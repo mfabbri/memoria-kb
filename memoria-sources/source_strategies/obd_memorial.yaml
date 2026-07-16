@@ -1,0 +1,21 @@
+﻿search_strategy:
+  source_id: obd_memorial
+  engine: obd_memorial_search_url
+  profile_path: source_profiles/obd_memorial.yaml
+  max_attempts: 3
+  attempts:
+  - id: cognome-nome-anno
+    label: Cognome + nome + anno nascita, verifica interattiva
+    when: has_family_and_given_name
+    fields:
+      f: family_name
+      n: given_name
+      y: birth_year
+  - id: solo-cognome
+    label: Solo cognome, verifica interattiva
+    when: has_family_name
+    fields:
+      f: family_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

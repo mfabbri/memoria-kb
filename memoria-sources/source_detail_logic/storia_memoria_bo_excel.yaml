@@ -1,0 +1,56 @@
+detail_logic:
+  source_id: storia_memoria_bo_excel
+  detail_level: claims_extractable
+  engine: storia_memoria_bo_excel_local_lookup
+  blocked_text:
+  - login
+  - access denied
+  - captcha
+  - restricted
+  - temporarily unavailable
+  field_patterns: []
+  claim_mappings:
+  - column: Nome battaglia
+    field: alias
+    confidence: 0.8
+  - column: Nato amg
+    field: birth.date
+    confidence: 0.75
+  - column: Nato comune
+    field: birth.place
+    confidence: 0.8
+  - column: Nato provincia
+    field: birth.province
+    confidence: 0.8
+  - column: Brigata di appartenenza
+    field: formation.name
+    confidence: 0.8
+  - column: Partigiano Patriota
+    field: role.status
+    confidence: 0.75
+  - column: Varie
+    field: note.source_row
+    confidence: 0.6
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: extracted-fields
+    when:
+      extracted_field_count_greater_than: 0
+    assessment: claim_candidates_extracted
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La pagina di dettaglio, quando disponibile, va conservata come SourceDocument.
+  - I claim estratti automaticamente sono candidati e richiedono revisione umana.
+  - La riga Excel è il documento tabellare di riferimento.
+  - Salvare sempre file, foglio e numero di riga come provenienza.
+  - Non pubblicare claim senza revisione umana.
+  extraction_method: local_table_row

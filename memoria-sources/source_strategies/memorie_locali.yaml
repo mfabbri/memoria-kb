@@ -1,0 +1,24 @@
+﻿search_strategy:
+  source_id: memorie_locali
+  engine: memorie_locali_full_text_search
+  profile_path: source_profiles/memorie_locali.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-completo
+    label: Nome completo
+    when: always
+    fields:
+      q: full_name
+  - id: cognome-nome
+    label: Cognome + nome
+    when: has_family_and_given_name
+    fields:
+      q: all_words_name
+  - id: solo-cognome
+    label: Solo cognome
+    when: has_family_name
+    fields:
+      q: family_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

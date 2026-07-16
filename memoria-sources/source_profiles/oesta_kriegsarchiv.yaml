@@ -1,0 +1,20 @@
+search_profile:
+  source_id: oesta_kriegsarchiv
+  engine: oesta_ais_full_text_search
+  discovery:
+    method: manual_public_page_review
+    url: https://www.archivinformationssystem.at/volltextsuche.aspx
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: ctl00$cphMainArea$txtMitAllenWoertern
+    label: With all words
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata:
+      html_name: ctl00$cphMainArea$txtMitAllenWoertern
+  strategy_notes:
+  - Profilo dichiarativo iniziale per OeStA Kriegsarchiv.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

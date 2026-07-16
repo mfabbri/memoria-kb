@@ -1,0 +1,131 @@
+result_logic:
+  source_id: bundesarchiv_invenio
+  engine: bundesarchiv_invenio_catalog_results
+  candidate_limit: 10
+  too_broad_threshold: 100
+
+  signals:
+    # L'executor Playwright dedicato genera una pagina sintetica con link
+    # data-invenio-candidate quando estrae candidati dalle partial-response
+    # JSF/AJAX o dai nodi Tektonik/Klassifikation.
+    result_link_selector: >-
+      a[data-invenio-candidate="true"],
+      a[href*="#invenio-record-"],
+      a[href*="#invenio-tektonik-"],
+      a[href*="#invenio-klassifikation-"],
+      a[href*="#tektonik-treffer"],
+      a[href*="#klassifikation-treffer"],
+      a[href*="/invenio/direktlink/"],
+      a[id*="copyLink"],
+      a[title*="Direktlink"],
+      a[id*="tbtn"]
+    result_container_selector: '#searchResultTab, div[id*="searchResultTab"], .resultTable, .ui-datatable, tbody.ui-datatable-data'
+    result_row_selector: '#searchResultTab tbody.ui-datatable-data > tr, div[id*="searchResultTab"] tbody.ui-datatable-data > tr, .resultTable tbody > tr'
+    title_selector: 'a[data-invenio-candidate="true"], a, td, .ui-column-title'
+    snippet_selector: 'td, .base-text, .layout-pane-content, .snippet'
+    loading_selector: 'div[id*="searchLoading"][style*="display: block"], div[id*="searchLoading"][aria-hidden="false"]'
+    direct_link_patterns:
+      - /invenio/direktlink/
+      - Direktlink
+      - Link kopiert
+      - invenio-record
+      - invenio-tektonik
+      - invenio-klassifikation
+      - tektonik-treffer
+      - klassifikation-treffer
+    no_results_text:
+      - Keine Treffer
+      - Keine Suchergebnisse
+      - No records found.
+      - 0 Treffer
+      - Es wurden keine Treffer gefunden
+    blocked_text:
+      - Sitzung abgelaufen
+      - Anmeldung erforderlich
+      - Bitte melden Sie sich an
+      - access denied
+      - Zugriff verweigert
+      - captcha
+      - Wartungsarbeiten
+
+  candidate_filters:
+    include_url_patterns:
+      - "invenio"
+      - "invenio-record"
+      - "invenio-tektonik"
+      - "invenio-klassifikation"
+      - "tektonik-treffer"
+      - "klassifikation-treffer"
+      - "/invenio/direktlink/"
+    exclude_url_patterns:
+      - "javascript:"
+      - "mailto:"
+      - "login.xhtml"
+      - "logout"
+      - "hilfe"
+      - "impressum"
+      - "datenschutz"
+      - "javax.faces"
+      - "primefaces"
+    exclude_title_patterns:
+      - "Login"
+      - "Logout"
+      - "Hilfe"
+      - "Impressum"
+      - "Datenschutz"
+      - "Abmelden"
+      - "Anmelden"
+    min_title_length: 3
+    require_non_empty_title: true
+
+  rules:
+    - id: blocked-or-session-expired
+      when:
+        blocked: true
+      assessment: blocked_or_dynamic
+      review_required: true
+
+    - id: loading-or-ajax-pending
+      when:
+        loading: true
+      assessment: blocked_or_dynamic
+      review_required: true
+
+    - id: no-result-links
+      when:
+        detail_link_count_equals: 0
+      assessment: no_results
+      review_required: false
+
+    - id: bounded-candidate-list
+      when:
+        detail_link_count_between:
+          - 1
+          - 10
+      assessment: candidate_results
+      collect_candidate_links: true
+      max_candidate_links: 10
+      review_required: true
+
+    - id: too-broad
+      when:
+        detail_link_count_greater_than: 100
+      assessment: too_broad
+      collect_candidate_links: false
+      review_required: true
+
+    - id: truncated-candidate-list
+      when:
+        detail_link_count_greater_than: 10
+      assessment: candidate_results_truncated
+      collect_candidate_links: true
+      max_candidate_links: 10
+      review_required: true
+
+  review_notes:
+    - Il catalogo autenticato usa tab JSF/AJAX e mostra i risultati nella struttura Tektonik/Klassifikation.
+    - L'executor dedicato stabilizza i nodi Tektonik/Klassifikation materializzati nelle partial-response AJAX.
+    - I nodi Tektonik/Klassifikation sono candidati intermedi, non record archivistici finali.
+    - Questa fonte è stabilizzata a livello candidate_results; il passo successivo sarà espandere i rowkey fino alle unità archivistiche puntuali.
+    - I candidati con frammento invenio-record indicano possibili record archivistici puntuali, comunque da revisionare.
+    - I candidati devono essere revisionati prima di diventare EvidenceClaim.

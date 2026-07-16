@@ -1,0 +1,13 @@
+project:
+  name: memoria-demo
+  description: Dataset demo Me.Mo.Ri.A
+paths:
+  raw: raw
+  ocr: processed/ocr
+  chunks: processed/chunks
+  candidates: processed/candidates
+  jsonld: graph/jsonld
+  review: historian_review
+policies:
+  keep_provenance: true
+  require_historian_review: true

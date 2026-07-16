@@ -1,0 +1,11 @@
+sources:
+  - id: local_book_scan
+    type: offline_scan
+    description: Scansione locale di libro o fascicolo
+    rights: verify_before_publication
+    default_ocr_profile: ita_deu_rus_300dpi
+  - id: german_docs_sample
+    type: online_archive
+    description: Fonte online da catalogare con wrapper dedicato
+    rights: verify_terms
+    default_ocr_profile: deu_300dpi

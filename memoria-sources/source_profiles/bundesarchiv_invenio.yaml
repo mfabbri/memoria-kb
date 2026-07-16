@@ -1,0 +1,328 @@
+search_profile:
+  source_id: bundesarchiv_invenio
+  engine: bundesarchiv_invenio_authenticated_catalog
+  discovery:
+    method: authenticated_ui_review_with_credentials
+    login_url: https://invenio.bundesarchiv.de/invenio/login.xhtml
+    main_url: https://invenio.bundesarchiv.de/invenio/main.xhtml
+    profiled_at: '2026-05-02T23:58:00+02:00'
+    observed_ui:
+    - Login autenticato osservato con campi Kennung/Passwort e pulsante Anmelden.
+    - Dopo il login e' presente una scelta Benutzung; nel profilo usato il contesto assegnato e' 36a Brigata Garibaldi - Italia.
+    - Il catalogo autenticato espone i tab principali Navigierende Suche, Suche, Suchergebnis, Merkzettel/Bestellen, Benutzerdaten, Hilfe e Kontakt.
+    - Il tab Suche contiene tre sottotab reali: Einfache Suche, Erweiterte Suche e Namenssuche.
+    - La Einfache Suche espone Suchbegriffe, filtro Nur Treffer mit Digitalisaten, Signatur con scelta Archivsignatur/Bestandssignatur e Zeitraum.
+    - La Erweiterte Suche espone Suchbegriffe con operatori, troncamenti, filtro Digitalisat, opzione Thesaurus, filtri aggiuntivi, filtri data/luogo, Bestandsauswahl, Benutzungsort, Signatur, Zeitraum, Aktenzeichen/Registriernr. e Organisationseinheit.
+  authentication:
+    required_for: authenticated_catalog_search_context
+    public_search_available: true
+    login_methods:
+    - user_id_password
+    - eID_personalausweis
+    - search_without_login
+    credential_policy: do_not_store_plaintext_credentials_in_yaml
+    recommended_runtime: Playwright persistent browser context or credentialed browser session with Benutzung selection
+    post_login_requirements:
+    - preserve assigned Benutzung context
+    - confirm authenticated menu with Abmelden
+    - keep main.xhtml as catalog landing page
+  fields:
+  - id: simple_search_terms
+    label: Suchbegriffe
+    type: text
+    role: full_text_or_keyword
+    required: false
+    default: ''
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:searchStrings
+      supports_wildcards: true
+      wildcard_chars:
+      - '*'
+      - '?'
+  - id: simple_digital_only
+    label: Nur Treffer mit Digitalisaten anzeigen
+    type: checkbox
+    role: digitized_records_filter
+    required: false
+    default: 'false'
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:nurDigitalisaten_input
+  - id: simple_signature
+    label: Signatur
+    type: text
+    role: archival_reference
+    required: false
+    default: ''
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:searchSignStrings
+      examples:
+      - R 109-I/4a
+  - id: simple_signature_type
+    label: Signaturtyp
+    type: radio
+    role: archival_reference_type
+    required: false
+    default: ARCHIV
+    options:
+    - value: ARCHIV
+      label: Archivsignatur
+    - value: BESTAND
+      label: Bestandssignatur
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:signTypeSelectedGroup
+  - id: simple_time_from
+    label: Zeitraum von
+    type: year
+    role: covering_date_start
+    required: false
+    default: ''
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:timeRangeFrom
+  - id: simple_time_to
+    label: Zeitraum bis
+    type: year
+    role: covering_date_end
+    required: false
+    default: ''
+    metadata:
+      tab: Einfache Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchEinfach:timeRangeTo
+  - id: advanced_search_terms
+    label: Suchbegriffe
+    type: text
+    role: full_text_or_keyword
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:searchStrings
+      supports_wildcards: true
+      wildcard_chars:
+      - '*'
+      - '?'
+  - id: advanced_concat_mode
+    label: Verknuepfung Suchbegriffe
+    type: radio
+    role: query_concatenation
+    required: false
+    default: UND
+    options:
+    - value: UND
+      label: Alle Begriffe
+    - value: ODER
+      label: Einen der Begriffe
+    - value: ZEICHENKETTE
+      label: Genaue Zeichenkette
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:concatSelectedGroup
+  - id: advanced_left_truncation
+    label: Suche mit Platzhalter links
+    type: checkbox
+    role: left_truncation
+    required: false
+    default: 'false'
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:leftTrunk_input
+  - id: advanced_right_truncation
+    label: Suche mit Platzhalter rechts
+    type: checkbox
+    role: right_truncation
+    required: false
+    default: 'true'
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:rightTrunk_input
+  - id: advanced_digital_only
+    label: Nur Treffer mit Digitalisaten anzeigen
+    type: checkbox
+    role: digitized_records_filter
+    required: false
+    default: 'false'
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:nurDigitalisaten_input
+  - id: advanced_thesaurus
+    label: Suche mit Thesaurus
+    type: checkbox
+    role: thesaurus_expansion
+    required: false
+    default: 'false'
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:mitThesaurus_input
+  - id: advanced_record_scope
+    label: Rechercheumfang
+    type: radio
+    role: archival_scope
+    required: false
+    default: ARCHIVWUERDIG
+    options:
+    - value: ARCHIVWUERDIG
+      label: nur archivwuerdige Unterlagen
+    - value: UNBEWERTET
+      label: auch unbewertete Unterlagen
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:rechercheList
+  - id: advanced_additional_field
+    label: Zusatzfeld
+    type: select
+    role: metadata_field_selector
+    required: false
+    default: '-1'
+    metadata:
+      tab: Erweiterte Suche
+      notes: Selettore dinamico per campi aggiuntivi di metadato, inclusi Diensteinheitenindex, Dienststelle, Personenindex, Ortsindex, Schicksal, Volkskartei e molti altri.
+  - id: advanced_additional_value
+    label: Zusatzwert
+    type: text
+    role: metadata_field_value
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      notes: Valore associato al Zusatzfeld selezionato.
+  - id: advanced_date_kind
+    label: Zusatzdatum
+    type: select
+    role: metadata_date_selector
+    required: false
+    default: '-1'
+    metadata:
+      tab: Erweiterte Suche
+      notes: Selettore dinamico di tipo data, con voci come Geburtsland, Unfalldatum, Urteilsdatum, Vermisstdatum, Volkskartei e altre.
+  - id: advanced_date_day
+    label: Zusatzdatum Tag
+    type: day
+    role: metadata_date_day
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      placeholder: TT
+  - id: advanced_date_month
+    label: Zusatzdatum Monat
+    type: month
+    role: metadata_date_month
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      placeholder: MM
+  - id: advanced_date_year
+    label: Zusatzdatum Jahr
+    type: year
+    role: metadata_date_year
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      placeholder: JJJJ
+  - id: advanced_date_place
+    label: Zusatzdatum Ort
+    type: text
+    role: metadata_place
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      placeholder: Ort
+  - id: advanced_usage_location
+    label: Suche nur fuer Benutzungsort
+    type: select
+    role: holding_location
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:mBenutzungsortSelect
+      options_observed:
+      - Alle Standorte
+      - Koblenz
+      - Freiburg
+      - Berlin-Lichterfelde
+      - Berlin-Tegel
+      - Digitales Magazin
+      - Ludwigsburg
+  - id: advanced_signature
+    label: Signatur
+    type: text
+    role: archival_reference
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:archSignature
+      examples:
+      - B 141/115001
+      - Z 42-VITI/34
+  - id: advanced_signature_type
+    label: Signaturtyp
+    type: radio
+    role: archival_reference_type
+    required: false
+    default: ARCHIV
+    options:
+    - value: ARCHIV
+      label: Archivsignatur
+    - value: BESTAND
+      label: Bestandssignatur
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:signTypeSelectedGroup
+  - id: advanced_time_from
+    label: Zeitraum von
+    type: year
+    role: covering_date_start
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:timeRangeFrom
+  - id: advanced_time_to
+    label: Zeitraum bis
+    type: year
+    role: covering_date_end
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:timeRangeTo
+  - id: advanced_file_number
+    label: Aktenzeichen / Registriernr.
+    type: text
+    role: file_number
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:aktenzeichen
+  - id: advanced_org_unit
+    label: Aktenfuehrende Organisationseinheit
+    type: text
+    role: creating_organization
+    required: false
+    default: ''
+    metadata:
+      tab: Erweiterte Suche
+      html_name: masterLayoutForm:tabPanel:tabSearch:searchTabPanel:tabSearchAllgemein:aktenOrgEinh
+  result_metadata_expected:
+  - archive.reference
+  - archive.title
+  - archive.covering_dates
+  - archive.record_group
+  - archive.classification_title
+  - archive.location
+  - digital_object.available
+  - person.full_name
+  strategy_notes:
+  - La UI autenticata conferma che il catalogo ha piu' modalita' di ricerca: semplice, avanzata e nominale.
+  - Le query piu' affidabili per il meta-motore partono da Suchbegriffe, Signatur, Zeitraum e Aktenzeichen; i filtri piu' specialistici vanno usati solo quando il profilo persona fornisce indizi forti.
+  - La Bestandsauswahl e i popup di Bestand/Klassifikation sono potenti ma introducono risultati AJAX e tabelle JSF che richiedono parsing prudente.

@@ -1,0 +1,62 @@
+result_logic:
+  source_id: albi_memoria_re
+  engine: albi_memoria_re_general_search
+  candidate_limit: 10
+  too_broad_threshold: 30
+  signals:
+    result_link_selector: a[href*="/albidellamemoria/scheda/"], a[href*="/albidellamemoria/dettaglio/"], a[href*="/albidellamemoria/persona/"],
+      a[href*="/albidellamemoria/record/"]
+    result_link_title_attribute: title
+    no_results_text:
+    - Nessun risultato
+    - Nessun elemento trovato
+    - La ricerca non ha prodotto risultati
+    - 0 risultati
+    - No results found
+    blocked_text:
+    - login
+    - access denied
+    - captcha
+    - verifica di sicurezza
+    - temporarily unavailable
+    - abilita javascript
+    - enable javascript
+  rules:
+  - id: blocked-or-dynamic
+    when:
+      blocked: true
+    assessment: blocked_or_dynamic
+    review_required: true
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      detail_link_count_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 30
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      detail_link_count_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  review_notes:
+  - 'Non usare a[href] generico: cattura menu e navigazione, non risultati.'
+  - Raccogliere solo link a schede/record di dettaglio degli Albi della Memoria.
+  - Se la pagina non espone risultati in HTML statico, implementare un executor Playwright o API-specifico prima di estrarre
+    candidati.
+  - I link di risultato sono candidate references, non EvidenceClaim pubblicabili.

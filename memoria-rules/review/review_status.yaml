@@ -1,0 +1,13 @@
+id: review_status_v0
+statuses:
+  - candidate
+  - needs_review
+  - accepted
+  - rejected
+  - merged
+  - conflict
+  - published_candidate
+transitions:
+  candidate: [needs_review, accepted, rejected, conflict]
+  needs_review: [accepted, rejected, merged, conflict]
+  conflict: [needs_review, accepted, rejected, merged]

@@ -1,0 +1,146 @@
+from __future__ import annotations
+
+import re
+import unittest
+from pathlib import Path
+
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+
+
+class MvpWorkspaceReportsOnlyTests(unittest.TestCase):
+    def test_workspace_wrapper_exposes_reports_only_reuse_mode(self) -> None:
+        text = (ROOT_DIR / "scripts" / "run_mvp_workspace_pipeline.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("[switch]$ReportsOnly", text)
+        self.assertIn("[switch]$SkipEvidenceImport", text)
+        self.assertIn("[string]$InputRootDir", text)
+        self.assertIn("[string]$ReuseLocalRunId", text)
+        self.assertIn("[string]$ReusePipelineRunId", text)
+        self.assertIn('[ValidateSet("Demo", "Full", "Debug")]', text)
+        self.assertIn('[string]$OutputProfile = "Full"', text)
+        self.assertIn("$defaultRawDir", text)
+        self.assertIn("Resolve-Path -LiteralPath $InputRootDir", text)
+        self.assertIn("$localRunId = if ([string]::IsNullOrWhiteSpace($ReuseLocalRunId))", text)
+        self.assertIn('$pipelineRunId = "$RunId-pipeline"', text)
+        self.assertIn("$sourcePipelineRunId = if ([string]::IsNullOrWhiteSpace($ReusePipelineRunId))", text)
+        self.assertIn("$sourcePipelineRunDir", text)
+
+    def test_reports_only_skips_heavy_steps_and_keeps_final_reports(self) -> None:
+        text = (ROOT_DIR / "scripts" / "run_mvp_workspace_pipeline.ps1").read_text(encoding="utf-8")
+
+        self.assertIn("STEP SKIP init_evidence_db reason=reports_only", text)
+        self.assertIn("STEP SKIP run_local_document_processing reason=reports_only", text)
+        self.assertIn("STEP SKIP build_candidate_person_profile_review reason=reports_only", text)
+        self.assertIn("STEP SKIP run_document_research_pipeline reason=reports_only", text)
+        self.assertIn("STEP SKIP import_document_analysis_evidence_to_db reason=skip_evidence_import", text)
+        self.assertRegex(text, re.compile(r"if \(\$ReportsOnly\).*?STEP SKIP run_document_research_pipeline", re.S))
+        self.assertIn("build_mvp_pilot_summary.ps1", text)
+        self.assertIn("build_mvp_consolidated_review_ledger.ps1", text)
+        self.assertRegex(
+            text,
+            re.compile(
+                r"STEP START import_document_analysis_evidence_to_db.*?STEP END import_document_analysis_evidence_to_db.*?STEP START build_mvp_consolidated_review_ledger",
+                re.S,
+            ),
+        )
+        self.assertIn("build_mvp_review_queue.ps1", text)
+        self.assertIn("summarize_mvp_review_decisions.ps1", text)
+        self.assertIn("export_obsidian_vault.ps1", text)
+        self.assertIn("build_mvp_pilot_cards_digest.ps1", text)
+        self.assertIn("build_mvp_review_session.ps1", text)
+        self.assertIn("-ConsolidatedLedgerJson $consolidatedLedgerJson", text)
+        self.assertIn("build_mvp_model_cards.ps1", text)
+        self.assertIn("-VerifiedFactsPreviewJson $verifiedFactsPreviewJson", text)
+        self.assertIn("-OutputDir $modelCardsDir", text)
+        self.assertIn("-FundingExcerptsDir $fundingExcerptsDir", text)
+        self.assertIn("build_verified_facts_profile_patch_preview.ps1", text)
+        self.assertIn("build_review_decision_conflict_register_preview.ps1", text)
+        self.assertIn("build_dataset_export_preview.ps1", text)
+        self.assertIn("build_publication_card_snapshot_preview.ps1", text)
+        self.assertIn("STEP SKIP build_verified_facts_profile_patch_preview reason=skip_evidence_import", text)
+        self.assertIn("STEP SKIP build_review_decision_conflict_register_preview reason=skip_evidence_import", text)
+        self.assertIn("STEP SKIP build_dataset_export_preview reason=skip_evidence_import", text)
+        self.assertIn("STEP SKIP build_publication_card_snapshot_preview reason=skip_evidence_import", text)
+        self.assertIn("build_mvp_review_dashboard.ps1", text)
+        self.assertIn("build_mvp_package_readiness.ps1", text)
+        self.assertIn("build_mvp_funding_dossier.ps1", text)
+        self.assertIn("Write-MvpRunIndex", text)
+
+    def test_run_index_records_reports_only_mode(self) -> None:
+        text = (ROOT_DIR / "scripts" / "run_mvp_workspace_pipeline.ps1").read_text(encoding="utf-8")
+
+        self.assertIn('$mode = if ($ReportsOnly) { "reports_only" }', text)
+        self.assertIn("output_profile = $OutputProfile", text)
+        self.assertIn("output_profile_guidance = $outputProfileGuidance", text)
+        self.assertIn("review_decisions_input = $reviewDecisionsInput", text)
+        self.assertIn('source = if ([string]::IsNullOrWhiteSpace($ReviewDecisionsJson)) { "generated_template" } else { "external_compiled_file" }', text)
+        self.assertIn("explicit_parameter = [bool](-not [string]::IsNullOrWhiteSpace($ReviewDecisionsJson))", text)
+        self.assertIn("template_path = $reviewDecisionsTemplateJson", text)
+        self.assertIn("hidden_by_profile = $hiddenByProfile", text)
+        self.assertIn("recommended_reading_order = $recommendedReadingOrder", text)
+        self.assertIn("Get-MvpRecommendedReadingOrder -Profile $OutputProfile", text)
+        self.assertIn("Get-MvpOutputProfileGuidance -Profile $OutputProfile", text)
+        self.assertIn("reports_only = [bool]$ReportsOnly", text)
+        self.assertIn("skip_evidence_import = [bool]$SkipEvidenceImport", text)
+        self.assertIn("local_run_id = $localRunId", text)
+        self.assertIn("source_pipeline_run_id = $sourcePipelineRunId", text)
+        self.assertIn("reuse_local_run_id = $ReuseLocalRunId", text)
+        self.assertIn("reuse_pipeline_run_id = $ReusePipelineRunId", text)
+        self.assertIn("source_pipeline_run_dir = $sourcePipelineRunDir", text)
+        self.assertIn("input_root_dir = $rawDir", text)
+        self.assertIn("default_input_root_dir = $defaultRawDir", text)
+        self.assertIn("input_root_is_subset = $inputRootIsSubset", text)
+        self.assertIn("processed_dir = $effectiveProcessedDir", text)
+        self.assertIn("default_processed_dir = $processedDir", text)
+        self.assertIn("quicklook_commands = $quicklookCommands", text)
+        self.assertIn("artifact_groups = [ordered]@", text)
+        self.assertIn("primary_human_output", text)
+        self.assertIn("historian_review", text)
+        self.assertIn("machine_audit", text)
+        self.assertIn("technical_diagnostics", text)
+        self.assertIn("## Mappa output", text)
+        self.assertIn("## Decisioni review usate", text)
+        self.assertIn("File decisioni", text)
+        self.assertIn("Parametro esplicito", text)
+        self.assertIn("## Profilo output", text)
+        self.assertIn("## Percorso Demo", text)
+        self.assertIn("Aprire questi file nell'ordine indicato", text)
+        self.assertIn("Profilo attivo", text)
+        self.assertIn("Non aprire di default in questo profilo", text)
+        self.assertIn("Lettura breve per demo", text)
+        self.assertIn("## Comandi rapidi PowerShell", text)
+        self.assertIn('Copiare un comando per riga in PowerShell', text)
+        self.assertIn('separarli con ``;``', text)
+        self.assertRegex(text, re.compile(r"\('\$run = \"' \+ \$pipelineRunDir \+ '\"'\)\s+'Get-Content \"\$run\\mvp_package_readiness\.md\"'", re.S))
+        self.assertIn('Get-Content "$run\\mvp_package_readiness.md"', text)
+        self.assertIn('Get-Content "$run\\mvp_funding_dossier.md"', text)
+        self.assertIn('Get-Content "$run\\document_analysis\\mvp_pilot_summary.md"', text)
+        self.assertIn('Get-Content "$run\\schede_modello\\README.md"', text)
+        self.assertIn('Get-Content "$run\\historian_review\\review_decision_conflict_register.preview.md"', text)
+        self.assertIn('Get-Content "$run\\dataset_export.preview.md"', text)
+        self.assertIn('Get-Content "$run\\publication_card_snapshots_preview\\README.md"', text)
+        self.assertIn('Get-Content "$run\\historian_review\\review_dashboard.md"', text)
+        self.assertIn('Get-Content "$run\\historian_review\\review_decisions_summary.md"', text)
+        self.assertIn("skipped_claim_candidate", text)
+        self.assertIn("not_publishable_without_human_review", text)
+        self.assertIn("ready_for_demo", text)
+        self.assertIn("publication_candidate", text)
+        self.assertIn("Modalita' ReportsOnly", text)
+        self.assertIn("Import evidence store saltato su richiesta", text)
+        self.assertIn("mvp_consolidated_review_ledger.md", text)
+        self.assertIn("model_cards_index", text)
+        self.assertIn("model_cards_manifest", text)
+        self.assertIn("profile_patch_preview", text)
+        self.assertIn("review_decision_conflict_register_preview", text)
+        self.assertIn("review_decision_conflict_register_preview_json", text)
+        self.assertIn("dataset_export_preview", text)
+        self.assertIn("publication_card_snapshot_index", text)
+        self.assertIn("publication_card_snapshot_manifest", text)
+        self.assertIn("funding_excerpts", text)
+        self.assertRegex(text, re.compile(r'"package_readiness".*?"funding_dossier".*?"pilot_cards_digest".*?"review_session".*?"review_dashboard"', re.S))
+        self.assertNotIn("mvp_model_cards_reviewed", text)
+
+
+if __name__ == "__main__":
+    unittest.main()

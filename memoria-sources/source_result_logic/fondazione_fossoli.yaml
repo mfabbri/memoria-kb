@@ -1,0 +1,126 @@
+result_logic:
+  source_id: fondazione_fossoli
+  engine: fondazione_fossoli_names_search
+  candidate_limit: 10
+  too_broad_threshold: 50
+  signals:
+    result_link_selector: a[href*="scheda"], a[href*="persona"], a[href*="deportat"], a[href*="internat"], a[href*="nomi-di-fossoli"]
+    no_results_text:
+    - Nessun risultato
+    - No results found
+    - La ricerca non ha prodotto risultati
+    - 0 risultati
+    blocked_text:
+    - login
+    - access denied
+    - captcha
+    - verifica di sicurezza
+    - temporarily unavailable
+  rules:
+  - id: blocked-or-manual
+    when:
+      blocked: true
+    assessment: search_url_ready
+    review_required: true
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      detail_link_count_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      detail_link_count_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 50
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - I risultati di lista sono candidate references, non prove storiche.
+  - Aprire la pagina di dettaglio o produrre una richiesta manuale prima di estrarre claim.
+  - I candidate_filters limitano il rumore di navigazione prodotto dal selettore HTML generico.
+  candidate_filters:
+    include_url_patterns:
+    - fondazionefossoli.org
+    - scheda
+    - persona
+    - deportat
+    - internat
+    exclude_url_patterns:
+    - 'javascript:'
+    - 'mailto:'
+    - '#'
+    - login
+    - logout
+    - signin
+    - signup
+    - language
+    - lang=
+    - cookie
+    - privacy
+    - terms
+    - help
+    - contatti
+    - contact
+    - search
+    - ricerca
+    - stampa
+    - print
+    - facebook.com
+    - twitter.com
+    - x.com
+    - instagram.com
+    - youtube.com
+    exclude_title_patterns:
+    - Login
+    - Logout
+    - Accedi
+    - Esci
+    - Home
+    - Cerca
+    - Ricerca
+    - Search
+    - Help
+    - Aiuto
+    - Contatti
+    - Privacy
+    - Cookie
+    - Stampa
+    - Print
+    - Facebook
+    - Twitter
+    - Instagram
+    - YouTube
+    - RSS
+    - Il Campo
+    - Museo Monumento
+    - ex Sinagoga
+    - Centro Studi
+    - La Fondazione
+    - prenota
+    - Prenota
+    - Offerta didattica
+    - Progetti
+    - Convegni
+    - Materiali e Risorse
+    - News ed Eventi
+    - English
+    - Italiano
+    - The Names of Fossoli
+    - I Nomi di Fossoli
+    min_title_length: 3
+    require_non_empty_title: true

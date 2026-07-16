@@ -1,0 +1,32 @@
+detail_logic:
+  source_id: icrc_pow
+  detail_level: manual_review_only
+  engine: icrc_archives_advanced_detail
+  blocked_text:
+  - login
+  - access denied
+  - captcha
+  - restricted
+  - temporarily unavailable
+  field_patterns: []
+  claim_mappings: []
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: extracted-fields
+    when:
+      extracted_field_count_greater_than: 0
+    assessment: claim_candidates_extracted
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La pagina di dettaglio, quando disponibile, va conservata come SourceDocument.
+  - I claim estratti automaticamente sono candidati e richiedono revisione umana.
+  - 'Fonte da trattare come richiesta o verifica manuale: non generare claim automatici senza intervento archivistico.'

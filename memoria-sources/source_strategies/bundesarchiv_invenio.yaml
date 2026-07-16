@@ -1,0 +1,68 @@
+﻿search_strategy:
+  source_id: bundesarchiv_invenio
+  engine: bundesarchiv_invenio_authenticated_catalog
+  profile_path: source_profiles/bundesarchiv_invenio.yaml
+  max_attempts: 6
+  attempts:
+  - id: simple-keyword-full-name
+    label: Einfache Suche per nome completo nei Suchbegriffe
+    when: always
+    fields:
+      simple_search_terms: full_name
+  - id: simple-keyword-family-name
+    label: Einfache Suche per solo cognome
+    when: has_family_name
+    fields:
+      simple_search_terms: family_name
+  - id: simple-signature
+    label: Einfache Suche per segnatura archivistica
+    when: has_archive_reference
+    fields:
+      simple_signature: archive_reference
+      simple_signature_type: ARCHIV
+  - id: advanced-exact-full-name
+    label: Erweiterte Suche con nome completo come frase esatta
+    when: has_full_name
+    fields:
+      advanced_search_terms: full_name
+      advanced_concat_mode: ZEICHENKETTE
+      advanced_right_truncation: 'false'
+      advanced_left_truncation: 'false'
+  - id: advanced-keyword-with-period
+    label: Erweiterte Suche con cognome o nome completo nel periodo 1939-1945
+    when: has_family_name
+    fields:
+      advanced_search_terms: family_name_with_military_context_de
+      advanced_concat_mode: ODER
+      advanced_time_from: '1939'
+      advanced_time_to: '1945'
+      advanced_right_truncation: 'true'
+  - id: advanced-file-number
+    label: Erweiterte Suche per Aktenzeichen o Registriernummer
+    when: has_file_number_or_reference
+    fields:
+      advanced_file_number: file_number_or_reference
+  fallback_policy:
+    on_no_results:
+    - retry_with_family_name_only
+    - retry_with_exact_phrase_disabled
+    - prepare_manual_review_with_bestands_context
+    on_too_broad:
+    - add_time_range_1939_1945
+    - add_advanced_org_unit_if_known
+    - add_usage_location_if_known
+    - prefer_signature_or_file_number
+  query_expansion:
+    german_context_terms:
+    - Italien
+    - Partisan
+    - Partisanen
+    - Kriegsgefangener
+    - Wehrmacht
+    - Garibaldi
+    - Brigade
+  strategy_notes:
+  - La Einfache Suche e' il punto di partenza piu' stabile per keyword, segnatura e periodo.
+  - La Erweiterte Suche permette controlli piu' fini su concat mode, troncamenti, Digitalisat, Thesaurus, Aktenzeichen e Organisationseinheit.
+  - La Namenssuche e' visibile nel catalogo autenticato ma va profilata meglio in un passo successivo prima di usarla in automatico.
+  - Per questa fonte i campi forti sono segnatura, Aktenzeichen e parole chiave archivistiche; l'omonimia personale va sempre trattata come candidata.

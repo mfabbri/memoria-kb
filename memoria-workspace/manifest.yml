@@ -1,0 +1,30 @@
+﻿workspace_id: memoria-local
+repository_role: descriptor_only
+workspace:
+  provider: local
+  root: "P:\\Comune\\Me.Mo.Ri.a"
+  env_var: MEMORIA_DATA_ROOT
+  providers:
+    local:
+      root: "P:\\Comune\\Me.Mo.Ri.a"
+    pcloud:
+      status: blocked_api_support
+      root: /MeMoRiA
+      api_host: eapi.pcloud.com
+      cache_dir: .memoria-cache/pcloud
+      credentials_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
+      mode: read_only
+data_root:
+  type: external_path
+  windows_path: "P:\\Comune\\Me.Mo.Ri.a"
+  env_var: MEMORIA_DATA_ROOT
+paths:
+  risultati: risultati
+  documenti_da_processare: documenti_da_processare
+  documenti_processati: documenti_processati
+  docs: docs
+  logs: logs
+  ricerche: ricerche
+  archivi: archivi
+  secure: secure
+  database: database

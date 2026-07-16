@@ -1,0 +1,59 @@
+detail_logic:
+  source_id: tna_wo417
+  detail_level: claims_extractable
+  engine: tna_discovery_record_detail
+  blocked_text:
+  - Sign in
+  - This record is closed
+  - Access denied
+  field_patterns:
+  - id: record_title
+    from: heading
+    pattern: ^(.+)$
+  - id: archival_reference
+    from: body_text
+    pattern: Reference\s*:?\s*(WO\s*417/[A-Za-z0-9/-]+)
+  - id: covering_dates
+    from: body_text
+    pattern: Date\s*:?\s*([0-9]{4}(?:\s*-\s*[0-9]{4})?)
+  - id: person_name
+    from: body_text
+    pattern: Name(?:\(s\))?\s*:?\s*([A-Z][A-Za-z .'-]{3,120}?)\s*(?:Description\s*:|Held by\s*:|Legal status\s*:|$)
+  - id: scope_summary
+    from: body_text
+    pattern: Description\s*:?\s*(.{20,240}?)\s*(?:Held by|Legal status|Closure status|$)
+  claim_mappings:
+  - field: archive.title
+    signal_field: record_title
+    confidence: 0.7
+  - field: archive.reference
+    signal_field: archival_reference
+    confidence: 0.9
+  - field: archive.covering_dates
+    signal_field: covering_dates
+    confidence: 0.8
+  - field: person.full_name
+    signal_field: person_name
+    confidence: 0.7
+  - field: archive.description
+    signal_field: scope_summary
+    confidence: 0.6
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: extracted-tna-fields
+    when:
+      extracted_field_count_greater_than: 1
+    assessment: claim_candidates_extracted
+    review_required: true
+  - id: fetched-without-fields
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - 'Una scheda Discovery resta un record archivistico da contestualizzare: i claim estratti non sono conferme biografiche automatiche.'
+  - Per WO 417 contano soprattutto reference, titolo, date e forma del nome presente nel record.

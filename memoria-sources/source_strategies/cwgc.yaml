@@ -1,0 +1,31 @@
+﻿search_strategy:
+  source_id: cwgc
+  engine: cwgc_find_war_dead
+  profile_path: source_profiles/cwgc.yaml
+  max_attempts: 2
+  attempts:
+  - id: cognome-nome-ww2
+    label: Cognome + nome, Seconda guerra mondiale
+    when: has_family_and_given_name
+    fields:
+      Surname: family_name
+      Forename: given_name
+      WarSelect: profile_default
+  - id: solo-cognome-ww2
+    label: Solo cognome, Seconda guerra mondiale
+    when: has_family_name
+    fields:
+      Surname: family_name
+      WarSelect: profile_default
+  - id: mononimo-come-cognome-ww2
+    label: Mononimo nel campo cognome, Seconda guerra mondiale
+    when: mononym
+    fields:
+      Surname: full_name
+      WarSelect: profile_default
+  - id: mononimo-come-nome-ww2
+    label: Mononimo nel campo nome, Seconda guerra mondiale
+    when: mononym
+    fields:
+      Forename: full_name
+      WarSelect: profile_default

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<partial-response>
+  <changes>
+    <update id="masterLayoutForm:tektonik:tree">
+      <![CDATA[
+      <ul id="masterLayoutForm:tektonik:tree" class="ui-tree">
+        <li id="masterLayoutForm:tektonik:tree:0" class="ui-treenode" data-rowkey="0" data-nodetype="root">
+          <span class="ui-treenode-label" title="Bestaende">Bestaende</span>
+        </li>
+        <li id="masterLayoutForm:tektonik:tree:0_1" class="ui-treenode" data-rowkey="0_1" data-nodetype="classification">
+          <span class="ui-treenode-label" title="Norddeutscher Bund und Deutsches Reich (1867/1871-1945)">Norddeutscher Bund und Deutsches Reich (1867/1871-1945)</span>
+        </li>
+        <li id="masterLayoutForm:tektonik:tree:0_1_7" class="ui-treenode ui-treenode-leaf" data-rowkey="0_1_7" data-nodetype="Verzeichnungseinheit">
+          <span class="ui-treenode-label" title="BArch R 70 Italienische Partisanen, 1944">BArch R 70 Italienische Partisanen, 1944</span>
+          <span>Signatur: BArch R 70/123</span>
+        </li>
+      </ul>
+      ]]>
+    </update>
+  </changes>
+</partial-response>

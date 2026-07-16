@@ -1,0 +1,27 @@
+search_profile:
+  source_id: tna_hs9
+  engine: tna_discovery_advanced_search
+  discovery:
+    method: manual_public_page_review
+    url: https://discovery.nationalarchives.gov.uk/
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: keywords
+    label: Keywords
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata:
+      html_name: _q
+  - id: reference_code
+    label: Reference code
+    type: text
+    role: archive_series
+    required: false
+    default: HS 9
+    metadata: {}
+  strategy_notes:
+  - Profilo dichiarativo iniziale per TNA Discovery - HS 9.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

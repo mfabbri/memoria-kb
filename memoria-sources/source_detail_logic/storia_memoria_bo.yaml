@@ -1,0 +1,165 @@
+detail_logic:
+  source_id: storia_memoria_bo
+  detail_level: claims_extractable
+  engine: storia_memoria_bo_person_detail
+  blocked_text:
+  - Access denied
+  - Forbidden
+  - Pagina non trovata
+  field_patterns:
+  - id: person_name
+    from: heading
+    pattern: ^(.*)$
+    group: 1
+  - id: birth_date
+    from: body_text
+    pattern: \b([0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4})\s*-\s*[0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4}\b
+    group: 1
+  - id: death_date
+    from: body_text
+    pattern: \b[0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4}\s*-\s*([0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4})\b
+    group: 1
+  - id: death_date
+    from: body_text
+    pattern: \bcadut[oa]\s+a\s+[^.;]+?\s+il\s+([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\b
+    group: 1
+  - id: birth_place
+    from: body_text
+    pattern: nato il [0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4}\s+a\s+([^;,.]+)
+    group: 1
+  - id: death_place
+    from: body_text
+    pattern: (?:Cadde|Morì|Morto).*?\s(?:a|presso)\s+([^.;]+?)\s+(?:il|l’|l')\s*[0-9]{1,2}\s+[A-Za-zÀ-ÿ]+\s+[0-9]{4}
+    group: 1
+  - id: death_place
+    from: body_text
+    pattern: \bcadut[oa]\s+a\s+([^.;]+?)\s+il\s+[0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4}\b
+    group: 1
+  - id: formation_name
+    from: body_text
+    pattern: Milit[oò]\s+nella\s+([^.]+?brigata[^.]+?)(?:\s+e\s+|\.\s+)
+    group: 1
+  - id: military_service_place
+    from: body_text
+    pattern: Prest\S*\s+servizio\s+militare\s+in\s+([^.;]+)
+    group: 1
+  - id: partisan_activity_place
+    from: body_text
+    pattern: oper\S*\s+a\s+([^.;]+?)\s*\.\s+Cad
+    group: 1
+  - id: education
+    from: body_text
+    pattern: 'Titolo\s+studio\s*:\s*(.+?)\s+Causa\s+morte\s*:'
+    group: 1
+  - id: death_cause
+    from: body_text
+    pattern: 'Causa\s+morte\s*:\s*(.+?)\s+Occupazione\s*:'
+    group: 1
+  - id: occupation
+    from: body_text
+    pattern: Occupazione\s*:\s*(.+?)\s+Scheda\b
+    group: 1
+  - id: parents
+    from: body_text
+    pattern: da\s+([^;,.]+?\s+e\s+[^;,.]+?);\s+nato
+    group: 1
+  - id: residence_1943
+    from: body_text
+    pattern: residente\s+nel\s+1943\s+(?:a|in|ivi)?\s*([^.;]+)\.
+    group: 1
+  - id: recognition_period
+    from: body_text
+    pattern: Riconosciuto\s+partigiano\s+dal\s+([^\.]+)\.
+    group: 1
+  - id: remembered_place
+    from: body_text
+    pattern: E['’]\s+ricordato\s+nel\s+([^\.]+)\.
+    group: 1
+  - id: role_status
+    from: body_text
+    pattern: Ha\s+fatto\s+parte\s+di\b.*?\b(Partigiana/o|Partigiano|Patriota)\b
+    group: 1
+  - id: bibliography
+    from: body_text
+    pattern: Bibliografia\s+(.+)$
+    group: 1
+  - id: biographical_excerpt
+    from: body_text
+    pattern: ^(.{80,1200}?)(?:\s+Fonte:|\s+Bibliografia|\s+Note|$)
+    group: 1
+  claim_mappings:
+  - field: person.full_name
+    signal_field: person_name
+    confidence: 0.95
+  - field: birth.date
+    signal_field: birth_date
+    confidence: 0.9
+  - field: birth.place
+    signal_field: birth_place
+    confidence: 0.85
+  - field: death.date
+    signal_field: death_date
+    confidence: 0.9
+  - field: death.place
+    signal_field: death_place
+    confidence: 0.8
+  - field: death.cause
+    signal_field: death_cause
+    confidence: 0.75
+  - field: formation.name
+    signal_field: formation_name
+    confidence: 0.8
+  - field: military.service.place
+    signal_field: military_service_place
+    confidence: 0.65
+  - field: partisan.activity.place
+    signal_field: partisan_activity_place
+    confidence: 0.65
+  - field: person.education
+    signal_field: education
+    confidence: 0.75
+  - field: occupation
+    signal_field: occupation
+    confidence: 0.8
+  - field: person.parents
+    signal_field: parents
+    confidence: 0.7
+  - field: residence.1943
+    signal_field: residence_1943
+    confidence: 0.65
+  - field: recognition.period
+    signal_field: recognition_period
+    confidence: 0.75
+  - field: memorial.place
+    signal_field: remembered_place
+    confidence: 0.7
+  - field: role.status
+    signal_field: role_status
+    confidence: 0.65
+  - field: source.bibliography
+    signal_field: bibliography
+    confidence: 0.7
+  - field: source.biographical_excerpt
+    signal_field: biographical_excerpt
+    confidence: 0.7
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: extracted-claims
+    when:
+      extracted_field_count_greater_than: 0
+    assessment: claim_candidates_extracted
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La scheda persona è un documento di dettaglio distinto dalla lista risultati.
+  - Il connettore Storia e Memoria pulisce header, menu e footer prima della logica di dettaglio comune.
+  - I claim estratti dalla scheda restano candidati e richiedono revisione umana.
+  - Titolo di studio e occupazione sono campi distinti: non mappare "Licenza elementare" come occupazione.

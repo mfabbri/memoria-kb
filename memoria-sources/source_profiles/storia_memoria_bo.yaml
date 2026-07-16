@@ -1,0 +1,87 @@
+search_profile:
+  source_id: storia_memoria_bo
+  engine: storia_memoria_bo_advanced_people
+  discovery:
+    method: online_profiled_from_advanced_people_url
+    url: https://www.storiaememoriadibologna.it/ricerca-avanzata/persone
+    url_template: https://www.storiaememoriadibologna.it/ricerca-avanzata/persone
+    detail_url_pattern: https://www.storiaememoriadibologna.it/archivio/persone/{slug}
+    known_positive_example: https://www.storiaememoriadibologna.it/archivio/persone/andreoli-dino
+    form_selector: form[id^="views-exposed-form-persone"]
+    people_tab_selector: a[href*="/ricerca-avanzata/persone"]
+    submit_selector: input[type="submit"]
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: s
+    label: Testo libero
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata:
+      html_name: s
+      notes: Campo ricerca libera della vista Drupal Persone.
+  - id: nom
+    label: Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata:
+      html_name: nom
+  - id: cog
+    label: Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata:
+      html_name: cog
+  - id: nas[min]
+    label: Data di nascita da
+    type: date
+    role: birth_date_min
+    required: false
+    default: ''
+    metadata:
+      html_name: nas[min]
+      value_format: iso_date
+  - id: nas[max]
+    label: Data di nascita a
+    type: date
+    role: birth_date_max
+    required: false
+    default: ''
+    metadata:
+      html_name: nas[max]
+      value_format: iso_date
+  - id: mor[min]
+    label: Data di morte da
+    type: date
+    role: death_date_min
+    required: false
+    default: ''
+    metadata:
+      html_name: mor[min]
+      value_format: iso_date
+  - id: mor[max]
+    label: Data di morte a
+    type: date
+    role: death_date_max
+    required: false
+    default: ''
+    metadata:
+      html_name: mor[max]
+      value_format: iso_date
+  result_model:
+    entity_type: person
+    candidate_link_pattern: /archivio/persone/
+    example_candidate: Dino Andreoli -> /archivio/persone/andreoli-dino
+    result_interpretation: La lista risultati produce candidati persona; la fonte documentale verificabile è la pagina di
+      dettaglio.
+  strategy_notes:
+  - Usare direttamente /ricerca-avanzata/persone come url_template operativo, non la pagina generica /ricerca-avanzata.
+  - La verifica online conferma che Andreoli Dino esiste come scheda /archivio/persone/andreoli-dino.
+  - I link risultato vanno riconosciuti dal pattern /archivio/persone/, non dalla vecchia classe CSS link-assoluto.
+  - Le date devono essere normalizzate in ISO YYYY-MM-DD prima della compilazione del form.
+  - Ogni risultato è candidato e richiede fetch della scheda dettaglio prima di produrre claim.

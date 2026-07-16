@@ -1,0 +1,19 @@
+﻿search_strategy:
+  source_id: icrc_pow
+  engine: icrc_archives_advanced_search
+  profile_path: source_profiles/icrc_pow.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-completo-title-content
+    label: Nome completo in titolo/contenuto
+    when: always
+    fields:
+      Fields[0].Value: full_name
+  - id: cognome-nome-title-content
+    label: Cognome + nome in titolo/contenuto
+    when: has_family_and_given_name
+    fields:
+      Fields[0].Value: all_words_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

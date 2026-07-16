@@ -1,0 +1,37 @@
+# Local editor and agent state
+.history/
+.agents/
+.git.invalid-empty-before-init/
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Test and generated scratch output
+.tmp-tests/
+tmp/
+temp/
+*.log
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Runtime/downloaded data and operational previews kept outside Git
+memoria-engine/archivi/
+memoria-engine/.tmp-tests/
+memoria-engine/.pytest_cache/
+memoria-engine/.venv/
+memoria-engine/tools/pwsh/
+
+# Legacy operational data excluded from distributable archives and Git
+memoria-engine/ricerche/person_profiles/
+memoria-engine/ricerche/caduti_purocielo.csv
+memoria-engine/ricerche/mvp/

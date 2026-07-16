@@ -1,0 +1,79 @@
+result_logic:
+  source_id: oesta_ais_feldsuche
+  engine: oesta_ais_field_search_results
+  candidate_limit: 10
+  too_broad_threshold: 50
+  signals:
+    result_link_selector: a[href]
+    no_results_text:
+    - No results found
+    - Nessun risultato
+    - Keine Treffer
+    - 0 results
+    - 0 risultati
+    blocked_text:
+    - login
+    - access denied
+    - captcha
+    - verifica di sicurezza
+    - temporarily unavailable
+    - session expired
+
+  candidate_filters:
+    exclude_url_patterns:
+    - "javascript:"
+    - "#"
+    - "login"
+    - "logout"
+    - "language="
+    - "hilfe"
+    - "help"
+    exclude_title_patterns:
+    - "Login"
+    - "Logout"
+    - "English"
+    - "Deutsch"
+    - "Home"
+    - "Search"
+    - "Help"
+    - "Hilfe"
+    min_title_length: 3
+    require_non_empty_title: true
+  rules:
+  - id: blocked-or-dynamic
+    when:
+      blocked: true
+    assessment: search_url_ready
+    review_required: true
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      detail_link_count_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      detail_link_count_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 50
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - La lista risultati della Feldsuche va interpretata come orientamento archivistico.
+  - Un link candidato può riferirsi a fascicoli, serie, livelli gerarchici o unità descrittive; non equivale automaticamente
+    a una persona identificata.
+  - Registrare URL, titolo, eventuale Ref. code e data di accesso prima di trasformare il risultato in SourceDocument.

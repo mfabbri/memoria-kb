@@ -1,0 +1,21 @@
+{
+  "@context": {
+    "ca": "https://ca-di-malanca.local/ontology/",
+    "Place": "ca:Place"
+  },
+  "@type": "PlaceResearchIdentityIndex",
+  "generated_from": "manual_seed",
+  "review_status": "unreviewed",
+  "places": [
+    {
+      "@id": "place:camalanca:ca-di-malanca",
+      "file": "ca-di-malanca.jsonld",
+      "preferred_label": "Ca' di Malanca"
+    },
+    {
+      "@id": "place:camalanca:purocielo",
+      "file": "purocielo.jsonld",
+      "preferred_label": "Purocielo"
+    }
+  ]
+}

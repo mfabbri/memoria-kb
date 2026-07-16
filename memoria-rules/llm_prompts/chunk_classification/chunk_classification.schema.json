@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ChunkClassification",
+  "type": "object",
+  "required": [
+    "classification_type",
+    "mentioned_people",
+    "mentioned_places",
+    "mentioned_dates",
+    "confidence",
+    "reasons",
+    "warnings",
+    "recommended_use",
+    "review_status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "classification_type": {
+      "type": "string",
+      "enum": [
+        "person_biographical_entry",
+        "multi_person_biographical_list",
+        "formation_context",
+        "battle_context",
+        "source_reference_context",
+        "bibliography",
+        "narrative_context",
+        "unclear",
+        "manual_review_required"
+      ]
+    },
+    "mentioned_people": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mentioned_places": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mentioned_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 0.99
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_use": {
+      "type": "string",
+      "enum": [
+        "search_hint",
+        "triage_only",
+        "manual_review_required"
+      ]
+    },
+    "review_status": {
+      "type": "string",
+      "const": "unreviewed"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+search_profile:
+  source_id: storia_memoria_bo_excel
+  engine: storia_memoria_bo_excel_local_lookup
+  discovery:
+    method: manual_public_page_review
+    url: file:///D:/xampp/htdocs/ca-di-malanca/archivi/storia.sba.unibo.it/
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: local_table_row
+    label: Riga tabellare locale
+    type: local_table
+    role: local_record
+    required: false
+    default: ''
+    metadata:
+      workbook_glob: '*.xls'
+  strategy_notes:
+  - Profilo dichiarativo iniziale per Storia e Memoria Bologna/Emilia-Romagna (Excel locali).
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

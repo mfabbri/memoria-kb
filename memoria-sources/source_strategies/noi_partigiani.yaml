@@ -1,0 +1,19 @@
+﻿search_strategy:
+  source_id: noi_partigiani
+  engine: noi_partigiani_wordpress_search
+  profile_path: source_profiles/noi_partigiani.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-completo-wordpress
+    label: Nome completo nella ricerca pubblica
+    when: always
+    fields:
+      s: full_name
+  - id: cognome-nome-wordpress
+    label: Cognome + nome nella ricerca pubblica
+    when: has_family_and_given_name
+    fields:
+      s: all_words_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

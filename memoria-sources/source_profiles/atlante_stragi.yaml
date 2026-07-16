@@ -1,0 +1,78 @@
+search_profile:
+  source_id: atlante_stragi
+  engine: atlante_stragi_public_search
+  discovery:
+    method: manual_public_page_review
+    url: https://www.straginazifasciste.it/?page_id=349&lang=en
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: comune
+    label: Comune
+    type: select
+    role: place
+    required: false
+    default: ''
+  - id: provincia
+    label: Provincia
+    type: select
+    role: province
+    required: false
+    default: ''
+  - id: regione
+    label: Regione
+    type: select
+    role: region
+    required: false
+    default: ''
+  - id: giornoin
+    label: Giorno inizio
+    type: number
+    role: start_day
+    required: false
+    default: ''
+  - id: mese_in
+    label: Mese inizio
+    type: select
+    role: start_month
+    required: false
+    default: ''
+  - id: giornofin
+    label: Giorno fine
+    type: number
+    role: end_day
+    required: false
+    default: ''
+  - id: mese_fin
+    label: Mese fine
+    type: select
+    role: end_month
+    required: false
+    default: ''
+  - id: tipo_vittima
+    label: Tipologia di vittima
+    type: select
+    role: victim_type
+    required: false
+    default: ''
+  - id: ordine
+    label: Ordina per
+    type: radio
+    role: sort_field
+    required: false
+    default: datainizio
+  - id: ord
+    label: Direzione ordinamento
+    type: radio
+    role: sort_direction
+    required: false
+    default: ASC
+  - id: submit
+    label: Submit
+    type: submit
+    role: submit
+    required: false
+    default: cerca
+  strategy_notes:
+  - Profilo dichiarativo per la ricerca avanzata dell'Atlante Stragi Nazifasciste.
+  - I campi sono mappati in modo prudente dal form pubblico `page_id=349`.
+  - La presenza di risultati produce episodi candidati da revisionare, non EvidenceClaim pubblicabili.

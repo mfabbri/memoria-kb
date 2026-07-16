@@ -1,0 +1,107 @@
+﻿search_strategy:
+  source_id: partigiani_italia
+  engine: partigiani_italia_public_search
+  profile_path: source_profiles/partigiani_italia.yaml
+  max_attempts: 4
+  attempts:
+  - id: cognome-nome-contains
+    label: Cognome + nome con operatori contains
+    when: has_family_and_given_name
+    fields:
+      cognome: family_name
+      cognome_op: contains
+      nome: given_name
+      nome_op: contains
+      nome_batt: ''
+      nome_batt_op: equal
+      luogo: ''
+      data_nasc_da: ''
+      data_nasc_a: ''
+      genere: ''
+      sigla_comm: ''
+      formazione: ''
+      formazione_op: equal
+      per_att_da: ''
+      per_att_a: ''
+      qualifica: ''
+      qualifica_op: equal
+      cmd: CERCA
+      solr: '1'
+      lm: '20'
+  - id: cognome-nome-nascita
+    label: Cognome + nome + anno nascita
+    when: has_family_given_and_birth_date
+    fields:
+      cognome: family_name
+      cognome_op: contains
+      nome: given_name
+      nome_op: contains
+      nome_batt: ''
+      nome_batt_op: equal
+      luogo: ''
+      data_nasc_da: birth_year
+      data_nasc_a: birth_year
+      genere: ''
+      sigla_comm: ''
+      formazione: ''
+      formazione_op: equal
+      per_att_da: ''
+      per_att_a: ''
+      qualifica: ''
+      qualifica_op: equal
+      cmd: CERCA
+      solr: '1'
+      lm: '20'
+  - id: solo-cognome-contains
+    label: Solo cognome con operatore contains
+    when: has_family_name
+    fields:
+      cognome: family_name
+      cognome_op: contains
+      nome: ''
+      nome_op: contains
+      nome_batt: ''
+      nome_batt_op: equal
+      luogo: ''
+      data_nasc_da: ''
+      data_nasc_a: ''
+      genere: ''
+      sigla_comm: ''
+      formazione: ''
+      formazione_op: equal
+      per_att_da: ''
+      per_att_a: ''
+      qualifica: ''
+      qualifica_op: equal
+      cmd: CERCA
+      solr: '1'
+      lm: '20'
+  - id: mononimo-come-nome-battaglia
+    label: Mononimo come nome di battaglia
+    when: mononym
+    fields:
+      cognome: ''
+      cognome_op: contains
+      nome: ''
+      nome_op: contains
+      nome_batt: full_name
+      nome_batt_op: equal
+      luogo: ''
+      data_nasc_da: ''
+      data_nasc_a: ''
+      genere: ''
+      sigla_comm: ''
+      formazione: ''
+      formazione_op: equal
+      per_att_da: ''
+      per_att_a: ''
+      qualifica: ''
+      qualifica_op: equal
+      cmd: CERCA
+      solr: '1'
+      lm: '20'
+  strategy_notes:
+  - 'Questa strategia replica la GET legacy e aggiunge due fallback dichiarativi: anno di nascita e solo cognome.'
+  - 'Il tentativo su nome_batt e'' prudente: va usato soprattutto per mononimi o alias curati.'
+  - Per evitare rumore, i risultati oltre 20 vanno considerati candidati troncati o ricerca troppo ampia.
+  - La futura interpretazione dettaglio dovra' aprire la scheda pubblica/autenticata e sintetizzare i campi anagrafici e resistenziali.

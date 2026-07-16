@@ -1,0 +1,81 @@
+result_logic:
+  source_id: atlante_stragi
+  engine: atlante_stragi_public_search
+  candidate_limit: 10
+  too_broad_threshold: 50
+  signals:
+    result_link_selector: a[href*="id_strage="]
+    no_results_text:
+    - Nessun risultato
+    - No results found
+    - La ricerca non ha prodotto risultati
+    - 0 risultati
+    - Nessun risultato
+    blocked_text:
+    - login
+    - access denied
+    - captcha
+    - verifica di sicurezza
+    - temporarily unavailable
+  candidate_filters:
+    include_url_patterns:
+    - id_strage=
+    exclude_url_patterns:
+    - "javascript:"
+    - "#"
+    - "wp-login"
+    - "wp-content"
+    - "feed"
+    - "comment"
+    - "author"
+    - "category"
+    - "tag"
+    - "?s="
+    - "page_id=349"
+    exclude_title_patterns:
+    - Login
+    - Home
+    - Privacy
+    - Cookie
+    - Cerca
+    - Search
+    - English
+    - Italiano
+    min_title_length: 4
+    require_non_empty_title: true
+  rules:
+  - id: blocked-or-manual
+    when:
+      blocked: true
+    assessment: search_url_ready
+    review_required: true
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      detail_link_count_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      detail_link_count_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 50
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - I risultati di lista sono candidate references, non prove storiche.
+  - Aprire la pagina di dettaglio o produrre una richiesta manuale prima di estrarre claim.

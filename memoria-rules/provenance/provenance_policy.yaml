@@ -1,0 +1,8 @@
+id: provenance_policy_v0
+rules:
+  - name: claim_requires_source
+    description: Every biographical or event claim must have at least one source reference.
+    severity: error
+  - name: source_requires_locator
+    description: Source reference should include document id and page, line, chunk or URL locator when available.
+    severity: warning

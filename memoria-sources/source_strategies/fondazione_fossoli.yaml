@@ -1,0 +1,39 @@
+﻿search_strategy:
+  source_id: fondazione_fossoli
+  engine: fondazione_fossoli_names_search
+  profile_path: source_profiles/fondazione_fossoli.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-cognome
+    label: Nome + cognome
+    when: has_family_and_given_name
+    fields:
+      nome: given_name
+      cognome: family_name
+      luogo_nascita: ''
+      giorno_nascita: ''
+      mese_nascita: ''
+      anno_nascita: ''
+  - id: nome-cognome-nascita
+    label: Nome + cognome + data nascita
+    when: has_family_given_and_birth_date
+    fields:
+      nome: given_name
+      cognome: family_name
+      luogo_nascita: ''
+      giorno_nascita: birth_day
+      mese_nascita: birth_month
+      anno_nascita: birth_year
+  - id: solo-cognome
+    label: Solo cognome
+    when: has_family_name
+    fields:
+      nome: ''
+      cognome: family_name
+      luogo_nascita: ''
+      giorno_nascita: ''
+      mese_nascita: ''
+      anno_nascita: ''
+  strategy_notes:
+  - 'Strategia prudente: prima nome e cognome nei campi strutturati, poi data di nascita come raffinamento, infine solo cognome.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

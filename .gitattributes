@@ -1,0 +1,5 @@
+# Exclude legacy operational data from distributable repository archives.
+# Runtime profiles are resolved from the external data root, not from Git.
+memoria-engine/ricerche/person_profiles/** export-ignore
+memoria-engine/ricerche/caduti_purocielo.csv export-ignore
+memoria-engine/ricerche/mvp/** export-ignore

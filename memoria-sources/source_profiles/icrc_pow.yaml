@@ -1,0 +1,20 @@
+search_profile:
+  source_id: icrc_pow
+  engine: icrc_archives_advanced_search
+  discovery:
+    method: manual_public_page_review
+    url: https://archives.icrc.org/search/advanced
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: Fields[0].Value
+    label: Word(s) from the title / content
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata:
+      html_name: Fields[0].Value
+  strategy_notes:
+  - Profilo dichiarativo iniziale per ICRC Archives - ricerca POW/captured personnel.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

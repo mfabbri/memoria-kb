@@ -1,0 +1,9 @@
+id: person_merge_policy_v0
+knowledge_ref: ../memoria-knowledge/entity-guidelines/person/person-card.md
+rules:
+  - name: same_name_not_enough
+    description: A matching or similar name alone is insufficient to merge two persons.
+    severity: error
+  - name: require_second_signal
+    description: Merge requires at least one additional signal such as place, date, unit, family relation, source continuity, or historian decision.
+    severity: error

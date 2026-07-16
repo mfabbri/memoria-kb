@@ -1,0 +1,34 @@
+﻿search_strategy:
+  source_id: storia_memoria_bo
+  engine: storia_memoria_bo_advanced_people
+  profile_path: source_profiles/storia_memoria_bo.yaml
+  max_attempts: 2
+  attempts:
+    - id: nome-cognome
+      label: Nome + cognome
+      when: has_family_and_given_name
+      fields:
+        s: ''
+        nom: given_name
+        cog: family_name
+        nas[min]: ''
+        nas[max]: ''
+        mor[min]: ''
+        mor[max]: ''
+    - id: testo-libero-nome-completo
+      label: Testo libero con nome completo
+      when: has_family_and_given_name
+      fields:
+        s: reversed_full_name
+        nom: ''
+        cog: ''
+        nas[min]: ''
+        nas[max]: ''
+        mor[min]: ''
+        mor[max]: ''
+  strategy_notes:
+    - 'Primo tentativo: campi strutturati nome/cognome.'
+    - 'Secondo tentativo: campo libero con nome completo in ordine Nome Cognome, utile se la view cambia o indicizza meglio il testo globale.'
+    - I tentativi con data di nascita o morte sono stati rimossi dalla strategia standard perchÃ© generavano blocchi duplicati per lo stesso permalink.
+    - Le date devono essere usate nella fase di scoring/revisione del candidato, non come query separata sempre eseguita.
+    - 'Non usare automaticamente il solo cognome: su Storia e Memoria puÃ² produrre liste troppo ampie e falsi positivi.'

@@ -1,0 +1,20 @@
+search_profile:
+  source_id: noi_partigiani
+  engine: noi_partigiani_wordpress_search
+  discovery:
+    method: manual_public_page_review
+    url: https://www.noipartigiani.it/?s={query}
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: s
+    label: Ricerca libera WordPress
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata:
+      html_name: s
+  strategy_notes:
+  - Profilo dichiarativo iniziale per Noi Partigiani.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

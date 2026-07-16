@@ -1,0 +1,7 @@
+id: ita_deu_rus_300dpi
+languages: [ita, deu, rus]
+dpi: 300
+psm: 4
+preprocess: true
+max_workers: 2
+notes: Profilo OCR coerente con esperimenti locali su WSL2/Tesseract.

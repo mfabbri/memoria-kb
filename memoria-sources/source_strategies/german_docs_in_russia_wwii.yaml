@@ -1,0 +1,40 @@
+﻿search_strategy:
+  source_id: german_docs_in_russia_wwii
+  engine: german_docs_in_russia_archival_browse
+  profile_path: source_profiles/german_docs_in_russia_wwii.yaml
+  max_attempts: 5
+  attempts:
+  - id: browse-fond-500
+    label: Aprire Fond 500 e scegliere l'opis pertinente
+    when: always
+    fields:
+      hierarchy_url: https://wwii.germandocsinrussia.org/ru/nodes/1-fond-500
+  - id: browse-opis-12475
+    label: Opis 12475, tank corps, documenti del XIV Panzerkorps in Italia
+    when: has_italy_or_apennine_context
+    fields:
+      inventory: '12475'
+      title_keywords: XIV Panzerkorps Italy partisans Lage Karten
+  - id: browse-opis-12483
+    label: Opis 12483, battalions, unita' minori e azioni locali
+    when: has_unit_or_place_context
+    fields:
+      inventory: '12483'
+      title_keywords: battalion Italy partisans
+  - id: browse-opis-12497
+    label: Opis 12497, intelligence and counterintelligence documents
+    when: has_intelligence_or_partisan_context
+    fields:
+      inventory: '12497'
+      title_keywords: Abwehr intelligence partisans Italy
+  - id: limited-keyword-search
+    label: Ricerca testuale interna solo come controllo secondario
+    when: has_specific_place_or_unit_keywords
+    fields:
+      title_keywords: place_keywords
+  strategy_notes:
+  - Preferire raccolte coerenti e piccole: un singolo delo o un intervallo di pagine, non l'intero sito.
+  - Le pagine di lista opis/delo producono candidati archivistici; i documenti scaricati vanno registrati come SourceDocument.
+  - Per scarichi massivi controllati costruire un manifest prima del download, con una riga per ogni pagina attesa e stato
+    pending/downloaded/metadata_reviewed.
+  - Se si usa la ricerca interna, annotare che l'indice e' incompleto o rumoroso e verificare sempre navigando la gerarchia.

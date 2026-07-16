@@ -1,0 +1,76 @@
+search_profile:
+  source_id: german_docs_in_russia_wwii
+  engine: german_docs_in_russia_archival_browse
+  discovery:
+    method: manual_public_hierarchy_review
+    url: https://wwii.germandocsinrussia.org/ru
+    profiled_at: '2026-05-31T00:00:00+02:00'
+    observed_ui: fund/opis/delo/page hierarchy with optional internal search
+  fields:
+  - id: hierarchy_url
+    label: Hierarchy URL
+    type: url
+    role: archival_hierarchy_entry
+    required: false
+    default: https://wwii.germandocsinrussia.org/ru/nodes/28468-top
+    metadata:
+      examples: fund 500; opis 12475; opis 12483; opis 12497
+  - id: fund
+    label: Fund
+    type: text
+    role: archive_fund
+    required: false
+    default: ''
+    metadata:
+      examples: Fond 500
+  - id: inventory
+    label: Inventory / Opis
+    type: text
+    role: archive_inventory
+    required: false
+    default: ''
+    metadata:
+      examples: '12475; 12483; 12497'
+  - id: file_number
+    label: File / Delo
+    type: text
+    role: archive_file_number
+    required: false
+    default: ''
+  - id: page_number
+    label: Page
+    type: text
+    role: archive_page_number
+    required: false
+    default: ''
+  - id: title_keywords
+    label: Title keywords
+    type: text
+    role: archival_title_keywords
+    required: false
+    default: ''
+  - id: place_keywords
+    label: Place keywords
+    type: text
+    role: place_or_area_filter
+    required: false
+    default: ''
+    metadata:
+      examples: Imola; Faenza; Apennines; Italy
+  - id: date_from
+    label: Date from
+    type: date_or_year
+    role: covering_date_start
+    required: false
+    default: ''
+  - id: date_to
+    label: Date to
+    type: date_or_year
+    role: covering_date_end
+    required: false
+    default: ''
+  strategy_notes:
+  - Usare prima la gerarchia archivistica: Top -> Fond 500 -> opis -> delo -> pagina/documento.
+  - Il motore di ricerca interno puo' aiutare a trovare parole chiave, ma non va considerato indice esaustivo.
+  - "Per ogni download salvare metadati minimi: URL pagina, gerarchia fond/opis/delo, titolo, data o intervallo, numero pagina, data accesso, eventuale URL immagine/documento e note di revisione."
+  - "I documenti possono contenere dati personali o contenuti soggetti a vincoli dell'accordo d'uso: niente claim automatici senza revisione."

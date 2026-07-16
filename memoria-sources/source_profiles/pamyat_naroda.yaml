@@ -1,0 +1,33 @@
+search_profile:
+  source_id: pamyat_naroda
+  engine: pamyat_naroda_search_url
+  discovery:
+    method: manual_public_page_review
+    url: https://pamyat-naroda.ru/heroes/
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: last_name
+    label: Фамилия / Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata: {}
+  - id: first_name
+    label: Имя / Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata: {}
+  - id: birth_year
+    label: Год рождения
+    type: text
+    role: birth_year
+    required: false
+    default: ''
+    metadata: {}
+  strategy_notes:
+  - Profilo dichiarativo iniziale per Pamyat Naroda.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

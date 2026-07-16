@@ -1,0 +1,54 @@
+result_logic:
+  source_id: partigiani_italia
+  engine: partigiani_italia_public_search
+  candidate_limit: 10
+  too_broad_threshold: 20
+  signals:
+    result_link_selector: a[href*="/persona/"], a[href*="/partigiano/"], a[href*="/scheda/"], a[href*="/dettaglio/"], a[href*="/cerca/"]
+    no_results_text:
+    - Nessun risultato
+    - La ricerca non ha prodotto risultati
+    - 0 risultati
+    blocked_text:
+    - login
+    - autenticazione
+    - accesso riservato
+  rules:
+  - id: blocked-or-authenticated-detail
+    when:
+      blocked: true
+    assessment: blocked_or_dynamic
+    review_required: true
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      detail_link_count_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      detail_link_count_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 20
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - La lista pubblica produce candidate results, non claim.
+  - Il primo livello deve riportare fino a 10 link candidati quando disponibili.
+  - Il secondo livello dovra' aprire le schede e sintetizzare campi come nome, cognome, nome di battaglia, luogo/data nascita,
+    formazione, qualifica e periodo attivita.
+  - Se la scheda dettaglio richiede autenticazione, il risultato resta reference-only con revisione manuale.

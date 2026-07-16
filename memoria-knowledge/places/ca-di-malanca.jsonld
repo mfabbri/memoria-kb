@@ -1,0 +1,28 @@
+{
+  "@context": {
+    "ca": "https://ca-di-malanca.local/ontology/",
+    "Place": "ca:Place"
+  },
+  "@type": "PlaceResearchIdentity",
+  "@id": "place:camalanca:ca-di-malanca",
+  "place_id": "place:camalanca:ca-di-malanca",
+  "preferred_label": "Ca' di Malanca",
+  "place_type": "building",
+  "alternate_labels": [
+    "Ca di Malanca",
+    "Casa di Malanca"
+  ],
+  "description": "Identita' luogo operativa per ricerca; non contiene coordinate o relazioni storiche verificate.",
+  "parent_place_id": "",
+  "latitude": null,
+  "longitude": null,
+  "geometry_precision": "unknown_geometry",
+  "source_document_ids": [],
+  "evidence_claim_ids": [],
+  "review_status": "unreviewed",
+  "provenance": "manual_seed_from_existing_fixture",
+  "audit": {
+    "created_for": "candidate_document_place_linking",
+    "verified_fact_policy": "not_verified_fact"
+  }
+}

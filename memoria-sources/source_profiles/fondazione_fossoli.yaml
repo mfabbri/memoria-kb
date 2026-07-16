@@ -1,0 +1,63 @@
+search_profile:
+  source_id: fondazione_fossoli
+  engine: fondazione_fossoli_names_search
+  discovery:
+    method: public_dynamic_form_review
+    url: https://www.fondazionefossoli.org/centro-studi/i-nomi-di-fossoli/
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: nome
+    label: Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata:
+      placeholder: 'es: Mario'
+  - id: cognome
+    label: Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata:
+      placeholder: 'es: Rossi'
+  - id: luogo_nascita
+    label: Luogo di nascita
+    type: text
+    role: birth_place
+    required: false
+    default: ''
+    metadata:
+      placeholder: 'es: Modena'
+  - id: giorno_nascita
+    label: Giorno di nascita
+    type: text
+    role: birth_day
+    required: false
+    default: ''
+    metadata:
+      placeholder: gg
+      value_format: dd
+  - id: mese_nascita
+    label: Mese di nascita
+    type: text
+    role: birth_month
+    required: false
+    default: ''
+    metadata:
+      placeholder: mm
+      value_format: mm
+  - id: anno_nascita
+    label: Anno di nascita
+    type: text
+    role: birth_year
+    required: false
+    default: ''
+    metadata:
+      placeholder: aaaa
+      value_format: yyyy
+  strategy_notes:
+  - Profilo dichiarativo per il form pubblico "I Nomi di Fossoli".
+  - I campi sono mappati dai label visibili della pagina pubblica: nome, cognome, luogo di nascita e data di nascita.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

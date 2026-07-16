@@ -1,0 +1,19 @@
+search_profile:
+  source_id: memorie_locali
+  engine: memorie_locali_full_text_search
+  discovery:
+    method: manual_public_page_review
+    url: https://resistenzamappe.it/?s={query}
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: q
+    label: Ricerca libera memorie locali
+    type: text
+    role: full_text
+    required: false
+    default: ''
+    metadata: {}
+  strategy_notes:
+  - Profilo dichiarativo iniziale per Memorie locali e portali territoriali della Resistenza.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

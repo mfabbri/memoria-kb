@@ -1,0 +1,35 @@
+﻿search_strategy:
+  source_id: oesta_ais_feldsuche
+  engine: oesta_ais_field_search
+  profile_path: source_profiles/oesta_ais_feldsuche.yaml
+  max_attempts: 4
+  attempts:
+  - id: titolo-nome-completo
+    label: Nome completo nel campo Title
+    when: always
+    fields:
+      title: full_name
+  - id: titolo-cognome-nome
+    label: Cognome + nome nel campo Title
+    when: has_family_and_given_name
+    fields:
+      title: all_words_name
+  - id: titolo-cognome
+    label: Solo cognome nel campo Title
+    when: has_family_name
+    fields:
+      title: family_name
+  - id: titolo-nome-con-periodo-morte
+    label: Nome completo con anno di morte come filtro periodo
+    when: has_family_given_and_death_year
+    fields:
+      title: full_name
+      time_period_from: death_year
+      time_period_to: death_year
+  strategy_notes:
+  - 'Strategia iniziale prudente: usare Title come campo piÃ¹ adatto a nominativi, fascicoli, elenchi o descrizioni archivistiche.'
+  - Quando Ã¨ disponibile un anno di morte o evento, usarlo come filtro temporale per ridurre rumore e omonimie.
+  - Non usare tentativi troppo larghi su soli nomi comuni senza altri indizi; se i risultati sono ampi, classificare come
+    too_broad o search_url_ready.
+  - In una fase successiva il Search Strategy Planner potrÃ  mappare formazione, luogo, reparto o evento anche su Contains
+    also e Ref. code.

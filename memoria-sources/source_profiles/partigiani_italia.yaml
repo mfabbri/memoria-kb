@@ -1,0 +1,175 @@
+search_profile:
+  source_id: partigiani_italia
+  engine: partigiani_italia_public_search
+  discovery:
+    method: manual_from_existing_registry
+    url: https://partigianiditalia.cultura.gov.it/cerca/
+    form_method: GET
+    profiled_at: '2026-05-01T00:00:00+02:00'
+  fields:
+  - id: cognome
+    label: Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata:
+      html_name: cognome
+  - id: cognome_op
+    label: Operatore cognome
+    type: hidden_or_select
+    role: family_name_operator
+    required: false
+    default: contains
+    metadata:
+      html_name: cognome_op
+  - id: nome
+    label: Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata:
+      html_name: nome
+  - id: nome_op
+    label: Operatore nome
+    type: hidden_or_select
+    role: given_name_operator
+    required: false
+    default: contains
+    metadata:
+      html_name: nome_op
+  - id: nome_batt
+    label: Nome di battaglia
+    type: text
+    role: alias
+    required: false
+    default: ''
+    metadata:
+      html_name: nome_batt
+  - id: nome_batt_op
+    label: Operatore nome di battaglia
+    type: hidden_or_select
+    role: alias_operator
+    required: false
+    default: equal
+    metadata:
+      html_name: nome_batt_op
+  - id: luogo
+    label: Luogo
+    type: text
+    role: place
+    required: false
+    default: ''
+    metadata:
+      html_name: luogo
+  - id: data_nasc_da
+    label: Data nascita da
+    type: text
+    role: birth_date_min
+    required: false
+    default: ''
+    metadata:
+      html_name: data_nasc_da
+  - id: data_nasc_a
+    label: Data nascita a
+    type: text
+    role: birth_date_max
+    required: false
+    default: ''
+    metadata:
+      html_name: data_nasc_a
+  - id: genere
+    label: Genere
+    type: text
+    role: gender
+    required: false
+    default: ''
+    metadata:
+      html_name: genere
+  - id: sigla_comm
+    label: Sigla commissione
+    type: text
+    role: commission_code
+    required: false
+    default: ''
+    metadata:
+      html_name: sigla_comm
+  - id: formazione
+    label: Formazione
+    type: text
+    role: formation
+    required: false
+    default: ''
+    metadata:
+      html_name: formazione
+  - id: formazione_op
+    label: Operatore formazione
+    type: hidden_or_select
+    role: formation_operator
+    required: false
+    default: equal
+    metadata:
+      html_name: formazione_op
+  - id: per_att_da
+    label: Periodo attivita da
+    type: text
+    role: activity_period_min
+    required: false
+    default: ''
+    metadata:
+      html_name: per_att_da
+  - id: per_att_a
+    label: Periodo attivita a
+    type: text
+    role: activity_period_max
+    required: false
+    default: ''
+    metadata:
+      html_name: per_att_a
+  - id: qualifica
+    label: Qualifica
+    type: text
+    role: role_or_status
+    required: false
+    default: ''
+    metadata:
+      html_name: qualifica
+  - id: qualifica_op
+    label: Operatore qualifica
+    type: hidden_or_select
+    role: role_or_status_operator
+    required: false
+    default: equal
+    metadata:
+      html_name: qualifica_op
+  - id: cmd
+    label: Comando
+    type: hidden
+    role: submit_command
+    required: false
+    default: CERCA
+    metadata:
+      html_name: cmd
+  - id: solr
+    label: Solr
+    type: hidden
+    role: search_backend_flag
+    required: false
+    default: '1'
+    metadata:
+      html_name: solr
+  - id: lm
+    label: Limite risultati
+    type: hidden
+    role: page_size
+    required: false
+    default: '20'
+    metadata:
+      html_name: lm
+  strategy_notes:
+  - La ricerca pubblica usa una GET su /cerca/ con nome e cognome separati.
+  - 'Il registry legacy usa name_order=surname_first: dal CSV ''COGNOME NOME'' ricava cognome e nome.'
+  - nome_op e cognome_op sono impostati a contains per tollerare varianti e secondi nomi.
+  - Il campo nome_batt va usato in una strategia separata quando sono disponibili alias o soprannomi curati.
+  - Le schede persona complete possono richiedere autenticazione; la lista pubblica va trattata come candidate result list.

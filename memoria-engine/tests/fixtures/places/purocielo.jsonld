@@ -1,0 +1,32 @@
+{
+  "@context": {
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "schema": "https://schema.org/",
+    "ca": "https://ca-di-malanca.local/ontology/",
+    "Place": "ca:Place",
+    "EvidenceClaim": "ca:EvidenceClaim",
+    "SourceDocument": "ca:SourceDocument"
+  },
+  "@type": "Place",
+  "@id": "place:purocielo",
+  "place_id": "place:purocielo",
+  "preferred_label": "Purocielo",
+  "place_type": "locality",
+  "alternate_labels": [
+    "Puro Cielo"
+  ],
+  "description": "Luogo pilota non ancora revisionato; non contiene relazioni persona-luogo.",
+  "latitude": null,
+  "longitude": null,
+  "admin_hierarchy": [],
+  "same_as": [],
+  "source_document_ids": [],
+  "evidence_claim_ids": [],
+  "review_status": "draft",
+  "confidence": 0.0,
+  "provenance": "manual_fixture",
+  "metadata": {
+    "model_version": "place.v1",
+    "normalization_policy": "no_profile_rewrite_or_geocoding"
+  }
+}

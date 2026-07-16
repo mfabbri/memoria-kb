@@ -1,0 +1,47 @@
+result_logic:
+  source_id: storia_memoria_bo_excel
+  engine: local_excel_lookup
+  candidate_limit: 10
+  too_broad_threshold: 25
+
+  signals:
+    # Fonte locale: non esiste una pagina HTML di risultati da parsare.
+    # Il connettore operativo deve leggere i workbook .xls in archivi/storia.sba.unibo.it.
+    local_workbook_dir: archivi/storia.sba.unibo.it
+    local_workbook_glob: "*.xls"
+
+    no_results_text:
+      - Nessuna riga corrispondente trovata nei file Excel locali
+      - Nessun risultato
+
+    blocked_text: []
+
+  rules:
+    - id: local-excel-matches
+      when:
+        local_match_count_between:
+          - 1
+          - 10
+      assessment: candidate_results
+      collect_candidate_links: false
+      review_required: true
+
+    - id: local-excel-no-results
+      when:
+        local_match_count_equals: 0
+      assessment: no_results
+      collect_candidate_links: false
+      review_required: false
+
+    - id: local-excel-too-broad
+      when:
+        local_match_count_greater_than: 25
+      assessment: too_broad
+      collect_candidate_links: false
+      review_required: true
+
+  review_notes:
+    - La fonte non deve interrogare il web.
+    - La ricerca operativa avviene sui file Excel locali in archivi/storia.sba.unibo.it.
+    - Ogni riga Excel trovata è un candidato documentale, non una scheda storica già validata.
+    - I dati estratti dagli Excel devono essere trasformati in EvidenceClaim solo con riferimento al file, al foglio e alla riga.

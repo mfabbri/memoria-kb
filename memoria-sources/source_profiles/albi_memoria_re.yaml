@@ -1,0 +1,81 @@
+search_profile:
+  source_id: albi_memoria_re
+  engine: albi_memoria_re_general_search
+  discovery:
+    method: online_public_page_review
+    url: https://www.albimemoria-istoreco.re.it/albidellamemoria/ricerca/9d2e61d2-ccdb-42dc-a204-c3b6d268ca5f
+    site_root: https://www.albimemoria-istoreco.re.it/
+    albo_id: 9d2e61d2-ccdb-42dc-a204-c3b6d268ca5f
+    albo_label: Albo generale (ricerca in tutti gli albi)
+    institution: Istoreco - Istituto per la Storia della Resistenza e della società contemporanea in provincia di Reggio Emilia
+    coverage_note: Ricerca trasversale su tutti gli Albi disponibili; gli Albi sono relativi ai 45 Comuni della provincia
+      di Reggio Emilia.
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: cognome
+    label: Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata:
+      observed_label: Cognome
+      query_support: primary
+  - id: nome
+    label: Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata:
+      observed_label: Nome
+      query_support: primary
+  - id: data_nascita
+    label: Data Nascita
+    type: date
+    role: birth_date
+    required: false
+    default: ''
+    metadata:
+      observed_label: Data Nascita
+      value_format: date_or_free_text
+  - id: anno_nascita
+    label: Anno Nascita
+    type: number
+    role: birth_year
+    required: false
+    default: ''
+    metadata:
+      observed_label: Anno Nascita
+      value_format: YYYY
+  - id: comune_nascita
+    label: Comune Nascita
+    type: text
+    role: birth_place
+    required: false
+    default: ''
+    metadata:
+      observed_label: Comune Nascita
+  - id: luogo_morte
+    label: Luogo Morte
+    type: text
+    role: death_place
+    required: false
+    default: ''
+    metadata:
+      observed_label: Luogo Morte
+  - id: data_morte
+    label: Data Morte
+    type: date
+    role: death_date
+    required: false
+    default: ''
+    metadata:
+      observed_label: Data Morte
+      value_format: date_or_free_text
+  strategy_notes:
+  - 'Il nuovo URL è l’Albo generale: ricerca in tutti gli albi disponibili.'
+  - I metadati osservati online espongono i campi Cognome, Nome, Data Nascita, Anno Nascita, Comune Nascita, Luogo Morte e
+    Data Morte.
+  - La ricerca automatica deve privilegiare cognome+nome; il solo cognome può diventare troppo ampio.
+  - 'La fonte copre primariamente memoria locale/provinciale reggiana: i risultati sono candidati e richiedono revisione umana.'

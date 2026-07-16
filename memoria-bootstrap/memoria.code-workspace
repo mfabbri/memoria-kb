@@ -1,0 +1,39 @@
+{
+  "folders": [
+    {
+      "path": "../memoria-bootstrap"
+    },
+    {
+      "path": "../memoria-engine"
+    },
+    {
+      "path": "../memoria-workspace"
+    },
+    {
+      "path": "../memoria-knowledge"
+    },
+    {
+      "path": "../memoria-rules"
+    },
+    {
+      "path": "../memoria-sources"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/__pycache__": true
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder:memoria-engine}\\.venv\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+      "tests"
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance"
+    ]
+  }
+}

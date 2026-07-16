@@ -1,0 +1,96 @@
+﻿search_strategy:
+  source_id: tna_wo417
+  engine: tna_discovery_advanced_search
+  profile_path: source_profiles/tna_wo417.yaml
+  max_attempts: 6
+  attempts:
+  - id: exact-original-wo417
+    label: Frase esatta originale in WO 417
+    when: has_family_and_given_name
+    fields:
+      _ep: full_name
+      _aq: ''
+      _or1: ''
+      _or2: ''
+      _or3: ''
+      _nq1: ''
+      _cr: WO 417
+      _sd: ''
+      _ed: ''
+      repository: 'true'
+  - id: exact-original-wo417-death-year
+    label: Frase esatta originale in WO 417 con anno morte
+    when: has_family_given_and_death_year
+    fields:
+      _ep: full_name
+      _aq: ''
+      _or1: ''
+      _or2: ''
+      _or3: ''
+      _nq1: ''
+      _cr: WO 417
+      _sd: death_year
+      _ed: death_year
+      repository: 'true'
+  - id: exact-reversed-wo417
+    label: Frase esatta nome+cognome in WO 417
+    when: has_family_and_given_name
+    fields:
+      _ep: reversed_full_name
+      _aq: ''
+      _or1: ''
+      _or2: ''
+      _or3: ''
+      _nq1: ''
+      _cr: WO 417
+      _sd: ''
+      _ed: ''
+      repository: 'true'
+  - id: all-words-name-wo417
+    label: Tutte le parole del nominativo in WO 417
+    when: has_family_and_given_name
+    fields:
+      _ep: ''
+      _aq: all_words_name
+      _or1: partisan
+      _or2: italy
+      _or3: bologna
+      _nq1: ''
+      _cr: WO 417
+      _sd: ''
+      _ed: ''
+      repository: 'true'
+  - id: mononym-exact-wo417
+    label: Mononimo come frase esatta in WO 417
+    when: mononym
+    fields:
+      _ep: full_name
+      _aq: ''
+      _or1: partisan
+      _or2: italy
+      _or3: ''
+      _nq1: ''
+      _cr: WO 417
+      _sd: ''
+      _ed: ''
+      repository: 'true'
+  - id: mononym-all-words-wo417
+    label: Mononimo come all-words in WO 417
+    when: mononym
+    fields:
+      _ep: ''
+      _aq: full_name_lc
+      _or1: partisan
+      _or2: italy
+      _or3: bologna
+      _nq1: ''
+      _cr: WO 417
+      _sd: ''
+      _ed: ''
+      repository: 'true'
+  strategy_notes:
+  - Base dichiarativa iniziale per testare TNA WO 417.
+  - Il connettore legacy TNA contiene ancora una strategia piu' ricca con contesto tradotto; questa YAML e' il punto di partenza
+    revisionabile.
+  - Le parole partisan/italy/bologna sono fallback generici e andranno sostituite da contesto fonte-specifico piu' fine.
+  - Non lanciare ricerche live senza credenziali TNA configurate via environment.

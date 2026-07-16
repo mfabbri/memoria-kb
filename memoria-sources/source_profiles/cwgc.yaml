@@ -1,0 +1,998 @@
+search_profile:
+  source_id: cwgc
+  engine: cwgc_find_war_dead
+  discovery:
+    method: playwright
+    url: https://www.cwgc.org/find-records/find-war-dead/
+    wait_selector: ''
+    profiled_at: '2026-04-30T20:50:30+00:00'
+  fields:
+  - label: Term
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata: {}
+    id: Term
+    type: text
+  - label: Last name
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Surname
+    id: Surname
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchlastName
+    id: SurnameExact
+    type: checkbox
+  - label: First name
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Forename
+    id: Forename
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchfirstname
+    id: ForenameExact
+    type: checkbox
+  - label: Initials
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Initials
+    id: Initials
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchinitials
+    id: InitialsExact
+    type: checkbox
+  - label: Service Number
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: ServiceNum
+    id: ServiceNum
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchserviceNumber
+    id: ServiceNumExact
+    type: checkbox
+  - label: Regiment
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Regiment
+    id: Regiment
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchregiment
+    id: RegimentExact
+    type: checkbox
+  - label: Served with (country)
+    role: ''
+    required: false
+    default: ''
+    options:
+    - value: ''
+      label: Served With
+    - value: American
+      label: American
+    - value: Arab World
+      label: Arab World
+    - value: Australian
+      label: Australian
+    - value: Austrian
+      label: Austrian
+    - value: Belgian
+      label: Belgian
+    - value: Brazilian
+      label: Brazilian
+    - value: Bulgarian
+      label: Bulgarian
+    - value: Canadian
+      label: Canadian
+    - value: Czechoslovakian
+      label: Czechoslovakian
+    - value: Dutch
+      label: Dutch
+    - value: Entirely Unidentified
+      label: Entirely Unidentified
+    - value: Finnish
+      label: Finnish
+    - value: German
+      label: German
+    - value: Greek
+      label: Greek
+    - value: Hungarian
+      label: Hungarian
+    - value: Indian
+      label: Indian
+    - value: Italian
+      label: Italian
+    - value: New Zealand
+      label: New Zealand
+    - value: Norwegian
+      label: Norwegian
+    - value: Polish
+      label: Polish
+    - value: Portuguese
+      label: Portuguese
+    - value: Romanian
+      label: Romanian
+    - value: Russian
+      label: Russian
+    - value: South African
+      label: South African
+    - value: United Kingdom
+      label: United Kingdom
+    metadata: {}
+    id: ServedWith
+    type: select
+  - label: Served in (army etc.)
+    role: ''
+    required: false
+    default: ''
+    options:
+    - value: ''
+      label: Served In
+    - value: Air Force
+      label: Air Force
+    - value: Army
+      label: Army
+    - value: Civilian War Dead 1939-1945
+      label: Civilian War Dead 1939-1945
+    - value: Merchant Navy
+      label: Merchant Navy
+    - value: Miscellaneous
+      label: Miscellaneous
+    - value: Navy
+      label: Navy
+    metadata: {}
+    id: ServedIn
+    type: select
+  - label: First World War
+    role: ''
+    required: false
+    default: '1'
+    options: []
+    metadata:
+      html_id: first
+    id: WarSelect
+    type: checkbox
+  - label: Country (commemorated in)
+    role: ''
+    required: false
+    default: 'null'
+    options:
+    - value: 'null'
+      label: Country
+    - value: Albania
+      label: Albania
+    - value: Algeria
+      label: Algeria
+    - value: Antigua and Barbuda
+      label: Antigua and Barbuda
+    - value: Argentina
+      label: Argentina
+    - value: Aruba, The Kingdom of the Netherlands
+      label: Aruba, The Kingdom of the Netherlands
+    - value: Australia
+      label: Australia
+    - value: Austria
+      label: Austria
+    - value: Azerbaijan
+      label: Azerbaijan
+    - value: Azores
+      label: Azores
+    - value: Bahamas
+      label: Bahamas
+    - value: Bangladesh
+      label: Bangladesh
+    - value: Barbados
+      label: Barbados
+    - value: Belgium
+      label: Belgium
+    - value: Belize
+      label: Belize
+    - value: Bermuda
+      label: Bermuda
+    - value: Botswana
+      label: Botswana
+    - value: Brazil
+      label: Brazil
+    - value: British Indian Ocean Territory
+      label: British Indian Ocean Territory
+    - value: Bulgaria
+      label: Bulgaria
+    - value: Cameroon
+      label: Cameroon
+    - value: Canada
+      label: Canada
+    - value: Cape Verde
+      label: Cape Verde
+    - value: Chad
+      label: Chad
+    - value: Chile
+      label: Chile
+    - value: China, (including Hong Kong)
+      label: China, (including Hong Kong)
+    - value: Civilian War Dead
+      label: Civilian War Dead
+    - value: Congo
+      label: Congo
+    - value: Congo (Democratic Republic)
+      label: Congo (Democratic Republic)
+    - value: Cook Islands
+      label: Cook Islands
+    - value: Costa Rica
+      label: Costa Rica
+    - value: Croatia
+      label: Croatia
+    - value: Cuba
+      label: Cuba
+    - value: Curacao, The Kingdom of the Netherlands
+      label: Curacao, The Kingdom of the Netherlands
+    - value: Cyprus
+      label: Cyprus
+    - value: Czech Republic
+      label: Czech Republic
+    - value: Denmark
+      label: Denmark
+    - value: Djibouti
+      label: Djibouti
+    - value: Dominica
+      label: Dominica
+    - value: Egypt
+      label: Egypt
+    - value: Equatorial Guinea
+      label: Equatorial Guinea
+    - value: Eritrea
+      label: Eritrea
+    - value: Estonia
+      label: Estonia
+    - value: Eswatini
+      label: Eswatini
+    - value: Ethiopia
+      label: Ethiopia
+    - value: Falkland Islands
+      label: Falkland Islands
+    - value: Faroe Islands
+      label: Faroe Islands
+    - value: Fiji
+      label: Fiji
+    - value: France
+      label: France
+    - value: Gambia
+      label: Gambia
+    - value: Georgia
+      label: Georgia
+    - value: Germany
+      label: Germany
+    - value: Ghana
+      label: Ghana
+    - value: Gibraltar
+      label: Gibraltar
+    - value: Greece
+      label: Greece
+    - value: Grenada
+      label: Grenada
+    - value: Guatemala
+      label: Guatemala
+    - value: Guinea
+      label: Guinea
+    - value: Guyana
+      label: Guyana
+    - value: Honduras
+      label: Honduras
+    - value: Hungary
+      label: Hungary
+    - value: Iceland
+      label: Iceland
+    - value: India
+      label: India
+    - value: Indonesia
+      label: Indonesia
+    - value: Iran
+      label: Iran
+    - value: Iraq
+      label: Iraq
+    - value: Ireland, Republic of
+      label: Ireland, Republic of
+    - value: Israel and Palestine (including Gaza)
+      label: Israel and Palestine (including Gaza)
+    - value: Italy
+      label: Italy
+    - value: Jamaica
+      label: Jamaica
+    - value: Japan
+      label: Japan
+    - value: Kenya
+      label: Kenya
+    - value: Latvia
+      label: Latvia
+    - value: Lebanese Republic
+      label: Lebanese Republic
+    - value: Lesotho
+      label: Lesotho
+    - value: Liberia
+      label: Liberia
+    - value: Libya
+      label: Libya
+    - value: Lithuania
+      label: Lithuania
+    - value: Luxembourg
+      label: Luxembourg
+    - value: Madagascar
+      label: Madagascar
+    - value: Madeira
+      label: Madeira
+    - value: Malawi
+      label: Malawi
+    - value: Malaysia
+      label: Malaysia
+    - value: Maldives
+      label: Maldives
+    - value: Mali
+      label: Mali
+    - value: Malta
+      label: Malta
+    - value: Martinique
+      label: Martinique
+    - value: Mauritania
+      label: Mauritania
+    - value: Mauritius
+      label: Mauritius
+    - value: Monaco
+      label: Monaco
+    - value: Morocco
+      label: Morocco
+    - value: Mozambique
+      label: Mozambique
+    - value: Myanmar
+      label: Myanmar
+    - value: Namibia
+      label: Namibia
+    - value: Nepal
+      label: Nepal
+    - value: Netherlands
+      label: Netherlands
+    - value: New Caledonia
+      label: New Caledonia
+    - value: New Zealand
+      label: New Zealand
+    - value: Nigeria
+      label: Nigeria
+    - value: Norfolk Island
+      label: Norfolk Island
+    - value: North Macedonia, Republic of
+      label: North Macedonia, Republic of
+    - value: Norway
+      label: Norway
+    - value: Oman
+      label: Oman
+    - value: Online Commemoration
+      label: Online Commemoration
+    - value: Pakistan
+      label: Pakistan
+    - value: Panama
+      label: Panama
+    - value: Papua New Guinea
+      label: Papua New Guinea
+    - value: Peru
+      label: Peru
+    - value: Philippines
+      label: Philippines
+    - value: Poland
+      label: Poland
+    - value: Portugal
+      label: Portugal
+    - value: Puerto Rico
+      label: Puerto Rico
+    - value: Romania
+      label: Romania
+    - value: Russian Federation (East)
+      label: Russian Federation (East)
+    - value: Russian Federation (North)
+      label: Russian Federation (North)
+    - value: Samoa
+      label: Samoa
+    - value: San Marino
+      label: San Marino
+    - value: Saudi Arabia
+      label: Saudi Arabia
+    - value: Senegal
+      label: Senegal
+    - value: Serbia
+      label: Serbia
+    - value: Seychelles
+      label: Seychelles
+    - value: Sierra Leone
+      label: Sierra Leone
+    - value: Singapore
+      label: Singapore
+    - value: Society Islands
+      label: Society Islands
+    - value: Solomon Islands
+      label: Solomon Islands
+    - value: Somalia (including Somaliland)
+      label: Somalia (including Somaliland)
+    - value: South Africa
+      label: South Africa
+    - value: Spain
+      label: Spain
+    - value: Sri Lanka
+      label: Sri Lanka
+    - value: St. Christopher and Nevis
+      label: St. Christopher and Nevis
+    - value: St. Helena and Ascension Island
+      label: St. Helena and Ascension Island
+    - value: St. Lucia
+      label: St. Lucia
+    - value: St. Vincent
+      label: St. Vincent
+    - value: Sudan
+      label: Sudan
+    - value: Sweden
+      label: Sweden
+    - value: Switzerland
+      label: Switzerland
+    - value: Syria
+      label: Syria
+    - value: Tanzania
+      label: Tanzania
+    - value: Thailand
+      label: Thailand
+    - value: Togo
+      label: Togo
+    - value: Tonga
+      label: Tonga
+    - value: Trinidad and Tobago
+      label: Trinidad and Tobago
+    - value: Tunisia
+      label: Tunisia
+    - value: Turkey (including Gallipoli)
+      label: Turkey (including Gallipoli)
+    - value: Uganda
+      label: Uganda
+    - value: Ukraine
+      label: Ukraine
+    - value: United Kingdom
+      label: United Kingdom
+    - value: United States of America
+      label: United States of America
+    - value: Uruguay
+      label: Uruguay
+    - value: Vanuatu
+      label: Vanuatu
+    - value: Yemen
+      label: Yemen
+    - value: Zambia
+      label: Zambia
+    - value: Zimbabwe
+      label: Zimbabwe
+    metadata: {}
+    id: CountryCommemoratedIn
+    type: select
+  - label: Cemetery or Memorial (commemorated at)
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Cemetery
+    id: Cemetery
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchcemetery
+    id: CemeteryExact
+    type: checkbox
+  - label: Unit
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Unit
+    id: Unit
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchunit
+    id: ExactUnit
+    type: checkbox
+  - label: Rank
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: Rank
+    id: Rank
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchrank
+    id: ExactRank
+    type: checkbox
+  - label: Secondary Regiment
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: SecondaryRegiment
+    id: SecondaryRegiment
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchsecondaryRegiment
+    id: ExactSecondaryRegiment
+    type: checkbox
+  - label: Secondary Unit
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: SecondaryUnit
+    id: SecondaryUnit
+    type: text
+  - label: Match this search term exactly
+    role: ''
+    required: false
+    default: 'true'
+    options: []
+    metadata:
+      html_id: matchsecondaryUnit
+    id: ExactSecondaryUnit
+    type: checkbox
+  - label: Age at Death
+    role: ''
+    required: false
+    default: '0'
+    options: []
+    metadata:
+      html_id: AgeOfDeath
+    id: AgeOfDeath
+    type: number
+  - label: DateDeathFromDay
+    role: ''
+    required: false
+    default: '1'
+    options:
+    - value: '1'
+      label: '1'
+    - value: '2'
+      label: '2'
+    - value: '3'
+      label: '3'
+    - value: '4'
+      label: '4'
+    - value: '5'
+      label: '5'
+    - value: '6'
+      label: '6'
+    - value: '7'
+      label: '7'
+    - value: '8'
+      label: '8'
+    - value: '9'
+      label: '9'
+    - value: '10'
+      label: '10'
+    - value: '11'
+      label: '11'
+    - value: '12'
+      label: '12'
+    - value: '13'
+      label: '13'
+    - value: '14'
+      label: '14'
+    - value: '15'
+      label: '15'
+    - value: '16'
+      label: '16'
+    - value: '17'
+      label: '17'
+    - value: '18'
+      label: '18'
+    - value: '19'
+      label: '19'
+    - value: '20'
+      label: '20'
+    - value: '21'
+      label: '21'
+    - value: '22'
+      label: '22'
+    - value: '23'
+      label: '23'
+    - value: '24'
+      label: '24'
+    - value: '25'
+      label: '25'
+    - value: '26'
+      label: '26'
+    - value: '27'
+      label: '27'
+    - value: '28'
+      label: '28'
+    - value: '29'
+      label: '29'
+    - value: '30'
+      label: '30'
+    - value: '31'
+      label: '31'
+    metadata: {}
+    id: DateDeathFromDay
+    type: select
+  - label: DateDeathFromMonth
+    role: ''
+    required: false
+    default: ''
+    options:
+    - value: ''
+      label: January
+    - value: ''
+      label: February
+    - value: ''
+      label: March
+    - value: ''
+      label: April
+    - value: ''
+      label: May
+    - value: ''
+      label: June
+    - value: ''
+      label: July
+    - value: ''
+      label: August
+    - value: ''
+      label: September
+    - value: ''
+      label: October
+    - value: ''
+      label: November
+    - value: ''
+      label: December
+    metadata: {}
+    id: DateDeathFromMonth
+    type: select
+  - label: DateDeathFromYear
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: DateDeathFromYear
+    id: DateDeathFromYear
+    type: text
+  - label: DateDeathToDay
+    role: ''
+    required: false
+    default: '1'
+    options:
+    - value: '1'
+      label: '1'
+    - value: '2'
+      label: '2'
+    - value: '3'
+      label: '3'
+    - value: '4'
+      label: '4'
+    - value: '5'
+      label: '5'
+    - value: '6'
+      label: '6'
+    - value: '7'
+      label: '7'
+    - value: '8'
+      label: '8'
+    - value: '9'
+      label: '9'
+    - value: '10'
+      label: '10'
+    - value: '11'
+      label: '11'
+    - value: '12'
+      label: '12'
+    - value: '13'
+      label: '13'
+    - value: '14'
+      label: '14'
+    - value: '15'
+      label: '15'
+    - value: '16'
+      label: '16'
+    - value: '17'
+      label: '17'
+    - value: '18'
+      label: '18'
+    - value: '19'
+      label: '19'
+    - value: '20'
+      label: '20'
+    - value: '21'
+      label: '21'
+    - value: '22'
+      label: '22'
+    - value: '23'
+      label: '23'
+    - value: '24'
+      label: '24'
+    - value: '25'
+      label: '25'
+    - value: '26'
+      label: '26'
+    - value: '27'
+      label: '27'
+    - value: '28'
+      label: '28'
+    - value: '29'
+      label: '29'
+    - value: '30'
+      label: '30'
+    - value: '31'
+      label: '31'
+    metadata: {}
+    id: DateDeathToDay
+    type: select
+  - label: DateDeathToMonth
+    role: ''
+    required: false
+    default: ''
+    options:
+    - value: ''
+      label: January
+    - value: ''
+      label: February
+    - value: ''
+      label: March
+    - value: ''
+      label: April
+    - value: ''
+      label: May
+    - value: ''
+      label: June
+    - value: ''
+      label: July
+    - value: ''
+      label: August
+    - value: ''
+      label: September
+    - value: ''
+      label: October
+    - value: ''
+      label: November
+    - value: ''
+      label: December
+    metadata: {}
+    id: DateDeathToMonth
+    type: select
+  - label: DateDeathToYear
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: DateDeathToYear
+    id: DateDeathToYear
+    type: text
+  - label: Exact Date of Death
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: DateOfDeath
+    id: DateOfDeath
+    type: text
+  - label: Honours & Awards
+    role: ''
+    required: false
+    default: 'null'
+    options:
+    - value: 'null'
+      label: Honours & Awards
+    - value: 10 times Mentioned in Despatches
+      label: 10 times Mentioned in Despatches
+    - value: 5 times Mentioned in Despatches
+      label: 5 times Mentioned in Despatches
+    - value: 6 times Mentioned in Despatches
+      label: 6 times Mentioned in Despatches
+    - value: '8 times Mentioned in Despatches '
+      label: 8 times Mentioned in Despatches
+    - value: 9 times Mentioned in Despatches
+      label: 9 times Mentioned in Despatches
+    - value: A F C
+      label: Air Force Cross
+    - value: A F M
+      label: Air Force Medal
+    - value: A M
+      label: Albert Medal
+    - value: A R R C
+      label: Associate of the Royal Red Cross, 2nd Class
+    - value: B E M
+      label: British Empire Medal
+    - value: B G M
+      label: Burma Gallantry Medal
+    - value: C B E
+      label: Commander of the Order of the British Empire
+    - value: C V O
+      label: Commander of the Royal Victorian Order
+    - value: C M G
+      label: Companion of St. Michael and St. George
+    - value: C B
+      label: Companion of the Bath
+    - value: C I E
+      label: Companion of the Indian Empire
+    - value: C S I
+      label: Companion of the Star of India
+    - value: C G M
+      label: Conspicuous Gallantry Medal
+    - value: D C M
+      label: Distinguished Conduct Medal
+    - value: D F C
+      label: Distinguished Flying Cross
+    - value: D F M
+      label: Distinguished Flying Medal
+    - value: D S C
+      label: Distinguished Service Cross
+    - value: D S M
+      label: Distinguished Service Medal
+    - value: D S O
+      label: Distinguished Service Order
+    - value: E M
+      label: Edward Medal
+    - value: E D
+      label: Efficiency Decoration
+    - value: E R D
+      label: Emergency Reserve Decoration
+    - value: E G M
+      label: Empire Gallantry Medal
+    - value: 4 times Mentioned in Despatches
+      label: Four times Mentioned in Despatches
+    - value: G C
+      label: George Cross
+    - value: G M
+      label: George Medal
+    - value: I S O
+      label: Imperial Service Order
+    - value: I D S M
+      label: Indian Distinguished Service Medal
+    - value: I O M
+      label: Indian Order of Merit
+    - value: K C M G
+      label: Knight Commander of St. Michael and St. George
+    - value: K C B
+      label: Knight Commander of the Bath
+    - value: K C I E
+      label: Knight Commander of the Indian Empire
+    - value: K B E
+      label: Knight Commander of the Order of the British Empire
+    - value: K C V O
+      label: Knight Commander of the Royal Victorian Order
+    - value: K C S I
+      label: Knight Commander of the Star of India
+    - value: G C I E
+      label: Knight Grand Commander of the Indian Empire
+    - value: G C S I
+      label: Knight Grand Commander of the Star of India
+    - value: G C M G
+      label: Knight Grand Cross of St. Michael and St. George
+    - value: G C B
+      label: Knight Grand Cross of the Bath
+    - value: G B E
+      label: Knight Grand Cross of the Order of the British Empire
+    - value: G C V O
+      label: Knight Grand Cross of the Royal Victorian Order
+    - value: K P
+      label: Knight of St. Patrick
+    - value: K G
+      label: Knight of the Garter
+    - value: K T
+      label: Knight of the Thistle
+    - value: O M
+      label: Member of the Order of Merit
+    - value: M B E
+      label: Member of the Order of the British Empire
+    - value: R R C
+      label: Member of the Royal Red Cross, 1st Class
+    - value: M V O
+      label: Member of the Royal Victorian Order
+    - value: Mentioned in Despatches
+      label: Mentioned in Despatches
+    - value: M S M
+      label: Meritorious Service Medal
+    - value: M C
+      label: Military Cross
+    - value: M M
+      label: Military Medal
+    - value: O B E
+      label: Officer of the Order of the British Empire
+    - value: O B I
+      label: Order of British India
+    - value: R D
+      label: Reserve Decoration (Naval)
+    - value: R V M
+      label: Royal Victorian Medal
+    - value: T D
+      label: Territorial Decoration
+    - value: 3 times Mentioned in Despatches
+      label: Three times Mentioned in Despatches
+    - value: Twice Mentioned in Despatches
+      label: Twice Mentioned in Despatches
+    - value: V C
+      label: Victoria Cross
+    - value: V D
+      label: Volunteer Officers' Decoration
+    metadata: {}
+    id: Honours
+    type: select
+  - label: Additional Information
+    role: ''
+    required: false
+    default: ''
+    options: []
+    metadata:
+      html_id: AdditionalInfo
+    id: AdditionalInfo
+    type: text
+  strategy_notes:
+  - Profilo promosso da profilazione live Playwright del 2026-04-30.
+  - Il campo WarSelect e' rilevato dal form live come checkbox First World War con default tecnico 1.
+  - Per il caso Purocielo/Ca' di Malanca usare l'override operativo source.form.war_select=2 nel registry fonti.
+  - Non produrre EvidenceClaim da URL o liste risultati CWGC non verificati.

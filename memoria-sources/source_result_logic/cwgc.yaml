@@ -1,0 +1,51 @@
+result_logic:
+  source_id: cwgc
+  engine: cwgc_find_war_dead
+  candidate_limit: 10
+  too_broad_threshold: 50
+  signals:
+    result_count_pattern: SHOW\s+(\d+)\s+OF\s+(\d+)\s+WAR DEAD
+    result_tabs:
+    - id: exact_matches
+      label_text: EXACT MATCHES
+      active_pattern: class="[^"]*active[^"]*"[^>]*>\s*EXACT MATCHES\s*<
+      href_pattern: href="([^"]*exact[^"]*)"[^>]*>\s*EXACT MATCHES\s*<
+    - id: close_matches
+      label_text: CLOSE MATCHES
+      active_pattern: class="[^"]*active[^"]*"[^>]*>\s*CLOSE MATCHES\s*<
+      href_pattern: href="([^"]*close[^"]*)"[^>]*>\s*CLOSE MATCHES\s*<
+    - id: all_matches
+      label_text: ALL MATCHES
+      active_pattern: class="[^"]*active[^"]*"[^>]*>\s*ALL MATCHES\s*<
+      href_pattern: href="([^"]*all[^"]*)"[^>]*>\s*ALL MATCHES\s*<
+  rules:
+  - id: no-results
+    when:
+      heading_equals: No search results
+      metadata_equals:
+        active_result_tab: exact_matches
+    assessment: no_results
+    review_required: false
+  - id: bounded-candidate-list
+    when:
+      total_results_between:
+      - 1
+      - 10
+    assessment: candidate_results
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true
+  - id: too-broad-mononym
+    when:
+      total_results_greater_than: 50
+      query_is_mononym: true
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  - id: truncated-candidate-list
+    when:
+      total_results_greater_than: 10
+    assessment: candidate_results_truncated
+    collect_candidate_links: true
+    max_candidate_links: 10
+    review_required: true

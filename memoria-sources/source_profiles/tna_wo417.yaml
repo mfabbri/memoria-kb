@@ -1,0 +1,96 @@
+search_profile:
+  source_id: tna_wo417
+  engine: tna_discovery_advanced_search
+  discovery:
+    method: manual_from_existing_connector
+    url: https://discovery.nationalarchives.gov.uk/advanced-search
+    login_required: 'true'
+    repository_filter: The National Archives
+    profiled_at: '2026-05-01T00:00:00+02:00'
+  fields:
+  - id: _ep
+    label: Exact word or phrase
+    type: text
+    role: exact_phrase
+    required: false
+    default: ''
+    metadata:
+      html_name: _ep
+  - id: _aq
+    label: All of these words
+    type: text
+    role: all_words
+    required: false
+    default: ''
+    metadata:
+      html_name: _aq
+  - id: _or1
+    label: Any of these words 1
+    type: text
+    role: any_words
+    required: false
+    default: ''
+    metadata:
+      html_name: _or1
+  - id: _or2
+    label: Any of these words 2
+    type: text
+    role: any_words
+    required: false
+    default: ''
+    metadata:
+      html_name: _or2
+  - id: _or3
+    label: Any of these words 3
+    type: text
+    role: any_words
+    required: false
+    default: ''
+    metadata:
+      html_name: _or3
+  - id: _nq1
+    label: None of these words 1
+    type: text
+    role: without_words
+    required: false
+    default: ''
+    metadata:
+      html_name: _nq1
+  - id: _cr
+    label: Catalogue reference
+    type: text
+    role: reference_code
+    required: true
+    default: WO 417
+    metadata:
+      html_name: _cr
+  - id: _sd
+    label: Start year
+    type: year
+    role: from_year
+    required: false
+    default: ''
+    metadata:
+      html_name: _sd
+  - id: _ed
+    label: End year
+    type: year
+    role: to_year
+    required: false
+    default: ''
+    metadata:
+      html_name: _ed
+  - id: repository
+    label: Held by The National Archives
+    type: checkbox
+    role: repository_filter
+    required: false
+    default: 'true'
+    metadata:
+      html_id: search-tna-as-repository
+  strategy_notes:
+  - 'La fonte richiede login TNA Discovery: non usare nei test ordinari.'
+  - Per WO 417 il filtro _cr deve restare WO 417.
+  - La strategia iniziale prova frase esatta, nome invertito e all-words sul nominativo.
+  - Gli anni possono restringere la ricerca quando il CSV contiene un anno di morte o nascita.
+  - 'I risultati Discovery sono candidati: la scheda dettaglio va aperta e revisionata prima di produrre claim.'

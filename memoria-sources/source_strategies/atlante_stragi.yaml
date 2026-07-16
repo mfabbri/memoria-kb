@@ -1,0 +1,94 @@
+﻿search_strategy:
+  source_id: atlante_stragi
+  engine: atlante_stragi_public_search
+  profile_path: source_profiles/atlante_stragi.yaml
+  max_attempts: 3
+  place_mappings:
+  - id: atlante-place-purocielo-ca-marcone
+    match_terms:
+    - Purocielo
+    - Ca Marcone
+    - CÃ  Marcone
+    - Brisighella
+    fields:
+      comune: '4030'
+      provincia: '39'
+      regione: '8'
+    labels:
+      comune: Brisighella
+      provincia: Ravenna
+      regione: Emilia-Romagna
+    provenance: Form pubblico Atlante Stragi page_id=349, option values osservati durante revisione manuale.
+    review_status: unreviewed
+    warnings:
+    - Mapping usato solo come parametro di ricerca fonte-specifico, non come fatto storico verificato.
+  - id: atlante-place-san-lazzaro
+    match_terms:
+    - San Lazzaro
+    fields:
+      comune: '3996'
+      provincia: '37'
+      regione: '8'
+    labels:
+      comune: San Lazzaro di Savena
+      provincia: Bologna
+      regione: Emilia-Romagna
+    provenance: Form pubblico Atlante Stragi page_id=349, option values osservati durante revisione manuale.
+    review_status: unreviewed
+    warnings:
+    - Mapping usato solo come parametro di ricerca fonte-specifico; puo' rappresentare un indizio diverso dal luogo dell'episodio.
+  - id: atlante-place-emilia-romagna
+    match_terms:
+    - Emilia
+    - Romagna
+    fields:
+      regione: '8'
+    labels:
+      regione: Emilia-Romagna
+    provenance: Form pubblico Atlante Stragi page_id=349, option values osservati durante revisione manuale.
+    review_status: unreviewed
+    warnings:
+    - Mapping regionale generico da usare solo come fallback ampio.
+  attempts:
+  - id: data-luogo-vittima-partigiana
+    label: Data, luogo dedotto e vittima partigiana
+    when: has_family_given_and_death_date
+    fields:
+      comune: atlante_comune
+      provincia: atlante_provincia
+      regione: atlante_regione
+      giornoin: death_day
+      mese_in: death_month
+      giornofin: death_day
+      mese_fin: death_month
+      tipo_vittima: partigiani
+      ordine: datainizio
+      ord: ASC
+      submit: cerca
+  - id: mese-provincia-vittima-partigiana
+    label: Mese, provincia dedotta e vittima partigiana
+    when: has_family_given_and_death_date
+    fields:
+      provincia: atlante_provincia
+      regione: atlante_regione
+      mese_in: death_month
+      mese_fin: death_month
+      tipo_vittima: partigiani
+      ordine: datainizio
+      ord: ASC
+      submit: cerca
+  - id: mese-regione-vittima-partigiana
+    label: Mese, regione dedotta e vittima partigiana
+    when: has_family_given_and_death_date
+    fields:
+      regione: atlante_regione
+      mese_in: death_month
+      mese_fin: death_month
+      tipo_vittima: partigiani
+      ordine: datainizio
+      ord: ASC
+      submit: cerca
+  strategy_notes:
+  - 'Strategia prudente: Atlante Stragi non e'' una banca dati persona; usare data, luogo e tipologia vittima.'
+  - I luoghi dedotti da profilo sono indizi operativi, non fatti verificati.
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

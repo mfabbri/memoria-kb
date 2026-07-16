@@ -1,0 +1,108 @@
+search_profile:
+  source_id: oesta_ais_feldsuche
+  engine: oesta_ais_field_search
+  discovery:
+    method: manual_public_page_review
+    url: https://www.archivinformationssystem.at/feldsuche.aspx
+    profiled_at: '2026-05-02T00:00:00+02:00'
+    observed_ui: scopeArchiv Field search / Feldsuche
+  fields:
+  - id: title
+    label: Title
+    type: text
+    role: title_or_name
+    required: false
+    default: ''
+    metadata:
+      ui_label: Title
+      match_modes: starts_with|contains|ends_with|is_equal_to
+  - id: ref_code
+    label: Ref. code
+    type: text
+    role: archival_reference
+    required: false
+    default: ''
+    metadata:
+      ui_label: Ref. code
+      match_modes: starts_with|contains|ends_with|is_equal_to
+  - id: level
+    label: Level
+    type: text
+    role: description_level_or_hierarchy
+    required: false
+    default: ''
+    metadata:
+      ui_label: Level
+  - id: contains_also
+    label: Contains also
+    type: text
+    role: related_terms
+    required: false
+    default: ''
+    metadata:
+      ui_label: Contains also
+  - id: level_of_description
+    label: Level of description
+    type: select
+    role: level_of_description
+    required: false
+    default: ''
+    metadata:
+      ui_label: Level of description
+  - id: archival_material_types
+    label: Archival Material Types
+    type: select
+    role: material_type
+    required: false
+    default: ''
+    metadata:
+      ui_label: Archival Material Types
+      examples: Akten; Brief; Fotografie; Karte; Manuskript; Urkunde
+  - id: archive_user
+    label: Archive user
+    type: text
+    role: repository_or_creator_filter
+    required: false
+    default: ''
+    metadata:
+      ui_label: Archive user
+  - id: time_period_from
+    label: Time Period from
+    type: date_or_year
+    role: time_period_start
+    required: false
+    default: ''
+    metadata:
+      ui_label: Time Period from
+  - id: time_period_to
+    label: Time Period to
+    type: date_or_year
+    role: time_period_end
+    required: false
+    default: ''
+    metadata:
+      ui_label: Time Period to
+  - id: images_available_online
+    label: Images available online
+    type: checkbox
+    role: digital_images_filter
+    required: false
+    default: 'false'
+    metadata:
+      ui_label: Images available online
+  - id: results_per_page
+    label: Results per page
+    type: number
+    role: pagination_limit
+    required: false
+    default: '10'
+    metadata:
+      ui_label: Results per page
+      allowed_range: 2-1000
+  strategy_notes:
+  - Fonte utile per ricerca archivistica mirata negli archivi austriaci/OeStA, inclusi riferimenti potenzialmente collegati
+    a militari, prigionia, reparti, luoghi o fascicoli.
+  - La Feldsuche consente filtri per titolo, codice di riferimento, livello descrittivo, tipologia documentale e periodo;
+    nel codice attuale va trattata come reference-only salvo implementazione dedicata ASP.NET.
+  - I risultati di lista sono candidati archivistici e non devono generare EvidenceClaim pubblicabili senza apertura della
+    descrizione e revisione umana.

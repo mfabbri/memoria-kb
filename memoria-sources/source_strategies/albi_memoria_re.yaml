@@ -1,0 +1,36 @@
+﻿search_strategy:
+  source_id: albi_memoria_re
+  engine: albi_memoria_re_general_search
+  profile_path: source_profiles/albi_memoria_re.yaml
+  max_attempts: 4
+  attempts:
+  - id: cognome-nome
+    label: Cognome + nome
+    when: has_family_and_given_name
+    fields:
+      cognome: family_name
+      nome: given_name
+  - id: cognome-nome-nascita
+    label: Cognome + nome + anno nascita
+    when: has_family_given_and_birth_date
+    fields:
+      cognome: family_name
+      nome: given_name
+      anno_nascita: birth_year
+  - id: cognome-nome-morte
+    label: Cognome + nome + data morte
+    when: has_family_given_and_death_date
+    fields:
+      cognome: family_name
+      nome: given_name
+      data_morte: death_date_iso
+  - id: solo-cognome
+    label: Solo cognome
+    when: has_family_name
+    fields:
+      cognome: family_name
+  strategy_notes:
+  - Usare prima cognome+nome, coerente con i campi esposti dallâ€™Albo generale.
+  - Aggiungere anno nascita o data morte solo quando presenti nel CSV o nei metadati retroalimentati.
+  - Il fallback solo-cognome deve essere interpretato come candidato debole e puÃ² generare too_broad.
+  - 'Questa strategia Ã¨ dichiarativa: se il sito richiede interazione JavaScript, servirÃ  un executor Playwright dedicato.'

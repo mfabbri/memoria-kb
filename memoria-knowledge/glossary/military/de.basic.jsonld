@@ -1,0 +1,76 @@
+{
+  "@context": {
+    "entry_id": "@id",
+    "term": "schema:name",
+    "translation_it": "schema:alternateName",
+    "review_status": "caduti:reviewStatus"
+  },
+  "@type": "MilitaryGlossary",
+  "@id": "military-glossary:de.basic",
+  "name": "Glossario militare tedesco di base",
+  "language": "de",
+  "scope_note": "Glossario minimo per riconoscimento candidate preview-only. Non rappresenta una gerarchia verificata e non prova presenza territoriale.",
+  "review_status": "unreviewed",
+  "entries": [
+    {
+      "@type": "MilitaryGlossaryEntry",
+      "@id": "military-glossary-entry:de:division",
+      "term": "Division",
+      "language": "de",
+      "category": "unit_type",
+      "translation_it": "divisione",
+      "aliases": ["Div."],
+      "abbreviations": ["Div"],
+      "source_reference": "curated_seed_glossary_unreviewed",
+      "review_status": "unreviewed"
+    },
+    {
+      "@type": "MilitaryGlossaryEntry",
+      "@id": "military-glossary-entry:de:regiment",
+      "term": "Regiment",
+      "language": "de",
+      "category": "unit_type",
+      "translation_it": "reggimento",
+      "aliases": ["Rgiment"],
+      "abbreviations": ["Rgt.", "Rgt"],
+      "source_reference": "curated_seed_glossary_unreviewed",
+      "review_status": "unreviewed"
+    },
+    {
+      "@type": "MilitaryGlossaryEntry",
+      "@id": "military-glossary-entry:de:bataillon",
+      "term": "Bataillon",
+      "language": "de",
+      "category": "unit_type",
+      "translation_it": "battaglione",
+      "aliases": ["Batallion"],
+      "abbreviations": ["Btl.", "Btl"],
+      "source_reference": "curated_seed_glossary_unreviewed",
+      "review_status": "unreviewed"
+    },
+    {
+      "@type": "MilitaryGlossaryEntry",
+      "@id": "military-glossary-entry:de:kompanie",
+      "term": "Kompanie",
+      "language": "de",
+      "category": "unit_type",
+      "translation_it": "compagnia",
+      "aliases": ["Komp."],
+      "abbreviations": ["Kp.", "Kp"],
+      "source_reference": "curated_seed_glossary_unreviewed",
+      "review_status": "unreviewed"
+    },
+    {
+      "@type": "MilitaryGlossaryEntry",
+      "@id": "military-glossary-entry:de:hauptmann",
+      "term": "Hauptmann",
+      "language": "de",
+      "category": "rank",
+      "translation_it": "capitano",
+      "aliases": [],
+      "abbreviations": ["Hptm.", "Hptm"],
+      "source_reference": "curated_seed_glossary_unreviewed",
+      "review_status": "unreviewed"
+    }
+  ]
+}

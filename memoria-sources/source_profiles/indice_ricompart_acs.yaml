@@ -1,0 +1,19 @@
+search_profile:
+  source_id: indice_ricompart_acs
+  engine: acs_ricompart_catalog_reference
+  discovery:
+    method: manual_public_page_review
+    url: https://partigianiditalia.cultura.gov.it/archivio/
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: reference_query
+    label: Query riferimento RICOMPART/ACS
+    type: text
+    role: archive_reference
+    required: false
+    default: ''
+    metadata: {}
+  strategy_notes:
+  - Profilo dichiarativo iniziale per Archivio Centrale dello Stato - RICOMPART / indice fondo.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

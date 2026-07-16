@@ -1,0 +1,817 @@
+﻿enabled_sources:
+- partigiani_italia
+- albi_memoria_re
+- storia_memoria_bo
+- storia_memoria_bo_excel
+- memorie_locali
+- atlante_stragi
+- fondazione_fossoli
+- cwgc
+- tna_wo417
+- tna_hs9
+- bundesarchiv_invenio
+- german_docs_in_russia_wwii
+- obd_memorial
+- pamyat_naroda
+- icrc_pow
+- oesta_ais_feldsuche
+- oesta_kriegsarchiv
+- noi_partigiani
+sources:
+- id: partigiani_italia
+  name: I Partigiani d'Italia - ricerca pubblica
+  kind: search_form_get_name
+  query_mode: default
+  url_template: https://partigianiditalia.cultura.gov.it/cerca/
+  search_profile_path: source_profiles/partigiani_italia.yaml
+  auth:
+    auth_mode: manual_persistent_context
+    detail_access_mode: authenticated
+    profile_root: secure/browser-profiles
+    profile_id: partigiani_italia_acs
+    login_entry_url: https://partigianiditalia.cultura.gov.it/login/
+    auth_check_url: https://partigianiditalia.cultura.gov.it/
+    logged_in_text: logout||esci||area riservata
+    logged_out_text: login||spid||cie
+    logged_in_selector: a[href*="logout"], a[href*="esci"]
+    login_wait_seconds: '900'
+    headless: 'false'
+    min_delay_ms_between_actions: '5000'
+    max_delay_ms_between_actions: '9000'
+    min_read_delay_ms: '6000'
+    max_read_delay_ms: '12000'
+    archival_cache_root: archivi
+    audit_log_path: logs/partigiani_italia_authenticated_session.ndjson
+  form:
+    name_order: surname_first
+    name_field: nome
+    surname_field: cognome
+    nome_op: contains
+    cognome_op: contains
+    nome_batt_op: equal
+    nome_batt: ''
+    luogo: ''
+    data_nasc_da: ''
+    data_nasc_a: ''
+    genere: ''
+    sigla_comm: ''
+    formazione_op: equal
+    formazione: ''
+    per_att_da: ''
+    per_att_a: ''
+    qualifica_op: equal
+    qualifica: ''
+    cmd: CERCA
+    solr: '1'
+    lm: '20'
+  note: Ricerca pubblica via form GET su `/cerca/`; il connettore compila `nome` e `cognome` dal nominativo del CSV e prova a estrarre gli hit della lista risultati. Le schede persona complete richiedono autenticazione.
+  group: italian_institutional_sources
+  access_type: public_web_plus_authenticated_detail
+  priority: 1
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - advanced_form_search
+  - candidate_detail_reference
+  - authenticated_detail_review
+  output_fields:
+  - person.full_name
+  - alias
+  - birth.date
+  - birth.place
+  - formation.name
+  - recognition.period
+  - archive.reference
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: albi_memoria_re
+  name: Albi della Memoria - Istoreco Reggio Emilia
+  kind: search_page
+  query_mode: default
+  url_template: https://www.albimemoria-istoreco.re.it/albidellamemoria
+  note: Portale degli Albi della Memoria Istoreco; ricerca pubblica negli albi dei comuni della provincia di Reggio Emilia.
+  group: local_and_regional_memory
+  access_type: public_web
+  priority: 2
+  search_profile_path: source_profiles/albi_memoria_re.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - memorial_lookup
+  - candidate_detail_reference
+  output_fields:
+  - person.full_name
+  - death.date
+  - death.place
+  - memorial.reference
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: storia_memoria_bo
+  name: Storia e Memoria di Bologna
+  kind: storia_memoria_bo
+  query_mode: default
+  url_template: https://www.storiaememoriadibologna.it/ricerca-avanzata/persone
+  search_profile_path: source_profiles/storia_memoria_bo.yaml
+  form:
+    name_order: surname_first
+  auth:
+    engine: playwright
+    advanced_search_url: https://www.storiaememoriadibologna.it/ricerca-avanzata/persone
+    form_selector: '#views-exposed-form-persone-block-2'
+    people_tab_selector: a[href*="/ricerca-avanzata/persone"]
+    submit_selector: '#edit-submit-persone'
+    browser_channel: ''
+    browser_user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+    direct_person_base_url: https://www.storiaememoriadibologna.it/archivio/persone
+  note: 'Ricerca persone in Storia e Memoria di Bologna via executor dedicato: prova prima il permalink canonico /archivio/persone/cognome-nome e poi la ricerca avanzata Persone.'
+  timeout: 20
+  group: local_and_regional_memory
+  access_type: public_web_playwright
+  priority: 1
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - advanced_form_search
+  - detail_page
+  - evidence_extraction
+  output_fields:
+  - person.full_name
+  - birth.date
+  - birth.place
+  - death.date
+  - death.place
+  - formation.name
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: storia_memoria_bo_excel
+  name: Storia e Memoria Bologna/Emilia-Romagna (Excel locali)
+  kind: local_excel
+  group: local_and_regional_memory
+  access_type: local_file
+  priority: 1
+  query_mode: default
+  url_template: file:///D:/xampp/htdocs/ca-di-malanca/archivi/storia.sba.unibo.it/
+  legal_policy:
+    allow_automated_search: true
+    allow_mass_extraction: true
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - local_table_lookup
+  - evidence_extraction
+  output_fields:
+  - alias
+  - birth.date
+  - birth.place
+  - birth.province
+  - formation.name
+  - role.status
+  - note.source_row
+  raw_storage:
+    enabled: true
+    strategy: local_table_row
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+  local:
+    workbook_dir: archivi/storia.sba.unibo.it
+    workbook_glob: '*.xls'
+    sheet_name: Foglio1
+    name_order: surname_first
+    surname_column: Cognome
+    given_name_column: Nome
+    alias_columns: Nome battaglia
+    snippet_columns: Nome battaglia,Nato amg,Nato comune,Nato provincia,Brigata di appartenenza,Partigiano Patriota,Varie
+  extraction:
+    method: local_table_claims
+    claim_mappings:
+    - column: Nome battaglia
+      field: alias
+      confidence: 0.8
+    - column: Nato amg
+      field: birth.date
+      confidence: 0.75
+    - column: Nato comune
+      field: birth.place
+      confidence: 0.8
+    - column: Nato provincia
+      field: birth.province
+      confidence: 0.8
+    - column: Brigata di appartenenza
+      field: formation.name
+      confidence: 0.8
+    - column: Partigiano Patriota
+      field: role.status
+      confidence: 0.75
+    - column: Varie
+      field: note.source_row
+      confidence: 0.6
+  note: Ricerca locale nei file Excel esportati di Storia e Memoria; il connettore scorre tutti i `.xls` della cartella configurata, confronta cognome e nome con le righe dei workbook e restituisce uno snippet dalla riga trovata.
+  search_profile_path: source_profiles/storia_memoria_bo_excel.yaml
+- id: memorie_locali
+  name: Memorie locali e portali territoriali della Resistenza
+  kind: search_page
+  query_mode: default
+  url_template: https://resistenzamappe.it/?s={query}
+  note: Fonte ombrello per portali territoriali e memorie locali; la ricerca deve restare manuale/curatoriale quando il sito non espone una ricerca strutturata stabile.
+  group: local_and_regional_memory
+  access_type: public_web_manual
+  priority: 3
+  search_profile_path: source_profiles/memorie_locali.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - full_text_search
+  - local_page_reference
+  - manual_review
+  output_fields:
+  - person.full_name
+  - event.name
+  - place.name
+  - local_reference
+  raw_storage:
+    enabled: true
+    strategy: reference_only
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: atlante_stragi
+  name: Atlante Stragi Nazifasciste
+  kind: search_page
+  query_mode: default
+  url_template: https://www.straginazifasciste.it/?page_id=349
+  note: Ricerca avanzata pubblica via POST su data, luogo e tipologia vittima; le pagine istituzionali e di navigazione non sono candidati storici.
+  group: massacres_and_deportations
+  access_type: public_web
+  priority: 2
+  search_profile_path: source_profiles/atlante_stragi.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - victim_search
+  - massacre_search
+  - place_search
+  - candidate_detail_reference
+  output_fields:
+  - death.date
+  - death.place
+  - event.massacre
+  - responsible_unit
+  - bibliography
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: fondazione_fossoli
+  name: Fondazione Fossoli - I Nomi di Fossoli
+  kind: search_page
+  query_mode: default
+  url_template: https://www.fondazionefossoli.org/centro-studi/i-nomi-di-fossoli/
+  note: Banca dati pubblica "I Nomi di Fossoli" con form strutturato nome/cognome/luogo e data di nascita; uso prudente, con risultati sempre candidati da revisione.
+  group: massacres_and_deportations
+  access_type: public_web_playwright
+  auth:
+    engine: playwright
+    advanced_search_url: https://www.fondazionefossoli.org/centro-studi/i-nomi-di-fossoli/
+    form_selector: body
+    submit_selector: 'button:has-text("Cerca"), input[type="submit"][value="Cerca"]'
+    browser_channel: ''
+    browser_user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+    field_selector_nome: 'input[placeholder="es: Mario"]'
+    field_selector_cognome: 'input[placeholder="es: Rossi"]'
+    field_selector_luogo_nascita: 'input[placeholder="es: Modena"]'
+    field_selector_giorno_nascita: 'input[placeholder="gg"]'
+    field_selector_mese_nascita: 'input[placeholder="mm"]'
+    field_selector_anno_nascita: 'input[placeholder="aaaa"]'
+  priority: 2
+  search_profile_path: source_profiles/fondazione_fossoli.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - deportation_lookup
+  - manual_review
+  output_fields:
+  - person.full_name
+  - birth.date
+  - deportation.event
+  - camp.transit
+  - source.reference
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: cwgc
+  name: CWGC
+  kind: cwgc
+  group: foreign_military_archives
+  access_type: public_web
+  priority: 3
+  query_mode: foreign
+  url_template: https://www.cwgc.org/find-records/find-war-dead/
+  search_profile_path: source_profiles/cwgc.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - war_dead_search
+  - reference_only
+  output_fields:
+  - person.full_name
+  - military.rank
+  - military.service_number
+  - death.date
+  - burial.memorial
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+  form:
+    results_base_url: https://www.cwgc.org/find-records/find-war-dead/search-results/
+    name_order: surname_first
+    war_select: '2'
+    max_attempts: '2'
+  note: Ricerca pubblica Find War Dead; il connettore prepara URL di ricerca CWGC senza scaricare automaticamente i risultati.
+- id: tna_wo417
+  name: TNA Discovery - WO 417
+  kind: credentialed
+  query_mode: default
+  url_template: https://discovery.nationalarchives.gov.uk/
+  search_profile_path: source_profiles/tna_wo417.yaml
+  credentials:
+    email: ${TNA_DISCOVERY_EMAIL}
+    password: ${TNA_DISCOVERY_PASSWORD}
+  auth:
+    engine: playwright
+    browser_channel: ''
+    browser_user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+    login_page_url: https://secure.nationalarchives.gov.uk/Login/sign-in?wa=wsignin1.0
+    success_url: https://secure.nationalarchives.gov.uk/Login/youraccount
+    username_field: UserName
+    password_field: Password
+    signed_in_marker: Sign out
+    post_login_link_text: Discovery - our catalogue
+    post_login_expected_url: https://discovery.nationalarchives.gov.uk/
+    advanced_search_url: https://discovery.nationalarchives.gov.uk/advanced-search
+    reference_code: WO 417
+    failure_marker: data-valmsg-for="wrong_pwd"
+  note: Richiede account Discovery del National Archives.
+  group: foreign_military_archives
+  access_type: credentialed_web
+  priority: 3
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - catalog_search
+  - advanced_form_search
+  - detail_page
+  - evidence_extraction
+  output_fields:
+  - archive.reference
+  - archive.title
+  - archive.covering_dates
+  - person.full_name
+  - archive.description
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: tna_hs9
+  name: TNA Discovery - HS 9
+  kind: credentialed
+  query_mode: default
+  url_template: https://discovery.nationalarchives.gov.uk/
+  credentials:
+    email: ${TNA_DISCOVERY_EMAIL}
+    password: ${TNA_DISCOVERY_PASSWORD}
+  auth:
+    engine: playwright
+    browser_channel: ''
+    browser_user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36
+    login_page_url: https://secure.nationalarchives.gov.uk/Login/sign-in?wa=wsignin1.0
+    success_url: https://secure.nationalarchives.gov.uk/Login/youraccount
+    username_field: UserName
+    password_field: Password
+    signed_in_marker: Sign out
+    post_login_link_text: Discovery - our catalogue
+    post_login_expected_url: https://discovery.nationalarchives.gov.uk/
+    advanced_search_url: https://discovery.nationalarchives.gov.uk/advanced-search
+    reference_code: HS 9
+    failure_marker: data-valmsg-for="wrong_pwd"
+  note: Richiede account Discovery del National Archives.
+  group: foreign_military_archives
+  access_type: credentialed_web
+  priority: 3
+  search_profile_path: source_profiles/tna_hs9.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - catalog_search
+  - advanced_form_search
+  - detail_page
+  - manual_download_request
+  output_fields:
+  - archive.reference
+  - archive.title
+  - archive.covering_dates
+  - person.full_name
+  - archive.description
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: bundesarchiv_invenio
+  name: Bundesarchiv invenio - Erweiterte Suche
+  kind: credentialed
+  query_mode: default
+  url_template: https://invenio.bundesarchiv.de/invenio/main.xhtml
+  search_profile_path: source_profiles/bundesarchiv_invenio.yaml
+  credentials:
+    username: ${BUNDESARCHIV_INVENIO_USERNAME}
+    password: ${BUNDESARCHIV_INVENIO_PASSWORD}
+  auth:
+    auth_mode: manual_persistent_context
+    engine: playwright
+    profile_root: secure/browser-profiles
+    profile_id: bundesarchiv_invenio
+    login_entry_url: https://invenio.bundesarchiv.de/invenio/login.xhtml
+    main_url: https://invenio.bundesarchiv.de/invenio/main.xhtml
+    advanced_search_entry_label: Erweiterte Suche
+    logged_in_text: Abmelden||Benutzer||Benutzung
+    logged_out_text: Anmelden||Zur Registrierung||Suche ohne Anmeldung
+    login_wait_seconds: '300'
+    headless: 'false'
+    min_delay_ms_between_actions: '4000'
+    max_delay_ms_between_actions: '9000'
+    min_read_delay_ms: '5000'
+    max_read_delay_ms: '12000'
+    archival_cache_root: archivi
+    audit_log_path: logs/bundesarchiv_invenio_authenticated_session.ndjson
+  form:
+    search_mode: advanced_search
+    advanced_search_url: https://invenio.bundesarchiv.de/invenio/main.xhtml
+    entry_tab_label: Erweiterte Suche
+    query_field_semantic: Suchbegriff / Stichwort
+    person_search_semantic: Personensuche
+    reference_field_semantic: Signatur / Aktenzeichen
+    include_unindexed_label: auch unbewertete Unterlagen
+    use_wildcards: 'true'
+    wildcards: '*,?'
+  note: 'Fonte autenticata/manuale del Bundesarchiv: login su login.xhtml, accesso a main.xhtml e ricerca nel tag Erweiterte Suche. Per ora il meta-motore prepara tentativi e riferimenti; lâ€™automazione live richiede un executor Playwright dedicato con profilo persistente e revisione umana.'
+  group: foreign_military_archives
+  access_type: authenticated_web_manual_persistent_context
+  priority: 4
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: ricerca mirata, nessuna estrazione massiva, conservare URL/data accesso/segnatura e revisionare i candidati prima di generare claim storici.'
+  supports:
+  - catalog_search
+  - advanced_form_search
+  - person_search
+  - archival_reference_search
+  - digitized_document_reference
+  - manual_authenticated_review
+  output_fields:
+  - archive.reference
+  - archive.title
+  - archive.covering_dates
+  - archive.record_group
+  - archive.description
+  - person.full_name
+  - birth.date
+  - military.unit_or_service
+  - digital_object.available
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Invenio produce riferimenti archivistici candidati: nessun fatto storico deve essere pubblicato senza dettaglio, segnatura, fonte tracciabile e revisione umana.'
+- id: german_docs_in_russia_wwii
+  name: German Docs in Russia - documenti tedeschi della Seconda guerra mondiale
+  kind: archival_document_repository
+  query_mode: foreign
+  url_template: https://wwii.germandocsinrussia.org/ru
+  search_profile_path: source_profiles/german_docs_in_russia_wwii.yaml
+  form:
+    browse_root_url: https://wwii.germandocsinrussia.org/ru/nodes/28468-top
+    fund_500_url: https://wwii.germandocsinrussia.org/ru/nodes/1-fond-500
+    known_relevant_inventories: 12475,12483,12497
+    preferred_workflow: hierarchy_browse_then_document_capture
+    search_use: limited_due_to_unreliable_index
+  note: 'Archivio digitale pubblico del progetto russo-tedesco: da usare soprattutto tramite navigazione gerarchica fond/opis/delo/pagina e scarico controllato di documenti storici con metadati di contesto. Il motore di ricerca interno e'' solo supporto secondario perche'' l''indice puo'' essere incompleto o rumoroso.'
+  group: foreign_military_archives
+  access_type: public_web_archival_repository
+  priority: 3
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: limited
+    attribution_required: true
+    notes: 'Uso solo per ricerca scientifica/storica e con conservazione di URL, data accesso, gerarchia archivistica e accordo d''uso. Evitare ricerca nominale indiscriminata; non ripubblicare documenti o dati personali senza verifica dei vincoli del sito e revisione umana.'
+  supports:
+  - archival_hierarchy_browse
+  - inventory_browse
+  - digitized_document_download
+  - page_image_capture
+  - archival_metadata_capture
+  - manual_review
+  output_fields:
+  - archive.fund
+  - archive.inventory
+  - archive.file
+  - archive.page
+  - archive.title
+  - archive.covering_dates
+  - archive.hierarchy_path
+  - source.url
+  - digital_object.url
+  raw_storage:
+    enabled: true
+    strategy: document_image_or_reference_with_metadata
+  review:
+    required: true
+    reason: 'I documenti scaricati sono fonti primarie: ogni metadato e ogni claim storico richiedono tracciamento della gerarchia archivistica, URL puntuale e revisione umana.'
+- id: obd_memorial
+  name: OBD-Memorial
+  kind: obd_memorial
+  query_mode: foreign
+  url_template: https://obd-memorial.ru/html/search.htm
+  form:
+    search_base_url: https://obd-memorial.ru/html/search.htm
+    max_attempts: '3'
+  note: Genera tentativi con cognome e nome in cirillico usando i parametri OBD `f`, `n`, `s`, `y`; la verifica dei risultati resta interattiva sul sito.
+  timeout: 8
+  group: foreign_military_archives
+  access_type: public_dynamic_web
+  priority: 4
+  search_profile_path: source_profiles/obd_memorial.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - transliterated_search
+  - search_url_ready
+  output_fields:
+  - search.url
+  - person.full_name
+  - military.unit
+  - death.date
+  - burial.place
+  raw_storage:
+    enabled: true
+    strategy: reference_only
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: pamyat_naroda
+  name: Pamyat Naroda
+  kind: pamyat_naroda
+  query_mode: foreign
+  url_template: https://pamyat-naroda.ru/heroes/
+  form:
+    search_base_url: https://pamyat-naroda.ru/heroes/
+    max_attempts: '3'
+  note: Genera URL di ricerca avanzata con cognome e nome in cirillico; il sito e' dinamico, quindi la verifica dei risultati resta interattiva.
+  timeout: 8
+  group: foreign_military_archives
+  access_type: public_dynamic_web
+  priority: 4
+  search_profile_path: source_profiles/pamyat_naroda.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - person_search
+  - transliterated_search
+  - search_url_ready
+  output_fields:
+  - search.url
+  - person.full_name
+  - birth.year
+  - military.unit
+  - award.reference
+  raw_storage:
+    enabled: true
+    strategy: reference_only
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: icrc_pow
+  name: ICRC Archives - ricerca POW/captured personnel
+  kind: search_form_post
+  query_mode: default
+  url_template: https://archives.icrc.org/search/advanced
+  form:
+    method: post
+    action: https://archives.icrc.org/search/advanced
+    query_field: Fields[0].Value
+    query_label: Word(s) from the title / content
+    SourceName: archive
+    Fields[0].SearchInField: 'False'
+    Fields[0].FieldName: Field_TitleArchive
+    Fields[1].SearchInField: 'False'
+    Fields[1].FieldName: Field_Reference
+    Fields[2].SearchInField: 'False'
+    Fields[2].FieldName: Field_ArchivelLevel
+    Fields[3].SearchInField: 'False'
+    Fields[3].FieldName: Field_Year
+    RecordSort.FieldName: Search_Unsorted
+    RecordSort.Direction: Ascending
+  note: Accesso anonimo alla ricerca avanzata ICRC; la ricerca richiede submit di un form POST e il report prepara il valore da inserire nel campo titolo/contenuto.
+  group: foreign_military_archives
+  access_type: public_web_form_or_manual
+  priority: 4
+  search_profile_path: source_profiles/icrc_pow.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - catalog_search
+  - pow_card_search
+  - manual_request
+  output_fields:
+  - archive.reference
+  - person.full_name
+  - captivity.status
+  - source.reference
+  raw_storage:
+    enabled: true
+    strategy: reference_only
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: oesta_ais_feldsuche
+  name: OeStA ArchivInformationsSystem - Feldsuche
+  kind: search_page
+  query_mode: default
+  url_template: https://www.archivinformationssystem.at/feldsuche.aspx
+  note: 'Ricerca per campi nel sistema archivistico OeStA/scopeArchiv. Fonte dichiarativa di orientamento: la pagina espone campi come titolo, segnatura/codice di riferimento, livello descrittivo, tipologia documentale, periodo e opzioni di ordinamento; l''uso automatico Ã¨ limitato e richiede revisione manuale dei candidati.'
+  group: foreign_military_archives
+  access_type: public_web_field_search_reference
+  priority: 4
+  search_profile_path: source_profiles/oesta_ais_feldsuche.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: usare la Feldsuche per orientamento archivistico e ricerca mirata, evitare estrazione massiva, conservare URL/data accesso e revisionare ogni candidato prima di generare claim.'
+  supports:
+  - catalog_field_search
+  - archival_reference_search
+  - title_search
+  - time_period_filter
+  - material_type_filter
+  - manual_review
+  output_fields:
+  - archive.reference
+  - archive.title
+  - archive.level_of_description
+  - archive.material_type
+  - archive.covering_dates
+  - person.full_name
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'La Feldsuche produce riferimenti archivistici candidati: nessun fatto storico deve essere pubblicato senza apertura della descrizione, fonte tracciabile e revisione umana.'
+- id: oesta_kriegsarchiv
+  name: OeStA Kriegsarchiv
+  kind: search_form_aspnet
+  query_mode: default
+  url_template: https://www.archivinformationssystem.at/volltextsuche.aspx
+  form:
+    method: post
+    action: https://www.archivinformationssystem.at/volltextsuche.aspx
+    query_field: ctl00$cphMainArea$txtMitAllenWoertern
+    query_label: With all words
+    ctl00$cphMainArea$cmdSuchen: Search
+    ctl00$cphMainArea$txtMitWortgruppe: ''
+    ctl00$cphMainArea$txtMitIrgendeinemDerWoerter: ''
+    ctl00$cphMainArea$txtOhneDieWoerter: ''
+    ctl00$cphMainArea$cboSuchbereich: '0'
+    ctl00$cphMainArea$txtZeitraumVon: ''
+    ctl00$cphMainArea$txtZeitraumBis: ''
+    ctl00$cphMainArea$cboArchivalienart: '-1'
+    ctl00$cphMainArea$txtVEStufen: ''
+    ctl00$cphMainArea$txtVEStufenID: ''
+    ctl00$cphMainArea$txtResultateProSeite: '10'
+    dynamic_hidden_fields: __VIEWSTATE,__VIEWSTATEGENERATOR,__EVENTVALIDATION,__PREVIOUSPAGE,__EVENTTARGET,__EVENTARGUMENT,__LASTFOCUS,ctl00_RadScriptManager1_TSM,hiddenInputToUpdateATBuffer_CommonToolkitScripts,ctl00_radMenu_ClientState
+  note: Ricerca full-text anonima nel catalogo OeStA via form ASP.NET; il connettore ricarica i campi hidden dinamici e segue il redirect verso la lista risultati.
+  group: foreign_military_archives
+  access_type: public_web_aspnet
+  priority: 4
+  search_profile_path: source_profiles/oesta_kriegsarchiv.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - catalog_search
+  - full_text_search
+  - manual_review
+  output_fields:
+  - archive.reference
+  - archive.title
+  - archive.covering_dates
+  - person.full_name
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: noi_partigiani
+  name: Noi Partigiani
+  kind: search_page
+  query_mode: default
+  url_template: https://www.noipartigiani.it/?s={query}
+  note: Ricerca WordPress pubblica.
+  group: oral_memory_and_audiovisual
+  access_type: public_wordpress
+  priority: 2
+  search_profile_path: source_profiles/noi_partigiani.yaml
+  legal_policy:
+    allow_automated_search: limited
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Uso prudente: verificare termini dâ€™uso della fonte, evitare estrazione massiva, conservare URL/data accesso e revisionare i claim.'
+  supports:
+  - full_text_search
+  - testimony_search
+  - candidate_detail_reference
+  output_fields:
+  - person.full_name
+  - testimony.archive
+  - testimony.url
+  - life_excerpt
+  - media.reference
+  raw_storage:
+    enabled: true
+    strategy: html_or_reference
+  review:
+    required: true
+    reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'

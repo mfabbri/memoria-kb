@@ -1,0 +1,26 @@
+detail_logic:
+  source_id: atlante_stragi
+  detail_level: detail_document_only
+  engine: atlante_stragi_public_detail
+  blocked_text:
+  - login
+  - access denied
+  - captcha
+  - restricted
+  - temporarily unavailable
+  field_patterns: []
+  claim_mappings: []
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La pagina di dettaglio, quando disponibile, va conservata come SourceDocument.
+  - I claim estratti automaticamente sono candidati e richiedono revisione umana.

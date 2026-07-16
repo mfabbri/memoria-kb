@@ -1,0 +1,21 @@
+﻿search_strategy:
+  source_id: tna_hs9
+  engine: tna_discovery_advanced_search
+  profile_path: source_profiles/tna_hs9.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-completo-serie
+    label: Nome completo nella serie HS 9
+    when: always
+    fields:
+      keywords: full_name
+      reference_code: HS 9
+  - id: cognome-nome-serie
+    label: Cognome + nome nella serie HS 9
+    when: has_family_and_given_name
+    fields:
+      keywords: all_words_name
+      reference_code: HS 9
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

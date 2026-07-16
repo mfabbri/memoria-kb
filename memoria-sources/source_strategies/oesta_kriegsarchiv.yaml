@@ -1,0 +1,19 @@
+﻿search_strategy:
+  source_id: oesta_kriegsarchiv
+  engine: oesta_ais_full_text_search
+  profile_path: source_profiles/oesta_kriegsarchiv.yaml
+  max_attempts: 3
+  attempts:
+  - id: nome-completo-fulltext
+    label: Nome completo in Volltextsuche
+    when: always
+    fields:
+      ctl00$cphMainArea$txtMitAllenWoertern: full_name
+  - id: cognome-nome-fulltext
+    label: Cognome + nome in Volltextsuche
+    when: has_family_and_given_name
+    fields:
+      ctl00$cphMainArea$txtMitAllenWoertern: all_words_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

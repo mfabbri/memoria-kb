@@ -1,0 +1,33 @@
+search_profile:
+  source_id: obd_memorial
+  engine: obd_memorial_search_url
+  discovery:
+    method: manual_public_page_review
+    url: https://obd-memorial.ru/html/search.htm
+    profiled_at: '2026-05-02T00:00:00+02:00'
+  fields:
+  - id: f
+    label: Фамилия / Cognome
+    type: text
+    role: family_name
+    required: false
+    default: ''
+    metadata: {}
+  - id: n
+    label: Имя / Nome
+    type: text
+    role: given_name
+    required: false
+    default: ''
+    metadata: {}
+  - id: y
+    label: Год рождения / anno nascita
+    type: text
+    role: birth_year
+    required: false
+    default: ''
+    metadata: {}
+  strategy_notes:
+  - Profilo dichiarativo iniziale per OBD-Memorial.
+  - I campi sono mappati in modo prudente a partire dal registry e dalla pagina pubblica della fonte.
+  - La presenza di risultati produce candidati da revisionare, non EvidenceClaim pubblicabili.

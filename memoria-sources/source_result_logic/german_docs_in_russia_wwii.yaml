@@ -1,0 +1,64 @@
+result_logic:
+  source_id: german_docs_in_russia_wwii
+  engine: german_docs_in_russia_archival_results
+  candidate_limit: 25
+  too_broad_threshold: 200
+  signals:
+    result_link_selector: a[href*="/ru/nodes/"], a[href*="/pages/"]
+    no_results_text:
+    - no results
+    - 0 results
+    - results not found
+    - nothing found
+    blocked_text:
+    - captcha
+    - access denied
+    - temporarily unavailable
+    - session expired
+  candidate_filters:
+    exclude_url_patterns:
+    - "javascript:"
+    - "#"
+    - "/users/"
+    - "/login"
+    - "/logout"
+    - "/pages/new"
+    exclude_title_patterns:
+    - Top
+    - Image
+    - user agreement
+    - About
+    min_title_length: 4
+    require_non_empty_title: true
+  rules:
+  - id: no-result-links
+    when:
+      detail_link_count_equals: 0
+    assessment: no_results
+    review_required: false
+  - id: bounded-hierarchy-candidates
+    when:
+      detail_link_count_between:
+      - 1
+      - 25
+    assessment: archival_hierarchy_candidates
+    collect_candidate_links: true
+    max_candidate_links: 25
+    review_required: true
+  - id: broad-hierarchy-list
+    when:
+      detail_link_count_greater_than: 25
+    assessment: archival_hierarchy_candidates_truncated
+    collect_candidate_links: true
+    max_candidate_links: 25
+    review_required: true
+  - id: too-broad
+    when:
+      detail_link_count_greater_than: 200
+    assessment: too_broad
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - I link candidati possono essere fondi, inventari, fascicoli o pagine: classificare il livello prima del download.
+  - Non interpretare la presenza in lista come evidenza storica; serve aprire il fascicolo o la pagina e registrare metadati.
+  - Il risultato utile per il workflow e' un manifest di documenti/pagine scaricabili, non una lista di persone.

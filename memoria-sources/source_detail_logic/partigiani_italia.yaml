@@ -1,0 +1,113 @@
+detail_logic:
+  source_id: partigiani_italia
+  detail_level: claims_extractable
+  engine: partigiani_italia_person_detail
+  blocked_text:
+  - consentita esclusivamente agli utenti registrati
+  - esegui il login
+  field_patterns:
+  - id: person_name
+    from: heading
+    pattern: ^(.+)$
+    group: 1
+  - id: given_name
+    from: body_text
+    pattern: 'Nome:\s*(.+?)\s+Cognome:'
+    group: 1
+  - id: family_name
+    from: body_text
+    pattern: 'Cognome:\s*(.+?)\s+Genere:'
+    group: 1
+  - id: family_name
+    from: body_text
+    pattern: 'Cognome:\s*(.+?)\s+Nato il:'
+    group: 1
+  - id: gender
+    from: body_text
+    pattern: 'Genere:\s*(.+?)\s+Nato il:'
+    group: 1
+  - id: birth_date
+    from: body_text
+    pattern: 'Nato il:\s*(.+?)\s+A:'
+    group: 1
+  - id: birth_place
+    from: body_text
+    pattern: 'A:\s*(.+?)\s+Comune:'
+    group: 1
+  - id: birth_municipality
+    from: body_text
+    pattern: 'Comune:\s*(.+?)\s+Provincia:'
+    group: 1
+  - id: birth_province
+    from: body_text
+    pattern: 'Provincia:\s*(.+?)\s+Nazione:'
+    group: 1
+  - id: birth_country
+    from: body_text
+    pattern: 'Nazione:\s*(.+?)\s+Attivit'
+    group: 1
+  - id: formation_name
+    from: body_text
+    pattern: 'Formazione:\s*(.+?)\s+Qualifica riconosciuta:'
+    group: 1
+  - id: recognition_status
+    from: body_text
+    pattern: 'Qualifica riconosciuta:\s*(.+?)\s+Commissioni:'
+    group: 1
+  - id: recognition_commission
+    from: body_text
+    pattern: 'Commissioni:\s*(.+?)\s+Schedari:'
+    group: 1
+  - id: archive_series
+    from: body_text
+    pattern: 'Schedari:\s*(.+)$'
+    group: 1
+  claim_mappings:
+  - field: person.full_name
+    signal_field: person_name
+    confidence: 0.9
+  - field: person.given_name
+    signal_field: given_name
+    confidence: 0.9
+  - field: person.family_name
+    signal_field: family_name
+    confidence: 0.9
+  - field: birth.date
+    signal_field: birth_date
+    confidence: 0.85
+  - field: birth.place
+    signal_field: birth_place
+    confidence: 0.8
+  - field: birth.municipality
+    signal_field: birth_municipality
+    confidence: 0.8
+  - field: birth.province
+    signal_field: birth_province
+    confidence: 0.8
+  - field: formation.name
+    signal_field: formation_name
+    confidence: 0.85
+  - field: partisan.recognition_status
+    signal_field: recognition_status
+    confidence: 0.8
+  - field: archive.recognition_commission
+    signal_field: recognition_commission
+    confidence: 0.75
+  - field: archive.series
+    signal_field: archive_series
+    confidence: 0.75
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La scheda persona pubblica puo' richiedere autenticazione anche se la lista risultati e' accessibile.
+  - In presenza di pagina login o blocco, la scheda va registrata come documento di dettaglio ma senza claim automatici.
+  - La pagina o il record va conservato come SourceDocument; i collegamenti personali richiedono revisione umana.

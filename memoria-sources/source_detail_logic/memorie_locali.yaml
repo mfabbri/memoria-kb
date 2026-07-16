@@ -1,0 +1,40 @@
+detail_logic:
+  source_id: memorie_locali
+  detail_level: detail_document_only
+  engine: memorie_locali_full_text_detail
+  blocked_text:
+  - login
+  - access denied
+  - captcha
+  - restricted
+  - temporarily unavailable
+  field_patterns:
+  - id: record_title
+    from: heading
+    pattern: ^(.+)$
+  claim_mappings:
+  - field: source.title
+    signal_field: record_title
+    confidence: 0.5
+  rules:
+  - id: blocked-detail
+    when:
+      blocked: true
+    assessment: detail_needs_manual_review
+    review_required: true
+  - id: fetched-context-page
+    when:
+      extracted_field_count_greater_than: 0
+    assessment: detail_document_fetched
+    review_required: true
+  - id: fetched-no-claims
+    when:
+      extracted_field_count_equals: 0
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - La pagina di dettaglio va conservata come SourceDocument di contesto.
+  - La fonte non è una banca dati nominativa strutturata.
+  - Non estrarre automaticamente claim personali da questa fonte.
+  - Eventuali collegamenti a persone, luoghi o eventi devono essere validati manualmente.
+  - La pagina o il record va conservato come SourceDocument; i collegamenti personali richiedono revisione umana.

@@ -1,0 +1,30 @@
+{
+  "@context": {
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "schema": "https://schema.org/",
+    "ca": "https://ca-di-malanca.local/ontology/",
+    "HistoricalEvent": "ca:HistoricalEvent",
+    "EvidenceClaim": "ca:EvidenceClaim",
+    "SourceDocument": "ca:SourceDocument"
+  },
+  "@type": "HistoricalEvent",
+  "@id": "event:battaglia-purocielo",
+  "event_id": "event:battaglia-purocielo",
+  "event_type": "battle",
+  "label": "Battaglia di Purocielo",
+  "description": "Evento pilota non ancora revisionato; non contiene partecipazioni personali.",
+  "date_start": "",
+  "date_end": "",
+  "place_labels": [
+    "Purocielo"
+  ],
+  "source_document_ids": [],
+  "evidence_claim_ids": [],
+  "review_status": "draft",
+  "confidence": 0.0,
+  "provenance": "manual_fixture",
+  "metadata": {
+    "model_version": "historical_event.v1",
+    "participation_policy": "no_participation_created_by_event_fixture"
+  }
+}

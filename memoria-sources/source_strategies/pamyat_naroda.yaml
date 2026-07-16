@@ -1,0 +1,21 @@
+﻿search_strategy:
+  source_id: pamyat_naroda
+  engine: pamyat_naroda_search_url
+  profile_path: source_profiles/pamyat_naroda.yaml
+  max_attempts: 3
+  attempts:
+  - id: cognome-nome-anno
+    label: Cognome + nome + anno nascita, verifica interattiva
+    when: has_family_and_given_name
+    fields:
+      last_name: family_name
+      first_name: given_name
+      birth_year: birth_year
+  - id: solo-cognome
+    label: Solo cognome, verifica interattiva
+    when: has_family_name
+    fields:
+      last_name: family_name
+  strategy_notes:
+  - 'Strategia prudente: prima nominativo completo, poi variante cognome/nome o solo cognome quando utile.'
+  - Le ricerche troppo ampie devono essere fermate a livello di revisione e non generare claim automatici.

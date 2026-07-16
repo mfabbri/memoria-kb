@@ -1,0 +1,33 @@
+{
+  "@context": {
+    "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+    "schema": "https://schema.org/",
+    "ca": "https://ca-di-malanca.local/ontology/",
+    "Place": "ca:Place",
+    "EvidenceClaim": "ca:EvidenceClaim",
+    "SourceDocument": "ca:SourceDocument"
+  },
+  "@type": "Place",
+  "@id": "place:ca-di-malanca",
+  "place_id": "place:ca-di-malanca",
+  "preferred_label": "Ca' di Malanca",
+  "place_type": "building",
+  "alternate_labels": [
+    "Ca di Malanca",
+    "Casa di Malanca"
+  ],
+  "description": "Luogo pilota non ancora revisionato; coordinate e collegamenti restano vuoti senza fonte attestante.",
+  "latitude": null,
+  "longitude": null,
+  "admin_hierarchy": [],
+  "same_as": [],
+  "source_document_ids": [],
+  "evidence_claim_ids": [],
+  "review_status": "draft",
+  "confidence": 0.0,
+  "provenance": "manual_fixture",
+  "metadata": {
+    "model_version": "place.v1",
+    "normalization_policy": "no_profile_rewrite_or_geocoding"
+  }
+}
