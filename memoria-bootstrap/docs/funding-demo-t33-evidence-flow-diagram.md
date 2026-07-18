@@ -2,8 +2,8 @@
 
 Data: 2026-07-16
 
-Stato: sotto-incremento T33 completato; T33 resta aperto per dossier finale,
-scheda caso demo, roadmap uso fondi e readiness esterna.
+Stato: sotto-incremento T33 completato; T33 resta aperto solo per eventuale
+approvazione umana della presentazione esterna.
 
 ## Scope
 
@@ -70,8 +70,10 @@ FEEDBACK LOOP T31
         v
 PACCHETTO FINANZIATORI T33
   funding-demo-t33-package-entrypoint.md
-  dossier finale da riallineare
-  roadmap uso fondi da produrre
+  funding-demo-t33-demo-case-card.md
+  funding-demo-t33-funding-roadmap.md
+  funding-demo-t33-external-readiness-checklist.md
+  funding-demo-t33-external-brief.md
 ```
 
 ## Mappa per il walkthrough
@@ -125,11 +127,8 @@ diagramma del percorso fonti-documenti-evidenze-review-feedback
 
 Restano aperti:
 
-- dossier finanziatori breve finale;
-- scheda del caso demo con provenance leggibile;
-- roadmap dell'uso dei fondi;
-- distinzione esplicita tra capacita' attuali, sviluppo finanziato e visione;
-- checklist di readiness per presentazione esterna.
+- approvazione umana della presentazione esterna, senza rimuovere i blocker
+  storici.
 
 ## Validazione
 

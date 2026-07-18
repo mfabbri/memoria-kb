@@ -1,9 +1,10 @@
 # Funding Demo Golden Path
 
-Data: 2026-07-15
+Data: 2026-07-17
 
-Stato: direzione approvata; T29, T30, T31 e T32 chiusi; T33 e' il prossimo
-incremento prioritario.
+Stato: direzione approvata; T29, T30, T31 e T32 chiusi; T33 e' l'incremento
+corrente, completo per preview nella parte agent-eseguibile e in attesa di
+approvazione umana della presentazione esterna.
 
 Contratto operativo T29:
 
@@ -402,6 +403,40 @@ all'entrypoint T33. La scheda racconta il caso Andreoli/Balboni con provenance
 leggibile, famiglie fonte, stati di riconciliazione, decisione storica,
 verified facts preview, ProfilePatch preview e feedback outcome, mantenendo
 espliciti i guardrail preview-only.
+
+Avanzamento del 2026-07-16: creata la roadmap uso fondi
+`memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md`, collegata
+all'entrypoint T33. La roadmap distingue capacita' attuali, sviluppo finanziato
+e visione di piattaforma, elenca risultati attesi a 1-2, 3-6 e 6-12 mesi e
+chiarisce che il finanziamento serve a scalare il metodo senza sostituire review
+storica, provenance o guardrail preview-only.
+
+Avanzamento del 2026-07-16: creata la checklist di readiness esterna
+`memoria-bootstrap/docs/funding-demo-t33-external-readiness-checklist.md`,
+collegata all'entrypoint T33. La checklist rende approvabile la presentazione ai
+finanziatori solo come demo preview-only con guardrail, mantenendo bloccata la
+pubblicazione storica finche' restano decisioni pending e output non canonici.
+
+Avanzamento del 2026-07-16: creato il brief editoriale esterno
+`memoria-bootstrap/docs/funding-demo-t33-external-brief.md`, collegato
+all'entrypoint T33. Il brief fornisce apertura, chiusura, messaggi consentiti e
+guardrail per presentare il dossier generato senza trasformarlo in biografia
+pubblicabile o in promessa di automazione.
+
+Stato operativo del 2026-07-16: la parte agent-eseguibile di T33 e' completa
+per preview. Restano necessari approvazione umana della presentazione esterna e
+mantenimento dei blocker storici: `go_with_review_blockers`,
+`publication_ready=false` e `preview_only=true`.
+
+Revalidazione del 2026-07-17: `memoria mvp demo --data-root
+"P:\Comune\Me.Mo.Ri.a"` conferma in sola lettura il descriptor T33, la run
+`prova-preview-profili-5-reviewed-01-pipeline`, lo stato
+`ready_for_internal_demo`, 4/4 documenti, 3 famiglie fonte e artefatti demo
+presenti. I safety flag restano preview-only e non pubblicabili:
+`applies_profile_patch=false`, `creates_canonical_verified_facts=false`,
+`modifies_canonical_profiles=false`, `preview_only=true` e
+`publication_ready=false`. T33 resta aperto solo per approvazione umana della
+presentazione esterna.
 
 ## Priorita' e stop condition
 

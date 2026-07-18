@@ -1,6 +1,6 @@
 # Current Next Increment
 
-Data: 2026-07-16
+Data: 2026-07-17
 
 ## Incremento corrente
 
@@ -8,7 +8,8 @@ T33 - Pacchetto finanziatori.
 
 ## Stato
 
-**Aperto e prioritario.**
+**Aperto: parte agent-eseguibile completata per preview; attende approvazione
+umana della presentazione esterna.**
 
 T32 e' chiuso: la golden run e' pronta per demo interna, usa il ledger standard
 `mvp_consolidated_review_ledger.json`, non dipende piu' dal sidecar T30 come
@@ -49,6 +50,40 @@ provenance, 3 famiglie fonte, 4/4 documenti coperti, stati di riconciliazione,
 decisione storica, verified facts preview, ProfilePatch preview e feedback
 outcome T31, senza scrivere nel data root esterno e senza presentare alcun
 output come pubblicabile.
+
+Avanzamento T33 del 2026-07-16: creata la roadmap uso fondi
+`memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md` e collegata
+all'entrypoint T33. La roadmap distingue capacita' attuali, sviluppo finanziato
+e visione di piattaforma, definisce risultati attesi a 1-2, 3-6 e 6-12 mesi e
+mantiene esplicito che il finanziamento scala un metodo con provenance, review
+storica e guardrail preview-only, non una pubblicazione automatica.
+
+Avanzamento T33 del 2026-07-16: creata la checklist di readiness esterna
+`memoria-bootstrap/docs/funding-demo-t33-external-readiness-checklist.md` e
+collegata all'entrypoint T33. La checklist separa il via libera alla
+presentazione finanziatori (`approvabile_con_guardrail`) dal blocco alla
+pubblicazione storica (`blocked`) dovuto a decisioni pending, output preview e
+feedback outcome `needs_manual_review`. Nessuna scrittura nel data root esterno
+e nessuna promozione canonica.
+
+Avanzamento T33 del 2026-07-16: creato il brief editoriale esterno
+`memoria-bootstrap/docs/funding-demo-t33-external-brief.md` e collegato
+all'entrypoint T33. Il brief completa la rifinitura del dossier per presentazione
+esterna con messaggio in 60 secondi, apertura, chiusura, cosa mostrare e cosa
+non dire, mantenendo `go_with_review_blockers`, `publication_ready=false` e
+`preview_only=true`. Nessuna scrittura nel data root esterno e nessuna
+promozione canonica.
+
+Revalidazione T33 del 2026-07-17: eseguita verifica read-only
+`memoria mvp demo --data-root "P:\Comune\Me.Mo.Ri.a"` dalla CLI Python. Il
+descriptor e' presente e JSON valido, la run resta
+`ready_for_internal_demo`, 1 profilo principale, 1 profilo di contrasto,
+4 documenti e 3 famiglie fonte sono dichiarati, gli artefatti T30/T31/T33
+risultano presenti e i safety flag restano:
+`preview_only=true`, `publication_ready=false`,
+`applies_profile_patch=false`, `creates_canonical_verified_facts=false` e
+`modifies_canonical_profiles=false`. Nessuna scrittura nel data root esterno,
+nessuna patch applicata, nessun fatto canonico creato.
 
 Descrittore:
 
@@ -124,18 +159,37 @@ T33 deve:
 
 ## Criteri di uscita
 
-- dossier finanziatori breve collegato alla golden run: **prodotto, da rifinire
-  per uso esterno**;
+- dossier finanziatori breve collegato alla golden run: **completato per
+  preview con dossier generato e brief editoriale esterno**;
 - script del walkthrough e comandi di fallback disponibili: **completato**;
 - diagramma del percorso fonti-documenti-evidenze-review-feedback:
   **completato**;
 - scheda del caso demo con provenance leggibile: **completata per preview**;
-- roadmap dell'uso dei fondi e risultati attesi;
-- distinzione esplicita fra capacita' attuali, sviluppo finanziato e visione;
-- checklist di readiness approvata per presentazione esterna: **generata come
-  `go_with_review_blockers`, non ancora approvata per esterno**;
+- roadmap dell'uso dei fondi e risultati attesi: **completata per preview**;
+- distinzione esplicita fra capacita' attuali, sviluppo finanziato e visione:
+  **completata per preview**;
+- checklist di readiness approvata per presentazione esterna:
+  **approvabile con guardrail**, mantenendo `go_with_review_blockers` per la
+  pubblicazione storica;
 - nessuna affermazione storica non supportata o output preview presentato come
   pubblicabile.
+
+## Stato di chiusura agent-eseguibile
+
+La parte eseguibile dall'agent per T33 e' completa per preview:
+
+- entrypoint del pacchetto collegato alla golden run;
+- dossier generato nel data root autorizzato;
+- diagramma fonti-documenti-evidenze-review-feedback;
+- scheda caso demo con provenance leggibile;
+- roadmap uso fondi e distinzione attuale/finanziato/visione;
+- checklist readiness esterna;
+- brief editoriale esterno;
+- validazione read-only `memoria mvp demo`, riconfermata il 2026-07-17.
+
+T33 non viene marcato chiuso in autonomia perche' la presentazione esterna
+richiede approvazione umana. I blocker storici restano attivi:
+`go_with_review_blockers`, `publication_ready=false`, `preview_only=true`.
 
 ## Priorita' degli incrementi successivi
 
@@ -1498,8 +1552,10 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 
 ## Prossimo incremento candidato
 
-T33 - Pacchetto finanziatori, ora avviato come incremento corrente dopo la
-chiusura di T32.
+T33 resta l'incremento corrente fino ad approvazione umana della presentazione
+esterna. La parte agent-eseguibile del pacchetto e' completa per preview:
+entrypoint, dossier generato, diagramma, scheda caso, roadmap fondi, readiness
+esterna e brief editoriale sono collegati alla golden run.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 

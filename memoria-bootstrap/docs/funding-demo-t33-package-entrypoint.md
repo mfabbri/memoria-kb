@@ -1,9 +1,11 @@
 # T33 Funding Demo Package Entrypoint
 
-Data: 2026-07-16
+Data: 2026-07-17
 
-Stato: sotto-incrementi T33 documentale, generazione pacchetto e scheda caso
-demo completati; T33 resta aperto per roadmap uso fondi e rifinitura esterna.
+Stato: sotto-incrementi T33 documentale, generazione pacchetto, scheda caso demo,
+roadmap uso fondi, readiness esterna e brief editoriale completati; T33 resta
+aperto solo per eventuale approvazione umana della presentazione, senza
+rimuovere i blocker storici.
 
 ## Scope
 
@@ -140,9 +142,27 @@ attraversare direttamente i JSON tecnici.
      stati preview e feedback loop senza produrre una scheda pubblicabile.
 
 11. **Dossier finanziatori**
-   - percorsi:
+   - percorso:
      `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_funding_dossier.md`
    - scopo: dossier rigenerato con ledger consolidato e preview facts.
+
+12. **Brief editoriale esterno**
+   - percorso:
+     `memoria-bootstrap/docs/funding-demo-t33-external-brief.md`
+   - scopo: aprire o chiudere la presentazione con un messaggio non tecnico,
+     collegato alla golden run e ai guardrail preview-only.
+
+13. **Roadmap uso fondi**
+   - percorso:
+     `memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md`
+   - scopo: distinguere capacita' attuali, sviluppo finanziato, visione e
+     risultati attesi senza promettere pubblicazione automatica.
+
+14. **Checklist readiness esterna**
+   - percorso:
+     `memoria-bootstrap/docs/funding-demo-t33-external-readiness-checklist.md`
+   - scopo: dichiarare cosa e' approvabile per finanziatori e cosa resta
+     bloccato per pubblicazione storica.
 
 ## Walkthrough 7-10 minuti
 
@@ -183,12 +203,13 @@ Da `memoria-engine`:
 | Criterio T33 | Stato | Evidenza o azione |
 |---|---|---|
 | Dossier finanziatori breve collegato alla golden run | completato per preview | `mvp_funding_dossier.md` rigenerato nella run canonica. |
+| Brief editoriale esterno | completato per preview | `funding-demo-t33-external-brief.md`. |
 | Script walkthrough e fallback | completato per ingresso | Questa pagina definisce scaletta e comandi fallback. |
 | Diagramma fonti-documenti-evidenze-review-feedback | completato | `funding-demo-t33-evidence-flow-diagram.md`. |
 | Scheda caso demo con provenance leggibile | completato per preview | `funding-demo-t33-demo-case-card.md`. |
-| Roadmap uso fondi | da produrre | Da aggiungere al dossier finale. |
-| Distinzione attuale/sviluppo finanziato/visione | da produrre | Da aggiungere al dossier finale. |
-| Readiness presentazione esterna | generata, non approvata | `mvp_go_no_go_checklist.md` = `go_with_review_blockers`. |
+| Roadmap uso fondi | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
+| Distinzione attuale/sviluppo finanziato/visione | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
+| Readiness presentazione esterna | approvabile con guardrail | `funding-demo-t33-external-readiness-checklist.md`; `mvp_go_no_go_checklist.md` resta `go_with_review_blockers`. |
 
 ## Validazione
 
@@ -198,6 +219,13 @@ Validazioni eseguite:
 cd memoria-engine
 .\.venv\Scripts\memoria.exe mvp demo --data-root "P:\Comune\Me.Mo.Ri.a"
 .\scripts\build_mvp_funding_package.ps1 -RunDir "P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline" -DemoDescriptorJson "P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json" -QualityGateStatus passed
+```
+
+Revalidazione read-only del 2026-07-17:
+
+```powershell
+cd memoria-engine
+.\.venv\Scripts\memoria.exe mvp demo --data-root "P:\Comune\Me.Mo.Ri.a"
 ```
 
 Esito atteso e osservato:
@@ -214,6 +242,6 @@ Esito atteso e osservato:
 
 ## Prossimo sotto-incremento T33
 
-Preparare la roadmap uso fondi/risultati attesi e la distinzione fra capacita'
-attuali, sviluppo finanziato e visione, poi fare rifinitura editoriale del
-dossier per presentazione esterna.
+Nessun ulteriore sotto-incremento agent-eseguibile e' richiesto prima della
+revisione umana della presentazione esterna. Mantenere `go_with_review_blockers`
+finche' restano decisioni storiche pending.
