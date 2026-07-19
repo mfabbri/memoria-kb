@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memoria.local/schemas/current-work.schema.json",
+  "title": "Me.Mo.Ri.A current work state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "selected_at",
+    "roadmap_basis",
+    "increment",
+    "verification",
+    "next_action"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "status": {
+      "enum": ["uninitialized", "selected", "in_progress", "blocked", "completed", "superseded"]
+    },
+    "selected_at": { "type": ["string", "null"], "format": "date-time" },
+    "updated_at": { "type": ["string", "null"], "format": "date-time" },
+    "roadmap_basis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "section"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "section": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "increment": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["id", "title", "objective", "scope", "out_of_scope", "candidate_files", "stop_condition"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "objective": { "type": "string", "minLength": 1 },
+        "scope": { "type": "array", "items": { "type": "string" } },
+        "out_of_scope": { "type": "array", "items": { "type": "string" } },
+        "candidate_files": { "type": "array", "items": { "type": "string" } },
+        "stop_condition": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tests", "documentation_touchpoints", "result"],
+      "properties": {
+        "tests": { "type": "array", "items": { "type": "string" } },
+        "documentation_touchpoints": { "type": "array", "items": { "type": "string" } },
+        "result": { "enum": ["not_run", "passed", "failed", "partial", "not_applicable"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "session_notes": { "type": "array", "items": { "type": "string" } },
+    "next_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "description"],
+      "properties": {
+        "mode": { "enum": ["resume", "recalculate", "review", "none"] },
+        "description": { "type": "string" }
+      }
+    }
+  }
+}

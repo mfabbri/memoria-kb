@@ -1085,6 +1085,8 @@ Criteri di ingresso:
 
 Criteri di uscita:
 
+- una sola golden run canonica con tre casi selezionati, promossa soltanto dopo
+  review e validazione della candidata;
 - dossier finanziatori breve collegato alla golden run;
 - script del walkthrough e comandi di fallback disponibili;
 - diagramma del percorso fonti-documenti-evidenze-review-feedback;
@@ -1094,6 +1096,11 @@ Criteri di uscita:
 - checklist di readiness approvata per presentazione esterna;
 - nessuna affermazione storica non supportata o output preview presentato come
   pubblicabile.
+
+Vincolo di transizione T33: la run precedente resta l'unica attiva mentre si
+prepara la candidata. Non e' ammessa una run comparativa usata in parallelo
+dalla presentazione; descriptor, dossier, walkthrough e feedback loop devono
+convergere sulla candidata prima della promozione.
 
 Stato: **aperto e prioritario**.
 

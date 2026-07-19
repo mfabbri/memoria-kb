@@ -1,49 +1,45 @@
-# Playbook Codex per Me.Mo.Ri.A
+# Playbook e skill Codex per Me.Mo.Ri.A
 
-Questa cartella contiene i playbook essenziali per lavorare nella workspace
-multi-repo senza caricare documentazione non pertinente.
+La procedura ordinaria usa le capacità native di Codex e un contesto minimo.
 
-## Entrypoint ordinario
-
-```text
-docs/playbooks/codex-session-contract.md
-docs/playbooks/codex-task-router.md
-docs/playbooks/codex-roadmap-task-selector.md
-docs/current-next-increment.md
-```
-
-Durante T29-T33 leggere anche:
+## Entrypoint
 
 ```text
-docs/funding-demo-golden-path.md
+AGENTS.md
+$memoria-session
+$memoria-roadmap-selector   # solo quando l'incremento non è già definito
 ```
 
-Le roadmap definiscono la direzione. `current-next-increment.md` e' il puntatore
-operativo autorevole della sessione: se un incremento e' aperto, va continuato.
+Aggiungere al massimo una skill verticale:
 
-## Priorita' corrente
+- `$memoria-source-registry` per fonti e registry;
+- `$memoria-profile-feedback` per feedback e patch ai profili;
+- `$memoria-quality-gate` per la chiusura e la review.
+
+## Profili consigliati
 
 ```text
-T29 contratto golden path
-T30 golden run multi-fonte
-T31 feedback loop chiuso
-T32 hardening demo
-T33 pacchetto finanziatori
+fast      ricognizione, ricerca simboli, controllo documentale leggero
+standard  fix e micro-feature ordinarie
+deep      architettura, migrazioni, conflitti tra contratti
+review    review finale di cambiamenti ad alto impatto
 ```
 
-Cloud, espansione fonti e micro-refactor non sono prossimi passi ordinari prima
-di T33.
+Se il client Codex supporta i profili, selezionarli dalla configurazione locale
+`.codex/config.toml`. Non usare il modello più costoso per scansioni meccaniche.
+
+## Playbook legacy
+
+I file `01-start-session.md` ... `09-continuous-refactor.md` e i vecchi
+`codex-*-core.md` restano temporaneamente disponibili per compatibilità, ma non
+sono letture iniziali. Le regole attive devono convergere in `AGENTS.md`, skill e
+contratti di repository.
 
 ## Regola sintetica
 
 ```text
-1 sessione = 1 incremento
-1 incremento = criteri di uscita verificabili
-1 claim = 1 documento tracciabile
-1 merge = provenance preservata
-1 verified fact = decisione umana
-1 feedback loop = ricerca eseguita + esito registrato
+1 sessione = 1 micro-obiettivo
+1 micro-obiettivo = 1 skill verticale massimo
+1 implementazione = 1 test mirato
+1 fatto storico = 1 fonte tracciabile + revisione umana
 ```
-
-Aggiungere al massimo un playbook verticale `*-core.md`, salvo necessita'
-esplicita.

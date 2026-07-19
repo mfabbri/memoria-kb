@@ -1,6 +1,6 @@
 # MVP Roadmap
 
-Data: 2026-07-12
+Data: 2026-07-18
 
 ## Definizione MVP
 
@@ -37,11 +37,11 @@ La demo deve rendere evidente che Me.Mo.Ri.A:
 L'MVP e' pronto per una presentazione esterna quando esiste una sola golden run
 che soddisfa tutti i criteri seguenti.
 
-### Caso storico
+### Casi storici
 
-- 1 profilo principale;
-- opzionalmente 1 profilo di contrasto;
-- 2-4 documenti complessivi, intenzionalmente selezionati;
+- 3 profili intenzionalmente selezionati: 1 caso principale e 2 casi
+  complementari;
+- 5 documenti sorgente complessivi, senza scansione massiva;
 - almeno due fonti o famiglie documentali differenti;
 - almeno un campo complementare, divergente o incerto utile alla review.
 
@@ -57,6 +57,8 @@ che soddisfa tutti i criteri seguenti.
 ### Decisione e patch
 
 - almeno una decisione storica sostanziale e' registrata;
+- ogni profilo selezionato ha almeno una decisione sostanziale oppure un esito
+  esplicito di incertezza o richiesta fonti;
 - almeno un fatto verificato resta marcato preview/non pubblicabile;
 - almeno una patch del profilo e' collegata a source document, claim, decisione,
   reviewer e run;
@@ -176,7 +178,8 @@ Fino alla chiusura di T33:
 2. eseguire fix o micro-refactor solo se bloccano direttamente la demo;
 3. non scegliere pCloud, nuove fonti o ampliamenti massivi come prossimo passo;
 4. non aumentare il numero di profili prima di rendere convincente il caso
-   principale.
+   principale; l'espansione T33 a tre casi e' il solo ampliamento controllato
+   autorizzato e deve confluire in una nuova golden run unica.
 
 ## Fuori scope MVP iniziale
 

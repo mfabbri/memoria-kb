@@ -1,0 +1,42 @@
+# Hybrid model routing for ChatGPT-authenticated Codex.
+# Avoid the unsupported ambiguous alias "gpt-5.6".
+
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "high"
+
+[agents]
+max_threads = 3
+max_depth = 1
+
+[agents.scanner]
+description = "Ricognizione read-only del repository e individuazione dei file minimi."
+config_file = "agents/scanner.toml"
+
+[agents.implementer]
+description = "Implementazione di un singolo micro-incremento già delimitato."
+config_file = "agents/implementer.toml"
+
+[agents.test_reviewer]
+description = "Esecuzione e revisione dei test mirati e dei quality gate."
+config_file = "agents/test-reviewer.toml"
+
+[agents.docs_reviewer]
+description = "Controllo di coerenza della documentazione operativa impattata."
+config_file = "agents/docs-reviewer.toml"
+
+[profiles.standard]
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
+
+[profiles.luna]
+model = "gpt-5.6-luna"
+model_reasoning_effort = "low"
+
+[profiles.terra]
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+
+[profiles.sol]
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"

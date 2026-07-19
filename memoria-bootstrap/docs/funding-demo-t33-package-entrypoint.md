@@ -1,16 +1,35 @@
 # T33 Funding Demo Package Entrypoint
 
-Data: 2026-07-17
+Data: 2026-07-18
 
-Stato: sotto-incrementi T33 documentale, generazione pacchetto, scheda caso demo,
-roadmap uso fondi, readiness esterna e brief editoriale completati; T33 resta
-aperto solo per eventuale approvazione umana della presentazione, senza
-rimuovere i blocker storici.
+Stato: entrypoint della golden run tecnica completo per uso interno. La prima
+revisione umana non ha approvato questo percorso come presentazione esterna;
+T33b separa ora la prova tecnica dalla presentazione finanziatori.
 
 ## Scope
 
 Questo sotto-incremento definisce la pagina di ingresso del pacchetto
 finanziatori collegata alla golden run T30-T32.
+
+Dal 2026-07-18 questa pagina e' l'entrypoint della **golden run tecnica**. Non va
+usata come scaletta principale davanti a finanziatori. La presentazione esterna
+ha un ingresso separato:
+
+```text
+memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md
+```
+
+## Due oggetti, una sola run
+
+| Oggetto | Funzione | Stato |
+|---|---|---|
+| Golden run tecnica | dimostrare in profondita' provenance, riconciliazione, review, patch preview e feedback loop | la run T30-T32 resta attiva durante la preparazione della candidata a tre casi |
+| Presentazione finanziatori | mostrare patrimonio disponibile, coorte pilota, prova del metodo e lavoro ancora necessario | bloccata fino alla promozione della stessa candidata |
+
+La separazione riguarda pubblico, sequenza e linguaggio. Dopo la transizione,
+entrambi gli oggetti devono leggere lo stesso descriptor e lo stesso `run_id`.
+La run corrente resta valida e unica finche' la candidata non supera tutti i
+gate del runbook a tre casi.
 
 Vincoli rispettati nella fase documentale iniziale:
 
@@ -84,10 +103,10 @@ Stato verificato:
 - `publication_ready=false`;
 - `preview_only=true`.
 
-## Lettura consigliata
+## Lettura tecnica consigliata
 
-Questa e' la sequenza da usare come ingresso manuale del pacchetto T33, senza
-attraversare direttamente i JSON tecnici.
+Questa e' la sequenza da usare per una verifica interna o per rispondere a un
+approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 
 1. **Indice pacchetto finanziatori**
    - percorso:
@@ -164,7 +183,11 @@ attraversare direttamente i JSON tecnici.
    - scopo: dichiarare cosa e' approvabile per finanziatori e cosa resta
      bloccato per pubblicazione storica.
 
-## Walkthrough 7-10 minuti
+## Walkthrough tecnico 7-10 minuti
+
+La tabella seguente descrive la run T30-T32 ancora attiva. Dopo la promozione
+della candidata deve essere rigenerata sul nuovo `run_id`, non mantenuta come
+secondo walkthrough.
 
 | Minuti | Schermata/materiale | Messaggio |
 |---|---|---|
@@ -209,7 +232,8 @@ Da `memoria-engine`:
 | Scheda caso demo con provenance leggibile | completato per preview | `funding-demo-t33-demo-case-card.md`. |
 | Roadmap uso fondi | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
 | Distinzione attuale/sviluppo finanziato/visione | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
-| Readiness presentazione esterna | approvabile con guardrail | `funding-demo-t33-external-readiness-checklist.md`; `mvp_go_no_go_checklist.md` resta `go_with_review_blockers`. |
+| Separazione golden run/presentazione | completata in bozza | `funding-demo-t33-presentation-entrypoint.md`. |
+| Readiness presentazione esterna | non approvata; T33b aperto | La review umana richiede una presentazione meno tecnica e basata sulla coorte pilota di 5 profili; `mvp_go_no_go_checklist.md` resta `go_with_review_blockers`. |
 
 ## Validazione
 
@@ -242,6 +266,9 @@ Esito atteso e osservato:
 
 ## Prossimo sotto-incremento T33
 
-Nessun ulteriore sotto-incremento agent-eseguibile e' richiesto prima della
-revisione umana della presentazione esterna. Mantenere `go_with_review_blockers`
-finche' restano decisioni storiche pending.
+T33 deve eseguire a gate
+`funding-demo-t33-three-case-runbook.md`, promuovere una sola golden run a tre
+casi e solo dopo riprendere la presentazione in sei schermate. La prossima
+revisione umana deve valutare il racconto e la prova prima di qualunque lavoro
+su bando, importo o finanziatore. Mantenere `go_with_review_blockers` finche'
+restano decisioni storiche pending.

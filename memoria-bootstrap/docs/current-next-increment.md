@@ -1,6 +1,6 @@
 # Current Next Increment
 
-Data: 2026-07-17
+Data: 2026-07-18
 
 ## Incremento corrente
 
@@ -8,8 +8,109 @@ T33 - Pacchetto finanziatori.
 
 ## Stato
 
-**Aperto: parte agent-eseguibile completata per preview; attende approvazione
-umana della presentazione esterna.**
+**Aperto: prima revisione umana non approvata; T33 prepara una candidata unica
+a tre casi prima di riprendere la presentazione finanziatori.**
+
+Esito review del 2026-07-18: il pacchetto precedente e' risultato troppo
+tecnico e il perimetro Andreoli/Balboni troppo ridotto per rappresentare la
+potenza del motore. La golden run resta valida come prova tecnica interna. La
+presentazione viene ricostruita come oggetto separato, usando la coorte pilota
+di 5 profili e il patrimonio disponibile di 57 profili senza presentarli come
+schede complete. Entrypoint T33b:
+`memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md`.
+
+Riallineamento T33 del 2026-07-18: la proposta di run comparativa e' fermata.
+Andreoli, Balboni e Bendini devono confluire in una sola candidata alla nuova
+golden run canonica. La run attuale resta l'unica attiva durante review e
+validazione; la presentazione non puo' usare la candidata prima della promozione.
+Comandi, backup, stop condition e gate sono documentati in
+`memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md`. Nessuna run e'
+stata eseguita e nessun file del data root esterno e' stato modificato in questo
+sotto-incremento documentale.
+
+Validazione del riallineamento: il dry-run read-only di `memoria mvp demo-build`
+sulla run attuale con il nuovo perimetro conferma 1 profilo principale, 2
+complementari, 5/5 documenti, 3 famiglie fonte, readiness
+`ready_for_internal_demo`, zero errori e zero warning. Il tool T31 accetta ora
+descriptor e backup espliciti, cosi' puo' completare la candidata senza toccare
+il descriptor attivo; 15 test mirati risultano passanti. Il preflight reale
+conferma sorgenti, indice profili, descriptor e summary presenti, candidata
+assente e action/plan T31 disponibili.
+
+Correzione operativa del 2026-07-18: il primo tentativo della fase 1 si e'
+fermato prima di review queue ed evidence import perche' la run canonica T32 non
+conserva il file separato `document_analysis/research_feedback_actions.json`
+richiesto dal wrapper `ReportsOnly`. Il runbook usa ora come sorgente la pipeline
+pilota originaria `mvp-expand-pilot-preview-profiles-v1-pipeline`, che contiene
+il file, gli stessi tre profili, l'action e il piano T31. La directory candidata
+parziale non contiene file operativi e puo' essere rigenerata con lo stesso
+`RunId`; descriptor attivo ed evidence store restano invariati.
+
+Seconda correzione operativa del 2026-07-18: il passaggio di `$Profiles` come
+array attraverso il processo esterno `pwsh.exe` espandeva i profili successivi
+come argomenti posizionali; `person:...` veniva quindi interpretato come
+`InputRootDir`. Le invocazioni esterne del runbook usano ora
+`-ProfileId ($Profiles -join ",")`; il wrapper ricostruisce l'array tramite la
+normalizzazione CSV gia' esistente. Anche questo tentativo si e' fermato prima
+di creare file candidati, review queue o evidence import.
+
+Fase 1 completata il 2026-07-18: la run
+`funding-demo-golden-3cases-v1-pipeline` e' terminata con stato `completed` in
+modalita' `ReportsOnly`, `SkipOnline` e `SkipEvidenceImport`. La verifica
+read-only conferma 3 profili `ready_for_review`, 83 item di review, package
+`ready_for_demo` ma `unreviewed`, evidence import `skipped` e descriptor attivo
+ancora puntato a `prova-preview-profili-5-reviewed-01-pipeline`. Il prossimo
+passo e' produrre cards e copia compilabile, quindi fermarsi al Gate 1 per
+approvazione umana.
+
+Avanzamento Gate 1 del 2026-07-19: prodotte le viste per la review storica
+della candidata a tre casi:
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\review_requests.three_cases.cards.md`
+e
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\review_focus_decisions_table.compilato.md`.
+Il builder segnala 15 item focus e i file risultano presenti e leggibili. La
+candidata resta al Gate 1: non sono state eseguite conversione, validazione,
+fase 2, evidence import, modifica del descriptor attivo o promozione canonica.
+Il prossimo passo e' approvazione committente, compilazione storica dei soli
+campi ammessi e successiva conversione/validazione secondo runbook.
+
+Riconferma Gate 1 del 2026-07-19: verifica read-only dei materiali conferma
+cards e copia compilabile presenti, stato `pending_historian_review` e assenza
+degli artefatti di conversione `review_decisions.compilato.json` e
+`review_focus_conversion_summary.*`. Il lavoro resta bloccato su approvazione
+committente e restituzione della tabella compilata dagli storici.
+
+Tentativo di avvio conversione del 2026-07-19: dopo approvazione committente
+dichiarata, il preflight read-only sulla tabella compilabile ha confermato che
+`review_focus_decisions_table.compilato.md` contiene ancora tutte le righe con
+`selected_action`, `reviewer`, `reviewed_at` e `note` vuoti. La conversione non
+e' stata eseguita. Il Gate 1 resta bloccato finche' la tabella non viene
+compilata dagli storici almeno con una decisione sostanziale valida per ciascuno
+dei tre profili.
+
+Conversione e validazione Gate 1 completate il 2026-07-19: dopo il salvataggio
+della tabella compilata, prodotti
+`review_decisions.compilato.json`, `review_focus_conversion_summary.json`,
+`review_focus_conversion_summary.md`, `review_decisions.validation.json` e
+`review_decisions.validation.md` nella run candidata. La validazione riporta
+stato `partial_review`, 15 decisioni accettate, 68 pending, 0 invalidi e 0
+errori; ciascuno dei tre profili ha 5 decisioni accettate e 0 invalidi. Nessuna
+fase 2, evidence import, modifica del descriptor attivo, ProfilePatch o
+promozione canonica e' stata eseguita.
+
+Fase 2 T33 completata il 2026-07-19: creato backup
+`P:\Comune\Me.Mo.Ri.a\database\evidence.before-funding-demo-golden-3cases-v1-20260719-134908.sqlite`
+con WAL assente, quindi rigenerata la stessa candidata
+`funding-demo-golden-3cases-v1-pipeline` in modalita' `ReportsOnly` e
+`SkipOnline` usando `review_decisions.compilato.json`. L'import evidence
+append-only ha letto 248 record, inserito 238 record e riconosciuto 10 gia'
+presenti; il riepilogo decisioni resta `partial_review`, 15 accepted, 68
+pending, 0 invalidi e 0 errori. Prodotti `verified_facts.preview.*` con 1 fatto
+preview e `profile_patch.preview.*` con 1 patch preview; `mvp_package_readiness`
+riporta `ready_for_demo` con 0 output mancanti. Il descriptor attivo resta
+puntato a `prova-preview-profili-5-reviewed-01-pipeline`; non sono state
+eseguite fase 3, fase 4, promozione canonica, applicazione ProfilePatch o
+modifiche ai profili canonici.
 
 T32 e' chiuso: la golden run e' pronta per demo interna, usa il ledger standard
 `mvp_consolidated_review_ledger.json`, non dipende piu' dal sidecar T30 come
@@ -60,11 +161,13 @@ storica e guardrail preview-only, non una pubblicazione automatica.
 
 Avanzamento T33 del 2026-07-16: creata la checklist di readiness esterna
 `memoria-bootstrap/docs/funding-demo-t33-external-readiness-checklist.md` e
-collegata all'entrypoint T33. La checklist separa il via libera alla
-presentazione finanziatori (`approvabile_con_guardrail`) dal blocco alla
-pubblicazione storica (`blocked`) dovuto a decisioni pending, output preview e
-feedback outcome `needs_manual_review`. Nessuna scrittura nel data root esterno
-e nessuna promozione canonica.
+collegata all'entrypoint T33. La prima versione classificava la presentazione
+come `approvabile_con_guardrail` e manteneva bloccata la pubblicazione storica.
+La review umana del 2026-07-18 ha superato quel verdetto: la presentazione
+esterna e' ora `not_ready_for_external_presentation`, mentre restano invariati
+i blocker su decisioni pending, output preview e feedback outcome
+`needs_manual_review`. Nessuna scrittura nel data root esterno e nessuna
+promozione canonica.
 
 Avanzamento T33 del 2026-07-16: creato il brief editoriale esterno
 `memoria-bootstrap/docs/funding-demo-t33-external-brief.md` e collegato
@@ -169,14 +272,14 @@ T33 deve:
 - distinzione esplicita fra capacita' attuali, sviluppo finanziato e visione:
   **completata per preview**;
 - checklist di readiness approvata per presentazione esterna:
-  **approvabile con guardrail**, mantenendo `go_with_review_blockers` per la
-  pubblicazione storica;
+  **non soddisfatta dopo la prima review umana**; T33b e' aperto, mentre
+  `go_with_review_blockers` resta invariato per la pubblicazione storica;
 - nessuna affermazione storica non supportata o output preview presentato come
   pubblicabile.
 
-## Stato di chiusura agent-eseguibile
+## Stato T33b
 
-La parte eseguibile dall'agent per T33 e' completa per preview:
+La parte tecnica T33 e' completa per preview:
 
 - entrypoint del pacchetto collegato alla golden run;
 - dossier generato nel data root autorizzato;
@@ -187,8 +290,10 @@ La parte eseguibile dall'agent per T33 e' completa per preview:
 - brief editoriale esterno;
 - validazione read-only `memoria mvp demo`, riconfermata il 2026-07-17.
 
-T33 non viene marcato chiuso in autonomia perche' la presentazione esterna
-richiede approvazione umana. I blocker storici restano attivi:
+La prima approvazione umana non e' stata concessa. T33b ha ora prodotto il
+contratto iniziale della presentazione in sei schermate e la separazione
+esplicita fra prova tecnica e racconto finanziatori. Restano da svolgere
+impaginazione e nuova prova umana. I blocker storici restano attivi:
 `go_with_review_blockers`, `publication_ready=false`, `preview_only=true`.
 
 ## Priorita' degli incrementi successivi
@@ -1552,10 +1657,15 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 
 ## Prossimo incremento candidato
 
-T33 resta l'incremento corrente fino ad approvazione umana della presentazione
-esterna. La parte agent-eseguibile del pacchetto e' completa per preview:
-entrypoint, dossier generato, diagramma, scheda caso, roadmap fondi, readiness
-esterna e brief editoriale sono collegati alla golden run.
+T33 resta l'incremento corrente. La candidata a tre casi ha superato Gate 1 e
+fase 2: decisioni validate, import evidence append-only eseguito, verified facts
+e ProfilePatch prodotti solo in preview, descriptor attivo ancora invariato. Il
+prossimo sotto-incremento candidato e' fase 3 del runbook: costruire il
+descriptor candidato e rigenerare il feedback loop T31 dentro la stessa run,
+senza modificare `memoria_mvp_demo.active.json`. Fase 4, gate finale,
+promozione canonica, impaginazione e prova della presentazione seguono solo dopo
+ulteriore validazione. Bando, importo e finanziatore restano fuori scope finche'
+il racconto non riceve approvazione umana.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 

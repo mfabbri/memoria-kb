@@ -29,6 +29,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Registra gli artefatti preview-only T31 per la golden run demo.")
     parser.add_argument("--data-root", default=r"P:\Comune\Me.Mo.Ri.a")
     parser.add_argument("--run-id", default=RUN_ID)
+    parser.add_argument(
+        "--descriptor-path",
+        default="",
+        help="Descriptor da aggiornare; default: database/memoria_mvp_demo.active.json.",
+    )
+    parser.add_argument(
+        "--backup-path",
+        default="",
+        help="Backup del descriptor; default: database/memoria_mvp_demo.active.before-t31-feedback-loop.json.",
+    )
     args = parser.parse_args()
 
     data_root = Path(args.data_root)
@@ -99,6 +109,8 @@ def main() -> int:
     descriptor_path, backup_path = _update_descriptor(
         data_root=data_root,
         run_id=args.run_id,
+        descriptor_path=Path(args.descriptor_path) if args.descriptor_path else None,
+        backup_path=Path(args.backup_path) if args.backup_path else None,
         generated_at=now,
         query=query,
         outcome=outcome,
@@ -226,6 +238,8 @@ def _update_descriptor(
     *,
     data_root: Path,
     run_id: str,
+    descriptor_path: Path | None,
+    backup_path: Path | None,
     generated_at: str,
     query: str,
     outcome: dict[str, Any],
@@ -235,14 +249,19 @@ def _update_descriptor(
     outcome_json: Path,
     outcome_md: Path,
 ) -> tuple[Path, Path]:
-    descriptor_path = data_root / "database" / "memoria_mvp_demo.active.json"
-    backup_path = data_root / "database" / "memoria_mvp_demo.active.before-t31-feedback-loop.json"
+    descriptor_path = descriptor_path or data_root / "database" / "memoria_mvp_demo.active.json"
+    backup_path = backup_path or data_root / "database" / "memoria_mvp_demo.active.before-t31-feedback-loop.json"
     _assert_inside(descriptor_path, data_root)
     _assert_inside(backup_path, data_root)
     descriptor_text = descriptor_path.read_text(encoding="utf-8")
+    descriptor = json.loads(descriptor_text)
+    descriptor_run_id = str(descriptor.get("run_id", "")).strip()
+    if descriptor_run_id != run_id:
+        raise SystemExit(
+            f"Descriptor run mismatch: expected {run_id}, found {descriptor_run_id or '<missing>'}"
+        )
     if not backup_path.exists():
         backup_path.write_text(descriptor_text, encoding="utf-8")
-    descriptor = json.loads(descriptor_text)
     descriptor["updated_at"] = generated_at
     descriptor.setdefault("artifacts", {}).update(
         {

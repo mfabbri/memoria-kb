@@ -387,3 +387,23 @@ Restano vietati senza incremento esplicito, backup e audit:
 Conseguenza: T31 e gli incrementi successivi possono produrre artefatti
 preview/audit nel data root esterno quando servono alla roadmap, ma devono
 sempre dichiarare file toccati, validazioni eseguite e impatto sul workflow.
+## 2026-07-18 - Espansione controllata della golden run T33 a tre casi
+
+Decisione: sostituire la proposta di run comparativa T33c con una candidata a
+nuova golden run canonica comprendente Andreoli, Balboni e Bendini.
+
+Regole:
+
+- l'attuale descriptor resta l'unico attivo durante preparazione e review;
+- la candidata non alimenta una presentazione parallela;
+- tutti gli artefatti tecnici, editoriali e T31 devono puntare allo stesso
+  `run_id` candidato prima della promozione;
+- la promozione avviene solo dopo decisioni storiche validate, readiness
+  tecnica, backup e approvazione umana;
+- dopo la promozione la run precedente resta archiviata ma non attiva;
+- non vengono applicate patch, creati fatti canonici o prodotte schede
+  pubblicabili.
+
+Conseguenza: golden run tecnica e presentazione finanziatori restano due
+oggetti narrativi, ma condividono una sola lineage evidenziale e un solo
+descriptor canonico.

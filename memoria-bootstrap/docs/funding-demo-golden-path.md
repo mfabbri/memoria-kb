@@ -1,10 +1,10 @@
 # Funding Demo Golden Path
 
-Data: 2026-07-17
+Data: 2026-07-18
 
 Stato: direzione approvata; T29, T30, T31 e T32 chiusi; T33 e' l'incremento
-corrente, completo per preview nella parte agent-eseguibile e in attesa di
-approvazione umana della presentazione esterna.
+corrente. La prima revisione umana non ha approvato la presentazione esterna;
+T33 prepara una candidata canonica unica a tre casi.
 
 Contratto operativo T29:
 
@@ -423,10 +423,9 @@ all'entrypoint T33. Il brief fornisce apertura, chiusura, messaggi consentiti e
 guardrail per presentare il dossier generato senza trasformarlo in biografia
 pubblicabile o in promessa di automazione.
 
-Stato operativo del 2026-07-16: la parte agent-eseguibile di T33 e' completa
-per preview. Restano necessari approvazione umana della presentazione esterna e
-mantenimento dei blocker storici: `go_with_review_blockers`,
-`publication_ready=false` e `preview_only=true`.
+Stato operativo del 2026-07-16: la parte tecnica agent-eseguibile di T33 e'
+completa per preview. Restano attivi i blocker storici:
+`go_with_review_blockers`, `publication_ready=false` e `preview_only=true`.
 
 Revalidazione del 2026-07-17: `memoria mvp demo --data-root
 "P:\Comune\Me.Mo.Ri.a"` conferma in sola lettura il descriptor T33, la run
@@ -435,8 +434,27 @@ Revalidazione del 2026-07-17: `memoria mvp demo --data-root
 presenti. I safety flag restano preview-only e non pubblicabili:
 `applies_profile_patch=false`, `creates_canonical_verified_facts=false`,
 `modifies_canonical_profiles=false`, `preview_only=true` e
-`publication_ready=false`. T33 resta aperto solo per approvazione umana della
-presentazione esterna.
+`publication_ready=false`.
+
+Esito review umana del 2026-07-18: il percorso di 14 materiali e' risultato
+troppo tecnico e il racconto su 2 profili non rende visibili la coorte pilota di
+5 profili e il patrimonio disponibile di 57 profili. T33 introduce un entrypoint
+separato in sei schermate per la presentazione:
+`memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md`. Bando,
+importo e finanziatore restano fuori scope fino a nuova approvazione umana.
+
+Riallineamento del 2026-07-18: la proposta di run comparativa e' fermata. I tre
+casi approfonditi devono appartenere a una sola candidata alla nuova golden run.
+La run T30-T32 resta l'unica attiva finche' la candidata non contiene review,
+preview, feedback loop, dossier e readiness coerenti e non riceve approvazione
+umana. La procedura sostitutiva e' definita in
+`memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md`.
+
+Avanzamento del 2026-07-18: completata la fase 1 della candidata
+`funding-demo-golden-3cases-v1-pipeline` senza evidence import. I tre profili
+sono `ready_for_review`, la coda contiene 83 item e il descriptor attivo resta
+quello T30-T32. T33 e' fermo al Gate 1 per produzione e approvazione delle
+richieste agli storici.
 
 ## Priorita' e stop condition
 
@@ -446,8 +464,10 @@ Fino a T33:
 - un Q2 puo' entrare solo come sotto-task se corregge un blocco della golden run;
 - una nuova fonte puo' entrare solo se il caso selezionato non puo' dimostrare il
   merge con materiali gia' disponibili;
-- non aumentare il perimetro oltre 2 profili e 4 documenti senza decisione
-  esplicita;
+- l'espansione esplicitamente autorizzata e' limitata a 3 profili e 5 documenti
+  nella stessa candidata canonica; la presentazione puo' mostrare la coorte
+  pilota di 5 profili e il patrimonio di 57 profili solo con stati e limiti
+  corretti;
 - non applicare patch ai profili canonici;
 - non presentare preview come pubblicazione.
 

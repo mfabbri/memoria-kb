@@ -1,6 +1,6 @@
 # Roadmap Master Post-Migrazione
 
-Data: 2026-07-12
+Data: 2026-07-18
 
 Scope: architettura multi-repo Me.Mo.Ri.A in `D:\CaDiMalanca\me.mo.ri.a-kb`.
 
@@ -134,6 +134,11 @@ Il focus e' T29-T33. Fino alla chiusura del pacchetto finanziatori:
 - non si aggiungono nuove fonti salvo quelle indispensabili al caso selezionato;
 - non si amplia il numero di profili prima di avere una storia dimostrativa
   coerente.
+
+Decisione T33 del 2026-07-18: il caso principale e' stato dimostrato nella
+golden run T30-T32. E' quindi autorizzata un'espansione controllata a tre casi,
+purche' produca una sola nuova golden run canonica e tutti gli artefatti tecnici
+e di presentazione puntino al medesimo `run_id`.
 
 Documento operativo di riferimento:
 

@@ -1,15 +1,18 @@
 # T33 External Funding Brief
 
-Data: 2026-07-16
+Data: 2026-07-18
 
-Stato: sotto-incremento T33 completato; brief editoriale esterno preview-only
-per presentazione finanziatori.
+Stato: sorgente editoriale T33; non approvata come entrypoint della
+presentazione esterna. Usare il nuovo
+`funding-demo-t33-presentation-entrypoint.md` per la sequenza T33b.
 
 ## Scope
 
-Questo brief e' la versione editoriale breve da usare prima di aprire il
-dossier generato nella run canonica. Non sostituisce gli artefatti tecnici, non
-approva decisioni storiche e non rende pubblicabile alcuna scheda.
+Questo brief conserva messaggi e guardrail editoriali da riusare nella
+presentazione. Non e' piu' la pagina di ingresso: la prima review umana ha
+mostrato che il racconto deve distinguere la golden run tecnica dalla coorte
+pilota e dal patrimonio disponibile. Non approva decisioni storiche e non rende
+pubblicabile alcuna scheda.
 
 Vincoli rispettati:
 
@@ -23,13 +26,15 @@ Vincoli rispettati:
 ## Messaggio in 60 secondi
 
 Me.Mo.Ri.A dimostra un metodo controllato per trasformare fonti eterogenee in
-evidenze revisionabili. La golden run T33 collega 4 documenti e 3 famiglie fonte
-a un caso dimostrativo, conserva provenance e divergenze, registra decisioni
-storiche, produce solo verified facts e ProfilePatch preview, e chiude un
+evidenze revisionabili. Il workspace contiene 57 profili caricati; una coorte
+pilota di 5 profili collega 13 documenti, 24 link persona-documento e 55 claim
+candidati a una coda di 114 decisioni storiche. La nuova golden run, dopo la
+promozione, approfondisce tre casi nella stessa lineage e mostra provenance,
+divergenze, decisioni, verified facts e ProfilePatch preview, oltre a un
 feedback loop con esito auditabile.
 
-Il pacchetto e' presentabile ai finanziatori come prova del metodo, non come
-pubblicazione storica. Lo stato corretto e':
+Il pacchetto prova il metodo, ma la presentazione esterna resta in revisione.
+Lo stato tecnico corretto e':
 
 ```text
 go_with_review_blockers
