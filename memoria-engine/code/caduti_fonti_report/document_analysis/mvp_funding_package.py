@@ -266,14 +266,14 @@ def _go_no_go_checks(
                 _check(
                     "demo_scope_profiles",
                     "Perimetro profili demo T33",
-                    1 <= len(demo_profiles) <= 2,
+                    len(demo_profiles) == 3,
                     "memoria_mvp_demo.active.json",
                     f"Profili demo dichiarati: {len(demo_profiles)}.",
                 ),
                 _check(
                     "demo_scope_documents",
                     "Perimetro documenti fonte demo T33",
-                    2 <= len(source_documents) <= 4,
+                    len(source_documents) == 5,
                     "memoria_mvp_demo.active.json",
                     f"Documenti fonte dichiarati: {len(source_documents)}.",
                 ),

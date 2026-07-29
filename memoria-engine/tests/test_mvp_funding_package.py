@@ -122,17 +122,21 @@ def write_descriptor_ready_run(root: Path) -> tuple[Path, Path]:
         "status": "ready_for_internal_demo",
         "preview_only": True,
         "primary_profile_ids": ["person:purocielo:andreoli-dino"],
-        "contrast_profile_ids": ["person:purocielo:balboni-william"],
+        "contrast_profile_ids": [
+            "person:purocielo:balboni-william",
+            "person:purocielo:bendini-ateo",
+        ],
         "source_document_ids": [
             "legacy_csv:a4ac96061a2381b5",
             "local_docx:4c2ad1d2ab937913",
             "partigiani_italia:b45553cd6b1673d8",
             "partigiani_italia:b6b3c9e526723a27",
+            "partigiani_italia:dadc75fad9db03ae",
         ],
         "source_families": ["legacy_csv", "local_docx", "partigiani_italia"],
         "readiness": {
-            "selected_document_count": 4,
-            "covered_document_count": 4,
+            "selected_document_count": 5,
+            "covered_document_count": 5,
             "missing_source_families": [],
         },
         "safety": {
@@ -189,8 +193,8 @@ class MvpFundingPackageTests(unittest.TestCase):
             index_md = (run_dir / "funding_package_index.md").read_text(encoding="utf-8")
 
         self.assertEqual(result["overall_status"], "go_with_review_blockers")
-        self.assertEqual(result["checklist"]["profile_count"], 2)
-        self.assertEqual(result["checklist"]["source_document_count"], 4)
+        self.assertEqual(result["checklist"]["profile_count"], 3)
+        self.assertEqual(result["checklist"]["source_document_count"], 5)
         self.assertEqual(result["checklist"]["source_family_count"], 3)
         self.assertEqual(check_ids["demo_descriptor_ready"], "go")
         self.assertEqual(check_ids["demo_multi_source_coverage"], "go")

@@ -2,76 +2,81 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-07-19T13:47:57+02:00",
-  "updated_at": "2026-07-19T13:50:58+02:00",
+  "selected_at": "2026-07-19T14:03:20+02:00",
+  "updated_at": "2026-07-19T14:06:10+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
       "section": "Incremento 6 - Pacchetto finanziatori",
-      "reason": "T33 resta aperto e prioritario fino alla convergenza su una sola golden run canonica a tre casi."
+      "reason": "T33 resta aperto e prioritario fino al pacchetto unico e alla decisione umana sulla presentazione."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T33 - Pacchetto finanziatori",
-      "reason": "La roadmap tecnica richiede una sola golden run canonica con tre casi, promossa soltanto dopo review e validazione della candidata."
+      "reason": "La roadmap tecnica richiede dossier, walkthrough, readiness e assenza di output preview presentati come pubblicabili."
     },
     {
       "path": "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md",
-      "section": "Fase 2 - Rigenerazione della stessa candidata",
-      "reason": "Gate 1 e conversione/validazione risultano completati; il passo successivo e' rigenerare la stessa lineage candidata con le decisioni validate."
+      "section": "Fase 4 - Pacchetto unico e gate finale",
+      "reason": "La fase 3 e' completata; il passo successivo e' rigenerare il pacchetto unico usando il descriptor candidato e fermarsi al gate finale."
     }
   ],
   "increment": {
-    "id": "t33-phase2-regenerate-candidate-with-validated-decisions",
-    "title": "T33 fase 2 - rigenerazione candidata con decisioni validate",
-    "objective": "Rigenerare la stessa candidata T33 a tre casi con le decisioni Gate 1 validate, producendo solo artefatti preview/audit e backup evidence, senza promozione canonica.",
+    "id": "t33-phase4-candidate-package-final-gate",
+    "title": "T33 fase 4 - pacchetto unico e gate finale",
+    "objective": "Rigenerare il pacchetto unico T33 sulla candidata a tre casi e fermarsi al gate finale, senza promozione canonica.",
     "scope": [
-      "Verificare in preflight che gli artefatti Gate 1 validati siano presenti e senza errori.",
-      "Verificare che evidence.sqlite-wal sia assente prima del backup.",
-      "Creare backup timestampato di evidence.sqlite nel data root esterno autorizzato.",
-      "Eseguire run_mvp_workspace_pipeline.ps1 sulla stessa run candidata con ReportsOnly, SkipOnline e ReviewDecisionsJson.",
-      "Leggere gli artefatti di esito prodotti dalla rigenerazione e registrare l'esito."
+      "Verificare in preflight che il descriptor candidato sia valido e che il descriptor attivo punti ancora alla run precedente.",
+      "Eseguire build_mvp_funding_package.ps1 sulla run candidata usando DemoDescriptorJson candidato e QualityGateStatus passed.",
+      "Correggere il gate del funding package se risulta ancora tarato sul vecchio perimetro T33 pre-espansione.",
+      "Leggere dossier, checklist/readiness, funding_package_index e artefatti chiave richiesti dal runbook.",
+      "Registrare l'esito e fermarsi per approvazione umana del gate finale."
     ],
     "out_of_scope": [
-      "Fase 3 descriptor candidato e feedback loop T31.",
-      "Fase 4 pacchetto unico e gate finale.",
       "Fase 5 promozione canonica o modifica di memoria_mvp_demo.active.json.",
-      "OCR, acquisizione online, nuove fonti o pipeline massiva.",
-      "Applicazione di ProfilePatch, promozione di facts o modifica di profili canonici."
+      "Presentazione esterna della candidata prima della promozione.",
+      "Applicazione di ProfilePatch o promozione di verified facts a fatti canonici.",
+      "Modifica di profili canonici, OCR, acquisizione online, nuove fonti o pipeline massiva."
     ],
     "candidate_files": [
       "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "P:/Comune/Me.Mo.Ri.a/database/evidence.sqlite",
-      "P:/Comune/Me.Mo.Ri.a/database/evidence.before-funding-demo-golden-3cases-v1-20260719-134908.sqlite",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/historian_review/review_decisions.compilato.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/historian_review/review_decisions.validation.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/historian_review/review_decisions_summary.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/historian_review/verified_facts.preview.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/historian_review/profile_patch.preview.json"
+      "memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package.py",
+      "memoria-engine/tests/test_mvp_funding_package.py",
+      "P:/Comune/Me.Mo.Ri.a/database/memoria_mvp_demo.active.json",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/memoria_mvp_demo.candidate.json",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_funding_dossier.json",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_funding_dossier.md",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_go_no_go_checklist.json",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_go_no_go_checklist.md",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/funding_package_index.md"
     ],
-    "stop_condition": "Fase 2 completata con artefatti preview/audit prodotti oppure blocco documentato; descriptor attivo e profili canonici non modificati."
+    "stop_condition": "Pacchetto candidato rigenerato e gate finale pronto per approvazione umana oppure blocco documentato; descriptor attivo e profili canonici non modificati."
   },
   "verification": {
     "tests": [
-      ".\\tools\\pwsh\\pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\run_mvp_workspace_pipeline.ps1 -WorkspaceRoot P:\\Comune\\Me.Mo.Ri.a -RunId funding-demo-golden-3cases-v1 -ReportsOnly -SkipOnline -ReuseLocalRunId mvp-expand-pilot-preview-profiles-v1-local -ReusePipelineRunId mvp-expand-pilot-preview-profiles-v1-pipeline -ProfilesIndex <profiles-index> -ProfileId <three-profiles-csv> -ReviewDecisionsJson <decisions-json> -VaultLimit 3 -OutputProfile Demo"
+      ".\\scripts\\build_mvp_funding_package.ps1 -RunDir <candidate-run-dir> -DemoDescriptorJson <candidate-descriptor> -QualityGateStatus passed",
+      ".\\.venv\\Scripts\\python.exe -m unittest tests.test_mvp_funding_package",
+      "Get-Content <candidate-run-dir>/funding_package_index.md",
+      "Get-Content <candidate-run-dir>/mvp_package_readiness.md",
+      "Get-Content <candidate-run-dir>/mvp_go_no_go_checklist.md"
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md"
     ],
     "result": "passed",
-    "notes": "Fase 2 completata. Preflight positivo: artefatti Gate 1 presenti, validation partial_review con 15 accepted, 68 pending, 0 invalidi, 0 errori, evidence.sqlite-wal assente e descriptor attivo ancora su prova-preview-profili-5-reviewed-01-pipeline. Creato backup P:/Comune/Me.Mo.Ri.a/database/evidence.before-funding-demo-golden-3cases-v1-20260719-134908.sqlite. Pipeline run_mvp_workspace_pipeline completata con status=completed in ReportsOnly e SkipOnline: import append-only 248 record letti, 238 inseriti, 10 gia' presenti; prodotti verified_facts.preview.* con 1 fatto preview, profile_patch.preview.* con 1 patch preview, ledger consolidato, dataset export preview, snapshots preview, readiness ready_for_demo con 0 output mancanti. Nessuna fase 3, fase 4, fase 5, modifica descriptor attivo, applicazione ProfilePatch o modifica profili canonici eseguita."
+    "notes": "Fase 4 completata. Preflight positivo: descriptor candidato ready_for_internal_demo, preview_only true, publication_ready false, T31 closed_with_auditable_outcome con outcome needs_manual_review, descriptor attivo ancora su prova-preview-profili-5-reviewed-01-pipeline. Il primo build_mvp_funding_package ha prodotto no_go_missing_outputs per due blocker obsoleti sul perimetro T33; corretto mvp_funding_package.py per accettare il perimetro corrente 3 profili e 5 documenti, aggiornato tests.test_mvp_funding_package e rieseguito il test mirato con 4 test OK. Rigenerato il pacchetto unico: mvp_go_no_go_checklist.* e funding_package_index.md riportano go_with_review_blockers, quality_gate passed, 3 profili, 5 documenti, 3 famiglie, 0 blocker tecnici e 1 review_blocker per 68 decisioni pending. Descriptor attivo invariato; nessuna fase 5, promozione canonica, applicazione ProfilePatch o modifica profili canonici eseguita."
   },
   "blockers": [],
   "session_notes": [
     "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate in questa sessione.",
-    "current-work.json precedente era completed; selezionato un nuovo micro-incremento T33 coerente con roadmap e runbook.",
-    "Gate 1 conversione/validazione gia' completato nella sessione precedente; fase 2 limitata a backup e rigenerazione candidata preview/audit.",
-    "Descriptor attivo verificato invariato dopo la pipeline: run_id prova-preview-profili-5-reviewed-01-pipeline, status ready_for_internal_demo, preview_only true, publication_status not_publishable_without_human_review."
+    "current-work.json precedente era completed; selezionato un nuovo micro-incremento T33 fase 4 coerente con roadmap e runbook.",
+    "Fase 3 completata nella sessione precedente; fase 4 limitata a pacchetto unico e stop al gate finale.",
+    "Fix mirato necessario: il funding package gate era ancora tarato sul vecchio perimetro descriptor-mode; ora valida il perimetro T33 a 3 profili e 5 documenti."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Validare dalle roadmap il prossimo micro-incremento prima di fase 3; il candidato naturale e' descriptor candidato e feedback loop T31 nella stessa run, senza promozione canonica."
+    "description": "Validare dalle roadmap e dal gate umano il prossimo passo; il candidato naturale e' approvazione esplicita del gate finale prima di qualunque fase 5/promozione canonica."
   }
 }

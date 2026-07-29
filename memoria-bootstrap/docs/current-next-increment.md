@@ -112,6 +112,38 @@ puntato a `prova-preview-profili-5-reviewed-01-pipeline`; non sono state
 eseguite fase 3, fase 4, promozione canonica, applicazione ProfilePatch o
 modifiche ai profili canonici.
 
+Fase 3 T33 completata il 2026-07-19: costruito il descriptor candidato
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\memoria_mvp_demo.candidate.json`
+e la riconciliazione candidata
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_demo_reconciliation_table.md`.
+`memoria mvp demo-build` riporta `ready_for_internal_demo`, 1 profilo
+principale, 2 complementari, 5/5 documenti coperti, 3 famiglie fonte, 15
+decisioni sostanziali, 1 verified fact preview e 1 ProfilePatch preview.
+Rigenerato il feedback loop T31 dentro la stessa run e aggiornato solo il
+descriptor candidato, con backup
+`memoria_mvp_demo.candidate.before-t31-feedback-loop.json`; il loop risulta
+`closed_with_auditable_outcome` con outcome `needs_manual_review`. La verifica
+`memoria mvp demo --descriptor <candidate>` conferma JSON valido, artefatti
+presenti e safety flag `preview_only=true`, `publication_ready=false`,
+`applies_profile_patch=false`, `creates_canonical_verified_facts=false` e
+`modifies_canonical_profiles=false`. Il descriptor attivo resta puntato a
+`prova-preview-profili-5-reviewed-01-pipeline`; non sono state eseguite fase 4,
+fase 5, promozione canonica, applicazione ProfilePatch o modifiche ai profili
+canonici.
+
+Fase 4 T33 completata il 2026-07-19: rigenerato il pacchetto unico sulla
+candidata usando `memoria_mvp_demo.candidate.json` come descriptor demo. Il
+primo passaggio del builder ha evidenziato un gate obsoleto ancora tarato sul
+perimetro precedente; il controllo e il test `tests.test_mvp_funding_package`
+sono stati aggiornati al perimetro T33 a 3 profili e 5 documenti. Dopo la
+rigenerazione, `mvp_go_no_go_checklist.*` e `funding_package_index.md`
+riportano `go_with_review_blockers`, quality gate `passed`, 3 profili, 5
+documenti, 3 famiglie fonte, 0 blocker tecnici e 1 review blocker dovuto alle
+68 decisioni pending. Il pacchetto e' pronto per gate finale umano come demo
+revisionabile, non pubblicabile. Il descriptor attivo resta puntato a
+`prova-preview-profili-5-reviewed-01-pipeline`; non sono state eseguite fase 5,
+promozione canonica, applicazione ProfilePatch o modifiche ai profili canonici.
+
 T32 e' chiuso: la golden run e' pronta per demo interna, usa il ledger standard
 `mvp_consolidated_review_ledger.json`, non dipende piu' dal sidecar T30 come
 ledger attivo, e il rischio del pacchetto repository distribuibile e' trattato
@@ -1658,14 +1690,16 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 ## Prossimo incremento candidato
 
 T33 resta l'incremento corrente. La candidata a tre casi ha superato Gate 1 e
-fase 2: decisioni validate, import evidence append-only eseguito, verified facts
-e ProfilePatch prodotti solo in preview, descriptor attivo ancora invariato. Il
-prossimo sotto-incremento candidato e' fase 3 del runbook: costruire il
-descriptor candidato e rigenerare il feedback loop T31 dentro la stessa run,
-senza modificare `memoria_mvp_demo.active.json`. Fase 4, gate finale,
-promozione canonica, impaginazione e prova della presentazione seguono solo dopo
-ulteriore validazione. Bando, importo e finanziatore restano fuori scope finche'
-il racconto non riceve approvazione umana.
+fase 2, fase 3 e fase 4: decisioni validate, import evidence append-only
+eseguito, verified facts e ProfilePatch prodotti solo in preview, descriptor
+candidato validato con feedback loop T31 chiuso auditabilmente, pacchetto unico
+rigenerato con `go_with_review_blockers` e descriptor attivo ancora invariato.
+Il prossimo sotto-incremento candidato e' il gate finale umano: verificare il
+pacchetto e decidere se autorizzare la fase 5 di promozione canonica del
+descriptor. Promozione canonica, impaginazione e prova della presentazione
+seguono solo dopo ulteriore validazione e approvazione esplicita. Bando, importo
+e finanziatore restano fuori scope finche' il racconto non riceve approvazione
+umana.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 
