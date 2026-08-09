@@ -1,9 +1,19 @@
 # T33 Three-Case Canonical Golden Run Runbook
 
-Data: 2026-07-18
+Data: 2026-08-09
 
-Stato: fase 1 completata il 2026-07-18; candidata creata senza evidence import.
-Gate 1 aperto per produrre e approvare le richieste agli storici.
+Stato: procedura storica completata attraverso la fase 5. La candidata
+`funding-demo-golden-3cases-v1-pipeline` e' stata promossa a golden run
+canonica il 2026-08-09. Non rieseguire questo runbook sulla demo attiva; per lo
+stato corrente usare `funding-demo-t33-current-state-operator-note.md`.
+
+## Lettura temporale
+
+Le sezioni seguenti conservano condizioni, stop condition e comandi usati
+durante la preparazione della candidata. Le formule "run attiva", "candidata"
+e "prima della promozione" descrivono quella transizione storica, non lo stato
+operativo corrente. Qualunque futura espansione deve aprire una nuova run
+candidata e un incremento dedicato.
 
 ## Obiettivo
 

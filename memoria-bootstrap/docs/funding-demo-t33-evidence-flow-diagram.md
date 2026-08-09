@@ -1,9 +1,10 @@
 # T33 Evidence Flow Diagram
 
-Data: 2026-07-16
+Data: 2026-08-09
 
-Stato: sotto-incremento T33 completato; T33 resta aperto solo per eventuale
-approvazione umana della presentazione esterna.
+Stato: diagramma riallineato alla golden run canonica a tre casi promossa;
+T33 resta aperto per prova asciutta e approvazione umana della presentazione
+esterna.
 
 ## Scope
 
@@ -32,10 +33,8 @@ FONTI / FAMIGLIE
         |
         v
 DOCUMENTI SELEZIONATI
-  legacy_csv:a4ac96061a2381b5
-  local_docx:4c2ad1d2ab937913
-  partigiani_italia:b45553cd6b1673d8
-  partigiani_italia:b6b3c9e526723a27
+  5 source_document_ids nel descriptor attivo
+  3 famiglie: legacy_csv / local_docx / partigiani_italia
         |
         v
 CLAIM / EVIDENZE PREVIEW
@@ -45,19 +44,20 @@ CLAIM / EVIDENZE PREVIEW
         v
 RICONCILIAZIONE MULTI-FONTE
   3 famiglie coperte
-  4/4 documenti coperti
+  5/5 documenti coperti
   compatibilita': corroborated / divergent / single_source
         |
         v
 REVISIONE STORICA
   review_queue.json
-  review_decisions_summary.json
-  10 decisioni storiche sostanziali
+  review_decisions.validation.json
+  15 decisioni accettate / 68 pending
         |
         v
 OUTPUT PREVIEW, NON CANONICI
   verified_facts.preview.json
   profile_patch.preview.json
+  1 verified fact preview / 1 ProfilePatch preview non applicata
   publication_ready=false
         |
         v
@@ -85,7 +85,7 @@ PACCHETTO FINANZIATORI T33
 | Documenti identificati | Ogni evidenza torna a un documento selezionato | `source_document_ids` nel descrittore demo |
 | Ledger standard | I claim sono nel flusso standard T32, non nel sidecar T30 | `mvp_consolidated_review_ledger.json` |
 | Riconciliazione | Contributi convergenti o divergenti restano visibili | `mvp_demo_reconciliation_table.md` |
-| Review | Lo storico decide o lascia aperto | `historian_review/review_decisions_summary.json` |
+| Review | Lo storico decide o lascia aperto | `historian_review/review_decisions.validation.json` |
 | Verified facts preview | Fatti verificati restano preview-only | `historian_review/verified_facts.preview.json` |
 | ProfilePatch preview | La modifica e' proposta ma non applicata | `historian_review/profile_patch.preview.json` |
 | Feedback loop | La review produce nuova ricerca o esito tracciato | `historian_review/feedback_loop_outcome.t31-demo.json` |

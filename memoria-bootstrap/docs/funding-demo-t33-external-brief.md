@@ -1,10 +1,10 @@
 # T33 External Funding Brief
 
-Data: 2026-07-18
+Data: 2026-08-09
 
-Stato: sorgente editoriale T33; non approvata come entrypoint della
-presentazione esterna. Usare il nuovo
-`funding-demo-t33-presentation-entrypoint.md` per la sequenza T33b.
+Stato: sorgente editoriale T33 riallineata alla golden run canonica a tre casi;
+non approvata come presentazione esterna. Usare
+`funding-demo-t33-presentation-entrypoint.md` per la sequenza in sei schermate.
 
 ## Scope
 
@@ -28,10 +28,10 @@ Vincoli rispettati:
 Me.Mo.Ri.A dimostra un metodo controllato per trasformare fonti eterogenee in
 evidenze revisionabili. Il workspace contiene 57 profili caricati; una coorte
 pilota di 5 profili collega 13 documenti, 24 link persona-documento e 55 claim
-candidati a una coda di 114 decisioni storiche. La nuova golden run, dopo la
-promozione, approfondisce tre casi nella stessa lineage e mostra provenance,
-divergenze, decisioni, verified facts e ProfilePatch preview, oltre a un
-feedback loop con esito auditabile.
+candidati a una coda di 114 decisioni storiche. La golden run canonica promossa
+approfondisce Andreoli, Balboni e Bendini nella stessa lineage e mostra
+provenance, divergenze, decisioni, verified facts e ProfilePatch preview, oltre
+a un feedback loop con esito auditabile.
 
 Il pacchetto prova il metodo, ma la presentazione esterna resta in revisione.
 Lo stato tecnico corretto e':
@@ -46,10 +46,10 @@ preview_only=true
 
 | Punto | Messaggio | Evidenza |
 |---|---|---|
-| Problema | Le informazioni storiche sono disperse in fonti non omogenee. | 4 documenti selezionati da `legacy_csv`, `local_docx`, `partigiani_italia`. |
+| Problema | Le informazioni storiche sono disperse in fonti non omogenee. | 5 documenti selezionati da `legacy_csv`, `local_docx`, `partigiani_italia`. |
 | Metodo | Ogni claim resta collegato a documento, fonte e metodo. | `mvp_demo_reconciliation_table.md`. |
 | Valore | Il merge non cancella divergenze o incertezze. | Compatibilita' `corroborated`, `divergent`, `single_source`. |
-| Controllo storico | Lo storico decide prima di ogni uso forte. | `review_decisions_summary.md`. |
+| Controllo storico | Lo storico decide prima di ogni uso forte. | `review_decisions.validation.md`: review parziale, 15 decisioni accettate e 68 pending. |
 | Sicurezza editoriale | Fatti e patch restano preview, non canonici. | `verified_facts.preview.md`, `profile_patch.preview.md`. |
 | Apprendimento | La review genera una nuova ricerca o un esito tracciato. | `feedback_loop_outcome.t31-demo.md`. |
 | Finanziamento | I fondi servono a scalare il metodo, non a sostituire la review. | `funding-demo-t33-funding-roadmap.md`. |
@@ -94,7 +94,7 @@ Questo brief va letto insieme a:
 3. `funding-demo-t33-evidence-flow-diagram.md`;
 4. `funding-demo-t33-funding-roadmap.md`;
 5. `funding-demo-t33-external-readiness-checklist.md`;
-6. `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_funding_dossier.md`.
+6. `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_funding_dossier.md`.
 
 Il dossier generato resta la base auditabile. Questo brief serve a evitare che
 la presentazione parta da conteggi tecnici o da materiali ancora marcati
@@ -125,6 +125,6 @@ Esito atteso:
 - descriptor presente e JSON valido;
 - status `ready_for_internal_demo`;
 - 3 famiglie fonte coperte;
-- 4/4 documenti coperti;
+- 5/5 documenti coperti;
 - safety flag preview-only confermate;
 - nessun file del data root esterno modificato.

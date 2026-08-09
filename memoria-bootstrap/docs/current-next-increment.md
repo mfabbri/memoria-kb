@@ -183,6 +183,24 @@ precedente resta storica e non deve essere usata come seconda demo attiva.
 Nessuna scrittura nel data root esterno, nessuna ProfilePatch applicata, nessun
 verified fact canonico creato e nessun profilo canonico modificato.
 
+Riallineamento materiali di supporto T33 del 2026-08-09: checklist readiness,
+brief editoriale, scheda casi e roadmap uso fondi indicano ora la golden run
+canonica `funding-demo-golden-3cases-v1-pipeline`, con 3 profili, 5 documenti e
+review parziale. I conteggi e i percorsi operativi della precedente run a due
+casi sono mantenuti solo dove esplicitamente storici. La presentazione esterna
+non e' approvata: il prossimo gate resta la prova asciutta del racconto in sei
+schermate e la successiva revisione umana. Nessuna scrittura nel data root
+esterno e nessuna modifica canonica sono state eseguite.
+
+Correzione identita' e residui T33 del 2026-08-09: una verifica read-only del
+descriptor attivo ha confermato il terzo profilo come
+`person:purocielo:bendini-ateo`; package entrypoint e scheda casi sono stati
+corretti da `bendini-primo`. Il diagramma evidenziale descrive ora 5/5
+documenti, 15 decisioni accettate, 68 pending, 1 verified fact preview e 1
+ProfilePatch preview non applicata. Il runbook della promozione a tre casi e'
+marcato come procedura storica completata e non va rieseguito sulla demo attiva.
+Nessun file del data root esterno e' stato modificato.
+
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
 Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite

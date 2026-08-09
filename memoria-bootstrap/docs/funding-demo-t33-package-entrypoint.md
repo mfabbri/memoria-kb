@@ -94,7 +94,7 @@ person:purocielo:balboni-william
 Caso complementare:
 
 ```text
-person:purocielo:bendini-primo
+person:purocielo:bendini-ateo
 ```
 
 Documenti selezionati principali:
@@ -174,8 +174,9 @@ approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 10. **Scheda caso demo**
    - percorso:
      `memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md`
-   - scopo: raccontare il caso Andreoli/Balboni con provenance leggibile,
-     stati preview e feedback loop senza produrre una scheda pubblicabile.
+   - scopo: raccontare Andreoli, Balboni e Bendini con ruoli differenti,
+     provenance leggibile, stati preview e feedback loop senza produrre una
+     scheda pubblicabile.
 
 11. **Dossier finanziatori**
    - percorso:

@@ -2,71 +2,75 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-08-09T17:25:23+02:00",
-  "updated_at": "2026-08-09T17:32:00+02:00",
+  "selected_at": "2026-08-09T18:37:16+02:00",
+  "updated_at": "2026-08-09T18:38:48+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T33 - Pacchetto finanziatori",
-      "reason": "T33 resta aperto e prioritario finche' dossier, walkthrough e presentazione non sono riallineati alla golden run canonica a tre casi."
+      "reason": "Il pacchetto deve descrivere una sola golden run canonica con tre casi e artefatti coerenti."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
       "section": "Incremento 6 - Pacchetto finanziatori",
-      "reason": "La presentazione deve usare una sola golden run, distinguere MVP attuale e sviluppo finanziato, e non presentare output preview come pubblicabili."
+      "reason": "La prova narrativa richiede materiali coerenti su casi, provenance, review e limiti."
     },
     {
       "path": "memoria-bootstrap/docs/decision-log.md",
       "section": "2026-07-18 - Espansione controllata della golden run T33 a tre casi",
-      "reason": "Dopo la promozione, golden run tecnica e presentazione finanziatori devono condividere lo stesso run_id canonico."
+      "reason": "Dopo la promozione materiali tecnici ed editoriali devono condividere identita' e run_id canonici."
     }
   ],
   "increment": {
-    "id": "t33-entrypoints-align-promoted-golden-run",
-    "title": "T33 - riallineamento entrypoint alla run canonica promossa",
-    "objective": "Aggiornare gli entrypoint T33 per indicare la golden run a tre casi come demo attiva e rimuovere riferimenti operativi obsoleti alla vecchia run come corrente.",
+    "id": "t33-correct-bendini-and-post-promotion-residuals",
+    "title": "T33 - correzione identita' Bendini e residui post-promozione",
+    "objective": "Allineare l'identita' del terzo caso al descriptor attivo, aggiornare il diagramma evidenziale e marcare il runbook di promozione come storico completato.",
     "scope": [
-      "Riallineare lo stato dell'entrypoint presentazione alla promozione canonica del 2026-08-09.",
-      "Riallineare l'entrypoint tecnico del pacchetto T33 alla run funding-demo-golden-3cases-v1-pipeline.",
-      "Mantenere espliciti i guardrail preview-only e non pubblicabili.",
-      "Aggiornare la nota di stato corrente con il sotto-incremento documentale."
+      "Correggere bendini-primo in person:purocielo:bendini-ateo nei materiali vivi.",
+      "Aggiornare il diagramma a 5/5 documenti, review parziale 15/68 e output preview correnti.",
+      "Marcare il runbook come procedura storica completata attraverso la fase 5.",
+      "Registrare la correzione nello stato corrente."
     ],
     "out_of_scope": [
+      "Modifica o riesecuzione del runbook.",
       "Scritture nel data root esterno P:/Comune/Me.Mo.Ri.a.",
-      "Rigenerazione del pacchetto finanziatori o della presentazione impaginata.",
-      "Applicazione di ProfilePatch o modifica dei profili canonici.",
-      "Promozione di verified facts canonici o pubblicazione storica.",
-      "Cloud, nuove fonti, OCR, pipeline o ricerche live."
+      "Prova asciutta o approvazione della presentazione esterna.",
+      "Applicazione di ProfilePatch, verified facts canonici o modifica dei profili canonici.",
+      "Bando, importo, finanziatore o pubblicazione."
     ],
     "candidate_files": [
       "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
-      "memoria-bootstrap/docs/funding-demo-t33-package-entrypoint.md"
+      "memoria-bootstrap/docs/funding-demo-t33-package-entrypoint.md",
+      "memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md",
+      "memoria-bootstrap/docs/funding-demo-t33-evidence-flow-diagram.md",
+      "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md"
     ],
-    "stop_condition": "Gli entrypoint T33 indicano funding-demo-golden-3cases-v1-pipeline come run canonica attiva, non indicano piu' prova-preview-profili-5-reviewed-01-pipeline come run corrente, e mantengono i guardrail preview-only/non pubblicabili senza scritture al data root esterno."
+    "stop_condition": "I materiali vivi usano person:purocielo:bendini-ateo, il diagramma descrive il perimetro promosso a 3 profili e 5 documenti, e il runbook avverte chiaramente che la fase 5 e' completata e non va rieseguita come procedura corrente."
   },
   "verification": {
     "tests": [
-      "rg -n \"prova-preview-profili-5-reviewed-01-pipeline|funding-demo-golden-3cases-v1-pipeline|subordinat|bloccata|resta attiva|Run canonica\" memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md memoria-bootstrap/docs/funding-demo-t33-package-entrypoint.md",
-      "Get-Content -Path memoria-bootstrap/docs/current-next-increment.md"
+      "Get-Content -Path memoria-bootstrap/planning/current-work.json | ConvertFrom-Json",
+      "rg -n \"bendini-primo|bendini-ateo|4/4 documenti|10 decisioni|5/5 documenti|15 decisioni|68 pending|procedura storica\" sui file candidati",
+      "git diff --check"
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md"
     ],
     "result": "passed",
-    "notes": "Riallineamento documentale completato. Gli entrypoint T33 indicano funding-demo-golden-3cases-v1-pipeline come run canonica attiva; i riferimenti residui a prova-preview-profili-5-reviewed-01-pipeline sono storici o relativi alla coorte pilota, non alla demo attiva. current-next-increment.md registra il prossimo candidato come prova asciutta della presentazione in sei schermate. Nessuna scrittura nel data root esterno, nessuna ProfilePatch applicata, nessun verified fact canonico creato e nessun profilo canonico modificato."
+    "notes": "Il descriptor attivo attesta person:purocielo:bendini-ateo; package entrypoint e demo case card sono stati corretti di conseguenza. Il diagramma evidenziale descrive ora 5/5 documenti, 15 decisioni accettate, 68 pending, 1 verified fact preview e 1 ProfilePatch preview non applicata. Il runbook a tre casi e' marcato come procedura storica completata attraverso la fase 5 e avverte di non rieseguirlo sulla demo attiva. Nessuna scrittura nel data root esterno e nessuna modifica canonica."
   },
   "blockers": [],
   "session_notes": [
     "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
-    "Il planner precedente era completed; selezionato un micro-incremento T33 documentale coerente con la promozione canonica gia' eseguita.",
+    "Il descriptor attivo e' stato interrogato in sola lettura e attesta person:purocielo:bendini-ateo.",
+    "Il worktree contiene modifiche documentali del micro-incremento precedente, preservate.",
     "Nessuna scrittura nel data root esterno prevista.",
-    "Aggiornati entrypoint presentazione e pacchetto tecnico T33 alla run canonica promossa.",
-    "Aggiornata la nota current-next-increment con stato e prossimo candidato."
+    "Corretto l'ID Bendini nei materiali vivi e riallineato il diagramma evidenziale.",
+    "Aggiunto al runbook un banner storico e una nota temporale per prevenire riesecuzioni accidentali."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Prossimo candidato: prova asciutta della presentazione T33 in sei schermate sulla run canonica promossa, senza bando/importo/pubblicazione e senza scritture nel data root."
+    "description": "Prossimo candidato: prova asciutta della presentazione T33 in sei schermate sui materiali corretti, senza bando, importo, finanziatore, pubblicazione o scritture nel data root."
   }
 }

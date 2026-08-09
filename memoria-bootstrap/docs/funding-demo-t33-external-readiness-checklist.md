@@ -1,10 +1,11 @@
 # T33 External Readiness Checklist
 
-Data: 2026-07-18
+Data: 2026-08-09
 
-Stato: prima revisione umana completata con esito non approvato per la
-presentazione esterna; T33b aperto per separare golden run tecnica e racconto
-finanziatori. Il blocco sulla pubblicazione storica resta invariato.
+Stato: checklist riallineata alla golden run canonica a tre casi promossa.
+La demo tecnica e' pronta per uso interno; il racconto in sei schermate deve
+ancora superare una prova asciutta e una nuova revisione umana. Il blocco sulla
+pubblicazione storica resta invariato.
 
 ## Scope
 
@@ -26,7 +27,7 @@ Vincoli rispettati:
 
 | Livello | Stato | Significato |
 |---|---|---|
-| Presentazione finanziatori | `not_ready_for_external_presentation` | Il percorso attuale e' troppo tecnico e restringe la prova a due profili, senza rendere visibili la coorte pilota di 5 profili e il patrimonio di 57 profili. |
+| Presentazione finanziatori | `ready_for_narrative_dry_run` | Il percorso e' ridotto a sei schermate e usa la run promossa a tre casi, ma non e' ancora approvato per uso esterno. |
 | Demo interna tecnica | `ready_for_internal_demo` | Il descriptor attivo conferma run, artefatti e safety flag preview-only. |
 | Pubblicazione storica | `blocked` | Restano decisioni storiche pending e output preview non approvati. |
 | Schede canoniche | `not_authorized` | Nessuna patch e nessun fatto canonico devono essere applicati da T33. |
@@ -40,8 +41,9 @@ La review del 2026-07-18 ha rilevato due problemi distinti:
   profili e che la run pilota dispone gia' di 5 schede modello.
 
 La correzione mantiene separati il linguaggio tecnico e quello finanziatori, ma
-non crea due lineage. I tre casi devono essere validati in una sola nuova golden
-run; la presentazione resta bloccata finche' quella candidata non e' promossa.
+non crea due lineage. Andreoli, Balboni e Bendini sono ora nella stessa golden
+run canonica promossa; resta da verificare che il racconto orale sia chiaro,
+breve e non trasformi gli output preview in risultati pubblicabili.
 
 Il valore del pacchetto esterno e' mostrare una prova controllata:
 
@@ -59,10 +61,10 @@ fonti eterogenee
 
 | Gate | Stato | Evidenza |
 |---|---|---|
-| Golden run corrente unica dichiarata | `pass` | `memoria_mvp_demo.active.json`; resta attiva durante la transizione |
-| Candidata canonica a tre casi | `pending` | 1 profilo principale, 2 complementari, 5 documenti; runbook a gate |
-| Merge multi-fonte visibile | `pass` | `mvp_demo_reconciliation_table.md`, 4/4 documenti coperti |
-| Decisione storica presente | `pass` | `historian_review/review_decisions_summary.md` |
+| Golden run corrente unica dichiarata | `pass` | `memoria_mvp_demo.active.json` punta a `funding-demo-golden-3cases-v1-pipeline` |
+| Golden run canonica a tre casi | `pass` | 1 profilo principale, 2 complementari e 5/5 documenti nella run promossa |
+| Merge multi-fonte visibile | `pass` | `mvp_demo_reconciliation_table.md`, 3 famiglie fonte e 5/5 documenti coperti |
+| Decisione storica presente | `pass_with_pending` | `historian_review/review_decisions.validation.md`: 15 accettate, 68 pending |
 | Verified facts solo preview | `pass` | `historian_review/verified_facts.preview.md` |
 | ProfilePatch solo preview | `pass` | `historian_review/profile_patch.preview.md` |
 | Feedback loop chiuso | `pass` | `historian_review/feedback_loop_outcome.t31-demo.md`, outcome `needs_manual_review` |
@@ -76,23 +78,24 @@ fonti eterogenee
 | Gate | Stato | Evidenza o azione |
 |---|---|---|
 | Golden run e presentazione separate | `pass_draft` | `funding-demo-t33-presentation-entrypoint.md` |
-| Unico `run_id` per tecnica e presentazione | `pending_canonical_candidate` | `funding-demo-t33-three-case-runbook.md` |
+| Unico `run_id` per tecnica e presentazione | `pass` | `funding-demo-golden-3cases-v1-pipeline` |
 | Coorte pilota di 5 profili visibile | `pass_draft` | schermata 3 del nuovo entrypoint |
 | Patrimonio di 57 profili contestualizzato | `pass_draft` | dichiarato come perimetro disponibile, non come risultato |
 | Percorso ridotto a sei schermate | `pass_draft` | nuovo entrypoint della presentazione |
-| Prova orale comprensibile | `pending_human_review` | da eseguire dopo l'impaginazione |
+| Prova orale comprensibile | `pending_dry_run` | da verificare prima dell'impaginazione |
 | Via libera alla presentazione esterna | `blocked` | richiede nuova approvazione umana |
 
 ## Condizioni per presentare
 
 Prima di una nuova revisione umana, l'operatore deve:
 
-1. aprire da `funding-demo-t33-presentation-entrypoint.md`;
-2. mostrare il patrimonio disponibile e la coorte pilota prima del caso tecnico;
-3. usare i tre casi della stessa golden run per mostrare capacita' differenti;
-4. tenere comandi, path e stati interni nell'appendice tecnica;
-5. distinguere sempre patrimonio, pilota, review e pubblicazione;
-6. fermarsi prima di bando, importo e finanziatore.
+1. verificare lo stato attivo con `funding-demo-t33-current-state-operator-note.md`;
+2. aprire da `funding-demo-t33-presentation-entrypoint.md`;
+3. mostrare il patrimonio disponibile e la coorte pilota prima del caso tecnico;
+4. usare i tre casi della stessa golden run per mostrare capacita' differenti;
+5. tenere comandi, path e stati interni nell'appendice tecnica;
+6. distinguere sempre patrimonio, pilota, review e pubblicazione;
+7. fermarsi prima di bando, importo e finanziatore.
 
 ## Frasi consentite
 
@@ -116,7 +119,7 @@ Prima di una nuova revisione umana, l'operatore deve:
 
 | Blocker | Effetto | Come si chiude dopo T33 |
 |---|---|---|
-| 104 decisioni pending nel pacchetto generato | Impedisce di presentare schede o claim come pubblicabili. | Sessione di review storica dedicata, con decisioni registrate e nuovo go/no-go. |
+| Review incompleta: 68 pending nella golden run attiva; 104 pending nella coorte pilota usata come contesto | Impedisce di presentare schede o claim come pubblicabili. | Sessione di review storica dedicata, con decisioni registrate e nuovo go/no-go. |
 | Output preview non canonici | Impedisce promozione automatica a profili o fatti verificati. | Incremento dedicato con backup, audit trail e approvazione curatoriale. |
 | Esito feedback `needs_manual_review` | Dimostra il loop, non una conclusione storica. | Nuova review della fonte/sessione collegata e registrazione dell'esito. |
 
@@ -127,7 +130,7 @@ Questa checklist va letta dopo:
 1. `funding-demo-t33-package-entrypoint.md`;
 2. `funding-demo-t33-demo-case-card.md`;
 3. `funding-demo-t33-evidence-flow-diagram.md`;
-4. `funding-demo-t33-funding-roadmap.md`.
+4. `funding-demo-t33-funding-roadmap.md`;
 5. `funding-demo-t33-external-brief.md`.
 
 Serve come controllo finale prima di aprire o inviare il pacchetto a
@@ -148,6 +151,6 @@ Esito atteso:
 - status `ready_for_internal_demo`;
 - ledger standard attivo;
 - 3 famiglie fonte coperte;
-- 4/4 documenti selezionati coperti;
+- 5/5 documenti selezionati coperti;
 - safety flag preview-only confermate;
 - nessun file del data root esterno modificato.

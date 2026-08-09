@@ -1,9 +1,9 @@
 # T33 Funding Roadmap
 
-Data: 2026-07-16
+Data: 2026-08-09
 
-Stato: sotto-incremento T33 completato; roadmap uso fondi e risultati attesi
-per pacchetto finanziatori.
+Stato: roadmap uso fondi riallineata alla golden run canonica promossa a tre
+casi; materiale editoriale preview-only per il pacchetto finanziatori.
 
 ## Scope
 
@@ -25,7 +25,7 @@ Vincoli rispettati:
 Golden run:
 
 ```text
-prova-preview-profili-5-reviewed-01-pipeline
+funding-demo-golden-3cases-v1-pipeline
 ```
 
 Descrittore:
@@ -36,12 +36,12 @@ P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json
 
 La demo e' pronta per uso interno come prova finanziabile:
 
-- 1 profilo principale e 1 profilo di contrasto;
-- 4 documenti selezionati;
+- 1 profilo principale e 2 profili complementari;
+- 5 documenti selezionati;
 - 3 famiglie fonte coperte;
-- 30 righe di riconciliazione;
-- decisioni storiche e verified facts solo preview;
-- ProfilePatch solo preview;
+- review parziale con 15 decisioni accettate e 68 pending;
+- 1 verified fact preview;
+- 1 ProfilePatch preview non applicata;
 - feedback loop T31 chiuso con esito auditabile `needs_manual_review`;
 - `publication_ready=false`.
 
@@ -52,7 +52,7 @@ La demo e' pronta per uso interno come prova finanziabile:
 | Golden run unica | Tutti gli artefatti demo puntano a una run canonica dichiarata. | `memoria_mvp_demo.active.json` |
 | Provenance | Ogni claim resta collegato a documento, famiglia fonte e metodo. | `mvp_demo_reconciliation_table.md` |
 | Merge multi-fonte | Fonti locali e online contribuiscono alla stessa scheda di lavoro senza cancellare divergenze. | `legacy_csv`, `local_docx`, `partigiani_italia` |
-| Review storica | Decisioni umane sono registrate con reviewer, stato e collegamento all'evidenza. | `review_decisions_summary.md` |
+| Review storica | Decisioni umane sono registrate con reviewer, stato e collegamento all'evidenza; la review resta parziale. | `review_decisions.validation.md` |
 | Preview facts | Alcune decisioni producono fatti preview non canonici. | `verified_facts.preview.md` |
 | Patch preview | Il sistema propone aggiornamenti senza applicarli. | `profile_patch.preview.md` |
 | Feedback loop | Una lacuna produce una ricerca tracciata e un esito auditabile. | `feedback_loop_outcome.t31-demo.md` |
@@ -66,7 +66,7 @@ La demo e' pronta per uso interno come prova finanziabile:
 | Perimetro piccolo | Il caso dimostra il metodo su pochi profili e documenti, non ancora su un corpus esteso. | MVP controllato |
 | Output preview | Verified facts e ProfilePatch non sono fatti o patch canonici. | Safety flag attivi |
 | Feedback manuale | Il loop T31 registra un esito `needs_manual_review`, non una nuova acquisizione automatica. | Auditabile, non conclusivo |
-| Confezionamento esterno | Il dossier generato e' utile, ma richiede rifinitura editoriale per presentazione pubblica. | T33 ancora aperto |
+| Confezionamento esterno | Il dossier e i materiali sono riallineati alla run promossa, ma il racconto in sei schermate richiede prova asciutta e review umana. | T33 ancora aperto |
 
 ## Uso dei fondi
 

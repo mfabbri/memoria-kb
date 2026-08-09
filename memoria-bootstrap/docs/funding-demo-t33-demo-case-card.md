@@ -1,9 +1,9 @@
 # T33 Demo Case Card
 
-Data: 2026-07-16
+Data: 2026-08-09
 
-Stato: sotto-incremento T33 completato; scheda caso demo preview-only per
-walkthrough finanziatori.
+Stato: scheda casi riallineata alla golden run canonica promossa a tre casi;
+materiale preview-only per il walkthrough finanziatori.
 
 ## Scope
 
@@ -30,13 +30,13 @@ P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json
 Run canonica:
 
 ```text
-prova-preview-profili-5-reviewed-01-pipeline
+funding-demo-golden-3cases-v1-pipeline
 ```
 
 Ledger attivo:
 
 ```text
-P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_consolidated_review_ledger.json
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_consolidated_review_ledger.json
 ```
 
 Stato:
@@ -46,8 +46,8 @@ Stato:
 - `publication_ready=false`;
 - `not_publishable_without_human_review`;
 - 3 famiglie fonte coperte;
-- 4/4 documenti selezionati coperti;
-- 30 righe di riconciliazione.
+- 5/5 documenti selezionati coperti;
+- review parziale: 15 decisioni accettate e 68 pending.
 
 ## Caso
 
@@ -63,12 +63,18 @@ Profilo di contrasto leggero:
 person:purocielo:balboni-william
 ```
 
+Profilo complementare con contesto incerto:
+
+```text
+person:purocielo:bendini-ateo
+```
+
 La scheda dimostra un percorso, non una biografia definitiva. Il valore per la
 demo e' mostrare che documenti diversi entrano nello stesso profilo di lavoro,
 che il sistema conserva la provenance e che lo storico mantiene il controllo su
 decisioni, patch e pubblicazione.
 
-## Documenti selezionati
+## Documenti selezionati principali
 
 | Ruolo | Documento | Famiglia | Stato nella golden run |
 |---|---|---|---|
@@ -76,6 +82,10 @@ decisioni, patch e pubblicazione.
 | Fonte locale/documentale | `local_docx:4c2ad1d2ab937913` | `local_docx` | coperto dalla riconciliazione |
 | Fonte online/istituzionale A | `partigiani_italia:b45553cd6b1673d8` | `partigiani_italia` | coperto dalla riconciliazione e da decisioni preview |
 | Fonte online/istituzionale B | `partigiani_italia:b6b3c9e526723a27` | `partigiani_italia` | coperto dalla riconciliazione |
+
+Il descriptor attivo dichiara 5 documenti complessivi. Questa scheda non
+duplica il quinto identificativo: per la lista canonica usare il descriptor o
+`memoria mvp demo` in sola lettura.
 
 ## Lettura provenance
 
@@ -85,9 +95,9 @@ decisioni, patch e pubblicazione.
 | Contesto documentale locale | Il documento locale contribuisce piste su formazione e collegamenti al profilo, lasciate in stato `unreviewed`. | `local_docx:4c2ad1d2ab937913`, campo `formation.name`, metodo `document_entity_context_rules` con proiezione standard dal documento collegato. |
 | Conferma nominativa online | Due record `partigiani_italia` corroborano nome, cognome e nome completo nel ledger di lavoro. | `partigiani_italia:b45553cd6b1673d8` e `partigiani_italia:b6b3c9e526723a27`, compatibilita' `corroborated`. |
 | Divergenze da non appiattire | Serie archivistica, commissione, formazione e qualifica mantengono valori divergenti o singola fonte. | `mvp_demo_reconciliation_table.md`, compatibilita' `divergent` e `single_source`. |
-| Decisione dello storico | Una parte dei claim e dei link documentali ha decisione `confirm` accettata, con reviewer e data. | `historian_review/review_decisions_summary.md`, 10 decisioni sostanziali nella run. |
-| Preview facts | Alcune decisioni alimentano `VerifiedFactPreview`, non fatti canonici. | `historian_review/verified_facts.preview.md`, 8 fatti preview. |
-| Patch preview | Le proposte di aggiornamento restano operazioni non applicate. | `historian_review/profile_patch.preview.md`, 2 patch profilo e 8 operazioni preview. |
+| Decisione dello storico | Una parte dei claim e dei link documentali ha decisione accettata, con reviewer e data; il resto resta pending. | `historian_review/review_decisions.validation.md`, 15 decisioni accettate e 68 pending. |
+| Preview facts | Le decisioni ammesse alimentano `VerifiedFactPreview`, non fatti canonici. | `historian_review/verified_facts.preview.md`, 1 fatto preview. |
+| Patch preview | La proposta di aggiornamento resta non applicata. | `historian_review/profile_patch.preview.md`, 1 patch preview. |
 | Feedback loop | La review produce una ricerca tracciata con esito `needs_manual_review`. | `historian_review/feedback_loop_outcome.t31-demo.md`, action `research-feedback-action:7bdbb2060d955baa`. |
 
 ## Snodo multi-fonte
@@ -102,13 +112,9 @@ la ricerca storica:
 - la divergenza resta visibile nella tabella di riconciliazione invece di
   essere risolta automaticamente.
 
-Distribuzione delle righe nel descriptor attivo:
-
-| Compatibilita' | Righe |
-|---|---:|
-| `corroborated` | 6 |
-| `divergent` | 20 |
-| `single_source` | 4 |
+La distribuzione corrente delle compatibilita' va letta dalla tabella di
+riconciliazione della run attiva, senza riusare i conteggi storici della run a
+due casi.
 
 ## Decisione e patch
 
@@ -127,7 +133,7 @@ Esempio di lettura, senza promozione canonica:
 
 | Passaggio | Artefatto |
 |---|---|
-| Decisione storica | `historian_review/review_decisions_summary.md` |
+| Decisione storica | `historian_review/review_decisions.validation.md` |
 | Fatti preview | `historian_review/verified_facts.preview.md` |
 | Patch proposta | `historian_review/profile_patch.preview.md` |
 | Safety flag | `memoria_mvp_demo.active.json` |
@@ -192,5 +198,5 @@ Esito atteso:
 - descriptor presente e JSON valido;
 - status `ready_for_internal_demo`;
 - 3 famiglie fonte coperte;
-- 4/4 documenti coperti;
+- 5/5 documenti coperti;
 - safety flag preview-only confermate.
