@@ -153,24 +153,34 @@ presentazione deve prima ottenere approvazione sul racconto e sulla prova.
 
 ## Materiali dei due percorsi
 
+Prima di lavorare sulla presentazione, leggere la nota operativa corrente:
+
+```text
+memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md
+```
+
 ### Percorso presentazione
 
 Usare nell'ordine:
 
 1. questo entrypoint;
-2. `funding-demo-t33-external-brief.md` come sorgente editoriale;
-3. `funding-demo-t33-demo-case-card.md` come base dei primi due casi;
-4. `funding-demo-t33-three-case-runbook.md` per preparare e promuovere l'unica golden run a tre casi;
-5. `funding-demo-t33-funding-roadmap.md` solo per la schermata finale.
+2. `funding-demo-t33-current-state-operator-note.md` per verificare quale run e'
+   attiva e quali guardrail restano validi;
+3. `funding-demo-t33-external-brief.md` come sorgente editoriale;
+4. `funding-demo-t33-demo-case-card.md` come base dei primi due casi;
+5. `funding-demo-t33-three-case-runbook.md` come storico della promozione a una
+   sola golden run a tre casi;
+6. `funding-demo-t33-funding-roadmap.md` solo per la schermata finale.
 
 ### Appendice tecnica
 
 Usare solo su richiesta di approfondimento:
 
-1. `funding-demo-t33-package-entrypoint.md`;
-2. `funding-demo-t33-evidence-flow-diagram.md`;
-3. `funding-demo-t33-external-readiness-checklist.md`;
-4. artefatti della golden run nel workspace operativo.
+1. `funding-demo-t33-current-state-operator-note.md`;
+2. `funding-demo-t33-package-entrypoint.md`;
+3. `funding-demo-t33-evidence-flow-diagram.md`;
+4. `funding-demo-t33-external-readiness-checklist.md`;
+5. artefatti della golden run nel workspace operativo.
 
 ## Criteri per la prossima revisione umana
 

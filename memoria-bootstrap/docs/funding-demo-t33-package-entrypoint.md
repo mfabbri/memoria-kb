@@ -19,6 +19,13 @@ ha un ingresso separato:
 memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md
 ```
 
+Per sapere rapidamente quale run e' attiva oggi, quali comandi usare per
+verificarla e come aprire eventuali nuove run candidate, leggere prima:
+
+```text
+memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md
+```
+
 ## Due oggetti, una sola run
 
 | Oggetto | Funzione | Stato |

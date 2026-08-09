@@ -170,6 +170,11 @@ ledger attivo a 3 profili e safety flag `preview_only=true`,
 Nessuna ProfilePatch e' stata applicata, nessun verified fact canonico e' stato
 creato e nessun profilo canonico e' stato modificato.
 
+Nota operativa corrente T33: lo stato semplice della demo attiva, i comandi
+minimi di verifica e il percorso consigliato per eventuali nuove run candidate
+sono raccolti in
+`memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md`.
+
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
 Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite
