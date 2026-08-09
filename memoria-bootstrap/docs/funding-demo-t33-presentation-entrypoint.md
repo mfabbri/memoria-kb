@@ -47,9 +47,10 @@ gia' presenti nella run canonica.
 | Coorte pilota | 5 profili | casi sui quali esistono schede modello e materiali di review |
 | Materiale pilota | 13 documenti collegati | documenti raccordati ai profili nel ledger del pilota |
 | Analisi pilota | 24 link persona-documento e 55 claim candidati | segnali da sottoporre a controllo storico |
-| Lavoro curatoriale | 114 item di review | coda esplicita e misurabile |
-| Decisioni registrate | 10 accettate, 104 pending | review avviata, non completata |
-| Risultato controllato | 8 verified facts preview | fatti non canonici e non pubblicabili |
+| Lavoro curatoriale pilota | 114 item di review | coda esplicita e misurabile sui 5 profili pilota |
+| Decisioni registrate nel pilota | 10 accettate, 104 pending | review avviata, non completata sulla coorte pilota |
+| Risultato controllato nel pilota | 8 verified facts preview | fatti non canonici e non pubblicabili della coorte pilota |
+| Review della golden run a tre casi | 15 accettate, 68 pending | profondita' dimostrativa, ancora non pubblicabile |
 
 ## Presentazione in sei schermate
 
@@ -111,16 +112,17 @@ I tre casi devono mostrare capacita' differenti:
 | Balboni | corroborazione e confronto multi-fonte | presente nella golden run canonica a tre casi |
 | Bendini | decisione su contesto incerto e limiti documentali visibili | presente nella golden run canonica a tre casi, con review ancora parziale |
 
-Per ogni caso mostrare la stessa struttura minima:
+Per ogni caso mantenere la stessa griglia di lettura, senza forzare lo stesso
+esito su tutti i profili:
 
 ```text
 documento
   -> claim con fonte
   -> confronto con altri documenti
-  -> decisione dello storico
-  -> verified fact preview
-  -> proposta di aggiornamento non applicata
-  -> nuova domanda di ricerca tracciata
+  -> decisione dello storico quando presente
+  -> esito preview quando presente
+  -> proposta di aggiornamento non applicata quando presente
+  -> nuova domanda di ricerca tracciata o pending esplicito
 ```
 
 Non aprire tutti gli artefatti. Per ciascun caso mostrare al massimo una
@@ -133,7 +135,7 @@ preview. Il dettaglio completo resta nel percorso tecnico.
 |---|---|
 | Collegamento auditabile fra profili, documenti e claim | trattamento completo dei 57 profili |
 | Confronto multi-fonte senza cancellare divergenze | schede storiche pubblicabili |
-| Decisioni umane registrate | completamento delle 104 decisioni pending |
+| Decisioni umane registrate | completamento delle decisioni pending del pilota e della golden run |
 | Fatti e patch prodotti in preview | applicazione automatica ai profili canonici |
 | Feedback di ricerca con esito tracciato | ciclo operativo ripetuto su una coorte estesa |
 

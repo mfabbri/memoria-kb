@@ -2,75 +2,102 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-08-09T18:37:16+02:00",
-  "updated_at": "2026-08-09T18:38:48+02:00",
+  "selected_at": "2026-08-09T18:45:11+02:00",
+  "updated_at": "2026-08-09T18:46:59+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T33 - Pacchetto finanziatori",
-      "reason": "Il pacchetto deve descrivere una sola golden run canonica con tre casi e artefatti coerenti."
+      "reason": "T33 resta aperto e prioritario fino alla chiusura del pacchetto finanziatori e richiede walkthrough/presentazione coerenti con una sola golden run."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
       "section": "Incremento 6 - Pacchetto finanziatori",
-      "reason": "La prova narrativa richiede materiali coerenti su casi, provenance, review e limiti."
+      "reason": "L'MVP per finanziatori deve mostrare problema, valore, prova tecnica, ruolo dello storico e uso dei fondi distinguendo MVP attuale, sviluppo finanziato e visione."
     },
     {
       "path": "memoria-bootstrap/docs/decision-log.md",
       "section": "2026-07-18 - Espansione controllata della golden run T33 a tre casi",
-      "reason": "Dopo la promozione materiali tecnici ed editoriali devono condividere identita' e run_id canonici."
+      "reason": "Golden run tecnica e presentazione finanziatori restano oggetti narrativi distinti ma devono condividere una sola lineage evidenziale e un solo descriptor canonico."
     }
   ],
   "increment": {
-    "id": "t33-correct-bendini-and-post-promotion-residuals",
-    "title": "T33 - correzione identita' Bendini e residui post-promozione",
-    "objective": "Allineare l'identita' del terzo caso al descriptor attivo, aggiornare il diagramma evidenziale e marcare il runbook di promozione come storico completato.",
+    "id": "t33-six-screen-presentation-dry-run",
+    "title": "T33 - prova asciutta della presentazione in sei schermate",
+    "objective": "Verificare in asciutto il racconto finanziatori T33 in sei schermate e registrare un esito narrativo non pubblicabile.",
     "scope": [
-      "Correggere bendini-primo in person:purocielo:bendini-ateo nei materiali vivi.",
-      "Aggiornare il diagramma a 5/5 documenti, review parziale 15/68 e output preview correnti.",
-      "Marcare il runbook come procedura storica completata attraverso la fase 5.",
-      "Registrare la correzione nello stato corrente."
+      "Controllare che l'entrypoint della presentazione separi golden run tecnica e racconto finanziatori.",
+      "Verificare le sei schermate rispetto a coorte pilota, tre casi, guardrail preview-only e assenza di bando/importo/finanziatore.",
+      "Registrare un verbale sintetico della prova asciutta con pass, blocker e correzioni candidate.",
+      "Aggiornare lo stato corrente con l'esito della prova asciutta."
     ],
     "out_of_scope": [
-      "Modifica o riesecuzione del runbook.",
+      "Impaginazione grafica o produzione slide finali.",
+      "Approvazione esterna della presentazione.",
+      "Bando, importo, finanziatore o pubblicazione.",
       "Scritture nel data root esterno P:/Comune/Me.Mo.Ri.a.",
-      "Prova asciutta o approvazione della presentazione esterna.",
-      "Applicazione di ProfilePatch, verified facts canonici o modifica dei profili canonici.",
-      "Bando, importo, finanziatore o pubblicazione."
+      "Applicazione di ProfilePatch, creazione di verified facts canonici o modifica dei profili canonici.",
+      "Pipeline, OCR, scraping o nuove fonti live."
     ],
     "candidate_files": [
       "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/funding-demo-t33-package-entrypoint.md",
+      "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
+      "memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md",
+      "memoria-bootstrap/docs/funding-demo-t33-external-brief.md",
       "memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md",
-      "memoria-bootstrap/docs/funding-demo-t33-evidence-flow-diagram.md",
-      "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md"
+      "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md",
+      "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
     ],
-    "stop_condition": "I materiali vivi usano person:purocielo:bendini-ateo, il diagramma descrive il perimetro promosso a 3 profili e 5 documenti, e il runbook avverte chiaramente che la fase 5 e' completata e non va rieseguita come procedura corrente."
+    "stop_condition": "La prova asciutta produce un verdetto per ciascuna delle sei schermate, conferma o evidenzia blocker narrativi, e lascia invariati data root esterno, profili canonici, ProfilePatch e verified facts canonici."
   },
   "verification": {
     "tests": [
       "Get-Content -Path memoria-bootstrap/planning/current-work.json | ConvertFrom-Json",
-      "rg -n \"bendini-primo|bendini-ateo|4/4 documenti|10 decisioni|5/5 documenti|15 decisioni|68 pending|procedura storica\" sui file candidati",
+      "rg -n \"bando|importo|finanziatore|publication_ready|ProfilePatch|verified facts|funding-demo-golden-3cases-v1-pipeline|prova asciutta\" sui file candidati",
       "git diff --check"
     ],
     "documentation_touchpoints": [
-      "memoria-bootstrap/docs/current-next-increment.md"
+      "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
     ],
     "result": "passed",
-    "notes": "Il descriptor attivo attesta person:purocielo:bendini-ateo; package entrypoint e demo case card sono stati corretti di conseguenza. Il diagramma evidenziale descrive ora 5/5 documenti, 15 decisioni accettate, 68 pending, 1 verified fact preview e 1 ProfilePatch preview non applicata. Il runbook a tre casi e' marcato come procedura storica completata attraverso la fase 5 e avverte di non rieseguirlo sulla demo attiva. Nessuna scrittura nel data root esterno e nessuna modifica canonica."
+    "notes": "Prova asciutta narrativa T33 completata. Creato il verbale in sei schermate e corretto l'entrypoint per distinguere conteggi pilota e golden run a tre casi, evitando di promettere esiti preview identici per tutti i profili.",
+    "task_envelope": {
+      "mode": "discovery-lite",
+      "repositories": [
+        "memoria-bootstrap"
+      ],
+      "read_set": [
+        "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
+        "memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md",
+        "memoria-bootstrap/docs/funding-demo-t33-external-brief.md",
+        "memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md",
+        "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md"
+      ],
+      "write_set": [
+        "memoria-bootstrap/planning/current-work.json",
+        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
+      ],
+      "test_command": "Get-Content planner JSON, rg checks on candidate docs, git diff --check",
+      "stop_conditions": [
+        "six-screen dry run has pass/blocker verdicts and guardrails",
+        "no external data-root writes",
+        "no claim approval, profile patch, canonical facts, publication, bando/importo/finanziatore"
+      ]
+    }
   },
   "blockers": [],
   "session_notes": [
     "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
-    "Il descriptor attivo e' stato interrogato in sola lettura e attesta person:purocielo:bendini-ateo.",
-    "Il worktree contiene modifiche documentali del micro-incremento precedente, preservate.",
-    "Nessuna scrittura nel data root esterno prevista.",
-    "Corretto l'ID Bendini nei materiali vivi e riallineato il diagramma evidenziale.",
-    "Aggiunto al runbook un banner storico e una nota temporale per prevenire riesecuzioni accidentali."
+    "Il planner precedente era completed; selezionato un nuovo micro-incremento T33 coerente con roadmap e decision log.",
+    "La prova asciutta ha confermato sei schermate leggibili con verdict pass o pass con cautela.",
+    "L'entrypoint della presentazione ora marca i conteggi 10/104 e 8 verified facts preview come perimetro pilota e aggiunge 15 accepted/68 pending per la golden run a tre casi.",
+    "Nessuna scrittura nel data root esterno, nessuna pubblicazione, nessun bando/importo/finanziatore e nessuna modifica canonica."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Prossimo candidato: prova asciutta della presentazione T33 in sei schermate sui materiali corretti, senza bando, importo, finanziatore, pubblicazione o scritture nel data root."
+    "description": "Prossimo candidato: revisione umana del racconto T33 in sei schermate, senza impaginazione finale, bando, importo, finanziatore o pubblicazione."
   }
 }

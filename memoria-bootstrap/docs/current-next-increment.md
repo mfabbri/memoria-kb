@@ -9,8 +9,9 @@ T33 - Pacchetto finanziatori.
 ## Stato
 
 **Aperto: la golden run canonica a tre casi e' promossa come demo
-revisionabile/non pubblicabile; T33 deve ora provare il racconto finanziatori
-in sei schermate senza bando, importo o pubblicazione.**
+revisionabile/non pubblicabile; la prova asciutta del racconto finanziatori in
+sei schermate e' completata e il prossimo gate e' revisione umana, senza bando,
+importo o pubblicazione.**
 
 Esito review del 2026-07-18: il pacchetto precedente e' risultato troppo
 tecnico e il perimetro Andreoli/Balboni troppo ridotto per rappresentare la
@@ -200,6 +201,14 @@ documenti, 15 decisioni accettate, 68 pending, 1 verified fact preview e 1
 ProfilePatch preview non applicata. Il runbook della promozione a tre casi e'
 marcato come procedura storica completata e non va rieseguito sulla demo attiva.
 Nessun file del data root esterno e' stato modificato.
+
+Prova asciutta presentazione T33 del 2026-08-09: creato
+`memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md` e riallineato
+l'entrypoint della presentazione per distinguere meglio conteggi della coorte
+pilota e conteggi della golden run a tre casi. Le sei schermate hanno verdetto
+`pass` o `pass con cautela`; la presentazione e' pronta per revisione umana del
+racconto, non per uso esterno finale. Nessun bando, importo o finanziatore e'
+stato introdotto; nessun file del data root esterno e' stato modificato.
 
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
@@ -1772,10 +1781,11 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 
 T33 resta l'incremento corrente. La golden run a tre casi
 `funding-demo-golden-3cases-v1-pipeline` e' ora il descriptor demo attivo, come
-demo revisionabile e non pubblicabile. Il prossimo sotto-incremento candidato e'
-una prova asciutta della presentazione in sei schermate: verificare che il
-racconto usi la coorte pilota, i tre casi e i guardrail preview-only senza
-scivolare in dettagli tecnici, bando, importo, finanziatore o pubblicazione.
+demo revisionabile e non pubblicabile. La prova asciutta della presentazione in
+sei schermate e' completata; il prossimo sotto-incremento candidato e' la
+revisione umana del racconto e dei blocchi narrativi, mantenendo separati
+coorte pilota, tre casi e patrimonio disponibile e senza introdurre bando,
+importo, finanziatore o pubblicazione.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 
