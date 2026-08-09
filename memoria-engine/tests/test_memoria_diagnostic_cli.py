@@ -340,6 +340,69 @@ def write_mvp_demo_descriptor(data_root: Path) -> Path:
     return descriptor_path
 
 
+def write_t33_final_gate_workspace(data_root: Path) -> tuple[Path, Path, Path]:
+    run_dir = data_root / "risultati" / "runs" / "funding-demo-golden-3cases-v1-pipeline"
+    for relative in [
+        "mvp_consolidated_review_ledger.json",
+        "historian_review/review_decisions_summary.json",
+        "historian_review/verified_facts.preview.json",
+        "historian_review/profile_patch.preview.json",
+    ]:
+        write_json(run_dir / relative, {"@type": "PreviewArtifact"})
+    write_json(run_dir / "mvp_go_no_go_checklist.json", {"overall_status": "go_with_review_blockers", "pending_review_count": 68})
+    for relative in [
+        "mvp_demo_reconciliation_table.md",
+        "mvp_package_readiness.md",
+        "mvp_go_no_go_checklist.md",
+        "funding_package_index.md",
+        "mvp_funding_dossier.md",
+        "historian_review/feedback_loop_outcome.t31-demo.md",
+    ]:
+        path = run_dir / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("preview-only\n", encoding="utf-8")
+    candidate_descriptor = data_root / "risultati" / "runs" / "funding-demo-golden-3cases-v1-pipeline" / "memoria_mvp_demo.candidate.json"
+    write_json(
+        candidate_descriptor,
+        {
+            "contract_version": "memoria_mvp_demo.v1",
+            "status": "ready_for_internal_demo",
+            "preview_only": True,
+            "publication_status": "not_publishable_without_human_review",
+            "run_id": "funding-demo-golden-3cases-v1-pipeline",
+            "run_dir": str(run_dir),
+            "primary_profile_ids": ["person:purocielo:andreoli-dino"],
+            "contrast_profile_ids": ["person:purocielo:balboni-william", "person:purocielo:bendini-ateo"],
+            "source_document_ids": [
+                "legacy_csv:a4ac96061a2381b5",
+                "local_docx:4c2ad1d2ab937913",
+                "partigiani_italia:b45553cd6b1673d8",
+                "partigiani_italia:b6b3c9e526723a27",
+                "partigiani_italia:dadc75fad9db03ae",
+            ],
+            "source_families": ["legacy_csv", "local_docx", "partigiani_italia"],
+            "readiness": {"selected_document_count": 5, "covered_document_count": 5, "missing_source_families": []},
+            "safety": {
+                "publication_ready": False,
+                "modifies_canonical_profiles": False,
+                "applies_profile_patch": False,
+                "creates_canonical_verified_facts": False,
+            },
+            "artifacts": {
+                "ledger": str(run_dir / "mvp_consolidated_review_ledger.json"),
+                "reconciliation_table": str(run_dir / "mvp_demo_reconciliation_table.md"),
+                "review_decisions_summary": str(run_dir / "historian_review" / "review_decisions_summary.json"),
+                "verified_facts_preview": str(run_dir / "historian_review" / "verified_facts.preview.json"),
+                "profile_patch_preview": str(run_dir / "historian_review" / "profile_patch.preview.json"),
+                "readiness_report": str(run_dir / "mvp_package_readiness.md"),
+            },
+        },
+    )
+    active_descriptor = data_root / "database" / "memoria_mvp_demo.active.json"
+    write_json(active_descriptor, {"run_id": "prova-preview-profili-5-reviewed-01-pipeline"})
+    return run_dir, candidate_descriptor, active_descriptor
+
+
 def write_mvp_demo_build_workspace(data_root: Path) -> Path:
     run_dir = data_root / "risultati" / "runs" / "golden-run-pipeline"
     write_json(
@@ -1012,6 +1075,37 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("presente=false", stdout)
             self.assertIn("no_canonical_profile_patch_applied: true", stdout)
             self.assertIn("non crea run, non rigenera artefatti", stdout)
+            self.assertEqual(stderr, "")
+
+    def test_mvp_final_gate_reports_candidate_ready_for_human_approval(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir)
+            run_dir, candidate_descriptor, active_descriptor = write_t33_final_gate_workspace(data_root)
+
+            code, stdout, stderr = run_cli(
+                "mvp",
+                "final-gate",
+                "--data-root",
+                str(data_root),
+                "--run-dir",
+                str(run_dir),
+                "--descriptor",
+                str(candidate_descriptor),
+                "--active-descriptor",
+                str(active_descriptor),
+            )
+
+            self.assertEqual(code, 0)
+            self.assertIn("Me.Mo.Ria T33 final gate", stdout)
+            self.assertIn("Gate status: ready_for_human_approval", stdout)
+            self.assertIn("Run candidata: funding-demo-golden-3cases-v1-pipeline", stdout)
+            self.assertIn("Funding package: go_with_review_blockers", stdout)
+            self.assertIn("Blocker tecnici: 0", stdout)
+            self.assertIn("Review blocker: 1", stdout)
+            self.assertIn("active_descriptor_still_separate: go", stdout)
+            self.assertIn("pending_review_decisions: review_blocker", stdout)
+            self.assertIn("Eseguire la fase 5 solo dopo approvazione esplicita", stdout)
+            self.assertIn("non promuove descriptor, non applica ProfilePatch", stdout)
             self.assertEqual(stderr, "")
 
     def test_mvp_demo_build_dry_run_and_explicit_outputs(self) -> None:

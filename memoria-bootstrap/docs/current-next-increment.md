@@ -144,6 +144,32 @@ revisionabile, non pubblicabile. Il descriptor attivo resta puntato a
 `prova-preview-profili-5-reviewed-01-pipeline`; non sono state eseguite fase 5,
 promozione canonica, applicazione ProfilePatch o modifiche ai profili canonici.
 
+Verifica gate finale T33 del 2026-08-09: aggiunto il comando read-only
+`memoria mvp final-gate`, che controlla descriptor candidato, descriptor attivo
+opzionale, perimetro 3 profili/5 documenti, copertura multi-fonte, safety flag,
+artifact preview e pacchetto go/no-go. L'esito `ready_for_human_approval`
+significa solo che il materiale puo' essere portato al gate umano; il report non
+autorizza promozione, non modifica `memoria_mvp_demo.active.json`, non applica
+ProfilePatch e non crea verified facts canonici. Coperti i casi offline di
+candidata pronta, safety flag bloccante e artifact fuori run candidata; test
+mirati passanti con 40 test OK.
+
+Promozione canonica T33 autorizzata e completata il 2026-08-09: dopo
+approvazione esplicita del gate umano come demo revisionabile/non pubblicabile,
+il descriptor candidato a tre casi e' stato copiato su
+`P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json`, con backup
+preventivo
+`P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.before-funding-demo-golden-3cases-v1-20260809-170417.json`.
+Le verifiche read-only `memoria mvp demo --data-root "P:\Comune\Me.Mo.Ri.a"` e
+`memoria mvp status --data-root "P:\Comune\Me.Mo.Ri.a"` confermano la nuova run
+canonica `funding-demo-golden-3cases-v1-pipeline`, 1 profilo principale, 2
+profili complementari, 5 documenti, 3 famiglie fonte, 12/12 artefatti presenti,
+ledger attivo a 3 profili e safety flag `preview_only=true`,
+`publication_ready=false`, `applies_profile_patch=false`,
+`creates_canonical_verified_facts=false` e `modifies_canonical_profiles=false`.
+Nessuna ProfilePatch e' stata applicata, nessun verified fact canonico e' stato
+creato e nessun profilo canonico e' stato modificato.
+
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
 Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite

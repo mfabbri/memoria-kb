@@ -2,69 +2,73 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-07-29T00:00:00+02:00",
-  "updated_at": "2026-07-29T00:00:00+02:00",
+  "selected_at": "2026-08-09T00:00:00+02:00",
+  "updated_at": "2026-08-09T00:00:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T26 - PCloudWorkspaceStorage read-only con mock HTTP",
-      "reason": "T25 e' chiuso e l'utente ha autorizzato esplicitamente la ripresa dell'integrazione pCloud."
+      "section": "T33 - Pacchetto finanziatori",
+      "reason": "T33 e' ancora aperto e prioritario; dopo gate tecnico verde e approvazione esplicita dell'utente, la fase 5 puo' promuovere il descriptor candidato come demo revisionabile/non pubblicabile."
+    },
+    {
+      "path": "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md",
+      "section": "Fase 5 - Promozione canonica autorizzata",
+      "reason": "Il runbook consente la copia del descriptor candidato su quello attivo soltanto dopo approvazione esplicita e backup."
     },
     {
       "path": "memoria-bootstrap/docs/decision-log.md",
-      "section": "2026-07-12 - Workspace operativo pluggable",
-      "reason": "Il decision log prevede WorkspaceStorage pluggable, pCloud come primo backend cloud candidato e ingresso iniziale read-only."
+      "section": "2026-07-12 - Golden run finanziatori come priorita' di roadmap",
+      "reason": "T29-T33 prevalgono su cloud e Q2 finche' il pacchetto finanziatori non e' chiuso."
     }
   ],
   "increment": {
-    "id": "t26-pcloud-workspace-read-only-env-selectable",
-    "title": "T26 - pCloud workspace read-only selezionabile da env",
-    "objective": "Introdurre un backend pCloud read-only selezionabile da variabili ambiente/manifest, senza salvare credenziali e senza test live obbligatori.",
+    "id": "t33-canonical-descriptor-promotion",
+    "title": "T33 - promozione canonica descriptor a tre casi",
+    "objective": "Promuovere il descriptor candidato T33 come descriptor demo attivo dopo approvazione esplicita, con backup e verifiche read-only.",
     "scope": [
-      "Aggiungere un driver PCloudWorkspaceStorage read-only con HTTP iniettabile e test mock.",
-      "Rendere esplicita la selezione del provider workspace tramite variabile ambiente e manifest provider-aware.",
-      "Documentare le variabili .env previste per provider, app OAuth, host, root/folderid e access token derivato.",
-      "Mantenere il backend locale e MEMORIA_DATA_ROOT compatibili."
+      "Verificare che descriptor attivo e candidato esistano.",
+      "Creare backup del descriptor attivo nel data root esterno autorizzato.",
+      "Copiare il descriptor candidato su memoria_mvp_demo.active.json.",
+      "Verificare con comandi read-only che la nuova run canonica e i safety flag siano corretti.",
+      "Aggiornare stato operativo e nota sintetica di documentazione."
     ],
     "out_of_scope": [
-      "Scritture pCloud, upload, mkdir remoto o sincronizzazione.",
-      "Test live obbligatori o uso di credenziali reali in questa sessione.",
-      "Migrazione dati dal backend locale a pCloud.",
-      "Modifica di dati reali, profili canonici, EvidenceClaim o artefatti storici."
+      "Applicazione di ProfilePatch o modifica dei profili canonici.",
+      "Promozione di verified facts canonici o pubblicazione storica.",
+      "OCR, pipeline, acquisizioni live o uso credenziali.",
+      "Nuovi backend cloud, T27/T28 o refactor Q2 non necessari."
     ],
     "candidate_files": [
       "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-engine/code/caduti_fonti_report/workspace_storage.py",
-      "memoria-engine/code/caduti_fonti_report/workspace_resolver.py",
-      "memoria-engine/tests/test_workspace_storage.py",
-      "memoria-engine/tests/test_workspace_resolver.py",
-      "memoria-workspace/manifest.yml",
-      "memoria-workspace/EXTERNAL_DATA_ROOT.md"
+      "P:/Comune/Me.Mo.Ri.a/database/memoria_mvp_demo.active.json",
+      "P:/Comune/Me.Mo.Ri.a/database/memoria_mvp_demo.active.before-funding-demo-golden-3cases-v1-20260809-170417.json",
+      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/memoria_mvp_demo.candidate.json"
     ],
-    "stop_condition": "Driver pCloud read-only e selezione provider/env coperti da test mock e documentazione; nessuna scrittura cloud o credenziale salvata."
+    "stop_condition": "memoria mvp demo e memoria mvp status confermano funding-demo-golden-3cases-v1-pipeline come run canonica attiva, con safety flag preview-only e nessuna modifica canonica ai profili."
   },
   "verification": {
     "tests": [
-      ".\\.venv\\Scripts\\python.exe -m unittest tests.test_workspace_storage tests.test_workspace_resolver tests.test_memoria_diagnostic_cli"
+      ".\\.venv\\Scripts\\memoria.exe mvp demo --data-root \"P:\\Comune\\Me.Mo.Ri.a\"",
+      ".\\.venv\\Scripts\\memoria.exe mvp status --data-root \"P:\\Comune\\Me.Mo.Ri.a\""
     ],
     "documentation_touchpoints": [
-      "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-workspace/EXTERNAL_DATA_ROOT.md"
+      "memoria-bootstrap/docs/current-next-increment.md"
     ],
     "result": "passed",
-    "notes": "T26 completato. Aggiunto PCloudWorkspaceStorage read-only con exists, list_dir, read_bytes via getfilelink e stat; write_bytes e mkdir restano bloccati. Aggiunta risoluzione provider-aware con MEMORIA_WORKSPACE_PROVIDER e variabili pCloud da .env/ambiente, mantenendo compatibilita' local e MEMORIA_DATA_ROOT. Correzione OAuth: i dati dell'app pCloud MemoriaStorage sono app_name, client_id e client_secret; il token usato dalle API e' un access token ottenuto dopo approve/code flow e scambio oauth2_token. Aggiunti memoria workspace status, che non stampa valori sensibili, memoria workspace pcloud-auth-url per generare l'URL authorize e memoria workspace pcloud-exchange-code per scambiare il code con oauth2_token e salvare il bearer nel .env senza stamparlo. Aggiornati manifest e documentazione workspace. Test mirati passanti: 59 test OK. Prova live completata il 2026-07-29: authorization code scambiato con successo, bearer salvato soltanto nel .env locale e listfolder read-only riuscito su api.pcloud.com. La root dell'account e' vuota; il workspace locale e' quindi configurato su path / e folderid 0. Nessuna scrittura cloud, migrazione dati o credenziale salvata nei repository."
+    "notes": "Promozione canonica T33 completata dopo approvazione esplicita dell'utente. Backup creato: P:\\Comune\\Me.Mo.Ri.a\\database\\memoria_mvp_demo.active.before-funding-demo-golden-3cases-v1-20260809-170417.json. Copiato il descriptor candidato funding-demo-golden-3cases-v1-pipeline su P:\\Comune\\Me.Mo.Ri.a\\database\\memoria_mvp_demo.active.json. Verifiche read-only passanti: memoria mvp demo conferma status ready_for_internal_demo, run funding-demo-golden-3cases-v1-pipeline, 1 profilo principale, 2 complementari, 5 documenti, 3 famiglie e safety flag preview_only true, publication_ready false, applies_profile_patch false, creates_canonical_verified_facts false, modifies_canonical_profiles false; memoria mvp status conferma 12/12 artefatti presenti, ledger attivo a 3 profili e profili caricati 57/57. Nessuna ProfilePatch applicata, nessun verified fact canonico creato e nessun profilo canonico modificato."
   },
   "blockers": [],
   "session_notes": [
-    "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate in questa sessione.",
-    "current-work.json precedente era completed; selezionato T26 per richiesta esplicita dell'utente.",
-    "Credenziali pCloud da usare solo via variabili ambiente/.env locale, non nei repository.",
-    "Documentazione pCloud ufficiale verificata per My Apps, OAuth authorize/oauth2_token, listfolder, stat, getfilelink e host API US/EU.",
-    "Scambio OAuth e accesso live read-only completati senza esporre codice, client secret o bearer; root pCloud vuota."
+    "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
+    "T26 risulta completato e committato; roadmap e playbook riportano T33 ancora aperto e prioritario.",
+    "Selezionato un sotto-incremento T33 autonomo per preparare il gate umano senza oltrepassarlo.",
+    "Il comando nuovo e' solo read-only/orientamento; la fase 5 resta subordinata ad approvazione esplicita.",
+    "L'utente ha approvato esplicitamente la promozione come demo revisionabile/non pubblicabile.",
+    "La fase 5 e' stata eseguita con backup preventivo e verifiche read-only positive."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Candidato naturale: test live read-only pCloud su cartella esistente configurata nel .env locale; T27 scrittura diagnostica solo dopo autorizzazione dedicata."
+    "description": "Prossimo candidato: aggiornare/semplificare il percorso presentazione T33 sulla nuova run canonica attiva, senza pubblicazione e senza nuove promozioni canoniche."
   }
 }

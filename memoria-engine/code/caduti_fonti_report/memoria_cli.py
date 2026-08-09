@@ -11,6 +11,7 @@ from typing import Sequence
 import yaml
 
 from caduti_fonti_report.document_analysis.mvp_demo_descriptor import build_mvp_demo_aligned_ledger, build_mvp_demo_descriptor
+from caduti_fonti_report.document_analysis.mvp_final_gate import build_mvp_final_gate_report
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
     DataRootResolution,
@@ -1103,6 +1104,59 @@ def _command_mvp_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_mvp_final_gate(args: argparse.Namespace) -> int:
+    resolution = _resolve_existing_data_root_for_command(args)
+    if resolution is None:
+        return 1
+    run_dir = Path(args.run_dir).expanduser().resolve() if args.run_dir.strip() else None
+    descriptor = Path(args.descriptor).expanduser().resolve() if args.descriptor.strip() else None
+    if descriptor is None and run_dir is None:
+        print("ERROR Specificare --run-dir oppure --descriptor.", file=sys.stderr)
+        return 2
+    if descriptor is None:
+        assert run_dir is not None
+        descriptor = run_dir / "memoria_mvp_demo.candidate.json"
+    if run_dir is None:
+        payload = _load_json_object(descriptor)
+        run_dir_text = str(payload.get("run_dir", "")).strip() if payload else ""
+        if run_dir_text:
+            run_dir = Path(run_dir_text).expanduser().resolve()
+        else:
+            run_id = str(payload.get("run_id", "")).strip() if payload else ""
+            run_dir = resolution.path / "risultati" / "runs" / run_id
+    active_descriptor = Path(args.active_descriptor).expanduser().resolve() if args.active_descriptor.strip() else None
+    report = build_mvp_final_gate_report(
+        run_dir=run_dir,
+        candidate_descriptor_json=descriptor,
+        active_descriptor_json=active_descriptor,
+    )
+    print("Me.Mo.Ria T33 final gate")
+    print(f"Workspace: {resolution.path}")
+    print("Modalita: preview-only/read-only")
+    print("")
+    print(f"Gate status: {report.get('gate_status', '')}")
+    print(f"Run candidata: {report.get('candidate_run_id', '') or 'missing'}")
+    print(f"Descriptor candidato: {report.get('candidate_descriptor_json', '')}")
+    print(f"Descriptor attivo: {report.get('active_descriptor_json', '') or 'not_checked'}")
+    print(f"Funding package: {report.get('funding_overall_status', '') or 'missing'}")
+    print(f"Blocker tecnici: {report.get('blocker_count', 0)}")
+    print(f"Review blocker: {report.get('review_blocker_count', 0)}")
+    print("")
+    print("Checklist:")
+    for item in _list_items(report.get("checks")):
+        print(f"- {item.get('id', '')}: {item.get('status', '')} | {item.get('note', '')}")
+    print("")
+    print("Prossime azioni:")
+    for action in _string_list(report.get("next_actions")):
+        print(f"- {action}")
+    print("")
+    print(
+        "Nota: comando Python read-only; non promuove descriptor, non applica ProfilePatch "
+        "e non crea verified facts canonici."
+    )
+    return 0 if report.get("gate_status") == "ready_for_human_approval" else 1
+
+
 def _command_mvp_demo_build(args: argparse.Namespace) -> int:
     resolution = _resolve_existing_data_root_for_command(args)
     if resolution is None:
@@ -1935,6 +1989,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path esplicito al descrittore; di default usa database/memoria_mvp_demo.active.json nel data root.",
     )
     mvp_demo.set_defaults(handler=_command_mvp_demo)
+    mvp_final_gate = mvp_subparsers.add_parser(
+        "final-gate",
+        help="Verifica read-only del gate finale T33 senza promuovere la candidata.",
+    )
+    mvp_final_gate.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
+    mvp_final_gate.add_argument(
+        "--run-dir",
+        default="",
+        help="Directory della run candidata; default derivato dal descriptor se possibile.",
+    )
+    mvp_final_gate.add_argument(
+        "--descriptor",
+        default="",
+        help="Descriptor candidato; default <run-dir>/memoria_mvp_demo.candidate.json.",
+    )
+    mvp_final_gate.add_argument(
+        "--active-descriptor",
+        default="",
+        help="Descriptor attivo da confrontare per verificare che la candidata non sia gia' promossa.",
+    )
+    mvp_final_gate.set_defaults(handler=_command_mvp_final_gate)
     mvp_demo_build = mvp_subparsers.add_parser(
         "demo-build",
         help="Prepara il descrittore golden run MVP demo da una run esistente; scrive solo su output espliciti.",
