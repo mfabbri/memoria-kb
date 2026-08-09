@@ -1,6 +1,6 @@
 # Current Next Increment
 
-Data: 2026-07-18
+Data: 2026-08-09
 
 ## Incremento corrente
 
@@ -8,8 +8,9 @@ T33 - Pacchetto finanziatori.
 
 ## Stato
 
-**Aperto: prima revisione umana non approvata; T33 prepara una candidata unica
-a tre casi prima di riprendere la presentazione finanziatori.**
+**Aperto: la golden run canonica a tre casi e' promossa come demo
+revisionabile/non pubblicabile; T33 deve ora provare il racconto finanziatori
+in sei schermate senza bando, importo o pubblicazione.**
 
 Esito review del 2026-07-18: il pacchetto precedente e' risultato troppo
 tecnico e il perimetro Andreoli/Balboni troppo ridotto per rappresentare la
@@ -175,6 +176,13 @@ minimi di verifica e il percorso consigliato per eventuali nuove run candidate
 sono raccolti in
 `memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md`.
 
+Riallineamento documentale T33 del 2026-08-09: gli entrypoint della
+presentazione e del pacchetto tecnico sono stati aggiornati per indicare
+`funding-demo-golden-3cases-v1-pipeline` come run canonica attiva. La run
+precedente resta storica e non deve essere usata come seconda demo attiva.
+Nessuna scrittura nel data root esterno, nessuna ProfilePatch applicata, nessun
+verified fact canonico creato e nessun profilo canonico modificato.
+
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
 Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite
@@ -281,7 +289,7 @@ Descrittore:
 P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json
 ```
 
-Run canonica:
+Run canonica storica T32:
 
 ```text
 prova-preview-profili-5-reviewed-01-pipeline
@@ -1744,17 +1752,12 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 
 ## Prossimo incremento candidato
 
-T33 resta l'incremento corrente. La candidata a tre casi ha superato Gate 1 e
-fase 2, fase 3 e fase 4: decisioni validate, import evidence append-only
-eseguito, verified facts e ProfilePatch prodotti solo in preview, descriptor
-candidato validato con feedback loop T31 chiuso auditabilmente, pacchetto unico
-rigenerato con `go_with_review_blockers` e descriptor attivo ancora invariato.
-Il prossimo sotto-incremento candidato e' il gate finale umano: verificare il
-pacchetto e decidere se autorizzare la fase 5 di promozione canonica del
-descriptor. Promozione canonica, impaginazione e prova della presentazione
-seguono solo dopo ulteriore validazione e approvazione esplicita. Bando, importo
-e finanziatore restano fuori scope finche' il racconto non riceve approvazione
-umana.
+T33 resta l'incremento corrente. La golden run a tre casi
+`funding-demo-golden-3cases-v1-pipeline` e' ora il descriptor demo attivo, come
+demo revisionabile e non pubblicabile. Il prossimo sotto-incremento candidato e'
+una prova asciutta della presentazione in sei schermate: verificare che il
+racconto usi la coorte pilota, i tre casi e i guardrail preview-only senza
+scivolare in dettagli tecnici, bando, importo, finanziatore o pubblicazione.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 

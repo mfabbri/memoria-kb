@@ -1,9 +1,12 @@
 # T33 Funding Presentation Entrypoint
 
-Data: 2026-07-18
+Data: 2026-08-09
 
-Stato: bozza T33 per revisione umana; la presentazione prevede tre casi
-approfonditi subordinati alla promozione di una nuova golden run canonica unica.
+Stato: bozza T33 riallineata alla golden run canonica a tre casi promossa il
+2026-08-09. La presentazione resta una demo revisionabile e non pubblicabile:
+puo' ora usare la run `funding-demo-golden-3cases-v1-pipeline`, ma deve ancora
+essere provata come racconto in sei schermate prima di bando, importo o
+finanziatore.
 
 ## Scopo
 
@@ -104,9 +107,9 @@ I tre casi devono mostrare capacita' differenti:
 
 | Caso | Ruolo nel racconto | Condizione |
 |---|---|---|
-| Andreoli | catena completa e feedback loop | da confermare nella nuova golden run |
-| Balboni | corroborazione e confronto multi-fonte | da confermare nella nuova golden run |
-| Bendini | decisione su contesto incerto e limiti documentali visibili | subordinato alla review storica nella stessa golden run |
+| Andreoli | catena completa e feedback loop | presente nella golden run canonica a tre casi |
+| Balboni | corroborazione e confronto multi-fonte | presente nella golden run canonica a tre casi |
+| Bendini | decisione su contesto incerto e limiti documentali visibili | presente nella golden run canonica a tre casi, con review ancora parziale |
 
 Per ogni caso mostrare la stessa struttura minima:
 

@@ -1,15 +1,16 @@
 # T33 Funding Demo Package Entrypoint
 
-Data: 2026-07-18
+Data: 2026-08-09
 
-Stato: entrypoint della golden run tecnica completo per uso interno. La prima
-revisione umana non ha approvato questo percorso come presentazione esterna;
-T33b separa ora la prova tecnica dalla presentazione finanziatori.
+Stato: entrypoint della golden run tecnica riallineato alla promozione canonica
+del 2026-08-09. La demo attiva e' ora
+`funding-demo-golden-3cases-v1-pipeline`; resta revisionabile, preview-only e
+non pubblicabile.
 
 ## Scope
 
-Questo sotto-incremento definisce la pagina di ingresso del pacchetto
-finanziatori collegata alla golden run T30-T32.
+Questo documento definisce la pagina di ingresso del pacchetto finanziatori
+collegata alla golden run a tre casi promossa come demo attiva.
 
 Dal 2026-07-18 questa pagina e' l'entrypoint della **golden run tecnica**. Non va
 usata come scaletta principale davanti a finanziatori. La presentazione esterna
@@ -30,13 +31,12 @@ memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md
 
 | Oggetto | Funzione | Stato |
 |---|---|---|
-| Golden run tecnica | dimostrare in profondita' provenance, riconciliazione, review, patch preview e feedback loop | la run T30-T32 resta attiva durante la preparazione della candidata a tre casi |
-| Presentazione finanziatori | mostrare patrimonio disponibile, coorte pilota, prova del metodo e lavoro ancora necessario | bloccata fino alla promozione della stessa candidata |
+| Golden run tecnica | dimostrare in profondita' provenance, riconciliazione, review, patch preview e feedback loop | attiva come `funding-demo-golden-3cases-v1-pipeline` |
+| Presentazione finanziatori | mostrare patrimonio disponibile, coorte pilota, prova del metodo e lavoro ancora necessario | sbloccata per prova narrativa, non ancora approvata come presentazione esterna |
 
-La separazione riguarda pubblico, sequenza e linguaggio. Dopo la transizione,
+La separazione riguarda pubblico, sequenza e linguaggio. Dopo la promozione,
 entrambi gli oggetti devono leggere lo stesso descriptor e lo stesso `run_id`.
-La run corrente resta valida e unica finche' la candidata non supera tutti i
-gate del runbook a tre casi.
+La run precedente resta storica; non va usata come seconda demo attiva.
 
 Vincoli rispettati nella fase documentale iniziale:
 
@@ -47,9 +47,9 @@ Vincoli rispettati nella fase documentale iniziale:
 - nessuna applicazione di `ProfilePatch`;
 - nessuna copia di dati reali nei repository.
 
-Aggiornamento operativo del 2026-07-16: dopo autorizzazione esplicita alla
-scrittura nel data root esterno, sono stati rigenerati solo gli artefatti T33
-del pacchetto finanziatori nella run canonica:
+Nota storica del 2026-07-16: dopo autorizzazione esplicita alla scrittura nel
+data root esterno, erano stati rigenerati solo gli artefatti T33 del pacchetto
+finanziatori nella run allora canonica:
 
 ```text
 P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_funding_dossier.json
@@ -76,7 +76,7 @@ P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json
 Run canonica:
 
 ```text
-prova-preview-profili-5-reviewed-01-pipeline
+funding-demo-golden-3cases-v1-pipeline
 ```
 
 Caso principale:
@@ -91,7 +91,13 @@ Caso di contrasto:
 person:purocielo:balboni-william
 ```
 
-Documenti selezionati:
+Caso complementare:
+
+```text
+person:purocielo:bendini-primo
+```
+
+Documenti selezionati principali:
 
 | Ruolo | Source document ID | Famiglia |
 |---|---|---|
@@ -100,12 +106,16 @@ Documenti selezionati:
 | Fonte online/istituzionale A | `partigiani_italia:b45553cd6b1673d8` | `partigiani_italia` |
 | Fonte online/istituzionale B | `partigiani_italia:b6b3c9e526723a27` | `partigiani_italia` |
 
+La run canonica attiva dichiara 5 documenti complessivi; usare `memoria mvp
+demo` o la nota operativa corrente per la verifica completa senza copiare dati
+reali nei repository.
+
 Stato verificato:
 
 - descriptor valido;
 - `ready_for_internal_demo`;
 - 3 famiglie fonte coperte;
-- 4/4 documenti coperti;
+- 5/5 documenti coperti;
 - ledger attivo standard: `mvp_consolidated_review_ledger.json`;
 - `publication_ready=false`;
 - `preview_only=true`.
@@ -117,12 +127,12 @@ approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 
 1. **Indice pacchetto finanziatori**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\funding_package_index.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\funding_package_index.md`
    - scopo: pagina di ingresso operativa generata dal builder T33.
 
 2. **Go/no-go checklist**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_go_no_go_checklist.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_go_no_go_checklist.md`
    - scopo: mostrare `go_with_review_blockers` e il confine preview-only.
 
 3. **Stato demo**
@@ -131,27 +141,27 @@ approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 
 4. **Tabella di riconciliazione**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_demo_reconciliation_table.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_demo_reconciliation_table.md`
    - scopo: mostrare claim, fonte, compatibilita' o divergenza.
 
 5. **Decisioni storiche**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\historian_review\review_decisions_summary.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\review_decisions.validation.md`
    - scopo: mostrare che lo storico decide e che restano stati non definitivi.
 
 6. **Verified facts preview**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\historian_review\verified_facts.preview.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\verified_facts.preview.md`
    - scopo: mostrare fatti verificati solo come preview.
 
 7. **ProfilePatch preview**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\historian_review\profile_patch.preview.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\profile_patch.preview.md`
    - scopo: mostrare proposta di aggiornamento non applicata.
 
 8. **Feedback loop**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\historian_review\feedback_loop_outcome.t31-demo.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\feedback_loop_outcome.t31-demo.md`
    - scopo: mostrare richiesta di nuova ricerca ed esito auditabile
      `needs_manual_review`.
 
@@ -169,7 +179,7 @@ approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 
 11. **Dossier finanziatori**
    - percorso:
-     `P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_funding_dossier.md`
+     `P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_funding_dossier.md`
    - scopo: dossier rigenerato con ledger consolidato e preview facts.
 
 12. **Brief editoriale esterno**
@@ -192,14 +202,14 @@ approfondimento tecnico. Non e' la scaletta della presentazione esterna.
 
 ## Walkthrough tecnico 7-10 minuti
 
-La tabella seguente descrive la run T30-T32 ancora attiva. Dopo la promozione
-della candidata deve essere rigenerata sul nuovo `run_id`, non mantenuta come
-secondo walkthrough.
+La tabella seguente descrive la demo tecnica attiva a tre casi. Non e' la
+scaletta esterna principale: per i finanziatori usare l'entrypoint di
+presentazione e mantenere questa pagina come appendice tecnica.
 
 | Minuti | Schermata/materiale | Messaggio |
 |---|---|---|
 | 0:00-1:00 | `memoria mvp demo` | Una sola golden run, preview-only, non pubblicabile. |
-| 1:00-2:00 | Caso Andreoli/Balboni | Perimetro piccolo: 2 profili, 4 documenti, 3 famiglie fonte. |
+| 1:00-2:00 | Tre casi selezionati | Perimetro piccolo: 3 profili, 5 documenti, 3 famiglie fonte. |
 | 2:00-3:30 | Riconciliazione | Le fonti convergono o divergono senza perdere provenance. |
 | 3:30-4:30 | Decisioni review | Lo storico conferma, lascia incerto o chiede verifica. |
 | 4:30-5:30 | Verified facts preview | Le decisioni possono generare fatti preview, non canonici. |
@@ -239,18 +249,21 @@ Da `memoria-engine`:
 | Scheda caso demo con provenance leggibile | completato per preview | `funding-demo-t33-demo-case-card.md`. |
 | Roadmap uso fondi | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
 | Distinzione attuale/sviluppo finanziato/visione | completato per preview | `funding-demo-t33-funding-roadmap.md`. |
-| Separazione golden run/presentazione | completata in bozza | `funding-demo-t33-presentation-entrypoint.md`. |
-| Readiness presentazione esterna | non approvata; T33b aperto | La review umana richiede una presentazione meno tecnica e basata sulla coorte pilota di 5 profili; `mvp_go_no_go_checklist.md` resta `go_with_review_blockers`. |
+| Separazione golden run/presentazione | completata in bozza, da provare narrativamente | `funding-demo-t33-presentation-entrypoint.md`. |
+| Readiness presentazione esterna | demo tecnica promossa; racconto esterno ancora da provare | La presentazione deve restare meno tecnica e basata su coorte pilota, tre casi e guardrail preview-only; `mvp_go_no_go_checklist.md` resta `go_with_review_blockers`. |
 
 ## Validazione
 
-Validazioni eseguite:
+Comandi da usare per validare lo stato attivo senza modifiche:
 
 ```powershell
 cd memoria-engine
 .\.venv\Scripts\memoria.exe mvp demo --data-root "P:\Comune\Me.Mo.Ri.a"
-.\scripts\build_mvp_funding_package.ps1 -RunDir "P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline" -DemoDescriptorJson "P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json" -QualityGateStatus passed
+.\.venv\Scripts\memoria.exe mvp status --data-root "P:\Comune\Me.Mo.Ri.a"
 ```
+
+La rigenerazione del pacchetto va eseguita solo in un incremento dedicato con
+scrittura autorizzata nel data root esterno.
 
 Revalidazione read-only del 2026-07-17:
 
@@ -273,9 +286,8 @@ Esito atteso e osservato:
 
 ## Prossimo sotto-incremento T33
 
-T33 deve eseguire a gate
-`funding-demo-t33-three-case-runbook.md`, promuovere una sola golden run a tre
-casi e solo dopo riprendere la presentazione in sei schermate. La prossima
-revisione umana deve valutare il racconto e la prova prima di qualunque lavoro
-su bando, importo o finanziatore. Mantenere `go_with_review_blockers` finche'
-restano decisioni storiche pending.
+T33 deve ora provare la presentazione in sei schermate sulla run canonica
+promossa, senza impaginare una domanda di finanziamento e senza scegliere bando,
+importo o finanziatore. La prossima revisione umana deve valutare il racconto e
+la prova. Mantenere `go_with_review_blockers` finche' restano decisioni storiche
+pending.
