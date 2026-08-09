@@ -2,81 +2,69 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-07-19T14:03:20+02:00",
-  "updated_at": "2026-07-19T14:06:10+02:00",
+  "selected_at": "2026-07-29T00:00:00+02:00",
+  "updated_at": "2026-07-29T00:00:00+02:00",
   "roadmap_basis": [
     {
-      "path": "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
-      "section": "Incremento 6 - Pacchetto finanziatori",
-      "reason": "T33 resta aperto e prioritario fino al pacchetto unico e alla decisione umana sulla presentazione."
-    },
-    {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T33 - Pacchetto finanziatori",
-      "reason": "La roadmap tecnica richiede dossier, walkthrough, readiness e assenza di output preview presentati come pubblicabili."
+      "section": "T26 - PCloudWorkspaceStorage read-only con mock HTTP",
+      "reason": "T25 e' chiuso e l'utente ha autorizzato esplicitamente la ripresa dell'integrazione pCloud."
     },
     {
-      "path": "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md",
-      "section": "Fase 4 - Pacchetto unico e gate finale",
-      "reason": "La fase 3 e' completata; il passo successivo e' rigenerare il pacchetto unico usando il descriptor candidato e fermarsi al gate finale."
+      "path": "memoria-bootstrap/docs/decision-log.md",
+      "section": "2026-07-12 - Workspace operativo pluggable",
+      "reason": "Il decision log prevede WorkspaceStorage pluggable, pCloud come primo backend cloud candidato e ingresso iniziale read-only."
     }
   ],
   "increment": {
-    "id": "t33-phase4-candidate-package-final-gate",
-    "title": "T33 fase 4 - pacchetto unico e gate finale",
-    "objective": "Rigenerare il pacchetto unico T33 sulla candidata a tre casi e fermarsi al gate finale, senza promozione canonica.",
+    "id": "t26-pcloud-workspace-read-only-env-selectable",
+    "title": "T26 - pCloud workspace read-only selezionabile da env",
+    "objective": "Introdurre un backend pCloud read-only selezionabile da variabili ambiente/manifest, senza salvare credenziali e senza test live obbligatori.",
     "scope": [
-      "Verificare in preflight che il descriptor candidato sia valido e che il descriptor attivo punti ancora alla run precedente.",
-      "Eseguire build_mvp_funding_package.ps1 sulla run candidata usando DemoDescriptorJson candidato e QualityGateStatus passed.",
-      "Correggere il gate del funding package se risulta ancora tarato sul vecchio perimetro T33 pre-espansione.",
-      "Leggere dossier, checklist/readiness, funding_package_index e artefatti chiave richiesti dal runbook.",
-      "Registrare l'esito e fermarsi per approvazione umana del gate finale."
+      "Aggiungere un driver PCloudWorkspaceStorage read-only con HTTP iniettabile e test mock.",
+      "Rendere esplicita la selezione del provider workspace tramite variabile ambiente e manifest provider-aware.",
+      "Documentare le variabili .env previste per provider, app OAuth, host, root/folderid e access token derivato.",
+      "Mantenere il backend locale e MEMORIA_DATA_ROOT compatibili."
     ],
     "out_of_scope": [
-      "Fase 5 promozione canonica o modifica di memoria_mvp_demo.active.json.",
-      "Presentazione esterna della candidata prima della promozione.",
-      "Applicazione di ProfilePatch o promozione di verified facts a fatti canonici.",
-      "Modifica di profili canonici, OCR, acquisizione online, nuove fonti o pipeline massiva."
+      "Scritture pCloud, upload, mkdir remoto o sincronizzazione.",
+      "Test live obbligatori o uso di credenziali reali in questa sessione.",
+      "Migrazione dati dal backend locale a pCloud.",
+      "Modifica di dati reali, profili canonici, EvidenceClaim o artefatti storici."
     ],
     "candidate_files": [
       "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package.py",
-      "memoria-engine/tests/test_mvp_funding_package.py",
-      "P:/Comune/Me.Mo.Ri.a/database/memoria_mvp_demo.active.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/memoria_mvp_demo.candidate.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_funding_dossier.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_funding_dossier.md",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_go_no_go_checklist.json",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/mvp_go_no_go_checklist.md",
-      "P:/Comune/Me.Mo.Ri.a/risultati/runs/funding-demo-golden-3cases-v1-pipeline/funding_package_index.md"
+      "memoria-engine/code/caduti_fonti_report/workspace_storage.py",
+      "memoria-engine/code/caduti_fonti_report/workspace_resolver.py",
+      "memoria-engine/tests/test_workspace_storage.py",
+      "memoria-engine/tests/test_workspace_resolver.py",
+      "memoria-workspace/manifest.yml",
+      "memoria-workspace/EXTERNAL_DATA_ROOT.md"
     ],
-    "stop_condition": "Pacchetto candidato rigenerato e gate finale pronto per approvazione umana oppure blocco documentato; descriptor attivo e profili canonici non modificati."
+    "stop_condition": "Driver pCloud read-only e selezione provider/env coperti da test mock e documentazione; nessuna scrittura cloud o credenziale salvata."
   },
   "verification": {
     "tests": [
-      ".\\scripts\\build_mvp_funding_package.ps1 -RunDir <candidate-run-dir> -DemoDescriptorJson <candidate-descriptor> -QualityGateStatus passed",
-      ".\\.venv\\Scripts\\python.exe -m unittest tests.test_mvp_funding_package",
-      "Get-Content <candidate-run-dir>/funding_package_index.md",
-      "Get-Content <candidate-run-dir>/mvp_package_readiness.md",
-      "Get-Content <candidate-run-dir>/mvp_go_no_go_checklist.md"
+      ".\\.venv\\Scripts\\python.exe -m unittest tests.test_workspace_storage tests.test_workspace_resolver tests.test_memoria_diagnostic_cli"
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/funding-demo-t33-three-case-runbook.md"
+      "memoria-workspace/EXTERNAL_DATA_ROOT.md"
     ],
     "result": "passed",
-    "notes": "Fase 4 completata. Preflight positivo: descriptor candidato ready_for_internal_demo, preview_only true, publication_ready false, T31 closed_with_auditable_outcome con outcome needs_manual_review, descriptor attivo ancora su prova-preview-profili-5-reviewed-01-pipeline. Il primo build_mvp_funding_package ha prodotto no_go_missing_outputs per due blocker obsoleti sul perimetro T33; corretto mvp_funding_package.py per accettare il perimetro corrente 3 profili e 5 documenti, aggiornato tests.test_mvp_funding_package e rieseguito il test mirato con 4 test OK. Rigenerato il pacchetto unico: mvp_go_no_go_checklist.* e funding_package_index.md riportano go_with_review_blockers, quality_gate passed, 3 profili, 5 documenti, 3 famiglie, 0 blocker tecnici e 1 review_blocker per 68 decisioni pending. Descriptor attivo invariato; nessuna fase 5, promozione canonica, applicazione ProfilePatch o modifica profili canonici eseguita."
+    "notes": "T26 completato. Aggiunto PCloudWorkspaceStorage read-only con exists, list_dir, read_bytes via getfilelink e stat; write_bytes e mkdir restano bloccati. Aggiunta risoluzione provider-aware con MEMORIA_WORKSPACE_PROVIDER e variabili pCloud da .env/ambiente, mantenendo compatibilita' local e MEMORIA_DATA_ROOT. Correzione OAuth: i dati dell'app pCloud MemoriaStorage sono app_name, client_id e client_secret; il token usato dalle API e' un access token ottenuto dopo approve/code flow e scambio oauth2_token. Aggiunti memoria workspace status, che non stampa valori sensibili, memoria workspace pcloud-auth-url per generare l'URL authorize e memoria workspace pcloud-exchange-code per scambiare il code con oauth2_token e salvare il bearer nel .env senza stamparlo. Aggiornati manifest e documentazione workspace. Test mirati passanti: 59 test OK. Prova live completata il 2026-07-29: authorization code scambiato con successo, bearer salvato soltanto nel .env locale e listfolder read-only riuscito su api.pcloud.com. La root dell'account e' vuota; il workspace locale e' quindi configurato su path / e folderid 0. Nessuna scrittura cloud, migrazione dati o credenziale salvata nei repository."
   },
   "blockers": [],
   "session_notes": [
     "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate in questa sessione.",
-    "current-work.json precedente era completed; selezionato un nuovo micro-incremento T33 fase 4 coerente con roadmap e runbook.",
-    "Fase 3 completata nella sessione precedente; fase 4 limitata a pacchetto unico e stop al gate finale.",
-    "Fix mirato necessario: il funding package gate era ancora tarato sul vecchio perimetro descriptor-mode; ora valida il perimetro T33 a 3 profili e 5 documenti."
+    "current-work.json precedente era completed; selezionato T26 per richiesta esplicita dell'utente.",
+    "Credenziali pCloud da usare solo via variabili ambiente/.env locale, non nei repository.",
+    "Documentazione pCloud ufficiale verificata per My Apps, OAuth authorize/oauth2_token, listfolder, stat, getfilelink e host API US/EU.",
+    "Scambio OAuth e accesso live read-only completati senza esporre codice, client secret o bearer; root pCloud vuota."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Validare dalle roadmap e dal gate umano il prossimo passo; il candidato naturale e' approvazione esplicita del gate finale prima di qualunque fase 5/promozione canonica."
+    "description": "Candidato naturale: test live read-only pCloud su cartella esistente configurata nel .env locale; T27 scrittura diagnostica solo dopo autorizzazione dedicata."
   }
 }

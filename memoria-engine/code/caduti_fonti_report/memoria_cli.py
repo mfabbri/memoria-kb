@@ -11,8 +11,17 @@ from typing import Sequence
 import yaml
 
 from caduti_fonti_report.document_analysis.mvp_demo_descriptor import build_mvp_demo_aligned_ledger, build_mvp_demo_descriptor
-from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, WorkspaceStorage
-from caduti_fonti_report.workspace_resolver import DataRootResolution, DataRootResolutionError, resolve_data_root
+from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
+from caduti_fonti_report.workspace_resolver import (
+    DataRootResolution,
+    DataRootResolutionError,
+    WorkspaceResolutionError,
+    build_workspace_storage,
+    build_pcloud_authorize_url,
+    exchange_pcloud_oauth_code,
+    resolve_data_root,
+    resolve_workspace,
+)
 
 
 REQUIRED_DATA_ROOT_DIRS = (
@@ -692,6 +701,129 @@ def _command_doctor(args: argparse.Namespace) -> int:
         _print_status_line(name, ok)
 
     return 0 if data_root_ok and all(ok for _, ok in dir_checks) and all(ok for _, ok in sibling_checks) else 1
+
+
+def _command_workspace_status(args: argparse.Namespace) -> int:
+    try:
+        resolution = resolve_workspace(explicit_data_root=args.data_root)
+    except (DataRootResolutionError, WorkspaceResolutionError) as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 2
+
+    print("Me.Mo.Ri.A workspace")
+    print(f"provider: {resolution.provider}")
+    print(f"source: {resolution.source}")
+    if resolution.provider == "local":
+        print(f"local_root: {resolution.local_root}")
+    if resolution.pcloud is not None:
+        print(f"pcloud_app_name: {resolution.pcloud.app_name}")
+        print(f"pcloud_api_host: {resolution.pcloud.api_host}")
+        print(f"pcloud_root: {resolution.pcloud.root}")
+        print(f"pcloud_folderid: {resolution.pcloud.folder_id or '<not configured>'}")
+        print(f"pcloud_client_id_ref: {resolution.pcloud.client_id_ref}")
+        print(f"pcloud_client_id_configured: {str(resolution.pcloud.client_id_configured).lower()}")
+        print(f"pcloud_client_secret_ref: {resolution.pcloud.client_secret_ref}")
+        print(f"pcloud_client_secret_configured: {str(resolution.pcloud.client_secret_configured).lower()}")
+        print(f"pcloud_access_token_ref: {resolution.pcloud.access_token_ref}")
+        print(f"pcloud_access_token_configured: {str(resolution.pcloud.token_configured).lower()}")
+        print(f"pcloud_mode: {resolution.pcloud.mode}")
+
+    if args.list.strip():
+        try:
+            storage = build_workspace_storage(resolution)
+            entries = storage.list_dir(args.list)
+        except (NotImplementedError, ValueError, PCloudStorageError, WorkspaceResolutionError) as exc:
+            print(f"ERROR {exc}", file=sys.stderr)
+            return 2
+        print("")
+        print(f"list: {args.list}")
+        if entries:
+            for entry in entries[: args.limit]:
+                marker = "dir" if entry.is_dir else "file"
+                size = "" if entry.size is None else f" size={entry.size}"
+                print(f"- {marker} {entry.path}{size}")
+        else:
+            print("- none")
+
+    return 0
+
+
+def _command_workspace_pcloud_auth_url(args: argparse.Namespace) -> int:
+    try:
+        resolution = resolve_workspace(explicit_data_root=args.data_root)
+        if resolution.pcloud is None:
+            print("ERROR Il provider workspace selezionato non e' pcloud.", file=sys.stderr)
+            return 2
+        url = build_pcloud_authorize_url(
+            resolution.pcloud,
+            redirect_uri=args.redirect_uri,
+            state=args.state,
+            force_reapprove=args.force_reapprove,
+        )
+    except (DataRootResolutionError, WorkspaceResolutionError) as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 2
+    print(url)
+    print("Dopo l'approvazione, scambia il code con oauth2_token e salva solo l'access token nel .env locale.")
+    return 0
+
+
+def _command_workspace_pcloud_exchange_code(args: argparse.Namespace) -> int:
+    try:
+        resolution = resolve_workspace(explicit_data_root=args.data_root)
+        if resolution.pcloud is None:
+            print("ERROR Il provider workspace selezionato non e' pcloud.", file=sys.stderr)
+            return 2
+        token = exchange_pcloud_oauth_code(
+            resolution.pcloud,
+            code=args.code,
+            api_host=args.api_host,
+        )
+        if args.save_env:
+            env_path = _nearest_env_path(Path.cwd())
+            _upsert_env_value(env_path, resolution.pcloud.access_token_ref, token.access_token)
+            _upsert_env_value(env_path, "MEMORIA_PCLOUD_API_HOST", token.api_host)
+            print(f"Access token pCloud salvato in: {env_path}")
+        else:
+            print("Access token pCloud ottenuto.")
+            print(f"Salvalo nel .env come {resolution.pcloud.access_token_ref}=<token> oppure rilancia con --save-env.")
+        print(f"token_type: {token.token_type}")
+        if token.uid:
+            print(f"uid: {token.uid}")
+        print(f"api_host: {token.api_host}")
+    except (DataRootResolutionError, WorkspaceResolutionError) as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
+def _nearest_env_path(start_dir: Path) -> Path:
+    current = start_dir.resolve()
+    if current.is_file():
+        current = current.parent
+    for directory in [current, *current.parents]:
+        env_path = directory / ".env"
+        if env_path.exists():
+            return env_path
+    return current / ".env"
+
+
+def _upsert_env_value(env_path: Path, key: str, value: str) -> None:
+    lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
+    prefix = f"{key}="
+    replacement = f"{key}={value}"
+    updated = False
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(prefix) or stripped.startswith(f"export {prefix}"):
+            new_lines.append(replacement)
+            updated = True
+        else:
+            new_lines.append(line)
+    if not updated:
+        new_lines.append(replacement)
+    env_path.write_text("\n".join(new_lines).rstrip() + "\n", encoding="utf-8")
 
 
 def _command_profiles_status(args: argparse.Namespace) -> int:
@@ -1718,6 +1850,51 @@ def build_parser() -> argparse.ArgumentParser:
                 help="Formato di output.",
             )
         command.set_defaults(handler=handler)
+
+    workspace = subparsers.add_parser("workspace", help="Diagnostica provider workspace local/pCloud.")
+    workspace_subparsers = workspace.add_subparsers(dest="workspace_command", required=True)
+    workspace_status = workspace_subparsers.add_parser(
+        "status",
+        help="Mostra il provider workspace selezionato senza esporre credenziali.",
+    )
+    workspace_status.add_argument("--data-root", default="", help="Path esplicito al data root locale.")
+    workspace_status.add_argument(
+        "--list",
+        default="",
+        help="Path logico da elencare in sola lettura. Per pCloud richiede il token configurato.",
+    )
+    workspace_status.add_argument("--limit", type=int, default=20, help="Numero massimo di entry da mostrare.")
+    workspace_status.set_defaults(handler=_command_workspace_status)
+    workspace_auth_url = workspace_subparsers.add_parser(
+        "pcloud-auth-url",
+        help="Genera l'URL OAuth pCloud code flow usando il client_id dal .env.",
+    )
+    workspace_auth_url.add_argument("--data-root", default="", help="Path esplicito al data root locale.")
+    workspace_auth_url.add_argument("--redirect-uri", default="", help="Redirect URI registrata per l'app pCloud.")
+    workspace_auth_url.add_argument("--state", default="", help="Valore state opzionale per il flow OAuth.")
+    workspace_auth_url.add_argument(
+        "--force-reapprove",
+        action="store_true",
+        help="Richiede a pCloud una nuova approvazione anche se l'app era gia' autorizzata.",
+    )
+    workspace_auth_url.set_defaults(handler=_command_workspace_pcloud_auth_url)
+    workspace_exchange_code = workspace_subparsers.add_parser(
+        "pcloud-exchange-code",
+        help="Scambia un authorization code pCloud con un access token OAuth.",
+    )
+    workspace_exchange_code.add_argument("--data-root", default="", help="Path esplicito al data root locale.")
+    workspace_exchange_code.add_argument("--code", required=True, help="Authorization code restituito da pCloud.")
+    workspace_exchange_code.add_argument(
+        "--api-host",
+        default="",
+        help="Host API da usare per oauth2_token; default dal manifest/env.",
+    )
+    workspace_exchange_code.add_argument(
+        "--save-env",
+        action="store_true",
+        help="Salva l'access token ottenuto nel .env locale senza stamparlo.",
+    )
+    workspace_exchange_code.set_defaults(handler=_command_workspace_pcloud_exchange_code)
 
     profiles = subparsers.add_parser("profiles", help="Diagnostica read-only dei profili persona.")
     profiles_subparsers = profiles.add_subparsers(dest="profiles_command", required=True)

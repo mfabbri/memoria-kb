@@ -14,7 +14,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.memoria_cli import REQUIRED_DATA_ROOT_DIRS, main  # noqa: E402
-from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage  # noqa: E402
+from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError  # noqa: E402
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -391,6 +391,15 @@ def write_mvp_demo_build_workspace(data_root: Path) -> Path:
     return run_dir
 
 
+def make_project_workspace(tmp_dir: Path) -> tuple[Path, Path]:
+    project_root = tmp_dir / "project"
+    engine_root = project_root / "memoria-engine"
+    workspace_root = project_root / "memoria-workspace"
+    engine_root.mkdir(parents=True)
+    workspace_root.mkdir()
+    return engine_root, workspace_root
+
+
 def run_cli(*args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> tuple[int, str, str]:
     stdout = StringIO()
     stderr = StringIO()
@@ -406,6 +415,184 @@ def run_cli(*args: str, cwd: Path | None = None, env: dict[str, str] | None = No
 
 
 class MemoriaDiagnosticCliTests(unittest.TestCase):
+    def test_workspace_status_reports_pcloud_selected_from_env_without_printing_token(self) -> None:
+        with temp_workspace() as tmp_dir:
+            engine_root, workspace_root = make_project_workspace(tmp_dir)
+            (workspace_root / "manifest.yml").write_text(
+                """
+workspace_id: test
+repository_role: descriptor_only
+workspace:
+  provider: local
+  root: P:/local/fallback
+  providers:
+    pcloud:
+      app_name: MemoriaStorage
+      root: /MeMoRiA
+      folderid: 123
+      api_host: eapi.pcloud.com
+      client_id_ref: MEMORIA_PCLOUD_CLIENT_ID
+      client_secret_ref: MEMORIA_PCLOUD_CLIENT_SECRET
+      access_token_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
+      mode: read_only
+""".strip(),
+                encoding="utf-8",
+            )
+
+            code, stdout, stderr = run_cli(
+                "workspace",
+                "status",
+                cwd=engine_root,
+                env={
+                    "MEMORIA_WORKSPACE_PROVIDER": "pcloud",
+                    "MEMORIA_PCLOUD_CLIENT_ID": "client-id",
+                    "MEMORIA_PCLOUD_CLIENT_SECRET": "client-secret",
+                    "MEMORIA_PCLOUD_ACCESS_TOKEN": "secret-token",
+                    "MEMORIA_PCLOUD_API_HOST": "eapi.pcloud.com",
+                    "MEMORIA_PCLOUD_ROOT": "/MeMoRiA",
+                    "MEMORIA_PCLOUD_FOLDER_ID": "123",
+                },
+            )
+
+            self.assertEqual(code, 0)
+            self.assertEqual(stderr, "")
+            self.assertIn("provider: pcloud", stdout)
+            self.assertIn("pcloud_app_name: MemoriaStorage", stdout)
+            self.assertIn("pcloud_api_host: eapi.pcloud.com", stdout)
+            self.assertIn("pcloud_root: /MeMoRiA", stdout)
+            self.assertIn("pcloud_folderid: 123", stdout)
+            self.assertIn("pcloud_client_id_configured: true", stdout)
+            self.assertIn("pcloud_client_secret_configured: true", stdout)
+            self.assertIn("pcloud_access_token_configured: true", stdout)
+            self.assertNotIn("secret-token", stdout)
+            self.assertNotIn("client-secret", stdout)
+
+    def test_workspace_pcloud_auth_url_uses_client_id_without_printing_secret(self) -> None:
+        with temp_workspace() as tmp_dir:
+            engine_root, workspace_root = make_project_workspace(tmp_dir)
+            (workspace_root / "manifest.yml").write_text(
+                """
+workspace_id: test
+repository_role: descriptor_only
+workspace:
+  provider: pcloud
+  providers:
+    pcloud:
+      client_id_ref: MEMORIA_PCLOUD_CLIENT_ID
+      client_secret_ref: MEMORIA_PCLOUD_CLIENT_SECRET
+""".strip(),
+                encoding="utf-8",
+            )
+
+            code, stdout, stderr = run_cli(
+                "workspace",
+                "pcloud-auth-url",
+                "--redirect-uri",
+                "http://localhost/callback",
+                cwd=engine_root,
+                env={
+                    "MEMORIA_PCLOUD_CLIENT_ID": "client-id",
+                    "MEMORIA_PCLOUD_CLIENT_SECRET": "client-secret",
+                },
+            )
+
+            self.assertEqual(code, 0)
+            self.assertEqual(stderr, "")
+            self.assertIn("https://my.pcloud.com/oauth2/authorize?", stdout)
+            self.assertIn("client_id=client-id", stdout)
+            self.assertIn("response_type=code", stdout)
+            self.assertNotIn("client-secret", stdout)
+
+    def test_workspace_status_list_reports_pcloud_errors_without_traceback(self) -> None:
+        with temp_workspace() as tmp_dir:
+            engine_root, workspace_root = make_project_workspace(tmp_dir)
+            (workspace_root / "manifest.yml").write_text(
+                """
+workspace_id: test
+repository_role: descriptor_only
+workspace:
+  provider: pcloud
+  providers:
+    pcloud:
+      access_token_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
+""".strip(),
+                encoding="utf-8",
+            )
+
+            with patch(
+                "caduti_fonti_report.memoria_cli.build_workspace_storage",
+                side_effect=PCloudStorageError("pCloud listfolder failed with result 2000."),
+            ):
+                code, stdout, stderr = run_cli(
+                    "workspace",
+                    "status",
+                    "--list",
+                    ".",
+                    cwd=engine_root,
+                    env={"MEMORIA_PCLOUD_ACCESS_TOKEN": "secret-token"},
+                )
+
+            self.assertEqual(code, 2)
+            self.assertIn("provider: pcloud", stdout)
+            self.assertIn("ERROR pCloud listfolder failed with result 2000.", stderr)
+            self.assertNotIn("Traceback", stderr)
+
+    def test_workspace_pcloud_exchange_code_saves_token_without_printing_it(self) -> None:
+        with temp_workspace() as tmp_dir:
+            engine_root, workspace_root = make_project_workspace(tmp_dir)
+            (workspace_root / "manifest.yml").write_text(
+                """
+workspace_id: test
+repository_role: descriptor_only
+workspace:
+  provider: pcloud
+  providers:
+    pcloud:
+      api_host: eapi.pcloud.com
+      client_id_ref: MEMORIA_PCLOUD_CLIENT_ID
+      client_secret_ref: MEMORIA_PCLOUD_CLIENT_SECRET
+      access_token_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
+""".strip(),
+                encoding="utf-8",
+            )
+            env_path = engine_root / ".env"
+            env_path.write_text(
+                """
+MEMORIA_WORKSPACE_PROVIDER=pcloud
+MEMORIA_PCLOUD_CLIENT_ID=client-id
+MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
+""".strip()
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch(
+                "caduti_fonti_report.memoria_cli.exchange_pcloud_oauth_code",
+                return_value=type("Token", (), {"access_token": "oauth-token", "token_type": "bearer", "uid": "123", "api_host": "eapi.pcloud.com"})(),
+            ):
+                code, stdout, stderr = run_cli(
+                    "workspace",
+                    "pcloud-exchange-code",
+                    "--code",
+                    "auth-code",
+                    "--save-env",
+                    cwd=engine_root,
+                    env={
+                        "MEMORIA_WORKSPACE_PROVIDER": "pcloud",
+                        "MEMORIA_PCLOUD_CLIENT_ID": "client-id",
+                        "MEMORIA_PCLOUD_CLIENT_SECRET": "client-secret",
+                    },
+                )
+
+            self.assertEqual(code, 0)
+            self.assertEqual(stderr, "")
+            self.assertIn("Access token pCloud salvato in:", stdout)
+            self.assertNotIn("oauth-token", stdout)
+            self.assertNotIn("client-secret", stdout)
+            env_text = env_path.read_text(encoding="utf-8")
+            self.assertIn("MEMORIA_PCLOUD_ACCESS_TOKEN=oauth-token", env_text)
+            self.assertIn("MEMORIA_PCLOUD_API_HOST=eapi.pcloud.com", env_text)
+
     def test_inventory_reports_missing_required_folder_without_recursing(self) -> None:
         with temp_workspace() as tmp_dir:
             data_root = make_data_root(tmp_dir, missing=("secure",))

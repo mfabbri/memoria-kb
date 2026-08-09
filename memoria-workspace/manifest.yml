@@ -8,11 +8,14 @@ workspace:
     local:
       root: "P:\\Comune\\Me.Mo.Ri.a"
     pcloud:
-      status: blocked_api_support
+      status: read_only_candidate
+      app_name: MemoriaStorage
       root: /MeMoRiA
       api_host: eapi.pcloud.com
       cache_dir: .memoria-cache/pcloud
-      credentials_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
+      client_id_ref: MEMORIA_PCLOUD_CLIENT_ID
+      client_secret_ref: MEMORIA_PCLOUD_CLIENT_SECRET
+      access_token_ref: MEMORIA_PCLOUD_ACCESS_TOKEN
       mode: read_only
 data_root:
   type: external_path

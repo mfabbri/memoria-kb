@@ -22,6 +22,61 @@ Tools should resolve the data root in this order:
 The manifest may describe future providers such as pCloud with a
 `credentials_ref`, but it must not store tokens or credentials.
 
+## Workspace provider selection
+
+The workspace backend can be selected without code changes:
+
+```dotenv
+MEMORIA_WORKSPACE_PROVIDER=local
+MEMORIA_DATA_ROOT=P:\Comune\Me.Mo.Ri.a
+```
+
+For the first pCloud read-only integration, use a local `.env` file that is not
+committed. Before OAuth approval, only the app credentials are needed:
+
+```dotenv
+MEMORIA_WORKSPACE_PROVIDER=pcloud
+MEMORIA_PCLOUD_APP_NAME=MemoriaStorage
+MEMORIA_PCLOUD_CLIENT_ID=<clientid>
+MEMORIA_PCLOUD_CLIENT_SECRET=<client-secret>
+MEMORIA_PCLOUD_API_HOST=eapi.pcloud.com
+MEMORIA_PCLOUD_ROOT=/MeMoRiA
+MEMORIA_PCLOUD_FOLDER_ID=<optional-folderid>
+```
+
+The pCloud developer console provides the app name, `client_id` and
+`client_secret`. Those values identify the OAuth app; they are not enough by
+themselves to call file/folder APIs. Generate the authorization URL with:
+
+```powershell
+memoria workspace pcloud-auth-url
+```
+
+After approval, pCloud returns an authorization `code`; exchange it with
+`oauth2_token` using `client_id`, `client_secret` and `code`, then store the
+returned bearer token in the same local `.env`:
+
+```dotenv
+MEMORIA_PCLOUD_ACCESS_TOKEN=<token returned by oauth2_token>
+```
+
+The CLI can do the exchange and update the local `.env` without printing the
+token:
+
+```powershell
+memoria workspace pcloud-exchange-code --code <authorization-code> --save-env
+```
+
+The default secret variable names are declared in `manifest.yml` as
+`client_id_ref`, `client_secret_ref` and `access_token_ref`. They can be renamed
+with `MEMORIA_PCLOUD_CLIENT_ID_REF`, `MEMORIA_PCLOUD_CLIENT_SECRET_REF` and
+`MEMORIA_PCLOUD_ACCESS_TOKEN_REF` if different local secret names are needed.
+For OAuth tokens, API calls pass the bearer as the pCloud global parameter
+`access_token`; the older `auth` parameter is only for username/password login
+tokens.
+The pCloud backend is read-only in T26: standard tests use mock HTTP, and live
+checks must be explicitly requested.
+
 ## Data policy
 
 - Real PDFs, scans, OCR outputs, generated JSON-LD, review dashboards and backups remain under `P:\Comune\Me.Mo.Ri.a`.

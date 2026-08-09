@@ -144,6 +144,30 @@ revisionabile, non pubblicabile. Il descriptor attivo resta puntato a
 `prova-preview-profili-5-reviewed-01-pipeline`; non sono state eseguite fase 5,
 promozione canonica, applicazione ProfilePatch o modifiche ai profili canonici.
 
+Avanzamento T26 del 2026-07-29: introdotto il backend
+`PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
+Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite
+manifest e override da `.env`: `MEMORIA_WORKSPACE_PROVIDER`,
+`MEMORIA_PCLOUD_APP_NAME`, `MEMORIA_PCLOUD_CLIENT_ID`,
+`MEMORIA_PCLOUD_CLIENT_SECRET`, `MEMORIA_PCLOUD_ACCESS_TOKEN`,
+`MEMORIA_PCLOUD_API_HOST`, `MEMORIA_PCLOUD_ROOT`, `MEMORIA_PCLOUD_FOLDER_ID` e
+ref override dedicati. Il comando `memoria workspace status` mostra il provider
+selezionato, host/root/folderid e quali segreti sono configurati, senza stampare
+valori sensibili; `memoria workspace pcloud-auth-url` genera l'URL OAuth code
+flow per l'app `MemoriaStorage`. Il token richiesto dalle API read-only e'
+ottenuto dopo approvazione utente e scambio `oauth2_token`, non coincide con
+client id/secret. L'opzione `--list` permette una verifica read-only esplicita.
+I test standard restano offline e non eseguono chiamate live pCloud. Nessuna
+scrittura cloud, migrazione dati, modifica a dati reali o salvataggio di
+credenziali nei repository e' stata eseguita.
+
+Verifica live T26 del 2026-07-29: il codice OAuth approvato dall'utente e'
+stato scambiato con successo tramite `oauth2_token`; il bearer e l'host
+restituito sono stati salvati soltanto nel `.env` locale, senza stamparli.
+`memoria workspace status --list .` conferma l'accesso read-only a
+`api.pcloud.com`. La root pCloud e' attualmente vuota ed e' configurata come
+path `/`, `folderid 0`. Nessuna cartella o file remoto e' stato creato.
+
 T32 e' chiuso: la golden run e' pronta per demo interna, usa il ledger standard
 `mvp_consolidated_review_ledger.json`, non dipende piu' dal sidecar T30 come
 ledger attivo, e il rischio del pacchetto repository distribuibile e' trattato
@@ -1703,8 +1727,10 @@ umana.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 
-- T26-T28 cloud solo dopo T33 o su richiesta esplicita/blocco diretto della
-  golden run;
+- verifica live read-only T26 su una cartella pCloud esistente, solo con
+  credenziali nel `.env` locale e autorizzazione esplicita;
+- T27 scrittura diagnostica pCloud solo dopo esito soddisfacente del read-only
+  e con cartella diagnostica remota autorizzata;
 - Q2 solo se rimuove un blocco diretto e documentato della golden run.
 
 ## Traccia parallela qualita'

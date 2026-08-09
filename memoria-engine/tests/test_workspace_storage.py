@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
-from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage  # noqa: E402
+from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudWorkspaceStorage  # noqa: E402
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -108,6 +108,109 @@ class LocalWorkspaceStorageTests(unittest.TestCase):
                 storage.write_bytes("../escape.txt", b"escape")
 
             self.assertFalse((tmp_dir.parent / "escape.txt").exists())
+
+
+class PCloudWorkspaceStorageTests(unittest.TestCase):
+    def test_lists_directory_with_root_folder_id_and_maps_entries_to_logical_paths(self) -> None:
+        calls: list[tuple[str, dict[str, str], int]] = []
+
+        def http_json_get(url: str, params: dict[str, str], timeout: int) -> dict[str, object]:
+            calls.append((url, params, timeout))
+            return {
+                "result": 0,
+                "metadata": {
+                    "isfolder": True,
+                    "path": "/MeMoRiA",
+                    "contents": [
+                        {"name": "database", "path": "/MeMoRiA/database", "isfolder": True, "folderid": 42},
+                        {"name": "README.txt", "path": "/MeMoRiA/README.txt", "isfolder": False, "fileid": 7, "size": 12},
+                    ],
+                },
+            }
+
+        storage = PCloudWorkspaceStorage(
+            access_token="secret-token",
+            root="/MeMoRiA",
+            root_folder_id="123",
+            api_host="eapi.pcloud.com",
+            http_json_get=http_json_get,
+        )
+
+        entries = storage.list_dir(".")
+
+        self.assertEqual(calls[0][0], "https://eapi.pcloud.com/listfolder")
+        self.assertEqual(calls[0][1]["folderid"], "123")
+        self.assertNotIn("path", calls[0][1])
+        self.assertEqual(calls[0][1]["access_token"], "secret-token")
+        self.assertNotIn("auth", calls[0][1])
+        self.assertEqual([entry.path for entry in entries], ["database", "README.txt"])
+        self.assertTrue(entries[0].is_dir)
+        self.assertEqual(entries[1].size, 12)
+
+    def test_stats_file_by_remote_path(self) -> None:
+        def http_json_get(url: str, params: dict[str, str], timeout: int) -> dict[str, object]:
+            self.assertEqual(url, "https://api.pcloud.com/stat")
+            self.assertEqual(params["path"], "/MeMoRiA/database/evidence.sqlite")
+            return {
+                "result": 0,
+                "metadata": {
+                    "path": "/MeMoRiA/database/evidence.sqlite",
+                    "isfolder": False,
+                    "size": 99,
+                },
+            }
+
+        storage = PCloudWorkspaceStorage(access_token="secret-token", root="/MeMoRiA", http_json_get=http_json_get)
+
+        file_stat = storage.stat("database/evidence.sqlite")
+
+        self.assertTrue(file_stat.exists)
+        self.assertTrue(file_stat.is_file)
+        self.assertEqual(file_stat.path, "database/evidence.sqlite")
+        self.assertEqual(file_stat.size, 99)
+
+    def test_missing_directory_listing_returns_empty_tuple(self) -> None:
+        def http_json_get(url: str, params: dict[str, str], timeout: int) -> dict[str, object]:
+            return {"result": 2005}
+
+        storage = PCloudWorkspaceStorage(access_token="secret-token", root="/MeMoRiA", http_json_get=http_json_get)
+
+        self.assertEqual(storage.list_dir("missing"), ())
+
+    def test_reads_file_through_getfilelink(self) -> None:
+        json_calls: list[tuple[str, dict[str, str], int]] = []
+        byte_calls: list[tuple[str, int]] = []
+
+        def http_json_get(url: str, params: dict[str, str], timeout: int) -> dict[str, object]:
+            json_calls.append((url, params, timeout))
+            return {"result": 0, "hosts": ["c1.pcloud.com"], "path": "/hash/readme.txt"}
+
+        def http_bytes_get(url: str, timeout: int) -> bytes:
+            byte_calls.append((url, timeout))
+            return b"hello"
+
+        storage = PCloudWorkspaceStorage(
+            access_token="secret-token",
+            root="/MeMoRiA",
+            timeout=5,
+            http_json_get=http_json_get,
+            http_bytes_get=http_bytes_get,
+        )
+
+        self.assertEqual(storage.read_bytes("README.txt"), b"hello")
+        self.assertEqual(json_calls[0][0], "https://api.pcloud.com/getfilelink")
+        self.assertEqual(json_calls[0][1]["path"], "/MeMoRiA/README.txt")
+        self.assertEqual(byte_calls, [("https://c1.pcloud.com/hash/readme.txt", 5)])
+
+    def test_rejects_writes_and_paths_that_escape_root(self) -> None:
+        storage = PCloudWorkspaceStorage(access_token="secret-token", root="/MeMoRiA", http_json_get=lambda *_: {})
+
+        with self.assertRaises(NotImplementedError):
+            storage.write_bytes("diagnostics.txt", b"blocked")
+        with self.assertRaises(NotImplementedError):
+            storage.mkdir("diagnostics")
+        with self.assertRaises(ValueError):
+            storage.stat("../escape.txt")
 
 
 if __name__ == "__main__":
