@@ -210,6 +210,22 @@ pilota e conteggi della golden run a tre casi. Le sei schermate hanno verdetto
 racconto, non per uso esterno finale. Nessun bando, importo o finanziatore e'
 stato introdotto; nessun file del data root esterno e' stato modificato.
 
+Verifica caso concreto T33 del 2026-08-25: una lettura read-only degli artefatti della golden run ha individuato Andreoli come candidato utilizzabile per il racconto, limitatamente ai collegamenti persona-documento confermati e ai limiti documentati. I dettagli restano negli artefatti esterni della run; nessun fatto storico e stato promosso o copiato nel repository.
+
+Revisioni narrative T33 del 2026-08-25: recepite nella bozza le osservazioni della revisione umana. Il racconto ora include persone, luoghi, eventi e documenti, sostituisce il glossario tecnico con cinque storie e usa Andreoli come unico esempio concreto, limitato a collegamenti confermati e divergenze documentate. La presentazione resta non pubblicabile.
+
+Selezione visuale T33 del 2026-08-26: eseguita lettura read-only dei materiali del caso concreto. Sono state selezionate tre tracce documentali per il futuro layout interno; la seconda scheda istituzionale resta una domanda aperta. Nessuna immagine o dato storico e stato copiato nel repository e la presentazione resta non pubblicabile.
+
+Scaletta visuale T33 del 2026-08-26: creato memoria-bootstrap/docs/funding-demo-t33-andreoli-visual-layout.md per comporre internamente la schermata Andreoli con tre tracce documentali e una domanda aperta. Immagini ed estratti restano nel data root esterno; nessun dato storico e stato copiato nel repository e la presentazione resta non pubblicabile.
+
+Handoff revisione umana T33 del 2026-08-25: creato
+`memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md` come traccia
+documentale per la revisione umana del racconto in sei schermate. L'handoff
+elenca materiali da leggere, domande per blocco narrativo, esiti ammessi e
+blocchi da non superare. Non approva la presentazione, non introduce bando,
+importo o finanziatore, non scrive nel data root esterno e non modifica
+ProfilePatch, verified facts canonici o profili canonici.
+
 Avanzamento T26 del 2026-07-29: introdotto il backend
 `PCloudWorkspaceStorage` in modalita' read-only con HTTP iniettabile e test mock.
 Il workspace e' ora risolvibile come provider logico `local` o `pcloud` tramite
@@ -1782,10 +1798,11 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 T33 resta l'incremento corrente. La golden run a tre casi
 `funding-demo-golden-3cases-v1-pipeline` e' ora il descriptor demo attivo, come
 demo revisionabile e non pubblicabile. La prova asciutta della presentazione in
-sei schermate e' completata; il prossimo sotto-incremento candidato e' la
-revisione umana del racconto e dei blocchi narrativi, mantenendo separati
-coorte pilota, tre casi e patrimonio disponibile e senza introdurre bando,
-importo, finanziatore o pubblicazione.
+sei schermate e' completata e l'handoff di revisione umana e' pronto; il
+prossimo sotto-incremento candidato e' la revisione umana effettiva del racconto
+e dei blocchi narrativi, mantenendo separati coorte pilota, tre casi e
+patrimonio disponibile e senza introdurre bando, importo, finanziatore o
+pubblicazione.
 
 Possibili candidati successivi, da non avviare in questa sessione:
 
@@ -2102,3 +2119,7 @@ cd memoria-engine
   metodologiche nuove.
 - Aggiornare roadmap o playbook solo se cambia il processo operativo.
 - Riportare nel riepilogo finale i file modificati e le validazioni eseguite.
+
+Template verbale revisione umana T33 del 2026-08-26: creato memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md e collegato all'handoff. Il template raccoglie esito, blocchi narrativi, correzioni richieste e conferme di guardrail, ma non registra alcuna decisione reale, non approva la presentazione, non introduce bando/importo/finanziatore e non modifica artefatti canonici.
+
+Preflight revisione umana T33 del 2026-08-28: creato memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md e collegato a handoff e template. Il preflight verifica materiali, sei blocchi narrativi, esiti ammessi e guardrail prima della revisione umana effettiva; non registra verdetti reali, non approva layout o pubblicazione, non introduce bando/importo/finanziatore e non modifica artefatti canonici.

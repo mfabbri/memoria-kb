@@ -1,103 +1,125 @@
 {
-  "$schema": "./current-work.schema.json",
-  "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-08-09T18:45:11+02:00",
-  "updated_at": "2026-08-09T18:46:59+02:00",
-  "roadmap_basis": [
-    {
-      "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T33 - Pacchetto finanziatori",
-      "reason": "T33 resta aperto e prioritario fino alla chiusura del pacchetto finanziatori e richiede walkthrough/presentazione coerenti con una sola golden run."
-    },
-    {
-      "path": "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
-      "section": "Incremento 6 - Pacchetto finanziatori",
-      "reason": "L'MVP per finanziatori deve mostrare problema, valore, prova tecnica, ruolo dello storico e uso dei fondi distinguendo MVP attuale, sviluppo finanziato e visione."
-    },
-    {
-      "path": "memoria-bootstrap/docs/decision-log.md",
-      "section": "2026-07-18 - Espansione controllata della golden run T33 a tre casi",
-      "reason": "Golden run tecnica e presentazione finanziatori restano oggetti narrativi distinti ma devono condividere una sola lineage evidenziale e un solo descriptor canonico."
-    }
-  ],
-  "increment": {
-    "id": "t33-six-screen-presentation-dry-run",
-    "title": "T33 - prova asciutta della presentazione in sei schermate",
-    "objective": "Verificare in asciutto il racconto finanziatori T33 in sei schermate e registrare un esito narrativo non pubblicabile.",
-    "scope": [
-      "Controllare che l'entrypoint della presentazione separi golden run tecnica e racconto finanziatori.",
-      "Verificare le sei schermate rispetto a coorte pilota, tre casi, guardrail preview-only e assenza di bando/importo/finanziatore.",
-      "Registrare un verbale sintetico della prova asciutta con pass, blocker e correzioni candidate.",
-      "Aggiornare lo stato corrente con l'esito della prova asciutta."
-    ],
-    "out_of_scope": [
-      "Impaginazione grafica o produzione slide finali.",
-      "Approvazione esterna della presentazione.",
-      "Bando, importo, finanziatore o pubblicazione.",
-      "Scritture nel data root esterno P:/Comune/Me.Mo.Ri.a.",
-      "Applicazione di ProfilePatch, creazione di verified facts canonici o modifica dei profili canonici.",
-      "Pipeline, OCR, scraping o nuove fonti live."
-    ],
-    "candidate_files": [
-      "memoria-bootstrap/planning/current-work.json",
-      "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
-      "memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md",
-      "memoria-bootstrap/docs/funding-demo-t33-external-brief.md",
-      "memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md",
-      "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md",
-      "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
-    ],
-    "stop_condition": "La prova asciutta produce un verdetto per ciascuna delle sei schermate, conferma o evidenzia blocker narrativi, e lascia invariati data root esterno, profili canonici, ProfilePatch e verified facts canonici."
-  },
-  "verification": {
-    "tests": [
-      "Get-Content -Path memoria-bootstrap/planning/current-work.json | ConvertFrom-Json",
-      "rg -n \"bando|importo|finanziatore|publication_ready|ProfilePatch|verified facts|funding-demo-golden-3cases-v1-pipeline|prova asciutta\" sui file candidati",
-      "git diff --check"
-    ],
-    "documentation_touchpoints": [
-      "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
-    ],
-    "result": "passed",
-    "notes": "Prova asciutta narrativa T33 completata. Creato il verbale in sei schermate e corretto l'entrypoint per distinguere conteggi pilota e golden run a tre casi, evitando di promettere esiti preview identici per tutti i profili.",
-    "task_envelope": {
-      "mode": "discovery-lite",
-      "repositories": [
-        "memoria-bootstrap"
-      ],
-      "read_set": [
-        "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
-        "memoria-bootstrap/docs/funding-demo-t33-current-state-operator-note.md",
-        "memoria-bootstrap/docs/funding-demo-t33-external-brief.md",
-        "memoria-bootstrap/docs/funding-demo-t33-demo-case-card.md",
-        "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md"
-      ],
-      "write_set": [
-        "memoria-bootstrap/planning/current-work.json",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/docs/funding-demo-t33-presentation-dry-run.md"
-      ],
-      "test_command": "Get-Content planner JSON, rg checks on candidate docs, git diff --check",
-      "stop_conditions": [
-        "six-screen dry run has pass/blocker verdicts and guardrails",
-        "no external data-root writes",
-        "no claim approval, profile patch, canonical facts, publication, bando/importo/finanziatore"
-      ]
-    }
-  },
-  "blockers": [],
-  "session_notes": [
-    "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
-    "Il planner precedente era completed; selezionato un nuovo micro-incremento T33 coerente con roadmap e decision log.",
-    "La prova asciutta ha confermato sei schermate leggibili con verdict pass o pass con cautela.",
-    "L'entrypoint della presentazione ora marca i conteggi 10/104 e 8 verified facts preview come perimetro pilota e aggiunge 15 accepted/68 pending per la golden run a tre casi.",
-    "Nessuna scrittura nel data root esterno, nessuna pubblicazione, nessun bando/importo/finanziatore e nessuna modifica canonica."
-  ],
-  "next_action": {
-    "mode": "recalculate",
-    "description": "Prossimo candidato: revisione umana del racconto T33 in sei schermate, senza impaginazione finale, bando, importo, finanziatore o pubblicazione."
-  }
+    "$schema":  "./current-work.schema.json",
+    "schema_version":  "1.0",
+    "status":  "completed",
+    "selected_at":  "2026-08-28T00:00:00+02:00",
+    "updated_at":  "2026-08-28T20:45:00+02:00",
+    "roadmap_basis":  [
+                          {
+                              "path":  "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+                              "section":  "Corsia prioritaria F - Funding demo golden path / T33 - Pacchetto finanziatori",
+                              "reason":  "T33 resta prioritario finche\u0027 il racconto finanziatori non supera i gate umani senza confondere demo revisionabile, preview e pubblicazione."
+                          },
+                          {
+                              "path":  "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
+                              "section":  "Incremento 6 - Pacchetto finanziatori",
+                              "reason":  "Il pacchetto deve mostrare problema, valore, prova tecnica, ruolo dello storico e uso dei fondi distinguendo MVP attuale, sviluppo finanziato e visione."
+                          },
+                          {
+                              "path":  "memoria-bootstrap/docs/decision-log.md",
+                              "section":  "2026-07-12 - Golden run finanziatori come priorita\u0027 di roadmap",
+                              "reason":  "T29-T33 prevalgono su cloud e Q2; nuove fonti, refactor e pubblicazione restano fuori finche\u0027 il pacchetto non e\u0027 chiuso."
+                          }
+                      ],
+    "increment":  {
+                      "id":  "t33-human-review-preflight",
+                      "title":  "T33 - preflight revisione umana",
+                      "objective":  "Aggiungere un controllo pre-revisione per verificare che handoff, template e materiali T33 siano pronti per una revisione umana effettiva senza registrare verdetti reali.",
+                      "scope":  [
+                                    "Definire una checklist preflight compilabile prima della revisione umana.",
+                                    "Verificare coerenza tra materiali richiesti, sei blocchi narrativi, esiti ammessi e guardrail.",
+                                    "Collegare il preflight all\u0027handoff e al template senza sostituire il verbale umano."
+                                ],
+                      "out_of_scope":  [
+                                           "Compilazione del verbale di revisione umana.",
+                                           "Approvazione del racconto, della presentazione esterna o di claim storici.",
+                                           "Impaginazione finale o produzione di slide.",
+                                           "Introduzione di bando, importo o finanziatore.",
+                                           "Scritture nel data root esterno P:/Comune/Me.Mo.Ri.a.",
+                                           "Applicazione di ProfilePatch, creazione di verified facts canonici o modifica dei profili canonici.",
+                                           "Pipeline, OCR persistente, scraping, nuove fonti live o nuove run candidate."
+                                       ],
+                      "candidate_files":  [
+                                              "memoria-bootstrap/planning/current-work.json",
+                                              "memoria-bootstrap/docs/current-next-increment.md",
+                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
+                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
+                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md"
+                                          ],
+                      "stop_condition":  "Il preflight rende controllabile la prontezza dei materiali per la revisione umana T33 senza approvare automaticamente racconto, claim, pubblicazione o modifiche canoniche."
+                  },
+    "verification":  {
+                         "tests":  [
+                                       "python -m json.tool memoria-bootstrap/planning/current-work.json",
+                                       "rg -n \"preflight|approved_for_layout|revise_before_layout|blocked|bando|importo|finanziatore|publication_ready|ProfilePatch|verified facts|revisione umana\" memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md memoria-bootstrap/docs/current-next-increment.md",
+                                       "git diff --check"
+                                   ],
+                         "documentation_touchpoints":  [
+                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md",
+                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
+                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
+                                                           "memoria-bootstrap/docs/current-next-increment.md"
+                                                       ],
+                         "result":  "passed",
+                         "notes":  "Preflight revisione umana T33 creato e collegato; gate pre-commit passato con JSON valido, riferimenti presenti, guardrail ed esiti coerenti e diff senza errori. Nessun verdetto reale, dato canonico, segreto o backup incluso.",
+                         "task_envelope":  {
+                                               "mode":  "scoped-fix",
+                                               "repositories":  [
+                                                                    "memoria-bootstrap"
+                                                                ],
+                                               "read_set":  [
+                                                                "AGENTS.md",
+                                                                "memoria-bootstrap/planning/current-work.json",
+                                                                "memoria-bootstrap/docs/agent-session-prompt.md",
+                                                                "memoria-bootstrap/docs/current-next-increment.md",
+                                                                "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
+                                                                "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
+                                                                "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+                                                                "memoria-bootstrap/docs/decision-log.md",
+                                                                "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
+                                                                "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
+                                                                "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
+                                                                "memoria-bootstrap/docs/funding-demo-t33-andreoli-visual-layout.md"
+                                                            ],
+                                               "write_set":  [
+                                                                 "memoria-bootstrap/planning/current-work.json",
+                                                                 "memoria-bootstrap/docs/current-next-increment.md",
+                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
+                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
+                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md"
+                                                             ],
+                                               "test_command":  "python -m json.tool memoria-bootstrap/planning/current-work.json; rg guardrail/esiti/link; git diff --check",
+                                               "stop_conditions":  [
+                                                                       "preflight revisione umana pronto",
+                                                                       "nessun verdetto umano simulato",
+                                                                       "no external data-root writes",
+                                                                       "no copy of historical data into repository",
+                                                                       "no ProfilePatch, canonical facts, canonical profiles or publication"
+                                                                   ]
+                                           }
+                     },
+    "blockers":  [
+
+                 ],
+    "session_notes":  [
+                          "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
+                          "Il planner precedente era completed; selezionato un micro-incremento T33 coerente con current-next, roadmap MVP, roadmap tecnica e decision log.",
+                          "Creato l\u0027handoff di revisione umana in sei schermate con domande, esiti ammessi e blocchi da non superare.",
+                          "Aggiornato current-next-increment.md come nota sintetica di sessione.",
+                          "Nessuna scrittura nel data root esterno, nessuna approvazione, nessun bando/importo/finanziatore, nessuna pubblicazione e nessuna modifica canonica.",
+                          "Ricerca read-only T33 del 2026-08-25: il caso Andreoli ha collegamenti persona-documento confermati tra materiale locale e due record istituzionali; i dati biografici e le divergenze restano non pubblicabili e, dove indicato, pending.",
+                          "Revisioni narrative T33 del 2026-08-25 incorporate nell\u0027entrypoint: il patrimonio include persone, luoghi, eventi e documenti; i tecnicismi della coorte sono rimossi; Andreoli e il caso concreto con limiti espliciti.",
+                          "Selezione visuale T33 del 2026-08-26: individuate tre tracce leggibili per la schermata del caso concreto; la scansione archivistica e il riferimento locale sono usabili come materiali di layout interno, mentre la seconda scheda istituzionale va resa come domanda aperta.",
+                          "Scaletta visuale T33 del 2026-08-26: creato il layout interno della schermata Andreoli con tre aree documentali, testo minimo e una domanda aperta esplicita; nessuna immagine o estratto storico e stato copiato nel repository.",
+                          "Template verbale revisione umana T33 del 2026-08-26: creato un template compilabile per raccogliere verdetto, blocchi narrativi, correzioni e guardrail; nessuna decisione reale e\u0027 stata registrata.",
+                          "La revisione umana effettiva richiede un verbale compilato da una persona; questa sessione prepara solo un preflight documentale senza registrare esiti reali.",
+                          "Creato funding-demo-t33-human-review-preflight.md come checklist preparatoria repository-only per materiali, blocchi narrativi, esiti ammessi e guardrail.",
+                          "Collegati handoff e template al preflight senza sostituire la revisione umana effettiva.",
+                          "Verifiche passate: json.tool sul planner, rg su guardrail/esiti/link e git diff --check; restano solo warning CRLF di Git.",
+                          "Gate di pubblicazione Git del 2026-08-28: verificati i sette file T33/planner; .env, backup e configurazioni locali restano esclusi dal commit."
+                      ],
+    "next_action":  {
+                        "mode":  "recalculate",
+                        "description":  "Dopo il push, valutare con l\u0027utente il prossimo micro-incremento: compilazione umana del preflight e revisione effettiva T33, oppure correzione dei soli materiali indicati."
+                    }
 }

@@ -72,85 +72,58 @@ e comunita' locali.
 Messaggio:
 
 ```text
-Il workspace contiene 57 profili caricati e 18 fonti online abilitate. Questo
-e' il perimetro di partenza, non un insieme di biografie gia' concluse.
+Me.Mo.Ri.A parte dalle persone, in particolare dai partigiani, ma non si ferma
+alle biografie. Raccoglie e mette in relazione anche luoghi, eventi e documenti,
+per ricostruire contesti e percorsi di memoria.
 ```
 
-Questa schermata mostra l'ampiezza potenziale senza confonderla con il risultato
-del pilota.
+I 57 profili e le 18 fonti abilitate restano il perimetro disponibile, non un
+insieme di biografie gia' concluse.
 
 ### 3. La coorte pilota
 
 Messaggio:
 
 ```text
-Su cinque profili pilota il sistema ha collegato 13 documenti, prodotto 24 link
-persona-documento e 55 claim candidati, trasformandoli in una coda di 114
-decisioni storiche esplicite.
+Cinque storie come punto di partenza. Attraverso persone, luoghi, documenti ed
+eventi collegati, Me.Mo.Ri.A mostra come materiali oggi dispersi possano
+diventare un percorso di ricerca chiaro e verificabile.
 ```
 
-Mostrare i cinque casi come un piccolo portafoglio con stati differenti:
+I numeri e gli stati della coorte restano nel percorso tecnico: nelle sei
+schermate conta il valore del percorso di ricerca, non il glossario interno.
 
-- 4 profili `ready_for_review`;
-- 1 profilo `needs_signal_review`;
-- 2 profili con decisioni accettate e verified facts preview;
-- 3 profili che rendono visibile il lavoro ancora necessario.
-
-Fonte operativa:
+### 4. Un caso concreto: Dino Andreoli
 
 ```text
-P:\Comune\Me.Mo.Ri.a\risultati\runs\prova-preview-profili-5-reviewed-01-pipeline\mvp_pilot_cards_digest.md
+Nel caso di Dino Andreoli, fonti diverse riportano lo stesso nome e aprono piste
+di ricerca sul suo contesto. Alcune informazioni coincidono, altre richiedono
+ancora confronto. Me.Mo.Ri.A non sceglie automaticamente: mantiene visibili
+fonti, collegamenti e dubbi, perche' sia lo storico a ricostruire il quadro.
 ```
 
-### 4. Tre casi in profondita'
+Questo esempio usa soltanto i collegamenti persona-documento confermati nella
+golden run e le divergenze documentate; non presenta dati biografici, date o
+ricostruzioni come conclusioni storiche pubblicabili.
 
-I tre casi devono mostrare capacita' differenti:
-
-| Caso | Ruolo nel racconto | Condizione |
-|---|---|---|
-| Andreoli | catena completa e feedback loop | presente nella golden run canonica a tre casi |
-| Balboni | corroborazione e confronto multi-fonte | presente nella golden run canonica a tre casi |
-| Bendini | decisione su contesto incerto e limiti documentali visibili | presente nella golden run canonica a tre casi, con review ancora parziale |
-
-Per ogni caso mantenere la stessa griglia di lettura, senza forzare lo stesso
-esito su tutti i profili:
-
-```text
-documento
-  -> claim con fonte
-  -> confronto con altri documenti
-  -> decisione dello storico quando presente
-  -> esito preview quando presente
-  -> proposta di aggiornamento non applicata quando presente
-  -> nuova domanda di ricerca tracciata o pending esplicito
-```
-
-Non aprire tutti gli artefatti. Per ciascun caso mostrare al massimo una
-divergenza o informazione significativa, una decisione e il relativo esito
-preview. Il dettaglio completo resta nel percorso tecnico.
+Per la composizione interna della schermata con le tre tracce selezionate usare
+memoria-bootstrap/docs/funding-demo-t33-andreoli-visual-layout.md.
 
 ### 5. Cosa dimostra e cosa non dimostra
 
-| Dimostrato | Non ancora dimostrato |
-|---|---|
-| Collegamento auditabile fra profili, documenti e claim | trattamento completo dei 57 profili |
-| Confronto multi-fonte senza cancellare divergenze | schede storiche pubblicabili |
-| Decisioni umane registrate | completamento delle decisioni pending del pilota e della golden run |
-| Fatti e patch prodotti in preview | applicazione automatica ai profili canonici |
-| Feedback di ricerca con esito tracciato | ciclo operativo ripetuto su una coorte estesa |
-
-Questa schermata deve aumentare credibilita', non giustificare tecnicamente il
-progetto.
+Il lavoro mostra un metodo e primi risultati. La verifica e l'approfondimento
+continuano prima che i contenuti possano essere considerati definitivi o
+pubblicabili.
 
 ### 6. Il passo successivo
 
 Messaggio:
 
 ```text
-Il motore ha dimostrato la catena su una coorte controllata. Il passo successivo
-e' trasformarla in una pratica curatoriale ripetibile: selezione dei profili,
-trattamento documentale, review storica, misurazione della qualita' e produzione
-di dossier approvati.
+Stiamo dando una forma comune alle informazioni su persone, luoghi ed eventi,
+mantenendo sempre il legame con le fonti. Cosi' diventa possibile raccontare
+storie piu' complete, trovare collegamenti prima nascosti e aprire nuove
+riflessioni, senza perdere il rigore della verifica storica.
 ```
 
 In questa fase non inserire ancora un bando, un importo o un finanziatore. La
