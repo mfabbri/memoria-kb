@@ -11,6 +11,7 @@ workspace:
       status: read_only_candidate
       app_name: MemoriaStorage
       root: /MeMoRiA
+      folderid: 31488065632
       api_host: eapi.pcloud.com
       cache_dir: .memoria-cache/pcloud
       client_id_ref: MEMORIA_PCLOUD_CLIENT_ID

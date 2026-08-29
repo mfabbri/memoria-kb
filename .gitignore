@@ -1,6 +1,8 @@
 # Local editor and agent state
 .history/
-.agents/
+.agents/*
+!.agents/skills/
+!.agents/skills/**
 .git.invalid-empty-before-init/
 
 # Python environments and caches

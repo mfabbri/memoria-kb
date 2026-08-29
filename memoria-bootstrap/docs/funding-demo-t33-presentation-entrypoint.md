@@ -85,9 +85,10 @@ insieme di biografie gia' concluse.
 Messaggio:
 
 ```text
-Cinque storie come punto di partenza. Attraverso persone, luoghi, documenti ed
-eventi collegati, Me.Mo.Ri.A mostra come materiali oggi dispersi possano
-diventare un percorso di ricerca chiaro e verificabile.
+Cinque storie come punto di partenza. Me.Mo.Ri.A mette in relazione
+informazioni su persone, luoghi, documenti ed eventi provenienti da fonti
+diverse, che usano criteri e linguaggi non omogenei, per costruire un percorso
+di ricerca chiaro e verificabile.
 ```
 
 I numeri e gli stati della coorte restano nel percorso tecnico: nelle sei
@@ -108,12 +109,17 @@ ricostruzioni come conclusioni storiche pubblicabili.
 
 Per la composizione interna della schermata con le tre tracce selezionate usare
 memoria-bootstrap/docs/funding-demo-t33-andreoli-visual-layout.md.
+Per la composizione complessiva usare anche il brief interno non pubblicabile
+memoria-bootstrap/docs/funding-demo-t33-internal-layout-brief.md.
 
 ### 5. Cosa dimostra e cosa non dimostra
 
-Il lavoro mostra un metodo e primi risultati. La verifica e l'approfondimento
-continuano prima che i contenuti possano essere considerati definitivi o
-pubblicabili.
+Il lavoro mostra un metodo e primi risultati. I suggerimenti del motore e la
+revisione degli storici aprono nuove piste e indicano nuove fonti da verificare.
+Un ciclo di ricerca si chiude solo quando le fonti disponibili sono state
+confrontate, le decisioni documentate e lo storico ritiene concluse le verifiche
+prioritarie. Dubbi e lacune restano visibili; nessun contenuto diventa
+pubblicabile senza fonti tracciabili e validazione umana.
 
 ### 6. Il passo successivo
 

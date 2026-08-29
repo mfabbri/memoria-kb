@@ -1,0 +1,42 @@
+{
+  "description": "Audit locale del model routing effettivamente eseguito da Codex.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "commandWindows": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "commandWindows": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "commandWindows": "python -c \"import pathlib,runpy; p=pathlib.Path.cwd(); r=next((x for x in [p,*p.parents] if (x/'.git').exists()),p); runpy.run_path(str(r/'.codex/hooks/model-routing-audit.py'),run_name='__main__')\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

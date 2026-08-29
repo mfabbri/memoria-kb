@@ -1,19 +1,38 @@
 # Codex model routing per Me.Mo.Ri.A
 
-Configurazione compatibile con Codex autenticato tramite account ChatGPT:
+## Runtime model policy
 
-- sessione principale: `gpt-5.5`;
-- esplorazione leggera: `gpt-5.6-luna`;
-- implementazione e revisione tecnica: `gpt-5.6-terra`;
-- profilo di ragionamento profondo opzionale: `gpt-5.6-sol`.
+The parent thread is a low-cost router:
 
-L'alias ambiguo `gpt-5.6` non deve essere usato. Utilizzare sempre uno degli ID completi oppure `gpt-5.5`.
+- parent/controller: `gpt-5.6-luna` / `medium`;
+- discovery: scanner -> Luna / `low`;
+- docs review: docs_reviewer -> Luna / `medium`;
+- docs/planner/agent-config edits: docs_editor -> Luna / `medium`;
+- implementation: implementer -> Terra / `medium`;
+- quality review: test_reviewer -> Terra / `high`;
+- architecture/migration: architect -> Sol / `high`.
 
-Profili disponibili:
+Project-local `[profiles.*]` are not used. Codex ignores `profiles` in a
+project-scoped `.codex/config.toml`.
+
+## Two levels of traceability
+
+1. `memoria-bootstrap/planning/current-work.json` records the intended route.
+2. `.codex/hooks.json` records the actual runtime model for the parent and
+   subagents in:
+   `memoria-bootstrap/planning/.runtime/model-routing.ndjson`.
+
+The runtime log is generated locally and ignored by Git.
+
+## Hook trust
+
+Project-local hooks must be reviewed/trusted by Codex after they change.
+Use `/hooks` in Codex and trust the project hook definition.
+
+## Validation
 
 ```powershell
-codex --profile standard
-codex --profile luna
-codex --profile terra
-codex --profile sol
+python .\memoria-bootstrap\planning\validate-codex-model-routing.py
+python -m json.tool .\memoria-bootstrap\planning\current-work.json
+git diff --check
 ```

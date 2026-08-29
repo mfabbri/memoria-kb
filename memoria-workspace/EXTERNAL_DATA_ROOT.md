@@ -74,6 +74,25 @@ with `MEMORIA_PCLOUD_CLIENT_ID_REF`, `MEMORIA_PCLOUD_CLIENT_SECRET_REF` and
 For OAuth tokens, API calls pass the bearer as the pCloud global parameter
 `access_token`; the older `auth` parameter is only for username/password login
 tokens.
+
+### App access mode and existing folders
+
+Before approving the OAuth request, verify the app's **Folder access** mode in
+the pCloud developer console. `Specific app folder` grants the token access
+only to the dedicated folder created under `Apps`; it does not grant access to
+an existing folder elsewhere in the account, even when the browser and OAuth
+account are the same. If the setting is disabled after app creation, the app
+cannot be converted from this mode in the console; ask pCloud support to
+enable `All folders` or create an equivalent app with that access mode.
+
+When diagnosing a folder ID, test the API root and the target with
+`listfolder` before changing paths or creating anything. A successful OAuth
+authentication does not prove that the token can see the intended folder:
+`2005` means that the directory is not present in the namespace visible to the
+token, while `2002` from `createfolder` means that the requested parent
+directory is not present. Do not use a temporary write as the first diagnostic
+and never store tokens in the repository.
+
 The pCloud backend is read-only in T26: standard tests use mock HTTP, and live
 checks must be explicitly requested.
 

@@ -7,11 +7,143 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.mvp_pilot_summary import (  # noqa: E402
+    _build_document_duplicate_diagnostics,
+    _build_reviewable_document_signals,
     render_mvp_pilot_summary_markdown,
+)
+from caduti_fonti_report.document_analysis.mvp_pilot_package_status import (  # noqa: E402
+    pilot_package_status_and_action,
+)
+from caduti_fonti_report.document_analysis.mvp_pilot_readiness import (  # noqa: E402
+    readiness_status_and_action,
 )
 
 
 class MvpPilotSummaryRenderingTests(unittest.TestCase):
+    def test_profile_readiness_status_and_action_preserves_decision_order(self) -> None:
+        cases = [
+            (dict(document_count=0, link_count=0, claim_count=0, signal_count=0), "needs_documents"),
+            (dict(document_count=1, link_count=0, claim_count=0, signal_count=0), "needs_links"),
+            (dict(document_count=1, link_count=1, claim_count=0, signal_count=1), "needs_signal_review"),
+            (dict(document_count=1, link_count=1, claim_count=0, signal_count=0), "needs_claims"),
+            (dict(document_count=1, link_count=1, claim_count=1, signal_count=0), "ready_for_review"),
+        ]
+        for inputs, expected_status in cases:
+            with self.subTest(inputs=inputs):
+                self.assertEqual(readiness_status_and_action(**inputs)[0], expected_status)
+
+    def test_pilot_package_status_and_action_covers_empty_and_signal_states(self) -> None:
+        self.assertEqual(
+            pilot_package_status_and_action(
+                profile_count=0,
+                document_count=0,
+                link_count=0,
+                claim_count=0,
+                signal_count=0,
+                ready_count=0,
+                blockers=[],
+            )[0],
+            "needs_profiles",
+        )
+        self.assertEqual(
+            pilot_package_status_and_action(
+                profile_count=1,
+                document_count=1,
+                link_count=1,
+                claim_count=0,
+                signal_count=1,
+                ready_count=0,
+                blockers=[],
+            ),
+            (
+                "needs_document_signal_review",
+                "Revisionare le piste documentali e segmentare i documenti multi-scheda prima dei claim.",
+            ),
+        )
+
+    def test_pilot_package_status_and_action_covers_ready_states(self) -> None:
+        base = dict(profile_count=1, document_count=1, link_count=1, claim_count=1, signal_count=1)
+        self.assertEqual(
+            pilot_package_status_and_action(**base, ready_count=1, blockers=[])[0],
+            "ready_for_human_review",
+        )
+        self.assertEqual(
+            pilot_package_status_and_action(**base, ready_count=1, blockers=["OCR"])[0],
+            "ready_with_document_intake_warnings",
+        )
+    def test_document_duplicate_diagnostics_preserve_identity_priority_deduplication_and_order(self) -> None:
+        diagnostics = _build_document_duplicate_diagnostics(
+            [
+                {"source_document_id": "doc-title-2", "title": "Same title"},
+                {"source_document_id": "doc-sha-1", "sha256": "ABC", "title": "Ignored title"},
+                {"source_document_id": "doc-title-1", "title": "Same title"},
+                {"source_document_id": "doc-sha-2", "sha256": "abc", "raw_file": "ignored.pdf"},
+                {"source_document_id": "doc-unique", "url": "https://example.test/one"},
+                {"source_document_id": "doc-empty"},
+            ]
+        )
+
+        self.assertEqual(diagnostics["duplicate_document_count"], 2)
+        self.assertEqual(diagnostics["estimated_unique_document_count"], 4)
+        self.assertEqual(
+            diagnostics["duplicate_document_groups"],
+            [
+                {
+                    "key_kind": "sha256",
+                    "key_value": "abc",
+                    "document_count": 2,
+                    "source_document_ids": ["doc-sha-1", "doc-sha-2"],
+                    "titles": ["Ignored title"],
+                    "raw_files": ["ignored.pdf"],
+                    "review_status": "unreviewed",
+                },
+                {
+                    "key_kind": "title",
+                    "key_value": "same title",
+                    "document_count": 2,
+                    "source_document_ids": ["doc-title-2", "doc-title-1"],
+                    "titles": ["Same title"],
+                    "raw_files": [],
+                    "review_status": "unreviewed",
+                },
+            ],
+        )
+
+    def test_reviewable_document_signals_preserve_order_deduplication_and_profile_filters(self) -> None:
+        signals = _build_reviewable_document_signals(
+            profiles=[{"profile_id": "person:one", "canonical_name": "One"}],
+            links=[
+                {"@id": "link-z", "profile_id": "person:one", "source_document_id": "doc-z"},
+                {"@id": "link-a", "profile_id": "person:one", "source_document_id": "doc-a"},
+            ],
+            entities=[
+                {"@id": "entity-a", "source_document_id": "doc-a", "value": "Entity A"},
+                {"@id": "entity-z", "source_document_id": "doc-z", "value": "Entity Z"},
+            ],
+            feedback_actions=[
+                {"@id": "action-a", "source_document_id": "doc-a", "value": "Action A"},
+                {"@id": "action-a", "source_document_id": "doc-a", "value": "Action A"},
+            ],
+            skipped_claim_entities=[
+                {"@id": "skip-other", "source_document_id": "doc-a", "candidate_profile_ids": ["person:other"]},
+                {"@id": "skip-one", "source_document_id": "doc-a", "candidate_profile_ids": ["person:one"]},
+            ],
+            skipped_structured_documents=[],
+        )
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(
+            [(signal["signal_type"], signal["source_item_id"]) for signal in signals[0]["signals"]],
+            [
+                ("candidate_document_person_link", "link-z"),
+                ("candidate_document_person_link", "link-a"),
+                ("research_feedback_action", "action-a"),
+                ("extracted_entity", "entity-a"),
+                ("skipped_claim_candidate", "skip-one"),
+                ("extracted_entity", "entity-z"),
+            ],
+        )
+
     def test_render_diagnostic_blocks_from_summary_payload(self) -> None:
         markdown = render_mvp_pilot_summary_markdown(
             {

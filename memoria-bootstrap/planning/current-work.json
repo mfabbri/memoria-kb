@@ -1,125 +1,14 @@
 {
-    "$schema":  "./current-work.schema.json",
-    "schema_version":  "1.0",
-    "status":  "completed",
-    "selected_at":  "2026-08-28T00:00:00+02:00",
-    "updated_at":  "2026-08-28T20:45:00+02:00",
-    "roadmap_basis":  [
-                          {
-                              "path":  "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-                              "section":  "Corsia prioritaria F - Funding demo golden path / T33 - Pacchetto finanziatori",
-                              "reason":  "T33 resta prioritario finche\u0027 il racconto finanziatori non supera i gate umani senza confondere demo revisionabile, preview e pubblicazione."
-                          },
-                          {
-                              "path":  "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
-                              "section":  "Incremento 6 - Pacchetto finanziatori",
-                              "reason":  "Il pacchetto deve mostrare problema, valore, prova tecnica, ruolo dello storico e uso dei fondi distinguendo MVP attuale, sviluppo finanziato e visione."
-                          },
-                          {
-                              "path":  "memoria-bootstrap/docs/decision-log.md",
-                              "section":  "2026-07-12 - Golden run finanziatori come priorita\u0027 di roadmap",
-                              "reason":  "T29-T33 prevalgono su cloud e Q2; nuove fonti, refactor e pubblicazione restano fuori finche\u0027 il pacchetto non e\u0027 chiuso."
-                          }
-                      ],
-    "increment":  {
-                      "id":  "t33-human-review-preflight",
-                      "title":  "T33 - preflight revisione umana",
-                      "objective":  "Aggiungere un controllo pre-revisione per verificare che handoff, template e materiali T33 siano pronti per una revisione umana effettiva senza registrare verdetti reali.",
-                      "scope":  [
-                                    "Definire una checklist preflight compilabile prima della revisione umana.",
-                                    "Verificare coerenza tra materiali richiesti, sei blocchi narrativi, esiti ammessi e guardrail.",
-                                    "Collegare il preflight all\u0027handoff e al template senza sostituire il verbale umano."
-                                ],
-                      "out_of_scope":  [
-                                           "Compilazione del verbale di revisione umana.",
-                                           "Approvazione del racconto, della presentazione esterna o di claim storici.",
-                                           "Impaginazione finale o produzione di slide.",
-                                           "Introduzione di bando, importo o finanziatore.",
-                                           "Scritture nel data root esterno P:/Comune/Me.Mo.Ri.a.",
-                                           "Applicazione di ProfilePatch, creazione di verified facts canonici o modifica dei profili canonici.",
-                                           "Pipeline, OCR persistente, scraping, nuove fonti live o nuove run candidate."
-                                       ],
-                      "candidate_files":  [
-                                              "memoria-bootstrap/planning/current-work.json",
-                                              "memoria-bootstrap/docs/current-next-increment.md",
-                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
-                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
-                                              "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md"
-                                          ],
-                      "stop_condition":  "Il preflight rende controllabile la prontezza dei materiali per la revisione umana T33 senza approvare automaticamente racconto, claim, pubblicazione o modifiche canoniche."
-                  },
-    "verification":  {
-                         "tests":  [
-                                       "python -m json.tool memoria-bootstrap/planning/current-work.json",
-                                       "rg -n \"preflight|approved_for_layout|revise_before_layout|blocked|bando|importo|finanziatore|publication_ready|ProfilePatch|verified facts|revisione umana\" memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md memoria-bootstrap/docs/current-next-increment.md",
-                                       "git diff --check"
-                                   ],
-                         "documentation_touchpoints":  [
-                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md",
-                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
-                                                           "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
-                                                           "memoria-bootstrap/docs/current-next-increment.md"
-                                                       ],
-                         "result":  "passed",
-                         "notes":  "Preflight revisione umana T33 creato e collegato; gate pre-commit passato con JSON valido, riferimenti presenti, guardrail ed esiti coerenti e diff senza errori. Nessun verdetto reale, dato canonico, segreto o backup incluso.",
-                         "task_envelope":  {
-                                               "mode":  "scoped-fix",
-                                               "repositories":  [
-                                                                    "memoria-bootstrap"
-                                                                ],
-                                               "read_set":  [
-                                                                "AGENTS.md",
-                                                                "memoria-bootstrap/planning/current-work.json",
-                                                                "memoria-bootstrap/docs/agent-session-prompt.md",
-                                                                "memoria-bootstrap/docs/current-next-increment.md",
-                                                                "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
-                                                                "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
-                                                                "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-                                                                "memoria-bootstrap/docs/decision-log.md",
-                                                                "memoria-bootstrap/docs/funding-demo-t33-presentation-entrypoint.md",
-                                                                "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
-                                                                "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
-                                                                "memoria-bootstrap/docs/funding-demo-t33-andreoli-visual-layout.md"
-                                                            ],
-                                               "write_set":  [
-                                                                 "memoria-bootstrap/planning/current-work.json",
-                                                                 "memoria-bootstrap/docs/current-next-increment.md",
-                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-handoff.md",
-                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md",
-                                                                 "memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md"
-                                                             ],
-                                               "test_command":  "python -m json.tool memoria-bootstrap/planning/current-work.json; rg guardrail/esiti/link; git diff --check",
-                                               "stop_conditions":  [
-                                                                       "preflight revisione umana pronto",
-                                                                       "nessun verdetto umano simulato",
-                                                                       "no external data-root writes",
-                                                                       "no copy of historical data into repository",
-                                                                       "no ProfilePatch, canonical facts, canonical profiles or publication"
-                                                                   ]
-                                           }
-                     },
-    "blockers":  [
-
-                 ],
-    "session_notes":  [
-                          "Skill memoria-session, memoria-planner e memoria-roadmap-selector lette e applicate.",
-                          "Il planner precedente era completed; selezionato un micro-incremento T33 coerente con current-next, roadmap MVP, roadmap tecnica e decision log.",
-                          "Creato l\u0027handoff di revisione umana in sei schermate con domande, esiti ammessi e blocchi da non superare.",
-                          "Aggiornato current-next-increment.md come nota sintetica di sessione.",
-                          "Nessuna scrittura nel data root esterno, nessuna approvazione, nessun bando/importo/finanziatore, nessuna pubblicazione e nessuna modifica canonica.",
-                          "Ricerca read-only T33 del 2026-08-25: il caso Andreoli ha collegamenti persona-documento confermati tra materiale locale e due record istituzionali; i dati biografici e le divergenze restano non pubblicabili e, dove indicato, pending.",
-                          "Revisioni narrative T33 del 2026-08-25 incorporate nell\u0027entrypoint: il patrimonio include persone, luoghi, eventi e documenti; i tecnicismi della coorte sono rimossi; Andreoli e il caso concreto con limiti espliciti.",
-                          "Selezione visuale T33 del 2026-08-26: individuate tre tracce leggibili per la schermata del caso concreto; la scansione archivistica e il riferimento locale sono usabili come materiali di layout interno, mentre la seconda scheda istituzionale va resa come domanda aperta.",
-                          "Scaletta visuale T33 del 2026-08-26: creato il layout interno della schermata Andreoli con tre aree documentali, testo minimo e una domanda aperta esplicita; nessuna immagine o estratto storico e stato copiato nel repository.",
-                          "Template verbale revisione umana T33 del 2026-08-26: creato un template compilabile per raccogliere verdetto, blocchi narrativi, correzioni e guardrail; nessuna decisione reale e\u0027 stata registrata.",
-                          "La revisione umana effettiva richiede un verbale compilato da una persona; questa sessione prepara solo un preflight documentale senza registrare esiti reali.",
-                          "Creato funding-demo-t33-human-review-preflight.md come checklist preparatoria repository-only per materiali, blocchi narrativi, esiti ammessi e guardrail.",
-                          "Collegati handoff e template al preflight senza sostituire la revisione umana effettiva.",
-                          "Verifiche passate: json.tool sul planner, rg su guardrail/esiti/link e git diff --check; restano solo warning CRLF di Git.",
-                          "Gate di pubblicazione Git del 2026-08-28: verificati i sette file T33/planner; .env, backup e configurazioni locali restano esclusi dal commit."
-                      ],
-    "next_action":  {
-                        "mode":  "recalculate",
-                        "description":  "Dopo il push, valutare con l\u0027utente il prossimo micro-incremento: compilazione umana del preflight e revisione effettiva T33, oppure correzione dei soli materiali indicati."
-                    }
+  "$schema": "./current-work.schema.json",
+  "schema_version": "1.0",
+  "status": "completed",
+  "selected_at": "2026-08-29T12:30:00+02:00",
+  "updated_at": "2026-08-29T13:15:00+02:00",
+  "roadmap_basis": [{"path":"memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","section":"Traccia parallela Q / Q2 - Micro-refactor opportunistici","reason":"T33 e il precedente Q2 sono chiusi; Q2 resta il candidato tecnico ammesso con una sola responsabilità isolata, comportamento invariato e test mirati."},{"path":"memoria-bootstrap/docs/roadmap/00-roadmap-master.md","section":"Stato corrente / Focus immediato","reason":"Dopo la chiusura T33, il refactor continuo può avanzare solo come micro-incremento verificabile e senza ampliare il perimetro MVP."},{"path":"memoria-bootstrap/docs/decision-log.md","section":"2026-07-07 - Traccia parallela di refactor continuo","reason":"Sono ammessi audit modulari e micro-refactor behavior-preserving, senza cambiare framework, workflow o contratti."}],
+  "increment": {"id":"q2-pilot-readiness-helper","title":"Q2 - isolare la decisione di readiness del profilo pilota","objective":"Estrarre la sola decisione pura di readiness e prossima azione del profilo pilota in un helper dedicato, mantenendo invariati output e workflow.","scope":["Spostare esclusivamente _readiness_status_and_action da mvp_pilot_summary.py a un helper puro dedicato.","Mantenere invariati status, next_action, scorecard, payload, Markdown, CLI, schema e workflow.","Aggiungere o aggiornare solo test mirati per documenti assenti, link mancanti, claim assenti con segnali e stato pronto."],"out_of_scope":["Cambi di output, CLI, schema o workflow.","Nuove fonti live, pCloud, pipeline, OCR o dati reali.","Modifiche a profili, verified facts, ProfilePatch o pubblicazione."],"candidate_files":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_readiness.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"stop_condition":"Una sola responsabilità è isolata, i test mirati passano e non cambiano output, CLI, schema, workflow o dati esterni."},
+  "verification": {"tests":["cd memoria-engine; python -m unittest tests.test_mvp_pilot_summary_rendering","python -m json.tool memoria-bootstrap/planning/current-work.json","git diff --check"],"documentation_touchpoints":["memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"result":"passed","notes":"Helper puro estratto in modulo dedicato; output e workflow invariati. 17 test mirati e downstream passati; JSON valido e diff check pulito.","task_envelope":{"mode":"scoped-fix","repositories":["memoria-engine","memoria-bootstrap"],"read_set":["AGENTS.md","memoria-bootstrap/planning/current-work.json","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-bootstrap/docs/decision-log.md","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py"],"write_set":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_readiness.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"test_command":"cd memoria-engine; python -m unittest tests.test_mvp_pilot_summary_rendering; cd ..; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check","stop_conditions":["una sola responsabilità della readiness profilo è isolata in un helper puro","status, next_action, scorecard, payload, Markdown, CLI, schema e workflow invariati","nessun file o dato oltre il write_set autorizzato"]}},
+  "routing": {"policy_version":"2.0","tier":"medium","task_class":"implementation","agent":"implementer","model":"gpt-5.6-terra","reasoning_effort":"medium","rationale":"Micro-refactor di codice runtime e test entro contratti esistenti, con rischio delimitato e comportamento invariato.","trace":[{"event":"selected","at":"2026-08-29T13:15:00+02:00","tier":"medium","agent":"implementer","model":"gpt-5.6-terra","reason":"Il write_set comprende codice runtime e test entro contratti esistenti; la readiness è una decisione pura e delimitata."},{"event":"fallback","at":"2026-08-29T13:15:00+02:00","from":"implementer/gpt-5.6-terra","to":"parent-controller","reason":"Nessun tool di delega subagent è disponibile nella sessione; il parent esegue solo il micro-slice registrato."}]},
+  "blockers": [],
+  "session_notes":["Skill memoria-session, memoria-planner, memoria-model-router e memoria-roadmap-selector applicate.","Selezionato e chiuso q2-pilot-readiness-helper dopo verifica della roadmap e del decision log.","Nessuna modifica a dati reali, fonte live, OCR, profilo, claim, ProfilePatch o pubblicazione eseguita."],
+  "next_action":{"mode":"recalculate","description":"Selezionare il prossimo micro-incremento solo dopo verifica della roadmap autorevole."}
 }

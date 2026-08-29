@@ -13,6 +13,8 @@ from .mvp_pilot_summary_markdown import (
     render_mvp_signal_diagnostics as _render_mvp_signal_diagnostics,
     render_pilot_package_scorecard as _render_pilot_package_scorecard,
 )
+from .mvp_pilot_package_status import pilot_package_status_and_action as _pilot_package_status_and_action
+from .mvp_pilot_readiness import readiness_status_and_action as _readiness_status_and_action
 
 
 def build_mvp_pilot_summary(
@@ -395,32 +397,14 @@ def _build_reviewable_document_signals(
     for profile in profiles:
         profile_id = str(profile.get("profile_id", ""))
         profile_links = links_by_profile.get(profile_id, [])
-        document_ids = sorted(
-            {
-                str(link.get("source_document_id", ""))
-                for link in profile_links
-                if str(link.get("source_document_id", ""))
-            }
+        deduped = _build_profile_reviewable_document_signals(
+            profile_id=profile_id,
+            profile_links=profile_links,
+            entities_by_document=entities_by_document,
+            actions_by_document=actions_by_document,
+            skipped_by_document=skipped_by_document,
+            skipped_structured_by_document=skipped_structured_by_document,
         )
-        signals: list[dict[str, Any]] = []
-        for link in profile_links[:5]:
-            signals.append(_signal_from_link(link))
-        for document_id in document_ids:
-            signals.extend(_signal_from_feedback_action(action) for action in actions_by_document.get(document_id, [])[:3])
-            signals.extend(_signal_from_entity(entity) for entity in entities_by_document.get(document_id, [])[:3])
-            applicable_skipped = [
-                skipped
-                for skipped in skipped_by_document.get(document_id, [])
-                if _skipped_claim_applies_to_profile(skipped=skipped, profile_id=profile_id)
-            ]
-            signals.extend(_signal_from_skipped_claim(skipped) for skipped in applicable_skipped[:3])
-            applicable_structured = [
-                skipped
-                for skipped in skipped_structured_by_document.get(document_id, [])
-                if _skipped_claim_applies_to_profile(skipped=skipped, profile_id=profile_id)
-            ]
-            signals.extend(_signal_from_skipped_structured_document(skipped) for skipped in applicable_structured[:3])
-        deduped = _deduplicate_signals(signals)[:10]
         if deduped:
             groups.append(
                 {
@@ -434,6 +418,43 @@ def _build_reviewable_document_signals(
                 }
             )
     return groups
+
+
+def _build_profile_reviewable_document_signals(
+    *,
+    profile_id: str,
+    profile_links: list[dict[str, Any]],
+    entities_by_document: dict[str, list[dict[str, Any]]],
+    actions_by_document: dict[str, list[dict[str, Any]]],
+    skipped_by_document: dict[str, list[dict[str, Any]]],
+    skipped_structured_by_document: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    document_ids = sorted(
+        {
+            str(link.get("source_document_id", ""))
+            for link in profile_links
+            if str(link.get("source_document_id", ""))
+        }
+    )
+    signals: list[dict[str, Any]] = []
+    for link in profile_links[:5]:
+        signals.append(_signal_from_link(link))
+    for document_id in document_ids:
+        signals.extend(_signal_from_feedback_action(action) for action in actions_by_document.get(document_id, [])[:3])
+        signals.extend(_signal_from_entity(entity) for entity in entities_by_document.get(document_id, [])[:3])
+        applicable_skipped = [
+            skipped
+            for skipped in skipped_by_document.get(document_id, [])
+            if _skipped_claim_applies_to_profile(skipped=skipped, profile_id=profile_id)
+        ]
+        signals.extend(_signal_from_skipped_claim(skipped) for skipped in applicable_skipped[:3])
+        applicable_structured = [
+            skipped
+            for skipped in skipped_structured_by_document.get(document_id, [])
+            if _skipped_claim_applies_to_profile(skipped=skipped, profile_id=profile_id)
+        ]
+        signals.extend(_signal_from_skipped_structured_document(skipped) for skipped in applicable_structured[:3])
+    return _deduplicate_signals(signals)[:10]
 
 
 def _signal_from_link(link: dict[str, Any]) -> dict[str, Any]:
@@ -660,33 +681,6 @@ def _build_pilot_package_scorecard(
     }
 
 
-def _pilot_package_status_and_action(
-    *,
-    profile_count: int,
-    document_count: int,
-    link_count: int,
-    claim_count: int,
-    signal_count: int,
-    ready_count: int,
-    blockers: list[str],
-) -> tuple[str, str]:
-    if profile_count == 0:
-        return "needs_profiles", "Selezionare 5-10 PersonResearchProfile pilota."
-    if document_count == 0:
-        return "needs_documents", "Registrare o collegare documenti revisionabili ai profili pilota."
-    if link_count == 0:
-        return "needs_document_person_links", "Generare o revisionare link documento-persona candidati."
-    if claim_count == 0:
-        if signal_count > 0:
-            return "needs_document_signal_review", "Revisionare le piste documentali e segmentare i documenti multi-scheda prima dei claim."
-        return "needs_candidate_claims", "Migliorare testi, qualita' documento o regole per produrre claim candidati."
-    if ready_count == 0:
-        return "needs_profile_readiness", "Risolvere i blocchi delle schede pilota prima della review storica."
-    if blockers:
-        return "ready_with_document_intake_warnings", "Revisionare le schede pronte e pianificare i blocchi documentali residui."
-    return "ready_for_human_review", "Passare alla review queue e alle decisioni del revisore storico."
-
-
 def _build_mvp_signal_diagnostics(
     *,
     profiles: list[dict[str, str]],
@@ -696,7 +690,8 @@ def _build_mvp_signal_diagnostics(
     claim_funnel_diagnostics: dict[str, Any],
     profile_readiness: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    duplicate_groups = _document_duplicate_groups(documents)
+    duplicate_diagnostics = _build_document_duplicate_diagnostics(documents)
+    duplicate_groups = duplicate_diagnostics["duplicate_document_groups"]
     weak_nominal_links = [link for link in links if _is_weak_nominal_link(link)]
     claim_profile_ids = {_profile_id_from_item(claim) for claim in claims if _profile_id_from_item(claim)}
     link_profile_ids = {_profile_id_from_item(link) for link in links if _profile_id_from_item(link)}
@@ -715,8 +710,8 @@ def _build_mvp_signal_diagnostics(
             }
         )
 
-    total_duplicate_documents = sum(_int_value(group.get("document_count")) - 1 for group in duplicate_groups)
-    unique_document_count = max(len(documents) - total_duplicate_documents, 0)
+    total_duplicate_documents = duplicate_diagnostics["duplicate_document_count"]
+    unique_document_count = duplicate_diagnostics["estimated_unique_document_count"]
     blockers = _mvp_signal_blockers(
         document_count=len(documents),
         unique_document_count=unique_document_count,
@@ -748,6 +743,16 @@ def _build_mvp_signal_diagnostics(
         "next_action": _mvp_signal_next_action(blockers),
         "review_status": "unreviewed",
         "publication_status": "not_publishable_without_human_review",
+    }
+
+
+def _build_document_duplicate_diagnostics(documents: list[dict[str, Any]]) -> dict[str, Any]:
+    duplicate_groups = _document_duplicate_groups(documents)
+    duplicate_document_count = sum(_int_value(group.get("document_count")) - 1 for group in duplicate_groups)
+    return {
+        "duplicate_document_groups": duplicate_groups,
+        "duplicate_document_count": duplicate_document_count,
+        "estimated_unique_document_count": max(len(documents) - duplicate_document_count, 0),
     }
 
 
@@ -1120,18 +1125,6 @@ def _document_intake_next_action(blockers: list[str]) -> str:
 
 def _profile_id_from_item(item: dict[str, Any]) -> str:
     return str(item.get("profile_id") or item.get("person_candidate_id") or item.get("person_id") or "")
-
-
-def _readiness_status_and_action(*, document_count: int, link_count: int, claim_count: int, signal_count: int) -> tuple[str, str]:
-    if document_count == 0:
-        return "needs_documents", "Registrare o collegare almeno un documento revisionabile."
-    if link_count == 0:
-        return "needs_links", "Verificare il link candidato documento-persona."
-    if claim_count == 0:
-        if signal_count > 0:
-            return "needs_signal_review", "Revisionare piste documentali e valutare segmentazione per produrre claim candidati."
-        return "needs_claims", "Migliorare testo/OCR o regole per produrre claim candidati."
-    return "ready_for_review", "Revisionare documenti, link e claim candidati."
 
 
 def _warnings(

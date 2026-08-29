@@ -1,17 +1,26 @@
 # Current Next Increment
 
-Data: 2026-08-09
+Data: 2026-08-29
 
 ## Incremento corrente
 
-T33 - Pacchetto finanziatori.
+Q2 - `q2-pilot-readiness-helper`: isolare la decisione pura di readiness e
+prossima azione del profilo pilota da `mvp_pilot_summary.py`.
 
 ## Stato
 
-**Aperto: la golden run canonica a tre casi e' promossa come demo
-revisionabile/non pubblicabile; la prova asciutta del racconto finanziatori in
-sei schermate e' completata e il prossimo gate e' revisione umana, senza bando,
-importo o pubblicazione.**
+**Chiuso il 2026-08-29: la golden run canonica a tre casi e' promossa come demo
+revisionabile/non pubblicabile; la revisione umana del racconto ha prodotto
+verdetto `approved_for_layout` e l'entrypoint e' stato allineato ai testi
+approvati dei blocchi 3 e 5. Il prossimo gate e' il layout interno non
+pubblicabile, senza bando, importo o pubblicazione. Il brief e il wireframe
+interni sono stati prodotti e verificati; T33 e' quindi chiuso senza
+pubblicazione, dati copiati o modifiche canoniche.**
+
+Il prossimo micro-incremento selezionato dopo la chiusura di T33 e del
+precedente Q2 e' un refactor behavior-preserving limitato a una sola
+responsabilita'. L'implementazione resta da delegare; non cambia output, CLI,
+schema, workflow o dati esterni.
 
 Esito review del 2026-07-18: il pacchetto precedente e' risultato troppo
 tecnico e il perimetro Andreoli/Balboni troppo ridotto per rappresentare la
@@ -1795,7 +1804,7 @@ Evidenza Q2 `LocalWorkspaceStorage` directory entries:
 
 ## Prossimo incremento candidato
 
-T33 resta l'incremento corrente. La golden run a tre casi
+T33 è chiuso. La golden run a tre casi
 `funding-demo-golden-3cases-v1-pipeline` e' ora il descriptor demo attivo, come
 demo revisionabile e non pubblicabile. La prova asciutta della presentazione in
 sei schermate e' completata e l'handoff di revisione umana e' pronto; il
@@ -1810,7 +1819,8 @@ Possibili candidati successivi, da non avviare in questa sessione:
   credenziali nel `.env` locale e autorizzazione esplicita;
 - T27 scrittura diagnostica pCloud solo dopo esito soddisfacente del read-only
   e con cartella diagnostica remota autorizzata;
-- Q2 solo se rimuove un blocco diretto e documentato della golden run.
+- implementazione del candidato Q2 selezionato, solo dopo validazione dello
+  scope e con comportamento invariato.
 
 ## Traccia parallela qualita'
 
@@ -1821,7 +1831,16 @@ modulari o micro-refactor behavior-preserving, con test mirati e stop condition
 esplicita. Non autorizza refactor ampi o cambi di CLI, schemi, workflow o
 pipeline senza decisione dedicata.
 
-Prossimo candidato tecnico: da definire.
+Discovery Q2 del 2026-08-29: dopo la chiusura del refactor sui duplicati
+documentali è stato selezionato un solo candidato tecnico residuo, da validare
+prima dell'implementazione: isolare `_pilot_package_status_and_action` da
+`memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py`
+in un helper puro dedicato. I test minimi sono
+`tests.test_mvp_pilot_summary_rendering`, con casi per documenti assenti, link
+mancanti, segnali da revisionare e stato pronto. Il candidato deve mantenere
+invariati `status`, `next_action`, scorecard, payload, Markdown, CLI, schema e
+workflow. La discovery è stata read-only; nessun codice runtime o dato esterno
+è stato modificato.
 
 ## Evidenza T31
 
@@ -2123,3 +2142,42 @@ cd memoria-engine
 Template verbale revisione umana T33 del 2026-08-26: creato memoria-bootstrap/docs/funding-demo-t33-human-review-response-template.md e collegato all'handoff. Il template raccoglie esito, blocchi narrativi, correzioni richieste e conferme di guardrail, ma non registra alcuna decisione reale, non approva la presentazione, non introduce bando/importo/finanziatore e non modifica artefatti canonici.
 
 Preflight revisione umana T33 del 2026-08-28: creato memoria-bootstrap/docs/funding-demo-t33-human-review-preflight.md e collegato a handoff e template. Il preflight verifica materiali, sei blocchi narrativi, esiti ammessi e guardrail prima della revisione umana effettiva; non registra verdetti reali, non approva layout o pubblicazione, non introduce bando/importo/finanziatore e non modifica artefatti canonici.
+
+Revisione umana effettiva T33 del 2026-08-28: Marco Fabbri (Author) ha approvato i sei blocchi narrativi e confermato i guardrail, con verdetto approved_for_layout. I blocchi Cinque storie e Limiti hanno ricevuto formulazioni aggiornate registrate nel verbale datato; il prossimo candidato e' allineare meccanicamente l'entrypoint ai due testi approvati, ripetere una breve prova asciutta e poi preparare il layout interno non pubblicabile. Il verdetto non autorizza pubblicazione, bando, importo, finanziatore o modifiche canoniche.
+Allineamento entrypoint T33 del 2026-08-29: recepiti meccanicamente in `funding-demo-t33-presentation-entrypoint.md` i testi approvati dal verbale umano per i blocchi 3, Cinque storie, e 5, Limiti e non pubblicabilita'. La prova asciutta breve `funding-demo-t33-presentation-alignment-dry-run-2026-08-29.md` conferma coerenza narrativa e guardrail: presentazione non pubblicabile, nessun bando/importo/finanziatore, nessuna nuova fonte, nessuna scrittura nel data root esterno e nessuna modifica canonica. Il prossimo candidato e' preparare il layout interno non pubblicabile.
+
+Semplificazione procedura agent Windows del 2026-08-29: rimossa la guida
+dedicata e concentrate in `AGENTS.md` cinque regole essenziali su patch, retry,
+escalation e JSON. La priorita' T33 e il prossimo candidato restano invariati.
+
+Brief layout interno T33 del 2026-08-29: creato funding-demo-t33-internal-layout-brief.md con ordine delle sei schermate, composizione Andreoli e preflight. Il brief resta interno, revisionabile e non pubblicabile; non introduce dati reali, bando, importo, finanziatore o modifiche canoniche.
+
+Verifica brief layout interno T33 del 2026-08-29: confermati collegamento dall'entrypoint, coerenza con la scaletta Andreoli e il verbale `approved_for_layout`, presenza dei testi approvati dei blocchi 3 e 5 e guardrail di non pubblicabilita'. Incremento chiuso senza dati reali, scritture nel data root esterno, approvazione di claim o modifiche canoniche.
+
+Wireframe layout interno T33 del 2026-08-29: prodotto `funding-demo-t33-internal-layout-wireframe.md` con sei schermate, gerarchia testuale, composizione Andreoli a tre tracce, domanda aperta e checklist. L'artefatto e' una base interna di impaginazione, non una slide finale e non pubblicabile; verifiche JSON, riferimenti/guardrail e diff passate.
+
+Q2 memoria-engine del 2026-08-29: isolata in `mvp_pilot_summary.py` la costruzione delle piste documentali revisionabili per profilo in un helper puro. Ordine, deduplicazione, filtri e output restano invariati; 16 test mirati e 3 test downstream della review queue passano. Nessun dato reale o data root esterno modificato.
+
+Q2 memoria-engine del 2026-08-29: isolata in `mvp_pilot_summary.py` la diagnostica pura dei duplicati documentali, inclusa la priorita' della chiave di identita', il raggruppamento e i conteggi derivati. Payload, blocker, Markdown, CLI, schema e workflow restano invariati; nessun dato reale o data root esterno modificato.
+
+T26 pCloud del 2026-08-29: verifica live read-only riuscita con provider `pcloud`, host `api.pcloud.com`, token configurato e modalita' `read_only`. La root `/` restituisce nessun contenuto e non ha `folderid` esplicito; nessuna scrittura cloud e' stata eseguita. Per completare T26 serve un path o `folderid` di una cartella remota esistente.
+T26 pCloud HOLD del 2026-08-29: l'app `MemoriaStorage` risulta vincolata a `Specific app folder`; il campo `Folder access` e' disabilitato. Il supporto pCloud deve convertire l'app a `All folders` o fornire una nuova app equivalente. In attesa della risposta non si eseguono altre operazioni cloud.
+
+Chiusura complessiva T33 del 2026-08-29: completati golden run, dossier, walkthrough,
+diagramma evidenziale, scheda caso, roadmap uso fondi, checklist readiness,
+revisione umana, allineamento narrativo, brief e wireframe del layout interno.
+Il materiale resta revisionabile e non pubblicabile. Il prossimo incremento va
+ricalcolato dalla roadmap; T26/pCloud resta separato e in HOLD.
+
+Q2 memoria-engine del 2026-08-29: estratta la decisione pura di stato e prossima
+azione del pacchetto pilota in `mvp_pilot_package_status.py`, mantenendo alias,
+output, scorecard, payload, Markdown, CLI, schema e workflow invariati. Aggiunti
+test mirati per documenti assenti, segnali da revisionare e stato pronto; 5 test
+passano. Nessun dato reale o data root esterno modificato.
+
+Q2 memoria-engine del 2026-08-29: estratta la decisione pura di readiness e
+prossima azione del profilo pilota in `mvp_pilot_readiness.py`, mantenendo
+status, payload, Markdown, CLI, schema e workflow invariati. Aggiunti test
+mirati per documenti assenti, link mancanti, segnali da revisionare, claim
+assenti e stato pronto; 17 test mirati e downstream passano. Nessun dato reale
+o data root esterno modificato.

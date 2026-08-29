@@ -1,0 +1,93 @@
+Crea una presentazione interna semplice di 6 slide su Me.Mo.Ri.A usando esclusivamente i dati e gli screenshot che allego dalla seguente run reale:
+
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline
+
+Non inventare dati, nomi, date, documenti o citazioni. Se un’informazione non è presente negli allegati, lasciala come “da verificare”.
+
+Dati concreti da mostrare:
+
+- Run: funding-demo-golden-3cases-v1-pipeline
+- Stato: ready_for_internal_demo
+- Profili selezionati: 3
+  - caso principale: Dino Andreoli
+  - casi complementari: Balboni e Bendini Ateo
+- Documenti coperti: 5 su 5
+- Famiglie di fonte: 3
+- Decisioni storiche accettate: 15
+- Decisioni ancora pending: 68
+- Verified facts: solo preview
+- ProfilePatch: solo preview, non applicata
+- Publication ready: false
+- Modifica profili canonici: false
+
+Struttura delle slide:
+
+1. La demo reale
+   Mostra la run `funding-demo-golden-3cases-v1-pipeline`, il suo stato
+   `ready_for_internal_demo` e il perimetro di 3 profili / 5 documenti / 3
+   famiglie di fonte.
+
+2. Cosa entra nel sistema
+   Usa uno screenshot o un estratto reale degli artefatti allegati per mostrare
+   almeno una fonte, un documento e il relativo collegamento al caso Andreoli.
+   Mantieni visibile la provenienza.
+
+3. Il caso Dino Andreoli
+   Mostra il nome Dino Andreoli e i tre materiali reali disponibili:
+   - traccia tabellare locale;
+   - documento contestuale locale;
+   - scansione archivistica istituzionale.
+   Inserisci la frase:
+   “Lo stesso nome ricompare in documenti diversi.”
+   Non presentare Andreoli come biografia conclusa.
+
+4. Cosa concorda e cosa diverge
+   Usa esclusivamente i dati reali degli allegati per distinguere:
+   - informazioni confermate da più fonti;
+   - informazioni divergenti;
+   - informazioni ancora da verificare.
+   Mostra sempre fonte e documento accanto a ogni elemento.
+
+5. La revisione umana
+   Rappresenta i numeri reali:
+   - 15 decisioni accettate;
+   - 68 decisioni pending.
+   Spiega visivamente che il sistema prepara materiale revisionabile, ma non
+   sostituisce la decisione dello storico.
+
+6. Risultato e limiti
+   Mostra:
+   - verified facts in preview;
+   - ProfilePatch in preview non applicata;
+   - `publication_ready=false`;
+   - nessuna modifica ai profili canonici.
+   Concludi con:
+   “Demo interna basata su dati reali selezionati. Non pubblicabile.”
+
+Indicazioni grafiche:
+
+- stile sobrio e documentale;
+- usare screenshot, tabelle o ritagli reali degli allegati;
+- riportare sotto ogni elemento il riferimento al file sorgente;
+- evidenziare con colori diversi confermato, divergente e da verificare;
+- non usare immagini decorative;
+- non inserire dati non presenti negli allegati;
+- non aggiungere bando, importo o finanziatore;
+- non trasformare preview o candidati in fatti definitivi;
+- inserire nel footer di ogni slide:
+  “Me.Mo.Ri.A · Dati reali dalla golden run · Demo interna · Non pubblicabile”.
+
+Usa gli allegati come unica fonte dei contenuti. Crea una presentazione interna di 5–6 slide con pochi estratti reali della run Me.Mo.Ri.A `funding-demo-golden-3cases-v1-pipeline`.
+
+Mostra concretamente:
+- il caso Dino Andreoli;
+- 2–3 collegamenti reali fra persona, documento e fonte;
+- almeno un’informazione confermata;
+- almeno una divergenza o informazione pending;
+- i numeri reali della run: 3 profili, 5 documenti, 3 famiglie fonte, 15 decisioni accettate e 68 pending;
+- la provenance accanto a ogni dato mostrato.
+
+Per ogni elemento indica il file sorgente e non inventare nulla. Mantieni visibili le incertezze. Non trasformare preview, pending o needs_manual_review in fatti definitivi.
+
+Footer obbligatorio:
+“Me.Mo.Ri.A · Dati reali dalla golden run · Demo interna · Non pubblicabile”.

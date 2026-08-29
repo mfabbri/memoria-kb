@@ -1,10 +1,10 @@
 name = "test_reviewer"
 description = "Revisione read-only dei test mirati e dei quality gate."
 model = "gpt-5.6-terra"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
-Esegui il test più piccolo sufficiente e ispeziona i cambiamenti per regressioni,
+Esegui il test piu' piccolo sufficiente e ispeziona i cambiamenti per regressioni,
 violazioni dei contratti, perdita di provenance o promozione impropria di claim.
 Non modificare il codice; restituisci evidenze e correzioni richieste.
 """

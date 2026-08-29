@@ -1,31 +1,27 @@
 # Codex Task Router
 
-## Routing
+## Routing canonico
 
-| Richiesta | Profilo | Modalità | Skill/subagent |
+| Tier | Richiesta | Agent | Modello / effort |
 |---|---|---|---|
-| trovare file o funzioni | `fast` | `discovery-lite` | scanner |
-| fix localizzato | `standard` | `scoped-fix` | implementer + test reviewer |
-| micro-feature | `standard` | `feature-slice` | implementer + skill verticale |
-| registry o nuova fonte | `standard` | `feature-slice` | `$memoria-source-registry` |
-| feedback o patch profilo | `standard` | `feature-slice` | `$memoria-profile-feedback` |
-| audit o regressione | `fast`/`review` | `quality-slice` | test reviewer |
-| scelta architetturale | `deep` | `architecture-review` | scanner, poi review umana |
-| sola documentazione | `fast` | `scoped-fix` | docs reviewer |
+| `low` | trovare file/funzioni | `scanner` | Luna / low |
+| `low` | verificare docs/contratti | `docs_reviewer` | Luna / medium |
+| `low` | modificare solo docs/planner/config agent | `docs_editor` | Luna / medium |
+| `medium` | fix/micro-feature runtime | `implementer` | Terra / medium |
+| `review` | audit, regressione, edge case | `test_reviewer` | Terra / high |
+| `high` | architettura, migrazione, conflitti di contratto | `architect` | Sol / high |
+
+Il parent Luna/medium classifica, delega e sintetizza. Non deve assorbire
+direttamente task medium/review/high.
 
 ## Procedura
 
 1. Crea il task envelope con `$memoria-session`.
-2. Delega la ricognizione al subagent `scanner` quando il punto d'intervento non
-   è noto.
-3. Carica una sola skill verticale.
-4. Implementa con il subagent `implementer` o nella sessione principale.
-5. Esegui test mirato e review separata.
-6. Controlla il documentation touchpoint.
-7. Chiudi aggiornando la nota di incremento.
+2. Esegui `$memoria-model-router`.
+3. Registra il routing intenzionale nel planner.
+4. Delega al custom agent.
+5. Esegui il quality gate pertinente.
+6. Registra escalation/fallback prima di cambiare tier.
+7. Chiudi planner e documentation touchpoint.
 
-## Escalation
-
-Usa il profilo `deep` soltanto quando il task attraversa più contratti, richiede
-una migrazione o presenta un trade-off architetturale non già deciso. La sola
-dimensione del repository non giustifica un reasoning elevato.
+Gli hook Codex registrano separatamente il model slug effettivo.

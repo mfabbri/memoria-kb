@@ -1102,7 +1102,9 @@ prepara la candidata. Non e' ammessa una run comparativa usata in parallelo
 dalla presentazione; descriptor, dossier, walkthrough e feedback loop devono
 convergere sulla candidata prima della promozione.
 
-Stato: **aperto e prioritario**.
+Stato: **chiuso il 2026-08-29**. La golden run, il pacchetto revisionabile,
+la revisione umana del racconto e il layout interno non pubblicabile risultano
+completati; non e' autorizzata la pubblicazione o la modifica canonica.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

@@ -1,0 +1,44 @@
+Sì. Questi sono i riferimenti esatti della golden run attuale:
+Cartella base:
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\
+Per una presentazione semplice userei soprattutto questi quattro documenti:
+1. Caso concreto e materiali da mostrare
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\review_requests.three_cases.cards.md
+Contiene le schede dei tre casi selezionati, incluso Andreoli, con i materiali e i punti di attenzione per la revisione.
+2. Collegamento fra persone, documenti e fonti
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_demo_reconciliation_table.md
+È il riferimento principale per mostrare:
+- quale documento è collegato a quale persona;
+- quali fonti convergono;
+- quali informazioni divergono;
+- quali elementi restano da verificare.
+3. Dati estratti effettivamente disponibili
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\dataset_export.preview.md
+Versione leggibile dei dati estratti dalla run.
+Versione completa:
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\dataset_export.preview.json
+4. Provenance e decisioni di review
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_consolidated_review_ledger.md
+Mostra la provenienza delle evidenze, lo stato delle decisioni e la distinzione fra accettato, pending e divergente.
+Per i numeri generali della demo:
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_funding_dossier.md
+Per i limiti e lo stato non pubblicabile:
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_go_no_go_checklist.md
+Per mostrare i risultati preview:
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\verified_facts.preview.md
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\profile_patch.preview.md
+Il descriptor attivo della demo è:
+P:\Comune\Me.Mo.Ri.a\database\memoria_mvp_demo.active.json
+Per Canva o Claude Design, gli allegati minimi da fornire sono quindi:
+review_requests.three_cases.cards.md
+mvp_demo_reconciliation_table.md
+dataset_export.preview.md
+mvp_consolidated_review_ledger.md
+mvp_go_no_go_checklist.md
+Non usare come fonte primaria la vecchia run prova-preview-profili-5-reviewed-01-pipeline: la run attuale è funding-demo-golden-3cases-v1-pipeline.
+
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\historian_review\review_requests.three_cases.cards.md
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_demo_reconciliation_table.md
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\dataset_export.preview.md
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_consolidated_review_ledger.md
+P:\Comune\Me.Mo.Ri.a\risultati\runs\funding-demo-golden-3cases-v1-pipeline\mvp_go_no_go_checklist.md

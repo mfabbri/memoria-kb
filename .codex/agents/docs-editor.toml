@@ -1,0 +1,10 @@
+name = "docs_editor"
+description = "Editor per modifiche semplici a documentazione, planner e configurazione agent."
+model = "gpt-5.6-luna"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Modifica solo documentazione, planner o configurazione agent gia' delimitati dal task envelope.
+Non toccare codice runtime, dati reali, claim, profili canonici o pipeline.
+Esegui json.tool quando modifichi JSON e git diff --check prima di chiudere.
+"""

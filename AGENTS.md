@@ -10,12 +10,51 @@ All'inizio di una sessione:
 
 1. leggi questo file;
 2. leggi `memoria-bootstrap/planning/current-work.json`;
-3. usa le skill `$memoria-session` e `$memoria-planner`;
+3. usa le skill `$memoria-session`, `$memoria-planner` e `$memoria-model-router`;
 4. riprendi l’incremento solo se è ancora aperto e coerente con roadmap e decision log;
 5. altrimenti usa `$memoria-roadmap-selector` e aggiorna il planner;
 6. carica una sola skill verticale, solo quando il task la richiede.
 
 Non leggere automaticamente tutte le roadmap, tutti i playbook o le run reali.
+
+Su Windows:
+
+1. usa `apply_patch` per le modifiche manuali solo quando la sandbox processuale di Codex e' operativa;
+2. se compare un errore infrastrutturale come `windows sandbox`, `spawn setup refresh`, `setup refresh had errors` o `helper_unknown_error`, non ritentare lo stesso `apply_patch` e non entrare in un ciclo di escalation: segnala il blocco infrastrutturale e interrompi i tool che richiedono quella sandbox;
+3. se i normali processi partono ma fallisce solo `apply_patch`, e la modifica resta confinata ai repository Git, e' ammesso un solo fallback deterministico tramite Python o `git apply`, seguito da `git diff --check`, diff mirato e test pertinenti;
+4. non usare `Set-Content`, `Out-File` o riserializzazione JSON come fallback;
+5. sui JSON modificati esegui `json.tool`; controlla il BOM solo se il parser lo segnala;
+6. non confondere la sandbox processuale di Codex con le modalita' applicative Me.Mo.Ri.A denominate `--sandbox`, che restano preview-only e seguono i propri contratti.
+
+
+## Routing modelli Codex
+
+La sessione principale usa `gpt-5.6-luna` con reasoning `medium` come
+router/controller a basso costo. Il parent deve classificare e delegare il
+lavoro sostanziale al custom agent appropriato; non deve eseguire direttamente
+task `medium`, `review` o `high`.
+
+Prima di delegare o modificare file, `$memoria-model-router` classifica il task
+in base alla forma e al rischio del lavoro, non alla dimensione del repository:
+
+- `low`: discovery read-only -> `scanner` / Luna `low`;
+- `low`: verifica documentale -> `docs_reviewer` / Luna `medium`;
+- `low`: modifica solo docs/planner/config agent -> `docs_editor` / Luna `medium`;
+- `medium`: codice o micro-feature entro contratti esistenti -> `implementer` / Terra `medium`;
+- `review`: regressioni, edge case, provenance o quality gate -> `test_reviewer` / Terra `high`;
+- `high`: architettura, migrazioni o trade-off multi-repository -> `architect` / Sol `high`.
+
+Ogni selezione intenzionale va registrata in
+`memoria-bootstrap/planning/current-work.json` nel blocco `routing`.
+Escalation e fallback devono essere registrati prima della nuova delega.
+
+La traccia runtime effettiva e' separata dal planner: gli hook Codex registrano
+il model slug realmente usato per sessione e subagent in
+`memoria-bootstrap/planning/.runtime/model-routing.ndjson`. Il file runtime e'
+locale e ignorato da Git; il planner conserva invece la decisione auditabile.
+
+Non usare profili project-local `[profiles.*]`: Codex li ignora nella
+`.codex/config.toml` del progetto.
 
 ## Principio archivistico
 

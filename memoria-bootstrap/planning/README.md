@@ -23,6 +23,8 @@ repository. Il planner deve essere marcato `superseded` e ricalcolato.
 ## Regole
 
 - un solo incremento attivo;
+- ogni incremento attivo registra il routing model/agent prima della delega;
+- escalation e fallback aggiornano la routing trace senza salvare chain-of-thought;
 - nessun fatto storico o decisione editoriale nel planner;
 - percorsi relativi al repository;
 - date ISO 8601 UTC;

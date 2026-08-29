@@ -407,3 +407,22 @@ Regole:
 Conseguenza: golden run tecnica e presentazione finanziatori restano due
 oggetti narrativi, ma condividono una sola lineage evidenziale e un solo
 descriptor canonico.
+
+## 2026-08-29 - Routing modelli Codex tracciabile v2
+
+Decisione: il parent Codex project-local usa Luna/medium come router/controller e
+delega il lavoro sostanziale a custom agent specializzati: Luna per discovery e
+documentazione, Terra per implementazione e quality review, Sol per architettura
+e migrazioni.
+
+Regola tecnica: non usare `[profiles.*]` nel `.codex/config.toml` di progetto.
+Il routing intenzionale e' versionato in `planning/current-work.json`; gli hook
+`SessionStart`, `SubagentStart` e `SubagentStop` registrano localmente il model
+slug effettivo in `planning/.runtime/model-routing.ndjson`.
+
+Regola di costo/rischio: la dimensione del repository non determina il tier.
+Le scritture semplici confinate a docs/planner/config agent possono restare su
+Luna; codice runtime passa almeno a Terra; trade-off architetturali passano a Sol.
+
+Conseguenza: e' possibile confrontare route richiesta e modello realmente
+eseguito senza salvare chain-of-thought o telemetria provider nel repository.
