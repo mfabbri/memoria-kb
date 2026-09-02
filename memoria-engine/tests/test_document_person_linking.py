@@ -279,6 +279,47 @@ class DocumentPersonLinkingTests(unittest.TestCase):
         self.assertEqual(by_name["Memo Moretti"]["review_status"], "unreviewed")
         self.assertNotIn("CandidateEvidenceClaim", json.dumps(payload))
 
+    def test_matches_reversed_given_family_name_as_normalized_candidate(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            profiles_index = write_profile_index(tmp_dir)
+            metadata_dir, text_dir = write_processed_document(
+                tmp_dir,
+                text="La scheda cita Laura Guazzaloca come persona collegata.",
+            )
+
+            payload = build_candidate_document_person_links(
+                text_dir=text_dir,
+                metadata_dir=metadata_dir,
+                profiles_index=profiles_index,
+            )
+
+        self.assertEqual(payload["link_count"], 1)
+        link = payload["candidate_document_person_links"][0]
+        self.assertEqual(link["profile_id"], "person:purocielo:guazzaloca-laura")
+        self.assertIn("normalized_reversed_canonical_name_match", link["reasons"])
+        self.assertEqual(link["score"], 0.92)
+
+    def test_prefers_profile_matching_document_title_over_referenced_people(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            profiles_index = write_profile_index(tmp_dir)
+            metadata_dir, text_dir = write_processed_document(
+                tmp_dir,
+                text="La scheda di Laura Guazzaloca cita anche Guazzaloca Laura e Memo Moretti.",
+            )
+            metadata_path = metadata_dir / "camalanca_html" / "doc-1.metadata.json"
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            metadata["title"] = "Guazzaloca Laura"
+            metadata_path.write_text(json.dumps(metadata, ensure_ascii=False), encoding="utf-8")
+
+            payload = build_candidate_document_person_links(
+                text_dir=text_dir,
+                metadata_dir=metadata_dir,
+                profiles_index=profiles_index,
+            )
+
+        self.assertEqual(payload["link_count"], 1)
+        self.assertEqual(payload["candidate_document_person_links"][0]["profile_id"], "person:purocielo:guazzaloca-laura")
+
     def test_uses_identity_search_hints_as_unreviewed_link_candidates_only(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             profiles_index = write_profile_index(tmp_dir)

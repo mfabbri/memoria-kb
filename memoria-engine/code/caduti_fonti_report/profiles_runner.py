@@ -367,6 +367,8 @@ def _repo_root_from_sources_yaml(sources_yaml: Path) -> Path:
     resolved = sources_yaml.resolve()
     if resolved.parent.name == "ricerche":
         return resolved.parent.parent
+    if resolved.parent.name == "registry" and resolved.parent.parent.name == "memoria-sources":
+        return resolved.parent.parent.parent / "memoria-engine"
     return resolved.parent
 
 

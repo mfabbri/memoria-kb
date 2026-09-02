@@ -284,8 +284,9 @@ def build_profile_patch(*, candidate_updates_jsonld: Path, decisions_json: Path)
         if not path:
             continue
         value = str(decision.get("target_value", "")).strip() or str(update.get("candidate_value", "")).strip()
+        requested_op = str(decision.get("op", "")).strip()
         operation = {
-            "op": "add" if path.endswith("/-") or "/verified_facts/" in path else "set",
+            "op": requested_op if requested_op in {"add", "set", "replace"} else ("add" if path.endswith("/-") or "/verified_facts/" in path else "set"),
             "path": path,
             "value": value,
             "candidate_update_id": update_id,

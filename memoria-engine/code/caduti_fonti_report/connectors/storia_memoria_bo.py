@@ -206,13 +206,38 @@ def _enrich_hits_with_detail(page, hits: list[SearchHit], timeout_ms: int) -> li
 
 def _open_people_tab_if_needed(page, source: Source) -> None:
     form_selector = source.auth.get("form_selector", "#views-exposed-form-persone-block-2").strip()
-    if page.locator(form_selector).count() > 0:
+    if _first_visible_locator(page.locator(form_selector)) is not None:
         return
 
     tab_selector = source.auth.get("people_tab_selector", 'a[href*="/ricerca-avanzata/persone"]').strip()
-    if tab_selector and page.locator(tab_selector).count() > 0:
-        page.locator(tab_selector).first.click()
+    tab = _first_visible_locator(page.locator(tab_selector)) if tab_selector else None
+    if tab is not None:
+        try:
+            href = tab.get_attribute("href")
+        except AttributeError:
+            href = None
+        if href:
+            page.goto(urllib.parse.urljoin(page.url, href), wait_until="domcontentloaded", timeout=60000)
+        else:
+            tab.click()
         page.wait_for_load_state("networkidle", timeout=60000)
+
+
+def _first_visible_locator(locator):
+    """Return the first visible match, keeping lightweight test doubles working."""
+    count = locator.count()
+    for index in range(count):
+        try:
+            candidate = locator.nth(index)
+            if candidate.is_visible():
+                return candidate
+        except AttributeError:
+            return locator.first
+    return None
+
+
+def _visible_field(form, selector: str):
+    return _first_visible_locator(form.locator(selector))
 
 
 def _execute_people_search(page, source: Source, attempt: dict[str, str]) -> tuple[str, str]:
@@ -227,15 +252,34 @@ def _execute_people_search(page, source: Source, attempt: dict[str, str]) -> tup
     page.wait_for_load_state("networkidle", timeout=timeout_ms)
     _open_people_tab_if_needed(page, source)
 
-    form = page.locator(form_selector)
-    form.locator('input[name="s"]').fill("")
-    form.locator('input[name="nom"]').fill(attempt["nom"])
-    form.locator('input[name="cog"]').fill(attempt["cog"])
-    form.locator('input[name="nas[min]"]').fill(attempt["nas_min"])
-    form.locator('input[name="nas[max]"]').fill(attempt["nas_max"])
-    form.locator('input[name="mor[min]"]').fill(attempt["mor_min"])
-    form.locator('input[name="mor[max]"]').fill(attempt["mor_max"])
-    form.locator(source.auth.get("submit_selector", "#edit-submit-persone").strip()).click()
+    form = _first_visible_locator(page.locator(form_selector))
+    if form is None:
+        query = {
+            key: value
+            for key, value in attempt.items()
+            if key != "label" and value
+        }
+        query_url = f"{advanced_search_url}?{urllib.parse.urlencode(query)}"
+        page.goto(query_url, wait_until="domcontentloaded", timeout=timeout_ms)
+        page.wait_for_load_state("networkidle", timeout=timeout_ms)
+        return page.url, page.content()
+    for field_name, value in {
+        "s": "",
+        "nom": attempt["nom"],
+        "cog": attempt["cog"],
+        "nas[min]": attempt["nas_min"],
+        "nas[max]": attempt["nas_max"],
+        "mor[min]": attempt["mor_min"],
+        "mor[max]": attempt["mor_max"],
+    }.items():
+        field = _visible_field(form, f'input[name="{field_name}"]')
+        if field is None:
+            raise RuntimeError(f"Campo persone non visibile o assente: {field_name}")
+        field.fill(value)
+    submit = _visible_field(form, source.auth.get("submit_selector", "#edit-submit-persone").strip())
+    if submit is None:
+        raise RuntimeError("Pulsante invio persone non visibile o assente")
+    submit.click()
     page.wait_for_load_state("networkidle", timeout=timeout_ms)
 
     return page.url, page.content()

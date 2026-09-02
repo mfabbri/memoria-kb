@@ -14,7 +14,10 @@ from caduti_fonti_report.connectors.obd_memorial import (
     transliterate_latin_to_russian,
 )
 from caduti_fonti_report.connectors.pamyat_naroda import _build_pamyat_search_url
-from caduti_fonti_report.connectors.storia_memoria_bo import _build_storia_memoria_search_attempts
+from caduti_fonti_report.connectors.storia_memoria_bo import (
+    _build_storia_memoria_search_attempts,
+    _first_visible_locator,
+)
 from caduti_fonti_report.models import Caduto, SearchHit, Source
 from caduti_fonti_report.queries import default_query
 
@@ -44,6 +47,29 @@ class FakeStoriaMemoriaLocator:
 
     def fill(self, value: str) -> None:
         self.page.fields[self.selector] = value
+
+
+class VisibleLocator:
+    def __init__(self, visible: list[bool]):
+        self.items = [VisibleLocatorItem(value) for value in visible]
+
+    def count(self) -> int:
+        return len(self.items)
+
+    def nth(self, index: int):
+        return self.items[index]
+
+    @property
+    def first(self):
+        return self.items[0]
+
+
+class VisibleLocatorItem:
+    def __init__(self, visible: bool):
+        self.visible = visible
+
+    def is_visible(self) -> bool:
+        return self.visible
 
 
 class FakeStoriaMemoriaPage:
@@ -122,6 +148,13 @@ class FakeStoriaMemoriaPlaywrightFactory:
 
 
 class ConnectorTests(unittest.TestCase):
+    def test_storia_memoria_bo_uses_first_visible_form_match(self) -> None:
+        locator = VisibleLocator([False, True])
+
+        selected = _first_visible_locator(locator)
+
+        self.assertIs(selected, locator.nth(1))
+
     def test_credentialed_source_without_credentials_returns_needs_credentials(self) -> None:
         caduto = Caduto(
             intestazione_pdf="TEST PERSON",

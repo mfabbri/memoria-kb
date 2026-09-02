@@ -9,6 +9,7 @@ from typing import Any
 
 
 ALLOWED_LIST_PATHS = {
+    "/formations/-": "formations",
     "/evidence_claim_ids/-": "evidence_claim_ids",
     "/conflicts/-": "conflicts",
     "/searched_sources/-": "searched_sources",
@@ -189,6 +190,11 @@ def _review_structural_path(profile_payload: dict[str, Any], operation: dict[str
     if current_value == candidate_value:
         _append_many_unique(profile_payload.setdefault("evidence_claim_ids", []), _string_list(operation.get("source_claim_ids")))
         return _result("applied", operation, reason="structural_value_confirmed")
+
+    if str(operation.get("op", "")).strip() == "replace":
+        container[second] = candidate_value
+        _append_many_unique(profile_payload.setdefault("evidence_claim_ids", []), _string_list(operation.get("source_claim_ids")))
+        return _result("applied", operation, reason="structural_value_replaced_after_explicit_review")
 
     conflict = _conflict_payload(operation, path=path, current_value=current_value, candidate_value=candidate_value)
     _append_unique(profile_payload.setdefault("conflicts", []), conflict)

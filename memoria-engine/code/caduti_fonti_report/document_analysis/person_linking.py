@@ -61,7 +61,7 @@ def build_candidate_document_person_links(
                 continue
             links.append(_candidate_link(candidate=candidate, metadata=metadata, text_payload=text_payload, match=match))
 
-    links = _deduplicate_links(links)
+    links = _prefer_document_title_links(_deduplicate_links(links))
     payload = {
         "@type": "CandidateDocumentPersonLinkSet",
         "text_dir": str(text_dir),
@@ -81,6 +81,28 @@ def build_candidate_document_person_links(
         output_md.write_text(render_candidate_document_person_links_markdown(payload), encoding="utf-8")
 
     return payload
+
+
+def _prefer_document_title_links(links: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_document: dict[str, list[dict[str, Any]]] = {}
+    for link in links:
+        by_document.setdefault(str(link.get("source_document_id", "")), []).append(link)
+
+    selected: list[dict[str, Any]] = []
+    for document_links in by_document.values():
+        title = _normalize_name(str(document_links[0].get("title", "")))
+        title_matches = [link for link in document_links if _names_equivalent(str(link.get("canonical_name", "")), title)]
+        if len(title_matches) == 1:
+            selected.extend(title_matches)
+        else:
+            selected.extend(document_links)
+    return selected
+
+
+def _names_equivalent(left: str, right: str) -> bool:
+    left_tokens = _normalize_name(left).split()
+    right_tokens = _normalize_name(right).split()
+    return left_tokens == right_tokens or left_tokens == list(reversed(right_tokens))
 
 
 def render_candidate_document_person_links_markdown(payload: dict[str, Any]) -> str:
@@ -120,8 +142,7 @@ def render_candidate_document_person_links_markdown(payload: dict[str, Any]) -> 
 def _profile_name_candidates(index_path: Path) -> list[ProfileNameCandidate]:
     repository = ProfileRepository(index_path)
     candidates: list[ProfileNameCandidate] = []
-    for entry in repository.list_entries():
-        profile = repository.load_entry(entry)
+    for profile in repository.load_profiles(include_legacy_seed=True):
         for name, kind in _profile_names(profile):
             normalized = _normalize_name(name)
             if _is_conservative_name(normalized):
@@ -238,6 +259,12 @@ def _match_name_in_text(text: str, name: str) -> dict[str, Any]:
             return {}
         match = normalized_pattern.search(text)
         match_type = "normalized"
+    if not match:
+        reversed_pattern = _reversed_name_pattern(name)
+        if reversed_pattern is None:
+            return {}
+        match = reversed_pattern.search(text)
+        match_type = "normalized_reversed"
     if not match:
         return {}
     return {
@@ -416,6 +443,13 @@ def _normalized_name_pattern(name: str) -> re.Pattern[str] | None:
     return re.compile(r"(?<!\w)" + r"[\W_]+".join(tokens) + r"(?!\w)", re.IGNORECASE)
 
 
+def _reversed_name_pattern(name: str) -> re.Pattern[str] | None:
+    tokens = [re.escape(token) for token in _normalize_name(name).split() if token]
+    if len(tokens) != 2 or tokens[0] == tokens[1]:
+        return None
+    return re.compile(r"(?<!\w)" + r"[\W_]+".join(reversed(tokens)) + r"(?!\w)", re.IGNORECASE)
+
+
 def _candidate_reason(*, candidate: ProfileNameCandidate, match: dict[str, Any]) -> str:
     match_type = str(match.get("match_type", "exact")) or "exact"
     return f"{match_type}_{candidate.match_kind}_match"
@@ -425,7 +459,7 @@ def _candidate_score(*, candidate: ProfileNameCandidate, match: dict[str, Any]) 
     score = candidate.confidence
     if candidate.match_kind.startswith("search_hint_"):
         score = min(score, 0.85)
-    if str(match.get("match_type", "exact")) == "normalized":
+    if str(match.get("match_type", "exact")) in {"normalized", "normalized_reversed"}:
         score = min(score, 0.92)
     return round(score, 2)
 

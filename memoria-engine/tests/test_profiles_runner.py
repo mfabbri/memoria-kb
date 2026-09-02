@@ -212,6 +212,14 @@ def real_sources_path() -> Path:
 
 
 class ProfilesRunnerTests(unittest.TestCase):
+    def test_repo_root_from_memoria_sources_registry_points_to_engine_repo(self) -> None:
+        repo_root = profiles_runner._repo_root_from_sources_yaml(
+            Path(__file__).resolve().parents[2] / "memoria-sources" / "registry" / "camalanca_fonti.yaml"
+        )
+
+        self.assertEqual(repo_root.name, "memoria-engine")
+        self.assertTrue((repo_root / "code").is_dir())
+
     def test_runs_from_profile_jsonld_and_preserves_profile_id(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             index_path = write_profile_fixture(tmp_dir)

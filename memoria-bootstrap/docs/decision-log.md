@@ -426,3 +426,92 @@ Luna; codice runtime passa almeno a Terra; trade-off architetturali passano a So
 
 Conseguenza: e' possibile confrontare route richiesta e modello realmente
 eseguito senza salvare chain-of-thought o telemetria provider nel repository.
+
+## 2026-08-29 - Migrazione prioritaria dei profili legacy
+
+Decisione: dopo la chiusura di T33, la ricostruzione controllata dei 57 profili
+ancora marcati con `seed.source = ricerche\\caduti_purocielo.csv` diventa la
+priorità operativa immediata, prima di cloud e micro-refactor Q2.
+
+La migrazione non consiste nel riscrivere il campo `seed` o nel rinominare i
+profili esistenti. Ogni profilo deve essere ricostruito da documenti e fonti
+strutturate, con `CandidateProfileUpdate`/`CandidateNewProfile`, provenance,
+revisione umana, mappa vecchio→nuovo, dry-run, backup, rollback e audit.
+
+I profili privi di copertura sufficiente restano invariati e vengono elencati
+come residui legacy. Nessun claim viene promosso automaticamente e nessun
+profilo canonico viene modificato dalla sola selezione di T34.
+
+Decisione operativa: i profili legacy saranno lavorati in lotti massimi di 20.
+
+## 2026-08-30 - Chiusura T34 lotto 2 senza promozione
+
+Il secondo lotto operativo ha interrogato 20 profili tramite la CLI e il
+connettore dichiarativo `storia_memoria_bo` di Storia e Memoria di Bologna.
+Sono stati registrati 16 esiti `ok` e 4 `no_results`, ma nessun documento di
+dettaglio `SourceDocument` e' risultato acquisibile per il lotto. Gli esiti
+positivi restano pertanto candidati di ricerca, non evidenze claim-eligible:
+la disambiguazione e la revisione umana precedono qualsiasi
+`CandidateProfileUpdate`, `ProfilePatch` o modifica canonica. Il lotto viene
+chiuso operativamente con stato aperto al gate successivo; i profili canonici
+e il seed storico restano invariati.
+
+Lezioni operative registrate: per T34 usare gli ID completi
+`person:purocielo:<slug>` e il flag `-ExecuteFirstPlannedAttempt` per le
+ricerche live; il wrapper di pipeline non espone `ResultsDir`, i job isolati
+richiedono percorsi assoluti e le cartelle profilo vanno create prima
+dell'acquisizione. Un esito `ok` senza `SourceDocument` resta un candidato
+ambiguo, non un'evidenza; i run paralleli devono mantenere separati output,
+provenance, revisione e audit per profilo.
+Intake e generazione candidati possono essere batch, ma revisione, provenance,
+backup, audit e applicazione restano distinguibili per singolo profilo.
+
+## 2026-08-30 - Regole di riconciliazione T34 emerse dalla migrazione
+
+Decisioni operative durevoli:
+
+- quando il registry viene letto da `memoria-sources/registry/...`, la root del
+  repository deve risalire a `memoria-engine`; il fallback non deve sostituire
+  la logica di dettaglio delle fonti;
+- alias e nominativi alternativi si aggiungono su `/identity/aliases/-` senza
+  sostituire il nome canonico;
+- ruoli o funzioni di brigata aggiuntivi si aggiungono su `/formations/-`,
+  mantenendo i valori legacy gia' presenti;
+- un candidato ridondante rispetto al valore legacy produce una decisione di
+  nessuna modifica e una patch preview senza operazioni;
+- date discordanti e appartenenze conflittuali restano `pending` finche' non
+  esiste una decisione umana esplicita e sostenuta dalla provenance;
+- le decisioni accettate generano sempre patch preview auditabili; l'eventuale
+  applicazione canonica e' un passo separato, con backup e verifica.
+
+Conseguenza: i conteggi, i profili e le decisioni specifiche restano negli
+artefatti dei run esterni; questo log conserva soltanto le regole riutilizzabili.
+
+## 2026-08-31 - Revisione manuale a blocchi e correzioni auditabili
+
+Decisione: la revisione di worklist di profili procede per blocchi numerati,
+ma il riferimento vincolante di ogni scelta e' il `candidate_update_id`, non
+il solo nome visualizzato. Prima di registrare un blocco successivo gli ID gia'
+decisi vengono esclusi e i conteggi devono essere verificati.
+
+Decisione operativa: un registro prodotto da un mapping errato non viene
+cancellato. Viene marcato `invalidated` e sostituito da un artefatto correttivo
+che riferisce il registro precedente; le decisioni corrette devono essere
+registrate separatamente e restano preview-only.
+
+Conseguenza: la chiusura della revisione significa copertura classificata e
+audit completa, non applicazione automatica delle patch o creazione canonica
+dei nuovi profili.
+
+## 2026-09-01 - Fallback operativo del controller
+
+Decisione: quando la delega a un subagent non e' disponibile, il controller
+puo' eseguire direttamente un micro-incremento `medium` gia' delimitato dal
+planner, mantenendo invariati write_set, stop condition e quality gate.
+
+Il fallback non si applica a review, migrazioni, architettura o conflitti di
+contratto; questi richiedono ancora l'agente dedicato. Ogni fallback deve essere
+registrato nel planner prima dell'esecuzione.
+
+Conseguenza: l'assenza del subagent non blocca i micro-refactor runtime sicuri
+e verificabili e non richiede all'utente di esplicitare il modello o l'agente.

@@ -4,7 +4,7 @@ import html
 import re
 import unicodedata
 from collections.abc import Callable
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urljoin, urlparse
 
 from ..http_utils import page_title, strip_tags
 from ..models import Source
@@ -44,7 +44,7 @@ class StoriaMemoriaBoSearchExecutor:
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
         ).strip()
         emit_unverified = _as_bool(source.auth.get("emit_unverified_permalink_candidates", "true"))
-        skip_advanced_form = _as_bool(source.auth.get("skip_advanced_form_after_permalink", "true"))
+        skip_advanced_form = _as_bool(source.auth.get("skip_advanced_form_after_permalink", "false"))
 
         slugs = _candidate_person_slugs(attempt)
         permalink_candidates = [
@@ -104,7 +104,7 @@ class StoriaMemoriaBoSearchExecutor:
                     browser.close()
                     return [direct_result]
 
-                if emit_unverified and permalink_candidates:
+                if emit_unverified and permalink_candidates and skip_advanced_form:
                     context.close()
                     browser.close()
                     return [
@@ -229,19 +229,30 @@ class StoriaMemoriaBoSearchExecutor:
             pass
         self._open_people_tab_if_needed(page, source=source, timeout_ms=timeout_ms)
 
-        form = page.locator(form_selector)
-        if form.count() <= 0:
+        form = _first_visible_locator(page.locator(form_selector))
+        if form is None:
+            query = {
+                key: value
+                for key, value in attempt.fields.items()
+                if value
+            }
+            query_url = f"{advanced_search_url}?{urlencode(query)}"
+            page.goto(query_url, wait_until="domcontentloaded", timeout=timeout_ms)
+            try:
+                page.wait_for_load_state("networkidle", timeout=timeout_ms)
+            except Exception:  # noqa: BLE001
+                pass
             return
 
         for field_name, value in attempt.fields.items():
             selector = f'input[name="{field_name}"]'
-            locator = form.locator(selector)
-            if locator.count() > 0:
-                locator.first.fill(value)
+            locator = _first_visible_locator(form.locator(selector))
+            if locator is not None:
+                locator.fill(value)
 
-        submit = form.locator(submit_selector)
-        if submit.count() > 0:
-            submit.first.click()
+        submit = _first_visible_locator(form.locator(submit_selector))
+        if submit is not None:
+            submit.click()
         else:
             first_input = form.locator("input").first
             first_input.press("Enter")
@@ -252,16 +263,36 @@ class StoriaMemoriaBoSearchExecutor:
 
     def _open_people_tab_if_needed(self, page, *, source: Source, timeout_ms: int) -> None:
         form_selector = source.auth.get("form_selector", "#views-exposed-form-persone-block-2").strip()
-        if page.locator(form_selector).count() > 0:
+        if _first_visible_locator(page.locator(form_selector)) is not None:
             return
 
         tab_selector = source.auth.get("people_tab_selector", 'a[href*="/ricerca-avanzata/persone"]').strip()
-        if tab_selector and page.locator(tab_selector).count() > 0:
-            page.locator(tab_selector).first.click()
+        tab = _first_visible_locator(page.locator(tab_selector)) if tab_selector else None
+        if tab is not None:
+            try:
+                href = tab.get_attribute("href")
+            except AttributeError:
+                href = None
+            if href:
+                page.goto(urljoin(page.url, href), wait_until="domcontentloaded", timeout=timeout_ms)
+            else:
+                tab.click()
             try:
                 page.wait_for_load_state("networkidle", timeout=timeout_ms)
             except Exception:  # noqa: BLE001
                 pass
+
+
+def _first_visible_locator(locator):
+    count = locator.count()
+    for index in range(count):
+        try:
+            candidate = locator.nth(index)
+            if candidate.is_visible():
+                return candidate
+        except AttributeError:
+            return locator.first
+    return None
 
 
 def _candidate_person_slugs(attempt: SearchAttempt) -> list[str]:

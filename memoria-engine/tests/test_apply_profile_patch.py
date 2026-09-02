@@ -180,6 +180,27 @@ class ApplyProfilePatchTests(unittest.TestCase):
         self.assertEqual(payload["conflicts"][0]["source_document_ids"], ["doc:3"])
         self.assertEqual(len(audit["conflict_operations"]), 1)
 
+    def test_explicit_replace_structural_patch_overwrites_after_review(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            profile_path, _original, audit, _audit_json, _audit_md, _backup_dir = apply_fixture(
+                tmp_dir,
+                operations=[
+                    {
+                        "op": "replace",
+                        "path": "/death/date",
+                        "value": "13 ottobre 1944",
+                        "candidate_update_id": "candidate-profile-update:date",
+                        "source_claim_ids": ["claim:date"],
+                        "source_document_ids": ["doc:date"],
+                    }
+                ],
+            )
+            payload = json.loads(profile_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(payload["death"]["date"], "13 ottobre 1944")
+        self.assertEqual(audit["applied_operations"][0]["reason"], "structural_value_replaced_after_explicit_review")
+        self.assertEqual(audit["conflict_operations"], [])
+
     def test_unreviewed_claim_cannot_be_promoted_without_source_document(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             profile_path, _original, audit, _audit_json, _audit_md, _backup_dir = apply_fixture(
@@ -227,6 +248,27 @@ class ApplyProfilePatchTests(unittest.TestCase):
         self.assertIn("Verificare documento originale", payload["next_research"])
         self.assertEqual(payload["search_hints"][-1]["review_status"], "unreviewed")
         self.assertEqual(len(audit["applied_operations"]), 4)
+
+    def test_appends_reviewed_formation(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            profile_path, _original, audit, _audit_json, _audit_md, backup_dir = apply_fixture(
+                tmp_dir,
+                operations=[
+                    {
+                        "op": "add",
+                        "path": "/formations/-",
+                        "value": "36ª Brigata Bianconcini Garibaldi",
+                        "candidate_update_id": "candidate-profile-update:formation",
+                        "source_claim_ids": ["claim:formation"],
+                        "source_document_ids": ["doc:formation"],
+                    }
+                ],
+            )
+            payload = json.loads(profile_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(list(backup_dir.glob("*.backup.jsonld"))), 1)
+
+        self.assertIn("36ª Brigata Bianconcini Garibaldi", payload["formations"])
+        self.assertEqual(len(audit["applied_operations"]), 1)
 
     def test_missing_profile_fails_readably(self) -> None:
         with workspace_temp_dir() as tmp_dir:

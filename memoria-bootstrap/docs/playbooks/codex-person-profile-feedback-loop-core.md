@@ -74,6 +74,34 @@ I path nel data root sono operativi e non devono essere copiati nei repository.
 - per T31, usare una ricerca controllata o un pacchetto manual-review tracciato;
 - non richiedere una pipeline massiva.
 
+## Revisione manuale a blocchi
+
+Quando una worklist contiene molti candidati:
+
+1. estrarre blocchi numerati con `candidate_update_id` stabile, valore, profilo
+   e documento sorgente;
+2. sottrarre gli ID gia' decisi prima di costruire il blocco successivo;
+3. mostrare all'utente le proposte con gli stessi ID usati nel registro;
+4. dopo la registrazione, verificare conteggi e copertura degli ID;
+5. generare preview separate per decisioni accettate e lasciare invariati i
+   profili canonici;
+6. se un blocco e' stato costruito con un mapping errato, invalidare il
+   registro, conservarlo per audit e registrare una correzione con
+   `supersedes` o riferimento esplicito all'artefatto invalidato.
+
+Un riepilogo per nome non sostituisce il controllo sugli ID: nomi ripetuti,
+alias e frammenti estratti dal contesto possono produrre mapping ambiguo.
+
+## Gate finale della migrazione
+
+Prima di dichiarare chiusa la revisione verificare:
+
+- copertura completa della worklist o elenco esplicito dei `needs_review`;
+- conteggi finali per `accepted`, `rejected` e `needs_review`;
+- provenance presente per ogni decisione accettata;
+- `preview_only=true` e nessuna modifica canonica;
+- JSON valido, diff pulito e artefatti finali collegati al planner.
+
 ## Stop condition
 
 Fermarsi se serve:
