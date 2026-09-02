@@ -15,6 +15,9 @@ from caduti_fonti_report.document_analysis.mvp_demo_descriptor import (  # noqa:
     build_mvp_demo_descriptor,
     render_mvp_demo_reconciliation_markdown,
 )
+from caduti_fonti_report.document_analysis.mvp_demo_reconciliation_markdown import (  # noqa: E402
+    render_mvp_demo_reconciliation_markdown as isolated_reconciliation_renderer,
+)
 
 
 @contextmanager
@@ -268,6 +271,7 @@ class MvpDemoDescriptorTests(unittest.TestCase):
         self.assertEqual(descriptor["reconciliation"]["row_count"], 5)
         self.assertFalse(descriptor_path_exists)
         self.assertFalse(reconciliation_path_exists)
+        self.assertIs(render_mvp_demo_reconciliation_markdown, isolated_reconciliation_renderer)
 
     def test_readiness_blocks_single_source_reconciliation(self) -> None:
         with workspace_temp_dir() as tmp_dir:

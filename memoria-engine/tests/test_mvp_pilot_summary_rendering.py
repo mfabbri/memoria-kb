@@ -17,9 +17,27 @@ from caduti_fonti_report.document_analysis.mvp_pilot_package_status import (  # 
 from caduti_fonti_report.document_analysis.mvp_pilot_readiness import (  # noqa: E402
     readiness_status_and_action,
 )
+from caduti_fonti_report.document_analysis.mvp_pilot_profile_readiness import (  # noqa: E402
+    build_profile_readiness,
+)
 
 
 class MvpPilotSummaryRenderingTests(unittest.TestCase):
+    def test_profile_readiness_builder_preserves_profile_document_intersection(self) -> None:
+        readiness = build_profile_readiness(
+            profiles=[{"profile_id": "person:one", "canonical_name": "One"}],
+            documents=[{"source_document_id": "doc-1"}],
+            links=[{"profile_id": "person:one", "source_document_id": "doc-1"}],
+            claims=[{"profile_id": "person:one", "source_document_id": "doc-other"}],
+            reviewable_document_signals=[
+                {"profile_id": "person:one", "signals": [{"source_document_id": "doc-1"}]}
+            ],
+        )
+
+        self.assertEqual(readiness[0]["document_count"], 1)
+        self.assertEqual(readiness[0]["candidate_evidence_claim_count"], 1)
+        self.assertEqual(readiness[0]["readiness_status"], "ready_for_review")
+
     def test_profile_readiness_status_and_action_preserves_decision_order(self) -> None:
         cases = [
             (dict(document_count=0, link_count=0, claim_count=0, signal_count=0), "needs_documents"),
