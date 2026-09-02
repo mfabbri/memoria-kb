@@ -21,8 +21,11 @@ Il parent Luna/medium e' il router/controller:
 - quality review -> test_reviewer Terra/high;
 - architettura o migrazione -> architect Sol/high.
 
-Registra escalation/fallback prima della nuova delega. Non sostituire
-silenziosamente un modello non disponibile.
+Se un subagent non e' disponibile, il parent puo' eseguire direttamente solo un
+micro-slice runtime `medium` gia' delimitato dal planner, registrando il
+fallback e mantenendo write_set, stop condition e quality gate. Review e high
+restano bloccati senza l'agente dedicato. Non sostituire silenziosamente un
+modello non disponibile.
 
 Non modificare dati reali, non approvare claim, non fondere profili e non
 pubblicare schede. Esegui test mirati, aggiorna il planner e chiudi con il

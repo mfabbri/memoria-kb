@@ -87,8 +87,14 @@ gap o conflitto
 7. Chiudere almeno un feedback loop storico. **T31**.
 8. Correggere incoerenze, test e presentazione della demo. **T32**.
 9. Preparare il pacchetto finanziatori e il walkthrough. **T33**.
-10. Riprendere storage cloud, nuove fonti o micro-refactor non bloccanti solo
-    dopo T33 o su richiesta esplicita.
+10. Ricostruire e migrare in modo controllato i 57 profili ancora marcati come
+    legacy. **T34, nuova priorità**.
+11. Riprendere storage cloud, nuove fonti o micro-refactor non bloccanti solo
+    dopo T34 o su richiesta esplicita.
+
+Aggiornamento operativo 2026-08-31: T34 ha chiuso la revisione preview; Q2 e'
+la prossima corsia selezionata. L'applicazione canonica T34 resta separata e
+richiede un incremento esplicito con backup, dry-run e audit.
 
 ## Direzione CLI
 
@@ -102,6 +108,9 @@ fornisce orientamento e stato read-only. La migrazione completa dei workflow non
 deve ritardare T29-T33.
 
 ## Stato corrente
+
+Focus successivo: Q2, con un solo micro-refactor behavior-preserving e test
+mirati. I residui canonici T34 non rientrano in questo refactor.
 
 Completato:
 
@@ -127,13 +136,14 @@ Capacita' gia' osservabili ma non ancora confezionate in una golden run unica:
 
 ## Focus immediato
 
-Il focus e' T29-T33. Fino alla chiusura del pacchetto finanziatori:
+T34 e' chiusa. Il focus corrente e' Q2: un solo micro-refactor
+behavior-preserving, con test mirati e senza modificare dati esterni o profili
+canonici.
 
 - T26-T28 cloud restano in hold;
-- Q2 e altri refactor sono ammessi solo se bloccano direttamente la golden run;
-- non si aggiungono nuove fonti salvo quelle indispensabili al caso selezionato;
-- non si amplia il numero di profili prima di avere una storia dimostrativa
-  coerente.
+- il candidato Q2 corrente proviene dall'audit di modularita' Q1;
+- i futuri interventi sui dati canonici richiedono un incremento separato e
+  una decisione esplicita.
 
 Decisione T33 del 2026-07-18: il caso principale e' stato dimostrato nella
 golden run T30-T32. E' quindi autorizzata un'espansione controllata a tre casi,

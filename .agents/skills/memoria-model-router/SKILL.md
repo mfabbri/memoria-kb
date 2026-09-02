@@ -30,8 +30,10 @@ La dimensione del repository non determina il tier.
 5. Altrimenti, se e' read-only documentale -> `low/docs_reviewer`.
 6. Altrimenti -> `low/scanner` per discovery o `medium/implementer` come default prudente.
 
-Registra il blocco `routing` nel planner prima della delega.
+Registra il blocco `routing` nel planner prima della delega o dell'esecuzione.
 Aggiungi un evento `escalated` o `fallback` prima di cambiare tier/modello.
+Il fallback al parent e' consentito per un micro-slice `medium` gia' delimitato
+e verificabile; non vale per `review` o `high`.
 Non salvare chain-of-thought.
 
 La traccia runtime effettiva viene prodotta dagli hook e non va copiata nel planner:

@@ -42,7 +42,10 @@ Supera il budget solo dichiarando il motivo.
 
 Dopo il task envelope usa `$memoria-model-router`. Registra il routing nel
 planner prima di delegare o modificare file. Il parent Luna e' un router:
-delega task medium/review/high al custom agent corrispondente.
+delega task medium/review/high al custom agent corrispondente quando disponibile.
+Se la delega non e' disponibile, puo' eseguire direttamente solo un micro-slice
+medium gia' delimitato, registrando un fallback esplicito e mantenendo invariati
+write_set e quality gate. Review e high restano fuori da questo fallback.
 
 ## Stop condition
 

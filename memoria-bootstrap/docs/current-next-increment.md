@@ -4,9 +4,37 @@ Data: 2026-09-02
 
 ## Incremento corrente
 
+Q2 - Isolamento del renderer Markdown della riconciliazione MVP.
+
+Obiettivo operativo corrente: estrarre il solo rendering Markdown da
+`mvp_demo_descriptor.py` in un modulo dedicato, mantenendo invariati payload,
+ledger, readiness, CLI, schema, workflow e import pubblico esistente.
+
+Stato corrente: selezionato il 2026-09-02. T34 è chiusa; Q2 riprende dal
+candidato prioritario dell'audit Q1, con fixture offline e test mirati.
+
+Stop condition corrente: renderer unico isolato, output invariato e test
+`tests.test_mvp_demo_descriptor` passanti; nessun dato esterno o profilo
+canonico modificato.
+
+Chiusura sessione 2026-09-02: renderer estratto in
+`mvp_demo_reconciliation_markdown.py`; `mvp_demo_descriptor.py` conserva
+l'import pubblico. I sei test mirati passano e non risultano modifiche a
+payload, ledger, readiness, CLI, schema, workflow, dati esterni o profili
+canonici. La prossima sessione deve ricalcolare un solo candidato Q2 dall'audit
+Q1.
+
+## Chiusura T34
+
+T34 - Migrazione controllata dei profili legacy: chiusa il 2026-09-02. Le
+evidenze operative della migrazione restano nel data root esterno; la roadmap
+non mantiene ulteriori preflight o applicazioni canoniche pendenti.
+
+## Incremento chiuso precedente
+
 Q2b - Pulizia delle copie private legacy dei renderer funding package.
 
-Obiettivo operativo corrente: rimuovere le copie private duplicate dei renderer
+Obiettivo operativo della sessione precedente: rimuovere le copie private duplicate dei renderer
 da `mvp_funding_package.py`, mantenendo `mvp_funding_package_markdown.py` come
 unica implementazione autorevole e preservando output, import, CLI, schema e
 workflow.

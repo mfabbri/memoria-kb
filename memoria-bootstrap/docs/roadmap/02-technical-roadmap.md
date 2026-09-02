@@ -1106,6 +1106,70 @@ Stato: **chiuso il 2026-08-29**. La golden run, il pacchetto revisionabile,
 la revisione umana del racconto e il layout interno non pubblicabile risultano
 completati; non e' autorizzata la pubblicazione o la modifica canonica.
 
+### T34 - Migrazione controllata dei profili legacy
+
+Dipendenze: T33, T17 e T18.
+
+Collegamento MVP: sviluppo della base profili operativi senza perpetuare il
+seed storico `caduti_purocielo.csv`.
+
+Priorità: completata il 2026-09-02. T26-T28 cloud restano in hold; Q2 può
+proseguire con micro-refactor behavior-preserving.
+
+Criteri di ingresso:
+
+- la lavorazione operativa è organizzata in lotti massimi di 20 profili; ogni
+  profilo mantiene candidati, decisioni, backup e audit distinti;
+
+- i 57 profili indicizzati sono censiti e risultano ancora marcati con
+  `seed.source = ricerche\\caduti_purocielo.csv`;
+- esiste un inventario dei documenti e delle fonti strutturate disponibili per
+  ciascun profilo;
+- il contratto editoriale `metadata.profile_status`,
+  `metadata.review_status` e `metadata.publication_status` resta applicabile;
+- il perimetro di scrittura, backup e rollback è definito prima di ogni run.
+
+Fasi obbligatorie:
+
+1. audit read-only dei profili legacy e della copertura documentale;
+2. intake locale dei documenti, con hash, sidecar e provenance;
+3. generazione di `CandidateProfileUpdate` e `CandidateNewProfile` preview-only;
+4. revisione umana dei candidati e delle evidenze, senza promozione automatica;
+5. produzione della mappa auditabile profilo legacy → profilo ricostruito;
+6. dry-run della migrazione con backup verificato e piano di rollback;
+7. applicazione canonica solo per il lotto esplicitamente approvato, con audit
+   e verifica post-migrazione.
+
+Criteri di uscita:
+
+- ogni profilo migrato ha provenance verso documenti e fonti strutturate;
+- ogni sostituzione è collegata a decisioni di revisione e a un audit;
+- backup, manifest, mappa vecchio→nuovo e rollback sono verificati;
+- i profili senza copertura sufficiente restano invariati e sono elencati come
+  residui legacy;
+- nessun claim non revisionato diventa `verified_fact`;
+- nessuna migrazione in-place o cancellazione del seed storico senza approvazione
+  esplicita e tracciata.
+
+Stato: chiusa il 2026-09-02. La migrazione controllata dei profili legacy è
+completata; le evidenze operative restano nel data root esterno.
+
+Chiusura operativa 2026-09-02: T34 non lascia un preflight o un'applicazione
+canonica pendente nella roadmap tecnica. Eventuali nuove modifiche ai dati
+canonici richiedono un incremento separato e autorizzato.
+
+Aggiornamento operativo 2026-08-31: la revisione T34 e' chiusa in preview-only;
+profili canonici invariati. L'applicazione resta un incremento separato.
+
+Aggiornamento operativo 2026-08-30: il lotto T34-2 di 20 profili e' stato
+interrogato tramite la CLI del connettore `storia_memoria_bo`. La ricerca ha
+prodotto 16 esiti `ok` e 4 `no_results`, ma nessun documento dettagliato
+acquisito (`SourceDocument=0`). I 16 esiti restano quindi candidati di ricerca
+ambigui e non possono alimentare `CandidateProfileUpdate` senza disambiguazione
+e documento identificabile. Nessun profilo canonico e' stato modificato. Il
+prossimo gate e' la revisione dei report e l'associazione documentale; i quattro
+`no_results` restano residui legacy.
+
 ## Traccia parallela Q - Qualita' e refactor continuo
 
 Questa traccia puo' avanzare in parallelo agli incrementi T, ma non li sostituisce
@@ -1157,7 +1221,32 @@ Criteri di uscita:
 - test mirati passanti;
 - documentazione aggiornata solo se cambia un confine pubblico.
 
-Stato: prossimo candidato.
+Stato: in corso. I micro-refactor Q2 restano limitati a una responsabilità per
+sessione; il renderer Markdown della riconciliazione MVP è stato isolato e
+verificato il 2026-09-02. La prossima selezione va ricalcolata dall'audit Q1.
+
+### Q2b - Pulizia delle copie private legacy dei renderer funding package
+
+Dipendenze: Q2 - Isolamento dei renderer Markdown del funding package.
+
+Obiettivo: rimuovere le copie private legacy rimaste in
+`mvp_funding_package.py` dopo l'estrazione dei renderer, mantenendo come unica
+implementazione autorevole `mvp_funding_package_markdown.py`.
+
+Perimetro:
+
+- eliminare esclusivamente le definizioni private duplicate e non utilizzate;
+- mantenere gli export pubblici compatibili e gli alias di retrocompatibilita';
+- non modificare output Markdown, builder, CLI, schema o workflow.
+
+Criteri di uscita:
+
+- nessuna copia privata legacy dei renderer resta nel builder;
+- import pubblici e nuovo modulo renderer verificati;
+- test mirati `tests.test_mvp_funding_package` passanti;
+- nessun dato esterno o profilo canonico modificato.
+
+Stato: chiusa il 2026-09-02.
 
 ## Criteri tecnici generali
 

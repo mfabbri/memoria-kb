@@ -31,8 +31,10 @@ Su Windows:
 
 La sessione principale usa `gpt-5.6-luna` con reasoning `medium` come
 router/controller a basso costo. Il parent deve classificare e delegare il
-lavoro sostanziale al custom agent appropriato; non deve eseguire direttamente
-task `medium`, `review` o `high`.
+lavoro sostanziale al custom agent appropriato. Se la delega non e' disponibile,
+puo' eseguire direttamente un micro-slice `medium` gia' delimitato dal planner,
+con fallback esplicito, write_set invariato e quality gate finale. Non esegue
+direttamente task `review` o `high`.
 
 Prima di delegare o modificare file, `$memoria-model-router` classifica il task
 in base alla forma e al rischio del lavoro, non alla dimensione del repository:
@@ -46,7 +48,10 @@ in base alla forma e al rischio del lavoro, non alla dimensione del repository:
 
 Ogni selezione intenzionale va registrata in
 `memoria-bootstrap/planning/current-work.json` nel blocco `routing`.
-Escalation e fallback devono essere registrati prima della nuova delega.
+Escalation e fallback devono essere registrati prima della nuova delega o del
+fallback diretto del parent. Il fallback diretto e' ammesso solo per codice o
+config runtime entro contratti esistenti; review, migrazioni, architettura e
+conflitti di contratto richiedono ancora l'agente dedicato.
 
 La traccia runtime effettiva e' separata dal planner: gli hook Codex registrano
 il model slug realmente usato per sessione e subagent in
