@@ -1,14 +1,47 @@
 {
-  "$schema": "./current-work.schema.json",
-  "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-08-29T12:30:00+02:00",
-  "updated_at": "2026-08-29T13:15:00+02:00",
-  "roadmap_basis": [{"path":"memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","section":"Traccia parallela Q / Q2 - Micro-refactor opportunistici","reason":"T33 e il precedente Q2 sono chiusi; Q2 resta il candidato tecnico ammesso con una sola responsabilità isolata, comportamento invariato e test mirati."},{"path":"memoria-bootstrap/docs/roadmap/00-roadmap-master.md","section":"Stato corrente / Focus immediato","reason":"Dopo la chiusura T33, il refactor continuo può avanzare solo come micro-incremento verificabile e senza ampliare il perimetro MVP."},{"path":"memoria-bootstrap/docs/decision-log.md","section":"2026-07-07 - Traccia parallela di refactor continuo","reason":"Sono ammessi audit modulari e micro-refactor behavior-preserving, senza cambiare framework, workflow o contratti."}],
-  "increment": {"id":"q2-pilot-readiness-helper","title":"Q2 - isolare la decisione di readiness del profilo pilota","objective":"Estrarre la sola decisione pura di readiness e prossima azione del profilo pilota in un helper dedicato, mantenendo invariati output e workflow.","scope":["Spostare esclusivamente _readiness_status_and_action da mvp_pilot_summary.py a un helper puro dedicato.","Mantenere invariati status, next_action, scorecard, payload, Markdown, CLI, schema e workflow.","Aggiungere o aggiornare solo test mirati per documenti assenti, link mancanti, claim assenti con segnali e stato pronto."],"out_of_scope":["Cambi di output, CLI, schema o workflow.","Nuove fonti live, pCloud, pipeline, OCR o dati reali.","Modifiche a profili, verified facts, ProfilePatch o pubblicazione."],"candidate_files":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_readiness.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"stop_condition":"Una sola responsabilità è isolata, i test mirati passano e non cambiano output, CLI, schema, workflow o dati esterni."},
-  "verification": {"tests":["cd memoria-engine; python -m unittest tests.test_mvp_pilot_summary_rendering","python -m json.tool memoria-bootstrap/planning/current-work.json","git diff --check"],"documentation_touchpoints":["memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"result":"passed","notes":"Helper puro estratto in modulo dedicato; output e workflow invariati. 17 test mirati e downstream passati; JSON valido e diff check pulito.","task_envelope":{"mode":"scoped-fix","repositories":["memoria-engine","memoria-bootstrap"],"read_set":["AGENTS.md","memoria-bootstrap/planning/current-work.json","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-bootstrap/docs/decision-log.md","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py"],"write_set":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py","memoria-engine/tests/test_mvp_pilot_summary_rendering.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_readiness.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],"test_command":"cd memoria-engine; python -m unittest tests.test_mvp_pilot_summary_rendering; cd ..; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check","stop_conditions":["una sola responsabilità della readiness profilo è isolata in un helper puro","status, next_action, scorecard, payload, Markdown, CLI, schema e workflow invariati","nessun file o dato oltre il write_set autorizzato"]}},
-  "routing": {"policy_version":"2.0","tier":"medium","task_class":"implementation","agent":"implementer","model":"gpt-5.6-terra","reasoning_effort":"medium","rationale":"Micro-refactor di codice runtime e test entro contratti esistenti, con rischio delimitato e comportamento invariato.","trace":[{"event":"selected","at":"2026-08-29T13:15:00+02:00","tier":"medium","agent":"implementer","model":"gpt-5.6-terra","reason":"Il write_set comprende codice runtime e test entro contratti esistenti; la readiness è una decisione pura e delimitata."},{"event":"fallback","at":"2026-08-29T13:15:00+02:00","from":"implementer/gpt-5.6-terra","to":"parent-controller","reason":"Nessun tool di delega subagent è disponibile nella sessione; il parent esegue solo il micro-slice registrato."}]},
-  "blockers": [],
-  "session_notes":["Skill memoria-session, memoria-planner, memoria-model-router e memoria-roadmap-selector applicate.","Selezionato e chiuso q2-pilot-readiness-helper dopo verifica della roadmap e del decision log.","Nessuna modifica a dati reali, fonte live, OCR, profilo, claim, ProfilePatch o pubblicazione eseguita."],
-  "next_action":{"mode":"recalculate","description":"Selezionare il prossimo micro-incremento solo dopo verifica della roadmap autorevole."}
+  "$schema":"./current-work.schema.json",
+  "schema_version":"1.0",
+  "status":"completed",
+  "selected_at":"2026-09-01T12:00:00+02:00",
+  "updated_at":"2026-09-02T00:00:00+02:00",
+  "roadmap_basis":[
+    {"path":"memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","section":"Q2b - Pulizia delle copie private legacy dei renderer funding package","reason":"La roadmap registra la pulizia come micro-incremento separato dopo l'estrazione dei renderer."},
+    {"path":"memoria-bootstrap/docs/roadmap/00-roadmap-master.md","section":"Stato corrente","reason":"La corsia post-T34 passa a Q2; l'applicazione canonica T34 resta separata."}
+  ],
+  "increment":{
+    "id":"q2b-remove-legacy-funding-renderers-v1",
+    "title":"Q2b - Pulizia delle copie private legacy dei renderer funding package",
+    "objective":"Rimuovere le copie private duplicate dei renderer da mvp_funding_package.py senza cambiare output o import pubblici.",
+    "scope":["Eliminare esclusivamente le definizioni private duplicate e non utilizzate.","Mantenere gli export pubblici compatibili e il nuovo modulo renderer come implementazione autorevole.","Verificare con test mirati offline."],
+    "out_of_scope":["Modifiche a checklist, quality gate o payload.","Cambio di output, schema, CLI o workflow.","Nuove fonti live, dati reali, applicazione canonica T34, pubblicazione o refactor di altri moduli."],
+    "candidate_files":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package_markdown.py","memoria-engine/tests/test_mvp_funding_package.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],
+    "stop_condition":"Nessuna copia privata legacy dei renderer resta nel builder, gli import pubblici e l'output restano invariati e i test mirati passano."
+  },
+  "verification":{
+    "tests":["python -m json.tool memoria-bootstrap/planning/current-work.json","git diff --check"],
+      "documentation_touchpoints":["memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json","memoria-bootstrap/docs/decision-log.md","memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md"],
+    "result":"passed",
+    "notes":"Rimosse le due copie private legacy dei renderer; import pubblici, alias pubblici, output e test mirati restano invariati.",
+    "task_envelope":{
+      "mode":"scoped-fix",
+      "repositories":["memoria-bootstrap","memoria-engine"],
+      "read_set":["AGENTS.md","memoria-bootstrap/docs/agent-session-prompt.md","memoria-bootstrap/planning/current-work.json","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/docs/memoria-engine-modularity-audit.md","memoria-bootstrap/docs/roadmap/00-roadmap-master.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package.py","memoria-engine/tests/test_mvp_funding_package.py"],
+      "write_set":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_funding_package_markdown.py","memoria-engine/tests/test_mvp_funding_package.py","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],
+      "test_command":"python -m unittest tests.test_mvp_funding_package; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check",
+      "stop_conditions":["i due renderer Markdown sono isolati","output, import pubblici, CLI, schema e workflow invariati","test mirati passanti","nessun dato esterno o profilo canonico modificato"]
+    }
+  },
+  "routing":{
+    "policy_version":"2.0",
+    "tier":"medium",
+    "task_class":"implementation",
+    "agent":"implementer",
+    "model":"gpt-5.6-terra",
+    "reasoning_effort":"medium",
+    "rationale":"Micro-refactor runtime delimitato a due renderer puri, con output e contratti esistenti; eseguito dal parent tramite fallback esplicito per assenza di subagent.",
+    "trace":[{"event":"selected","at":"2026-09-01T12:30:00+02:00","tier":"medium","agent":"implementer","model":"gpt-5.6-terra","reason":"Isolamento di due renderer Markdown puri dal funding package."},{"event":"fallback","at":"2026-09-01T12:30:00+02:00","from":"implementer/gpt-5.6-terra","to":"parent-controller","reason":"Subagent non disponibile; il parent esegue il micro-slice delimitato con quality gate."},{"event":"completed","at":"2026-09-02T00:00:00+02:00","reason":"Copie private legacy rimosse; test mirato, JSON e diff check completati."}]
+  },
+  "blockers":[],
+    "session_notes":["Il lotto batch comprende i 20 profili T34-2 gia selezionati.","Intake e ricerca sono batch; revisione, provenance, backup, audit e patch restano per profilo.","Nessun profilo canonico viene modificato in questa fase.","Blocco 1: 10 decisioni accepted esplicite e 10 operazioni ProfilePatch preview generate su 8 profili; nessuna applicazione canonica.","Blocco 2: 7 decisioni esplicite sulle date di morte; 5 operazioni ProfilePatch preview e 2 decisioni rejected/nessuna operazione; nessuna applicazione canonica.","Blocco 3: 3 decisioni accepted esplicite e 3 operazioni ProfilePatch preview; nessuna applicazione canonica.","Blocco 4A: 8 decisioni esplicite su formazioni/ruoli; 2 operazioni ProfilePatch preview, 5 decisioni senza modifica e 1 pending; nessuna applicazione canonica.","Blocco 4B: 6 decisioni accepted esplicite sugli alias e 6 operazioni ProfilePatch preview additive; nessuna applicazione canonica.","Blocco 5A: 10 CandidateNewProfile classificati; 7 rejected e 3 needs_review; nessun nuovo profilo creato.","Blocco 5B: 10 CandidateNewProfile classificati; 9 accepted e 1 rejected; generato preview per 9 nuovi profili, nessuna creazione canonica.","Blocco 5C: 10 CandidateNewProfile classificati; 2 accepted e 8 rejected; generato preview per 2 nuovi profili, nessuna creazione canonica.","Blocco 5D: 8 CandidateNewProfile classificati; 3 accepted, 4 rejected e 1 needs_review; generato preview per 3 nuovi profili, nessuna creazione canonica. Il registro iniziale errato e' stato invalidato e corretto.","Post-sessione: documentati nel playbook i controlli ID, la correzione auditabile dei mapping e il gate finale T34; aggiunta regola riutilizzabile nel decision log."]
+  ,"next_action":{"mode":"recalculate","description":"Selezionare il prossimo micro-incremento dalla roadmap nella sessione successiva."}
 }

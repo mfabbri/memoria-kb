@@ -10,7 +10,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
-from caduti_fonti_report.document_analysis.mvp_funding_package import build_mvp_funding_package  # noqa: E402
+from caduti_fonti_report.document_analysis.mvp_funding_package import (  # noqa: E402
+    build_mvp_funding_package,
+    render_funding_package_index_markdown,
+    render_go_no_go_markdown,
+)
+from caduti_fonti_report.document_analysis.mvp_funding_package_markdown import (  # noqa: E402
+    render_funding_package_index_markdown as render_extracted_funding_package_index_markdown,
+    render_go_no_go_markdown as render_extracted_go_no_go_markdown,
+)
 
 
 @contextmanager
@@ -159,6 +167,16 @@ def write_descriptor_ready_run(root: Path) -> tuple[Path, Path]:
 
 
 class MvpFundingPackageTests(unittest.TestCase):
+    def test_renderers_remain_compatible_through_original_module_exports(self) -> None:
+        checklist = {"overall_status": "go", "checks": [], "next_actions": []}
+        index = {"overall_status": "go", "reading_order": [], "materials": []}
+
+        self.assertEqual(render_go_no_go_markdown(checklist), render_extracted_go_no_go_markdown(checklist))
+        self.assertEqual(
+            render_funding_package_index_markdown(index),
+            render_extracted_funding_package_index_markdown(index),
+        )
+
     def test_builds_go_with_review_blockers_for_ready_demo_with_pending_decisions(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             run_dir = write_ready_run(tmp_dir)

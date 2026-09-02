@@ -1,11 +1,165 @@
 # Current Next Increment
 
-Data: 2026-08-29
+Data: 2026-09-02
 
 ## Incremento corrente
 
-Q2 - `q2-pilot-readiness-helper`: isolare la decisione pura di readiness e
-prossima azione del profilo pilota da `mvp_pilot_summary.py`.
+Q2b - Pulizia delle copie private legacy dei renderer funding package.
+
+Obiettivo operativo corrente: rimuovere le copie private duplicate dei renderer
+da `mvp_funding_package.py`, mantenendo `mvp_funding_package_markdown.py` come
+unica implementazione autorevole e preservando output, import, CLI, schema e
+workflow.
+
+Stato corrente: selezionato il 2026-09-01. L'estrazione precedente e' verificata;
+resta da rimuovere il codice privato legacy duplicato. La policy di fallback del
+controller e' attiva per questo micro-slice `medium` delimitato.
+
+Perimetro corrente: due responsabilita' pure di rendering, test mirati offline e nessun
+dato esterno, profilo canonico, nuova fonte o pubblicazione.
+
+Stop condition corrente: responsabilita' estratta, test mirati passanti e
+contratti pubblici invariati — verificata.
+
+Chiusura sessione 2026-09-02: rimosse da `mvp_funding_package.py` le due copie
+private legacy dei renderer Markdown. Il modulo
+`mvp_funding_package_markdown.py` resta l'implementazione autorevole; gli
+import/alias pubblici, l'output e il workflow restano invariati. Test mirato,
+validazione JSON e `git diff --check` completati.
+
+## Nota storica - Q1 audit di modularita'
+
+Obiettivo operativo: ricostruire l'artefatto audit Q1 mancante usando soltanto
+evidenze versionate e metriche leggere del repository, così da rendere
+verificabile la successiva selezione di un solo candidato Q2.
+
+Stato: selezionato il 2026-09-01 dopo la verifica del blocco Q2.
+
+Perimetro: sola discovery/documentazione; nessuna modifica runtime, nessun
+refactor, nessun dato esterno e nessuna decisione storica.
+
+Chiusura audit Q1 2026-09-01: ricostruito e verificato
+`memoria-engine-modularity-audit.md` con metriche leggere, responsabilità,
+rischi, quattro candidati e test minimi. È stato selezionato come prossimo Q2
+`mvp-demo-reconciliation-renderer`, limitato al rendering Markdown della
+riconciliazione in `mvp_demo_descriptor.py`; l'implementazione è rinviata alla
+sessione successiva.
+
+Esito sessione 2026-09-01: discovery Q2 non verificabile. Il riferimento
+`memoria-engine-modularity-audit.md`, dichiarato presente nell'evidenza Q1,
+non esiste nel checkout e non risulta nella storia Git; senza quell'artefatto
+non e' possibile selezionare responsabilita', rischio e test minimi di un solo
+candidato senza introdurre un'ipotesi non auditabile. Nessun codice runtime,
+dato esterno, profilo canonico o decisione storica e' stato modificato. Il
+prossimo passo e' ripristinare/verificare l'audit Q1 e ricalcolare la selezione.
+
+## Incremento precedente - T34 - Revisione residui
+
+T34 - Revisione residui: confronti di date del lotto 2.
+
+Obiettivo: preparare il confronto documentale dei 16 `CandidateProfileUpdate`
+pending relativi alle date del lotto T34-2, mantenendo provenance e decisioni
+separate per profilo. Gli altri 46 update pending e i 38
+`CandidateNewProfile` restano fuori scope. Nessuna ProfilePatch verra' applicata
+e nessun profilo canonico verra' modificato.
+
+Selezione sessione 2026-08-31: T34 resta la priorita' immediata secondo la
+roadmap tecnica e il decision log. Il lotto 2 e' chiuso come intake; la coda
+successiva e' la revisione dei 16 confronti di date, con esito accettato,
+rifiutato o pending motivato soltanto dopo verifica della provenance.
+
+Chiusura revisione date T34-2 2026-08-31: verificati i 16 casi presenti negli
+artefatti, con 15 decisioni `accepted` per compatibilita' documentale e 1 caso
+`pending` motivato per il conflitto Bonfanti sulla data di morte. Generate 15
+operazioni di `ProfilePatch` preview in 9 run isolate; nessuna patch canonica,
+fusione o modifica ai profili reali e' stata eseguita. Restano 45
+`CandidateProfileUpdate` pending e 38 `CandidateNewProfile`.
+
+Worklist manuale T34 2026-08-31: generata nel data root esterno la coda
+`intake-t34-manual-review-queue-20260831`, con 84 elementi (46
+`CandidateProfileUpdate` e 38 `CandidateNewProfile`). La worklist contiene
+provenance, documento, claim, valore candidato, valore legacy e campi vuoti per
+decisione e nota; non registra decisioni e non modifica profili canonici. Il
+prossimo lavoro e' compilarla manualmente per blocchi, lasciando pending i
+conflitti non risolti.
+
+Blocco 1 revisione T34 2026-08-31: accettate esplicitamente 10 date compatibili
+su 8 profili, con 10 operazioni `ProfilePatch` preview generate. Nessuna patch
+canonica e' stata applicata. Il prossimo blocco riguarda le date di morte con
+contesto incompleto o conflittuale, da sottoporre singolarmente all'utente.
+
+Blocco 2 revisione T34 2026-08-31: registrate 7 decisioni esplicite sulle date
+di morte; 5 hanno prodotto operazioni `ProfilePatch` preview e 2 hanno
+mantenuto il valore legacy senza operazioni (Mereu e Poletti). Nessuna patch
+canonica e' stata applicata. Il prossimo blocco riguarda le date di nascita
+compatibili residue.
+
+Blocco 3 revisione T34 2026-08-31: accettate esplicitamente 3 date di nascita
+compatibili (Ottonelli, Poletti e Poli), con 3 operazioni `ProfilePatch`
+preview. Nessuna patch canonica e' stata applicata. Il prossimo blocco riguarda
+formazioni/ruoli e alias residui.
+
+Blocco 4A revisione T34 2026-08-31: registrate 8 decisioni su
+formazioni/ruoli. Accettate 2 aggiunte di ruolo (Marciatori e Minozzi),
+mantenute 5 formazioni senza modifica e lasciato pending Guerra; Terzi e'
+stato mantenuto sulla 36a Brigata. Generate 2 operazioni `ProfilePatch`
+preview; nessuna patch canonica applicata.
+
+Blocco 4B revisione T34 2026-08-31: accettati esplicitamente 6 alias
+documentati, con 6 operazioni `ProfilePatch` preview additive su
+`/identity/aliases/-`. I nomi canonici restano invariati e nessuna patch
+canonica e' stata applicata. Il prossimo blocco riguarda i 38
+`CandidateNewProfile` e i conflitti residui.
+
+Blocco 5A revisione T34 2026-08-31: dei primi 10 `CandidateNewProfile`,
+7 sono stati scartati come frammenti/luoghi spurii e 3 sono stati mantenuti
+`needs_review` come possibili persone. Nessun nuovo profilo e' stato creato;
+il prossimo blocco e' la revisione dei successivi 10 candidati.
+
+Blocco 5C revisione T34 2026-08-31: dei successivi 10 `CandidateNewProfile`,
+2 sono stati accettati in modalita preview (`Venzi Ernesto` e `Bagni Desildo`)
+e 8 sono stati rifiutati come duplicati, luoghi, alias o frammenti. Nessuna
+creazione canonica; il prossimo blocco riguarda gli ultimi 8 candidati.
+
+Blocco 5B revisione T34 2026-08-31: dei successivi 10 `CandidateNewProfile`,
+9 sono stati accettati in modalita preview e 1 (`Livio Brisighella`) e' stato
+rifiutato. Generato il preview di 9 nuovi profili, senza creazione canonica;
+il prossimo blocco e' la revisione dei successivi 10 candidati.
+
+Blocco 5D revisione T34 2026-08-31: sugli ultimi 8 `CandidateNewProfile`,
+3 sono stati accettati in modalita preview (`Saba Mario`, `Tacconi Rosa` e
+`Bergonzoni Lino`), 4 sono stati rifiutati e 1 (`Rosina Forli`) e' stato
+mantenuto `needs_review`. Il registro iniziale errato e' stato invalidato e
+corretto; nessuna creazione canonica e' stata eseguita.
+
+Checklist finale T34 2026-08-31: verificata la copertura della worklist tramite
+ID stabili, registrati i conteggi finali (`accepted`, `rejected`,
+`needs_review`), conservata la provenance delle decisioni accettate e validati
+JSON e diff. La correzione del mapping errato del primo Blocco 5D e' stata
+registrata senza cancellare l'artefatto originale. La chiusura resta
+preview-only: nessuna patch canonica, creazione profilo o pubblicazione.
+
+Avvio T34 Bassi del 2026-08-30: eseguita una ricerca dettagliata isolata per
+`person:purocielo:bassi-giancarlo`. Il connettore ha restituito un hit nominale
+singolo con contenuto biografico, ma l'acquisizione ha prodotto `0 SourceDocument`
+e nessun file/sidecar. Il risultato resta quindi candidato di ricerca e non
+alimenta ancora `CandidateProfileUpdate`; il profilo canonico Bassi e' invariato.
+
+Chiusura batch T34 lotto 2 del 2026-08-30: completate 20 invocazioni isolate
+orchestrate in un unico batch, con 16 esiti `ok` e 4 `no_results`. Gli esiti
+`ok` hanno prodotto 0 `SourceDocument` acquisiti; i 4 `no_results` sono Panov
+Sergio, Sadavich Carlo, Il Toscano e Bonfanti Adolfo. Sono stati mantenuti
+output e provenance separati per profilo. Nessun CandidateProfileUpdate,
+ProfilePatch o profilo canonico e' stato modificato.
+
+Esito verifica del 2026-08-30: le 20 run finali sono presenti nel data root
+esterno. I 16 esiti `ok` non contengono `SourceDocument`: 9 sono corrispondenze
+nominali singole candidate (Bagni, Bassi, Bergonzoni, Bianchi, Bordini, Boschi,
+Comi, Costa e Gherardi), mentre 7 restano ambigui (Brini duplicato; Gianni,
+Giorgio, Michele, Nicola e Stefano con più hit; Willi con risultato William).
+I 4 `no_results` sono Panov Sergio, Sadavich Carlo, Il Toscano e Bonfanti Adolfo.
+Tutti gli esiti restano candidati di ricerca o residui legacy: nessun claim,
+CandidateProfileUpdate, ProfilePatch o profilo canonico è stato modificato.
 
 ## Stato
 
@@ -2181,3 +2335,263 @@ status, payload, Markdown, CLI, schema e workflow invariati. Aggiunti test
 mirati per documenti assenti, link mancanti, segnali da revisionare, claim
 assenti e stato pronto; 17 test mirati e downstream passano. Nessun dato reale
 o data root esterno modificato.
+
+Selezione Q2 del 2026-08-29: il prossimo micro-incremento e' isolare la
+costruzione della readiness per profilo in `mvp_pilot_profile_readiness.py`.
+Il perimetro resta behavior-preserving, preview-only e limitato a codice,
+test, planner e questa nota; nessun dato reale o data root esterno sara'
+modificato.
+
+Discovery fonti online del 2026-08-29: la cartella esterna autorizzata
+`P:\Comune\Me.Mo.Ri.a\documenti_da_processare\fonti_online` contiene 30 file
+(12 TXT, 3 JPG, 15 sidecar YAML), per circa 364 KB. I file effettivi sono nei
+gruppi `storia_memoria_bo_excel`, `partigiani_italia` e `storia_memoria_bo`;
+`atlante_stragi` e `fondazione_fossoli` risultano vuoti. I sidecar espongono
+identificativi, titoli e URL; nessun OCR, download, import o modifica canonica
+e' stato eseguito. Il primo lotto di intake resta da scegliere insieme.
+
+Chiusura Q2 del 2026-08-29: `q2-pilot-profile-readiness-builder` ha estratto
+la costruzione della readiness per profilo in un helper puro. I 7 test mirati,
+la validazione JSON e il diff check sono passati; output, CLI, schema,
+workflow e dati esterni sono rimasti invariati.
+
+Intake operativo `intake-balboni-online-v1` del 2026-08-29: run locale e run
+documentale completate nel data root esterno con 13 documenti, OCR/rete/import
+store disabilitati. Prodotti 3 link candidati, 2 claim grezzi e 61 entita'; il
+profilo canonico Balboni e' stato escluso per seed legacy. Nessuna modifica
+canonica eseguita; la run resta da revisionare.
+
+Priorità roadmap del 2026-08-29: su richiesta dell'utente, T34 diventa il
+prossimo percorso operativo per ricostruire e migrare in modo controllato tutti
+i 57 profili legacy. La priorità non autorizza ancora modifiche canoniche:
+prima servono audit di copertura, candidati preview, revisione umana, mappa
+vecchio→nuovo, dry-run, backup e audit di applicazione.
+
+T34 fase 1 del 2026-08-29: audit read-only dell'indice profili e della cartella
+`fonti_online` completato. Tutti i 57 profili risultano legacy; 5 hanno una
+directory soggetto con documenti disponibili (Andreoli, Balboni, Bendini,
+Guazzaloca e Pasciuti), mentre 52 non hanno copertura nella cartella esaminata.
+Nessun candidato, profilo canonico o dato operativo è stato modificato.
+
+T34 lotto 1 del 2026-08-29: per Balboni sono stati generati 2
+`CandidateProfileUpdate` preview-only e `pending`, collegati a claim
+documentali e al documento di Partigiani d'Italia. Entrambe le proposte sono
+Revisione T34 lotto 1: l'utente conferma 36a Brigata Bianconcini Garibaldi;
+si genera solo ProfilePatch preview con provenance, senza modifica canonica.
+Applicazione Balboni completata dopo dry-run: una formazione aggiunta al profilo
+canonico, backup e audit presenti nella run; nessun conflitto o salto.
+T34 Andreoli: con il matching dei profili legacy e dei nomi invertiti, l'intake
+circoscritto ha prodotto 1 link documento-persona e 18 `CandidateProfileUpdate`
+pending, tutti collegati al documento `storia_memoria_bo:e12f29badf406b9d`.
+Nessuna ProfilePatch o modifica canonica è stata eseguita.
+Revisione Andreoli completata: l'utente ha confermato nascita, morte e
+formazione. Il dry-run ha dato 3 operazioni applicabili; la patch è stata
+applicata con backup e audit, senza conflitti né salti.
+Bendini: intake circoscritto e linker legacy completati; generate 14
+`CandidateProfileUpdate` pending con provenance. Le tre varianti della formazione
+e i valori compositi legacy di nascita/morte richiedono revisione umana prima
+di generare una ProfilePatch.
+Bendini: registrate le tre conferme utente su nascita, morte e formazione;
+generata la ProfilePatch preview e completato il dry-run con 3 operazioni
+applicabili, 0 conflitti e 0 salti. L'applicazione canonica resta separata.
+Bendini applicato: le tre decisioni confermate sono state scritte nel profilo
+canonico con backup e audit; nessun conflitto o salto.
+Guazzaloca: intake circoscritto e linker disambiguato completati; generate 11
+proposte pending. Le proposte principali riguardano nascita, morte e formazione;
+tre estrazioni spurie sulla formazione sono da escludere in revisione.
+Guazzaloca: confermati dall'utente nascita, morte e formazione; generate le
+decisioni e la ProfilePatch preview. Dry-run passato con 3 operazioni applicabili,
+0 conflitti e 0 salti; applicazione canonica ancora separata.
+Guazzaloca applicata: le tre decisioni confermate sono state scritte nel profilo
+canonico con backup e audit; nessun conflitto o salto.
+Decisione operativa T34: i prossimi profili saranno lavorati in lotti massimi di
+20; intake e candidati saranno batch, mentre revisione, backup, audit e patch
+resteranno separati e revisionabili per profilo.
+
+Chiusura sessione 2026-08-30 - T34 lotto 2: la CLI `run_profiles_meta_search.ps1`
+ha interrogato tutti i 20 profili legacy selezionati sulla fonte `Storia e
+Memoria di Bologna`, con un run separato per profilo e acquisizione esplicita
+abilitata. Esito: 16 risultati `ok`, 4 `no_results` (Panov Sergio, Sadavich
+Carlo, Il Toscano, Bonfanti Adolfo), 0 documenti dettagliati acquisiti. I
+risultati `ok` sono ricerche preliminari: diversi nomi legacy sono generici e
+le pagine restituite non sono ancora associate con certezza alla persona. Per
+questo non sono stati generati aggiornamenti candidati ne' applicate modifiche
+canoniche. Il lotto resta aperto al gate di disambiguazione e revisione umana;
+il seed legacy non viene cancellato o riscritto.
+
+Lezioni operative T34 da riusare nei prossimi lotti:
+
+- la CLI richiede l'ID completo del profilo, ad esempio
+  `person:purocielo:panov-sergio`, non il solo slug;
+- la ricerca live esplicita richiede `-ExecuteFirstPlannedAttempt`;
+- `run_mvp_workspace_pipeline.ps1` non accetta `ResultsDir` e determina in
+  autonomia la cartella `risultati`;
+- i job PowerShell isolati non ereditano la directory corrente: usare percorsi
+  assoluti per gli script;
+- una ricerca `ok` non equivale a un documento acquisito: con nomi generici
+  possono restare risultati ambigui e `SourceDocument=0`;
+- le cartelle profilo devono esistere prima dell'acquisizione;
+- l'esecuzione parallela va mantenuta separata per profilo, per preservare
+  provenance, revisione e audit distinti.
+T34 Andreoli: intake circoscritto completato, ma il documento risulta
+`claim_allowed=false` e il link al profilo non è stato risolto; nessuna proposta
+o modifica canonica viene generata prima della revisione manuale.
+`formation.name` con azione `conflict_or_revision`; il profilo canonico resta
+invariato e il lotto è fermo al gate di revisione umana.
+
+Chiusura micro-incremento 2026-08-30 - T34 fix runner: il runner calcolava
+`registry` come repository root quando riceveva
+`memoria-sources/registry/camalanca_fonti.yaml`; questo attivava il fallback
+legacy e lasciava i report con `SourceDocument=0`. Il calcolo ora riconosce il
+registry condiviso e risolve `memoria-engine`, mantenendo attivi detail logic e
+claim candidati. Verifica live su Bassi Giancarlo: 1 risultato, 1
+`SourceDocument`, 11 claim candidati, 1 documento acquisito; tutto resta
+`unreviewed` e non sono state applicate modifiche canoniche.
+
+Prossimo passo candidato T34: rilanciare il lotto già definito di 20 profili
+con il root corretto, conservando output e provenance separati per profilo; poi
+triage umano dei candidati, senza `ProfilePatch` automatico.
+
+Chiusura lotto T34-2 2026-08-30: rilancio completato in 20 run isolate con il
+root corretto. Esito: 11 profili con `candidate_results`, 9 `no_results`, 20
+SourceDocument di report (11 dettagli con claim e 9 riferimenti senza claim),
+119 claim candidati totali e 20 artefatti acquisiti. Tutti i claim restano
+`unreviewed`; nessuna ProfilePatch, fusione o modifica canonica è stata
+eseguita.
+
+Chiusura candidate preview T34-2 2026-08-30: generati 20 file separati
+`CandidateProfileUpdate` dai report del lotto, con 119 proposte complessive e
+6 anteprime `CandidateNewProfile`. Le proposte restano pending/unreviewed;
+non è stato generato né applicato alcun `ProfilePatch`.
+
+Inventario review T34-2: 91 proposte nel bucket `da_accettare_facilmente`, 16
+`da_confrontare` e 12 `da_discutere`; tutte dispongono di document ID e URL.
+I 12 conflitti includono date di nascita/morte discordanti, ordine o alias del
+nome e appartenenze a brigate non equivalenti. Le 6 `CandidateNewProfile`
+(persone menzionate nei documenti) restano soltanto suggerimenti da verificare.
+Nessuna decisione `accepted` o `rejected` è stata registrata.
+
+Revisione esplicita T34-2: su autorizzazione dell'utente sono state registrate
+91 decisioni `accepted` per il solo bucket `da_accettare_facilmente`. Sono state
+generate 20 `ProfilePatch` preview separate, con 36 operazioni complessive,
+ma nessuna patch è stata applicata ai profili canonici. Restano da esaminare
+16 proposte `da_confrontare`, 12 `da_discutere` e 6 `CandidateNewProfile`.
+
+Primo caso non facile - Bonfanti Adolfo: il documento dettagliato conferma la
+nascita del 17 settembre 1907, già presente nel profilo ma con una nota di
+incertezza; la morte è invece 14 ottobre 1944 nella fonte contro 12 ottobre
+1944 nel profilo legacy. Proposta: accettare soltanto la normalizzazione della
+data di nascita e mantenere la data di morte come conflitto da confrontare,
+senza applicare patch.
+
+Decisioni review T34-3: accettate esplicitamente le precisazioni della morte
+per Mazzanti Ivo (`11 ottobre 1944`, mantenendo il luogo legacy) e Minozzi
+Sergio (`20 ottobre 1944, Bologna`). Le rispettive ProfilePatch restano
+preview-only. Mereu Antonio e Poletti Livio restano pending per conflitto di
+data.
+
+Revisione facile T34-3: accettate 109 proposte `da_accettare_facilmente` con
+decisioni `user-explicit`. Generate 20 `ProfilePatch` preview separate con 45
+operazioni complessive; nessuna patch è stata applicata. Restano 17 proposte
+`da_confrontare`, 18 `da_discutere` e 17 `CandidateNewProfile`.
+
+Chiusura lotto T34-3 2026-08-30: processati 20 profili in run isolate sulla
+fonte `storia_memoria_bo`. Esito: 14 `candidate_results`, 6 `no_results`, 20
+documenti acquisiti, 144 `CandidateProfileUpdate` e 17 `CandidateNewProfile`
+preview. Tutti i candidati restano `pending/unreviewed`; nessuna ProfilePatch o
+modifica canonica è stata applicata.
+Chiusura lotto finale T34-4: processati i 13 profili residui in run isolate.
+Generate 108 CandidateProfileUpdate e 15 CandidateNewProfile preview, distribuiti in 78 proposte facili, 11 da confrontare e 19 da discutere. Le decisioni facili sono state registrate con revisore user-explicit e hanno prodotto 30 operazioni di ProfilePatch preview; tutto resta pending/unreviewed e nessuna patch o modifica canonica e stata applicata.
+
+Coda decisionale T34-4: i 11 casi `da_confrontare` sono compatibilita' di data
+con luogo o contesto gia' presente nel legacy; la regola operativa proposta e'
+preservare il valore completo, senza sostituirlo con la sola data. I 19 casi
+`da_discutere` includono date discordanti, alias e appartenenze; nessuna decisione
+e' stata registrata per questi casi e i 15 CandidateNewProfile restano sospesi.
+
+Decisione T34-4 sui confronti: confermata dall'utente la preservazione del valore
+legacy completo per tutti gli 11 casi compatibili. Registrate 11 decisioni
+`accepted` con `target_value` uguale al valore corrente e generate le rispettive
+ProfilePatch preview; nessuna modifica canonica applicata.
+
+Coda T34-4 dei casi da discutere: 6 alias/nominativi aggiuntivi, 6 appartenenze
+o funzioni di brigata e 7 date non conciliabili o insufficientemente dettagliate.
+Gli alias possono essere valutati come aggiunta mantenendo il nome canonico; le
+appartenenze richiedono scelta tra integrazione e mantenimento; le date richiedono
+conferma puntuale. Nessuna decisione e' stata registrata in questa fase.
+
+Confronto T34-4: i 6 alias hanno confidenza 0.95 e citazione diretta; le 6
+appartenenze hanno confidenza 0.8 ma in alcuni casi competono con ruolo o brigata
+gia' presenti; le 7 date hanno confidenza 0.9, con 4 valori legacy assenti o
+incompleti e 3 conflitti espliciti (Ungania nascita, Ungania morte, Vignuzzi morte).
+Il confronto non ha promosso alcun candidato a fatto canonico.
+
+Decisione alias T34-4: accettati i 6 nominativi aggiuntivi come alias con
+operazione `add` su `/identity/aliases/-`; il nome canonico legacy resta invariato.
+Generate sei ProfilePatch preview separate, senza applicazione canonica.
+
+Confronto appartenenze T34-4: Serotti, Toni e Villa ripetono la 36a Brigata gia'
+presente nel legacy e non giustificano una sostituzione. Proni aggiunge una
+funzione diversa (vice comandante rispetto a motorista); Vignuzzi aggiunge la
+funzione di ispettore di battaglione; Terzi presenta il conflitto 66a Jacchia
+contro 36a Brigata. Nessuna decisione e' stata registrata per questi sei casi.
+
+Decisione ruoli T34-4: accettate le aggiunte per Proni (vice comandante di
+compagnia) e Vignuzzi (ispettore di battaglione), con operazioni additive su
+`/formations/-`. I valori legacy restano invariati; Serotti, Toni, Villa e Terzi
+restano senza decisione.
+
+Decisione duplicati T34-4: per Serotti, Toni e Villa registrata la scelta
+`rejected`/nessuna modifica, poiche' la 36a Brigata e' gia' presente nei valori
+legacy. Le preview risultano prive di operazioni; Terzi resta pending per il
+conflitto tra 66a Jacchia e 36a Brigata.
+
+Riapertura date T34-4: cinque casi sono candidati a integrazione preservando il
+contesto legacy: Serotti nascita (valore legacy illeggibile), Saba morte (giorno
+non reperito), Soldati morte (data da aggiungere mantenendo il luogo), Ungania
+morte (data non reperita) e Villa morte (dettaglio cronologico non reperito).
+Restano due conflitti da non risolvere automaticamente: Ungania nascita
+(`21 giugno 1920` contro `1 marzo 1925`) e Vignuzzi morte (`12 dicembre 1944`
+contro `ottobre 1944, Brisighella`).
+
+Decisione date T34-4: confermati i cinque casi integrativi. Generate cinque
+ProfilePatch preview con date accettate; per Soldati il target conserva anche
+`Fornazzano/Casola Valsenio`. Ungania nascita e Vignuzzi morte restano pending.
+
+Confronto conflitti duri T34-4: Ungania nascita propone `21 giugno 1920` con
+confidenza 0.9 contro `1 marzo 1925, Palazzuolo sul Senio` proveniente da fonte
+biografica derivata. Vignuzzi morte propone `12 dicembre 1944` con confidenza
+0.9 contro `ottobre 1944, Brisighella` nel legacy. In entrambi i casi la scelta
+richiede esplicita sostituzione, mantenimento oppure registrazione del conflitto;
+nessuna patch e' stata generata.
+
+Decisione conflitti duri T34-4: l'utente ha scelto la fonte per entrambi i casi.
+Generate due ProfilePatch preview con sostituzione delle date legacy; le fonti,
+i claim e le decisioni restano tracciati e nessuna modifica canonica e' stata
+applicata.
+
+Inventario residui T34: restano 27 CandidateProfileUpdate pending nel lotto 2,
+33 nel lotto 3 e 1 nel lotto 4 (Terzi, appartenenza 66a/36a). Nel lotto 2 la
+coda comprende 15 confronti di date e 12 casi da discutere; nel lotto 3 15
+confronti di date e 18 casi da discutere. Restano inoltre 38 CandidateNewProfile
+senza decisione. Il prossimo lavoro deve procedere per coda di revisione, senza
+applicare patch canoniche.
+
+Stato migrazione T34 salvato a fine sessione 2026-08-30: i 57 profili legacy
+sono stati sottoposti a intake/ricerca in lotti da massimo 20. Sono stati
+prodotti 371 `CandidateProfileUpdate` e 38 `CandidateNewProfile`. Le decisioni
+registrate sono 307 `accepted` e 3 `rejected` senza modifica; restano 61 update
+pending e 38 nuovi profili da valutare. Le patch preview generate sono auditabili
+per run e profilo, ma nessuna modifica canonica e' stata applicata.
+
+Decisioni di questa sessione: alias aggiunti in modo non sostitutivo; ruoli
+aggiuntivi separati dai valori legacy; duplicati chiusi senza operazioni; cinque
+date integrate preservando il contesto; due conflitti di data risolti a favore
+della fonte esplicita. Resta pending il conflitto di Terzi tra 66a Jacchia e
+36a Brigata. Prima della pubblicazione restano revisione dei residui, decisione
+sui nuovi profili, backup, dry-run, audit e applicazione esplicita delle patch.
+migrazione T34 chiusa in preview-only 2026-08-31: tutte le decisioni della
+worklist sono state classificate. Generati i registri finali e una raccolta di
+10 operazioni `ProfilePatch` preview; restano 2 conflitti `needs_review`
+(Brini Adelmo e Bagni Alfonso). Nessuna modifica canonica o pubblicazione e'
+stata eseguita.
