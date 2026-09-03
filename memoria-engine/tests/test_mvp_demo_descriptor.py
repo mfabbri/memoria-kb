@@ -18,6 +18,9 @@ from caduti_fonti_report.document_analysis.mvp_demo_descriptor import (  # noqa:
 from caduti_fonti_report.document_analysis.mvp_demo_reconciliation_markdown import (  # noqa: E402
     render_mvp_demo_reconciliation_markdown as isolated_reconciliation_renderer,
 )
+from caduti_fonti_report.document_analysis.mvp_demo_descriptor_readiness import (  # noqa: E402
+    build_readiness_summary,
+)
 
 
 @contextmanager
@@ -166,6 +169,46 @@ def write_demo_run(data_root: Path, run_id: str = "golden-run") -> Path:
 
 
 class MvpDemoDescriptorTests(unittest.TestCase):
+    def test_readiness_helper_reports_ready_multi_source_scope(self) -> None:
+        readiness = build_readiness_summary(
+            rows=[
+                {"profile_id": "person:one", "source_document_id": "local:one"},
+                {"profile_id": "person:one", "source_document_id": "archive:two"},
+            ],
+            primary_profile_ids=("person:one",),
+            selected_document_ids=("local:one", "archive:two"),
+            source_families=("archive", "local"),
+            scoped_document_ids=("archive:two", "local:one"),
+            scoped_claim_document_ids=("archive:two", "local:one"),
+            ledger_claim_document_ids=("archive:two", "local:one"),
+        )
+
+        self.assertEqual(readiness["status"], "ready_for_internal_demo")
+        self.assertEqual(readiness["errors"], [])
+        self.assertEqual(readiness["missing_source_document_ids"], [])
+        self.assertEqual(readiness["alignment_plan"], [])
+        self.assertEqual(readiness["next_actions"], ["Verificare review, verified facts preview e ProfilePatch preview prima di creare il descrittore T30."])
+
+    def test_readiness_helper_blocks_empty_single_source_scope(self) -> None:
+        readiness = build_readiness_summary(
+            rows=[],
+            primary_profile_ids=("person:one",),
+            selected_document_ids=("local:one",),
+            source_families=(),
+        )
+
+        self.assertEqual(readiness["status"], "blocked_for_internal_demo")
+        self.assertEqual(
+            readiness["errors"],
+            [
+                "no_reconciliation_rows_for_selected_scope",
+                "multi_source_reconciliation_requires_at_least_two_source_families",
+                "primary_profile_without_reconciliation_rows",
+            ],
+        )
+        self.assertEqual(readiness["missing_source_document_ids"], ["local:one"])
+        self.assertEqual(readiness["alignment_plan"][0]["action"], "produce_candidate_claims")
+
     def test_builds_preview_descriptor_and_reconciliation_table(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             data_root = tmp_dir / "data-root"

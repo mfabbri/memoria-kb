@@ -1,47 +1,48 @@
 {
-  "$schema":"./current-work.schema.json",
-  "schema_version":"1.0",
-  "status":"completed",
-  "selected_at":"2026-09-02T10:00:00+02:00",
-  "updated_at":"2026-09-02T10:30:00+02:00",
-  "roadmap_basis":[
-    {"path":"memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","section":"Q2 - Micro-refactor opportunistici","reason":"T34 è chiusa; Q2 riprende con un solo refactor behavior-preserving coperto da test mirati."},
-    {"path":"memoria-bootstrap/docs/memoria-engine-modularity-audit.md","section":"Selezione","reason":"L'audit Q1 seleziona mvp-demo-reconciliation-renderer come primo candidato Q2 per confine chiaro e fixture offline."}
+  "$schema": "./current-work.schema.json",
+  "schema_version": "1.0",
+  "status": "completed",
+  "selected_at": "2026-09-03T14:00:00+02:00",
+  "updated_at": "2026-09-03T14:30:00+02:00",
+  "roadmap_basis": [
+    {"path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "section": "Q2 - Micro-refactor opportunistici", "reason": "Q2 resta in corso e richiede una sola responsabilita' behavior-preserving per sessione."},
+    {"path": "memoria-bootstrap/docs/memoria-engine-modularity-audit.md", "section": "Moduli principali / mvp_pilot_summary.py", "reason": "Il summary MVP resta un modulo accoppiato; il calcolo dei blocker intake e' una responsabilita' pura isolabile."},
+    {"path": "memoria-bootstrap/docs/agent-session-prompt.md", "section": "Procedura sessione e routing", "reason": "La procedura impone un solo micro-incremento e l'accorpamento di test e implementazione sullo stesso confine."}
   ],
-  "increment":{
-    "id":"q2-mvp-demo-reconciliation-renderer-v1",
-    "title":"Q2 - Isolamento del renderer Markdown della riconciliazione MVP",
-    "objective":"Estrarre il solo renderer Markdown della riconciliazione da mvp_demo_descriptor.py senza modificare output o contratti pubblici.",
-    "scope":["Spostare il renderer e i suoi helper privati in un modulo dedicato.","Mantenere l'import pubblico esistente da mvp_demo_descriptor.py.","Verificare l'output con fixture offline e test mirati."],
-    "out_of_scope":["Modifiche a ledger, readiness, payload, CLI, schema o workflow.","Dati esterni, profili canonici, claim, ProfilePatch o pubblicazione.","Refactor di altri renderer o moduli Q2."],
-    "candidate_files":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_demo_descriptor.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_demo_reconciliation_markdown.py","memoria-engine/tests/test_mvp_demo_descriptor.py","memoria-bootstrap/docs/roadmap/00-roadmap-master.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],
-    "stop_condition":"Il renderer Markdown della riconciliazione è isolato in un solo modulo, l'import pubblico e l'output restano invariati e i test mirati passano."
+  "increment": {
+    "id": "mvp-pilot-document-intake-blockers-v1",
+    "title": "Isolamento dei blocker dell'intake documentale MVP",
+    "objective": "Estrarre il calcolo puro dei blocker dell'intake documentale da mvp_pilot_summary.py mantenendo invariati payload, blocker e workflow.",
+    "scope": ["Creare un modulo leaf per il calcolo dei blocker intake e le sole dipendenze pure necessarie.", "Aggiornare mvp_pilot_summary.py per usare il modulo dedicato senza cambiare la costruzione del summary.", "Aggiungere test offline per OCR, PDF, revisione manuale, errori OCR e documenti MVP assenti."],
+    "out_of_scope": ["Modifiche a CLI, schema, ledger, workflow o output osservabile.", "Modifiche a fonti live, dati esterni, claim, profili canonici o pubblicazione.", "Nuove dipendenze o decisioni architetturali multi-repository."],
+    "candidate_files": ["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_document_intake.py", "memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py", "memoria-engine/tests/test_mvp_pilot_summary_rendering.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+    "stop_condition": "Responsabilita' blocker intake isolata, output e workflow invariati, test mirati passanti, JSON e git diff --check validi, nessun dato reale modificato."
   },
-  "verification":{
-    "tests":["python -m json.tool memoria-bootstrap/planning/current-work.json","git diff --check"],
-      "documentation_touchpoints":["memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],
-    "result":"passed",
-    "notes":"T34 è chiusa; renderer Markdown della riconciliazione isolato, import pubblico invariato e test mirati passanti.",
-    "task_envelope":{
-      "mode":"scoped-fix",
-      "repositories":["memoria-bootstrap","memoria-engine"],
-      "read_set":["AGENTS.md","memoria-bootstrap/planning/current-work.json","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/docs/roadmap/00-roadmap-master.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-bootstrap/docs/memoria-engine-modularity-audit.md","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_demo_descriptor.py","memoria-engine/tests/test_mvp_demo_descriptor.py"],
-      "write_set":["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_demo_descriptor.py","memoria-engine/code/caduti_fonti_report/document_analysis/mvp_demo_reconciliation_markdown.py","memoria-engine/tests/test_mvp_demo_descriptor.py","memoria-bootstrap/docs/roadmap/00-roadmap-master.md","memoria-bootstrap/docs/roadmap/02-technical-roadmap.md","memoria-bootstrap/docs/current-next-increment.md","memoria-bootstrap/planning/current-work.json"],
-      "test_command":"python -m unittest tests.test_mvp_demo_descriptor; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check",
-      "stop_conditions":["renderer isolato in un solo modulo","output, import pubblico, ledger, readiness, CLI, schema e workflow invariati","test mirati passanti","nessun dato esterno o profilo canonico modificato"]
+  "verification": {
+    "tests": ["python -m unittest tests.test_mvp_pilot_summary_rendering", "python -m py_compile memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_document_intake.py memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py", "python -m json.tool memoria-bootstrap/planning/current-work.json", "git diff --check"],
+    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+    "result": "passed",
+    "notes": "Blocker intake isolati in un leaf puro; 9 test mirati, py_compile, JSON e diff check passati. Payload, blocker, diagnostica e workflow invariati; nessun dato reale modificato.",
+    "task_envelope": {
+      "mode": "feature-slice",
+      "repositories": ["memoria-engine", "memoria-bootstrap"],
+      "read_set": ["AGENTS.md", "memoria-bootstrap/docs/agent-session-prompt.md", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/docs/memoria-engine-modularity-audit.md", "memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py", "memoria-engine/tests/test_mvp_pilot_summary_rendering.py", ".agents/skills/memoria-session/SKILL.md", ".agents/skills/memoria-planner/SKILL.md", ".agents/skills/memoria-model-router/SKILL.md", ".agents/skills/memoria-roadmap-selector/SKILL.md"],
+      "write_set": ["memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_document_intake.py", "memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py", "memoria-engine/tests/test_mvp_pilot_summary_rendering.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "python -m unittest tests.test_mvp_pilot_summary_rendering; python -m py_compile memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_document_intake.py memoria-engine/code/caduti_fonti_report/document_analysis/mvp_pilot_summary.py; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check",
+      "stop_conditions": ["una sola responsabilita' estratta", "test mirati passanti", "payload, status, diagnostica e workflow invariati", "nessun dato reale o profilo canonico modificato"]
     }
   },
-  "routing":{
-    "policy_version":"2.0",
-    "tier":"medium",
-    "task_class":"implementation",
-    "agent":"implementer",
-    "model":"gpt-5.6-terra",
-    "reasoning_effort":"medium",
-    "rationale":"Micro-refactor runtime delimitato a un renderer puro, entro contratti esistenti e con test offline; il parent usa il fallback esplicito perché il subagent implementer non è disponibile.",
-    "trace":[{"event":"selected","at":"2026-09-02T10:00:00+02:00","tier":"medium","agent":"implementer","model":"gpt-5.6-terra","reason":"L'audit Q1 seleziona il renderer della riconciliazione come responsabilità pura a rischio medio-basso."},{"event":"fallback","at":"2026-09-02T10:00:00+02:00","from":"implementer/gpt-5.6-terra","to":"parent-controller","reason":"Subagent non disponibile; il parent esegue esclusivamente il micro-slice delimitato con quality gate."},{"event":"completed","at":"2026-09-02T10:30:00+02:00","reason":"Renderer isolato; import pubblico invariato, test mirati, JSON e diff check passanti."}]
+  "routing": {
+    "policy_version": "2.0",
+    "tier": "medium",
+    "task_class": "implementation",
+    "agent": "mmr_implementer",
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "medium",
+    "rationale": "Il write_set contiene un refactor runtime delimitato entro contratti esistenti, con test offline sullo stesso confine.",
+    "trace": [{"event": "selected", "at": "2026-09-03T14:20:00+02:00", "tier": "medium", "agent": "mmr_implementer", "model": "gpt-5.6-terra", "reasoning_effort": "medium", "reason": "Refactor behavior-preserving del calcolo puro dei blocker intake nel summary MVP."}, {"event": "fallback", "at": "2026-09-03T14:20:00+02:00", "tier": "medium", "agent": "mmr_implementer", "model": "gpt-5.6-terra", "reasoning_effort": "medium", "reason": "Nessun subagent callable disponibile; il parent esegue direttamente lo slice runtime delimitato, con write_set e quality gate invariati."}]
   },
-  "blockers":[],
-    "session_notes":["Il lotto batch comprende i 20 profili T34-2 gia selezionati.","Intake e ricerca sono batch; revisione, provenance, backup, audit e patch restano per profilo.","Nessun profilo canonico viene modificato in questa fase.","Blocco 1: 10 decisioni accepted esplicite e 10 operazioni ProfilePatch preview generate su 8 profili; nessuna applicazione canonica.","Blocco 2: 7 decisioni esplicite sulle date di morte; 5 operazioni ProfilePatch preview e 2 decisioni rejected/nessuna operazione; nessuna applicazione canonica.","Blocco 3: 3 decisioni accepted esplicite e 3 operazioni ProfilePatch preview; nessuna applicazione canonica.","Blocco 4A: 8 decisioni esplicite su formazioni/ruoli; 2 operazioni ProfilePatch preview, 5 decisioni senza modifica e 1 pending; nessuna applicazione canonica.","Blocco 4B: 6 decisioni accepted esplicite sugli alias e 6 operazioni ProfilePatch preview additive; nessuna applicazione canonica.","Blocco 5A: 10 CandidateNewProfile classificati; 7 rejected e 3 needs_review; nessun nuovo profilo creato.","Blocco 5B: 10 CandidateNewProfile classificati; 9 accepted e 1 rejected; generato preview per 9 nuovi profili, nessuna creazione canonica.","Blocco 5C: 10 CandidateNewProfile classificati; 2 accepted e 8 rejected; generato preview per 2 nuovi profili, nessuna creazione canonica.","Blocco 5D: 8 CandidateNewProfile classificati; 3 accepted, 4 rejected e 1 needs_review; generato preview per 3 nuovi profili, nessuna creazione canonica. Il registro iniziale errato e' stato invalidato e corretto.","Post-sessione: documentati nel playbook i controlli ID, la correzione auditabile dei mapping e il gate finale T34; aggiunta regola riutilizzabile nel decision log."]
-  ,"next_action":{"mode":"recalculate","description":"Selezionare un solo ulteriore micro-incremento Q2 dall'audit Q1 nella prossima sessione."}
+  "blockers": [],
+  "session_notes": ["Sessione avviata dalla procedura agent-session-prompt.md.", "I candidati Q2 precedenti risultano gia' coperti nel worktree; e' stato selezionato un nuovo confine emerso dall'audit del descriptor.", "Fallback diretto del parent registrato per lo slice runtime medium, in assenza di un subagent callable.", "Il leaf readiness e' stato estratto e verificato con test offline; i playbook ora impediscono la chiusura di un task runtime con solo planning.", "Il worktree contiene modifiche preesistenti non attribuite a questa selezione e da preservare.", "Nessun dato reale, claim o profilo canonico e' coinvolto."],
+  "next_action": {"mode": "recalculate", "description": "Ricalcolare un solo micro-incremento Q2 nella prossima sessione."}
 }

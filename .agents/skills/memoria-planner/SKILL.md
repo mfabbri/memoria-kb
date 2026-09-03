@@ -22,12 +22,24 @@ Record:
 
 - roadmap path and section;
 - objective and explicit scope;
+- primary deliverable and expected roadmap advancement;
+- whether the increment is prerequisite-only; if yes, the blocking reason or
+  independent value;
 - routing tier, agent, model, reasoning effort and rationale;
 - out-of-scope items;
 - minimum candidate files;
 - targeted tests and documentation touchpoints;
 - objective stop condition;
 - `next_action.mode = resume`.
+
+Efficiency gate:
+
+- tests and implementation may share one micro-increment when they protect the
+  same boundary and use the same quality gate;
+- a test-only increment requires a documented real blocker or independent
+  deliverable value;
+- after an architecture review approves a boundary, resume that candidate's
+  implementation unless a newer decision invalidates it.
 
 ## Close
 

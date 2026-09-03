@@ -10,6 +10,16 @@ from typing import Sequence
 
 import yaml
 
+from caduti_fonti_report.memoria_cli_diagnostic_formatters import (
+    print_count_block as _print_count_block,
+    print_count_markdown as _print_count_markdown,
+    print_inventory_markdown as _print_inventory_markdown,
+    print_inventory_text as _print_inventory_text,
+    print_profiles_status_markdown as _print_profiles_status_markdown,
+    print_profiles_status_text as _print_profiles_status_text,
+    print_required_dirs_markdown as _print_required_dirs_markdown,
+    print_status_line as _print_status_line,
+)
 from caduti_fonti_report.document_analysis.mvp_demo_descriptor import build_mvp_demo_aligned_ledger, build_mvp_demo_descriptor
 from caduti_fonti_report.document_analysis.mvp_final_gate import build_mvp_final_gate_report
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
@@ -518,106 +528,10 @@ def _project_root(start_dir: Path) -> Path:
     return start_dir.parent if start_dir.name == "memoria-engine" else start_dir
 
 
-def _print_status_line(label: str, ok: bool) -> None:
-    status = "OK" if ok else "MISSING"
-    print(f"{status} {label}")
-
-
 def _inventory_sections(section: str) -> tuple[str, ...]:
     if section == "all":
         return INVENTORY_SECTIONS
     return (section,)
-
-
-def _print_inventory_text(resolution: DataRootResolution, inventories: list[SectionInventory]) -> None:
-    print(f"Data root: {resolution.path}")
-    print(f"Source: {resolution.source}")
-    for inventory in inventories:
-        print("")
-        print(f"Section: {inventory.name}")
-        print(f"Path: {inventory.path}")
-        print(f"exists: {str(inventory.exists).lower()}")
-        print(f"top_level_files: {inventory.top_level_files}")
-        print(f"top_level_dirs: {inventory.top_level_dirs}")
-        print("entries:")
-        if inventory.names:
-            for name in inventory.names:
-                print(f"- {name}")
-        else:
-            print("- none")
-
-
-def _print_inventory_markdown(resolution: DataRootResolution, inventories: list[SectionInventory]) -> None:
-    print("# Memoria inventory")
-    print("")
-    print(f"- Data root: `{resolution.path}`")
-    print(f"- Source: `{resolution.source}`")
-    for inventory in inventories:
-        print("")
-        print(f"## {inventory.name}")
-        print("")
-        print(f"- Path: `{inventory.path}`")
-        print(f"- Exists: {'yes' if inventory.exists else 'no'}")
-        print(f"- Top-level files: {inventory.top_level_files}")
-        print(f"- Top-level directories: {inventory.top_level_dirs}")
-        print("")
-        print("### Entries")
-        print("")
-        if inventory.names:
-            for name in inventory.names:
-                print(f"- `{name}`")
-        else:
-            print("- none")
-
-
-def _print_profiles_status_text(resolution: DataRootResolution, status: ProfilesStatus) -> None:
-    print(f"Data root: {resolution.path}")
-    print(f"Source: {resolution.source}")
-    print(f"Profiles index: {status.index_path}")
-    print(f"exists: {str(status.index_exists).lower()}")
-    print(f"index_profiles: {status.index_count}")
-    print(f"loaded_profiles: {status.loaded_profiles}")
-    print(f"missing_profile_files: {len(status.missing_profile_files)}")
-    _print_count_block("profile_status", status.profile_statuses)
-    _print_count_block("review_status", status.review_statuses)
-    _print_count_block("publication_status", status.publication_statuses)
-    if status.missing_profile_files:
-        print("missing_files:")
-        for file_name in status.missing_profile_files:
-            print(f"- {file_name}")
-
-
-def _print_profiles_status_markdown(resolution: DataRootResolution, status: ProfilesStatus) -> None:
-    print("# Memoria profiles status")
-    print("")
-    print(f"- Data root: `{resolution.path}`")
-    print(f"- Source: `{resolution.source}`")
-    print(f"- Profiles index: `{status.index_path}`")
-    print(f"- Exists: {'yes' if status.index_exists else 'no'}")
-    print(f"- Index profiles: {status.index_count}")
-    print(f"- Loaded profiles: {status.loaded_profiles}")
-    print(f"- Missing profile files: {len(status.missing_profile_files)}")
-    print("")
-    _print_count_markdown("Profile status", status.profile_statuses)
-    _print_count_markdown("Review status", status.review_statuses)
-    _print_count_markdown("Publication status", status.publication_statuses)
-    if status.missing_profile_files:
-        print("## Missing files")
-        print("")
-        for file_name in status.missing_profile_files:
-            print(f"- `{file_name}`")
-
-
-def _print_required_dirs_markdown(resolution: DataRootResolution, checks: list[tuple[str, bool]]) -> None:
-    print("# Memoria inventory")
-    print("")
-    print(f"- Data root: `{resolution.path}`")
-    print(f"- Source: `{resolution.source}`")
-    print("")
-    print("## Required folders")
-    print("")
-    for name, ok in checks:
-        print(f"- [{'x' if ok else ' '}] `{name}`")
 
 
 def _command_data_root(args: argparse.Namespace) -> int:
@@ -1857,26 +1771,6 @@ def _status_value(value: object) -> str:
 
 def _sorted_counts(counter: Counter[str]) -> tuple[tuple[str, int], ...]:
     return tuple(sorted(counter.items(), key=lambda item: item[0]))
-
-
-def _print_count_block(label: str, counts: tuple[tuple[str, int], ...]) -> None:
-    print(f"{label}:")
-    if counts:
-        for status, count in counts:
-            print(f"- {status}: {count}")
-    else:
-        print("- none: 0")
-
-
-def _print_count_markdown(title: str, counts: tuple[tuple[str, int], ...]) -> None:
-    print(f"## {title}")
-    print("")
-    if counts:
-        for status, count in counts:
-            print(f"- `{status}`: {count}")
-    else:
-        print("- none")
-    print("")
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -515,3 +515,15 @@ registrato nel planner prima dell'esecuzione.
 
 Conseguenza: l'assenza del subagent non blocca i micro-refactor runtime sicuri
 e verificabili e non richiede all'utente di esplicitare il modello o l'agente.
+
+## 2026-09-02 - Identificatori univoci dei custom agent Codex
+
+Decisione: gli agenti Me.Mo.Ri.A usano il prefisso `mmr_` in configurazione,
+planner e policy (`mmr_scanner`, `mmr_docs_reviewer`, `mmr_docs_editor`,
+`mmr_implementer`, `mmr_test_reviewer`, `mmr_architect`). Modelli,
+reasoning, sandbox e confini di responsabilita' restano invariati.
+
+Conseguenza: il validator richiede corrispondenza uno-a-uno tra chiave
+`[agents.*]`, file TOML, campo `name` e route del planner. Gli hook restano
+la fonte di evidenza dell'effettiva delega: una configurazione valida non
+sostituisce l'avvio runtime del subagent.

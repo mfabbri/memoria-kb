@@ -39,12 +39,12 @@ direttamente task `review` o `high`.
 Prima di delegare o modificare file, `$memoria-model-router` classifica il task
 in base alla forma e al rischio del lavoro, non alla dimensione del repository:
 
-- `low`: discovery read-only -> `scanner` / Luna `low`;
-- `low`: verifica documentale -> `docs_reviewer` / Luna `medium`;
-- `low`: modifica solo docs/planner/config agent -> `docs_editor` / Luna `medium`;
-- `medium`: codice o micro-feature entro contratti esistenti -> `implementer` / Terra `medium`;
-- `review`: regressioni, edge case, provenance o quality gate -> `test_reviewer` / Terra `high`;
-- `high`: architettura, migrazioni o trade-off multi-repository -> `architect` / Sol `high`.
+- `low`: discovery read-only -> `mmr_scanner` / Luna `low`;
+- `low`: verifica documentale -> `mmr_docs_reviewer` / Luna `medium`;
+- `low`: modifica solo docs/planner/config agent -> `mmr_docs_editor` / Luna `medium`;
+- `medium`: codice o micro-feature entro contratti esistenti -> `mmr_implementer` / Terra `medium`;
+- `review`: regressioni, edge case, provenance o quality gate -> `mmr_test_reviewer` / Terra `high`;
+- `high`: architettura, migrazioni o trade-off multi-repository -> `mmr_architect` / Sol `high`.
 
 Ogni selezione intenzionale va registrata in
 `memoria-bootstrap/planning/current-work.json` nel blocco `routing`.

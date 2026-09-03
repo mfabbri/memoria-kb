@@ -20,9 +20,72 @@ from caduti_fonti_report.document_analysis.mvp_pilot_readiness import (  # noqa:
 from caduti_fonti_report.document_analysis.mvp_pilot_profile_readiness import (  # noqa: E402
     build_profile_readiness,
 )
+from caduti_fonti_report.document_analysis.mvp_pilot_image_ocr_readiness import (  # noqa: E402
+    build_image_ocr_readiness,
+)
+from caduti_fonti_report.document_analysis.mvp_pilot_document_intake import (  # noqa: E402
+    build_document_intake_blockers,
+)
 
 
 class MvpPilotSummaryRenderingTests(unittest.TestCase):
+    def test_document_intake_blockers_preserve_priority_and_order(self) -> None:
+        blockers = build_document_intake_blockers(
+            input_summary={
+                "available": True,
+                "asset_count": 0,
+                "action_counts": {
+                    "image_ocr_required": 2,
+                    "pdf_text_extraction_required": 1,
+                    "manual_review_required": 3,
+                },
+            },
+            ocr_summary={"available": False, "summary": {"error": 2}},
+            text_summary={"available": True, "extracted_count": 0},
+            metadata_summary={"document_count": 1},
+            image_ocr_readiness={"blocking_image_count": 1, "unknown_image_count": 1},
+            mvp_document_count=0,
+        )
+
+        self.assertEqual(
+            blockers,
+            [
+                "Nessun asset raw rilevato nella run locale.",
+                "2 immagini richiedono OCR prioritario, ma non esiste un report OCR batch collegato.",
+                "1 PDF richiedono estrazione testo o revisione manuale.",
+                "3 asset richiedono revisione manuale prima di produrre evidenze.",
+                "2 documenti OCR sono in errore.",
+                "Nessun testo estratto dai documenti metadatati: servono OCR, trascrizione o text extraction.",
+                "Nessun documento raggiunge il riepilogo MVP come base per link o claim candidati.",
+            ],
+        )
+
+    def test_image_ocr_readiness_classifies_blocking_support_and_unknown_assets(self) -> None:
+        readiness = build_image_ocr_readiness(
+            input_plan={
+                "assets": [
+                    {"source_document_id": "doc-block", "raw_file": "A\\block.jpg", "recommended_action": "image_ocr_required"},
+                    {"source_document_id": "doc-support", "raw_file": "support.jpg", "recommended_action": "image_ocr_required"},
+                    {"source_document_id": "", "raw_file": "missing.jpg", "recommended_action": "image_ocr_required"},
+                    {"source_document_id": "doc-text", "recommended_action": "text_extract"},
+                ]
+            },
+            metadata_report={
+                "documents": [
+                    {"source_document_id": "doc-block", "claim_eligible": True},
+                    {"raw_file": "SUPPORT.JPG", "claim_eligible": False},
+                ]
+            },
+        )
+
+        self.assertEqual(readiness["image_ocr_required_count"], 3)
+        self.assertEqual(readiness["blocking_image_count"], 1)
+        self.assertEqual(readiness["support_image_count"], 1)
+        self.assertEqual(readiness["unknown_image_count"], 1)
+        self.assertEqual(readiness["blocking_images"][0]["source_document_id"], "doc-block")
+        self.assertEqual(readiness["support_images"][0]["raw_file"], "support.jpg")
+        self.assertTrue(any("metadata o sidecar" in warning for warning in readiness["warnings"]))
+
     def test_profile_readiness_builder_preserves_profile_document_intersection(self) -> None:
         readiness = build_profile_readiness(
             profiles=[{"profile_id": "person:one", "canonical_name": "One"}],

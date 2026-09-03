@@ -2,23 +2,118 @@
 
 Data: 2026-09-02
 
+## Nota di sessione 2026-09-03 - nuova selezione e chiusura
+
+La procedura agent-session ha verificato che lo stato precedente era chiuso e
+ha selezionato `mvp-pilot-document-intake-blockers-v1` dalla corsia Q2. Il
+calcolo puro dei blocker dell'intake documentale è stato estratto in
+`mvp_pilot_document_intake.py`; il summary conserva payload, blocker,
+diagnostica e workflow invariati. Il test offline copre OCR, PDF, revisione
+manuale, errori OCR e documenti MVP assenti. I 9 test mirati, `py_compile`,
+JSON e `git diff --check` sono passati; nessun dato reale, claim o profilo
+canonico è stato modificato. La prossima sessione deve ricalcolare un solo
+candidato Q2.
+
+## Nota di sessione 2026-09-03 - nuova selezione e chiusura
+
+La procedura agent-session ha verificato che lo stato precedente era chiuso e
+ha selezionato `mvp-pilot-image-ocr-readiness-v1` dalla corsia Q2. La
+classificazione pura degli asset `image_ocr_required` è stata estratta in
+`mvp_pilot_image_ocr_readiness.py`; il summary conserva payload, blocker,
+diagnostica e workflow invariati. Il test offline copre immagini bloccanti,
+di supporto e con metadata mancanti. Test mirato, `py_compile`, JSON e
+`git diff --check` sono passati; nessun dato reale, claim o profilo canonico è
+stato modificato. La prossima sessione deve ricalcolare un solo candidato Q2.
+
+## Nota di sessione 2026-09-03 - nuova selezione
+
+La procedura agent-session ha verificato che lo stato precedente era chiuso e
+che i candidati Q2 gia' classificati risultano coperti nel checkout. E' stato
+selezionato `mvp-demo-readiness-helper-v1`: isolare il calcolo puro della
+readiness da `mvp_demo_descriptor.py`, mantenendo invariati payload, status,
+diagnostica e workflow. Implementazione e test offline condividono lo stesso
+confine; il routing intenzionale e' `medium/mmr_implementer` con modello
+`gpt-5.6-terra`. Chiusura sessione: il leaf
+`mvp_demo_descriptor_readiness.py` e' stato estratto, con payload, status,
+diagnostica, provenance e workflow invariati. Gli 8 test mirati, `py_compile`,
+JSON e `git diff --check` sono passati; nessun dato reale, claim o profilo
+canonico e' stato modificato. Il prompt e il task router vietano ora di
+chiudere un task runtime eseguibile con solo planning o documentazione.
+
+## Nota di sessione 2026-09-03 - selezione corrente
+
+Il planner ha selezionato `local-processing-progress-reporter-v1` dalla
+traccia Q2: il throttling e il parsing del progresso del runner locale saranno
+isolati in un leaf dedicato, con test offline sullo stesso confine. L'obiettivo
+e' behavior-preserving: manifest, sequenza degli step, callback e output
+restano invariati. Il fallback diretto del parent e' registrato nel planner
+per assenza di un subagent callable. Chiusura sessione 2026-09-03: estratto
+`local_processing_progress.py` e mantenuti invariati callback, frequenze,
+manifest e sequenza degli step. I 19 test mirati, `py_compile`, JSON e
+`git diff --check` sono passati; nessun dato reale o profilo canonico e' stato
+modificato. La prossima sessione deve ricalcolare un solo candidato Q2.
+
+## Nota di sessione 2026-09-03
+
+Il precedente incremento dei golden test diagnostici CLI è chiuso. È stato
+selezionato e delegato il micro-incremento Q2
+`q2-diagnostic-formatters-extraction-v1`: estrarre i formatter diagnostici in
+un leaf di sola stampa, accorpando implementazione e test perché condividono
+confine e quality gate. Il planner è stato chiuso dopo la restituzione
+dell’implementazione e la verifica dei test; nessun dato reale, claim o
+profilo canonico è coinvolto.
+
+Correzione di processo: il prompt e il playbook del router ora stabiliscono che
+la delega non è un risultato. Il parent deve attendere la restituzione,
+verificare diff/status nel worktree condiviso, eseguire il quality gate e
+aggiornare il planner prima di rispondere; un diff runtime vuoto lascia la
+sessione aperta o bloccata.
+
+Chiusura sessione 2026-09-03: il leaf diagnostico è stato estratto in
+`memoria_cli_diagnostic_formatters.py`; `memoria_cli.py` conserva gli alias
+pubblici compatibili. I 42 test diagnostici, `py_compile`, JSON e `git diff
+--check` sono passati. Nessun dato reale o profilo canonico è stato modificato.
+
 ## Incremento corrente
 
-Q2 - Isolamento del renderer Markdown della riconciliazione MVP.
+Q2 - Golden test dei formatter diagnostici CLI.
+
+Obiettivo operativo corrente: aggiungere test offline con confronto esatto di
+stdout, stderr e return code per il gruppo di formatter diagnostici già
+delimitato dalla review architetturale, senza modificare runtime o output.
+
+Stato corrente: completato il 2026-09-03 come prerequisito verificabile per la
+futura estrazione di `memoria_cli_diagnostic_formatters.py`.
+
+Perimetro: cinque casi mirati per status line, inventory text/Markdown e
+profiles status text/Markdown, usando fixture temporanee già previste dalla
+suite. Restano fuori estrazione del modulo, parser, handler, resolver, schema,
+workflow, dati esterni, claim, profili canonici e pubblicazione.
+
+Stop condition corrente: soddisfatta; confronti golden stabili aggiunti e test
+mirati passanti, senza modificare contratti runtime o output di produzione.
+
+Chiusura sessione 2026-09-03: aggiunti cinque confronti integrali di stdout,
+stderr vuoto e return code in `test_memoria_diagnostic_cli.py`; il gate
+combinato conta 48 test passanti. La review architetturale del 2026-09-02
+resta il vincolo per la sessione successiva: il modulo futuro sarà un leaf di
+sola stampa e gli helper condivisi non saranno duplicati.
+
+Q2 - Isolamento del renderer Markdown dei profili candidati.
 
 Obiettivo operativo corrente: estrarre il solo rendering Markdown da
-`mvp_demo_descriptor.py` in un modulo dedicato, mantenendo invariati payload,
-ledger, readiness, CLI, schema, workflow e import pubblico esistente.
+`candidate_person_profiles.py` in un modulo dedicato, mantenendo invariati
+payload, estrazione, CLI, schema, workflow e import pubblico esistente.
 
 Stato corrente: selezionato il 2026-09-02. T34 è chiusa; Q2 riprende dal
 candidato prioritario dell'audit Q1, con fixture offline e test mirati.
 
 Stop condition corrente: renderer unico isolato, output invariato e test
-`tests.test_mvp_demo_descriptor` passanti; nessun dato esterno o profilo
+`tests.test_candidate_person_profiles_from_documents` passanti; nessun dato esterno o profilo
 canonico modificato.
 
 Chiusura sessione 2026-09-02: renderer estratto in
-`mvp_demo_reconciliation_markdown.py`; `mvp_demo_descriptor.py` conserva
+`candidate_person_profiles_markdown.py`; `candidate_person_profiles.py` conserva
 l'import pubblico. I sei test mirati passano e non risultano modifiche a
 payload, ledger, readiness, CLI, schema, workflow, dati esterni o profili
 canonici. La prossima sessione deve ricalcolare un solo candidato Q2 dall'audit

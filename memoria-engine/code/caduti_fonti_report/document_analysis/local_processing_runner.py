@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import os
-import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
@@ -21,6 +20,7 @@ from .llm_chunk_classifier import classify_document_chunks, llm_chunk_defaults_f
 from .local_processing_manifest import build_running_step_record, build_skipped_step_record
 from .local_processing_manifest import duration_text as _duration_text
 from .local_processing_manifest import render_run_summary as _render_run_summary
+from .local_processing_progress import ProgressReporter as _ProgressReporter
 from .mention_extraction import extract_document_mentions
 from .metadata_extraction import extract_document_metadata
 from .military_glossary import extract_military_glossary_mentions
@@ -808,41 +808,6 @@ def _input_snapshot_item(path: Path) -> dict[str, str]:
 
 def _input_read_error_count(input_snapshot: list[dict[str, str]]) -> int:
     return sum(1 for item in input_snapshot if item.get("read_error"))
-
-
-class _ProgressReporter:
-    def __init__(self, callback: Callable[[str], None] | None, *, item_interval: int = 500, seconds_interval: float = 30.0) -> None:
-        self.callback = callback
-        self.item_interval = item_interval
-        self.seconds_interval = seconds_interval
-        self.last_item = 0
-        self.last_time = time.monotonic()
-
-    def report(self, message: str, *, force: bool = False) -> None:
-        if self.callback is None:
-            return
-        item = _progress_item(message)
-        now = time.monotonic()
-        if force or item - self.last_item >= self.item_interval or now - self.last_time >= self.seconds_interval:
-            self.callback(message)
-            self.last_item = item
-            self.last_time = now
-
-
-def _progress_item(message: str) -> int:
-    for token in message.split():
-        value = token
-        if "=" in token:
-            _name, _sep, value = token.partition("=")
-        if "/" in value:
-            current, _sep, _total = value.partition("/")
-        else:
-            current = value
-        try:
-            return int(current)
-        except ValueError:
-            continue
-    return 0
 
 
 def _input_delta(*, previous_manifest: dict[str, Any], name: str, input_snapshot: list[dict[str, str]]) -> dict[str, Any]:

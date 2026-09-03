@@ -8,23 +8,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 EXPECTED = {
-    "scanner": ("gpt-5.6-luna", "low"),
-    "docs-reviewer": ("gpt-5.6-luna", "medium"),
-    "docs-editor": ("gpt-5.6-luna", "medium"),
-    "implementer": ("gpt-5.6-terra", "medium"),
-    "test-reviewer": ("gpt-5.6-terra", "high"),
-    "architect": ("gpt-5.6-sol", "high"),
+    "mmr-scanner": ("gpt-5.6-luna", "low"),
+    "mmr-docs-reviewer": ("gpt-5.6-luna", "medium"),
+    "mmr-docs-editor": ("gpt-5.6-luna", "medium"),
+    "mmr-implementer": ("gpt-5.6-terra", "medium"),
+    "mmr-test-reviewer": ("gpt-5.6-terra", "high"),
+    "mmr-architect": ("gpt-5.6-sol", "high"),
 }
 
 ROUTES = {
     "low": {
-        ("scanner","gpt-5.6-luna","low"),
-        ("docs_reviewer","gpt-5.6-luna","medium"),
-        ("docs_editor","gpt-5.6-luna","medium"),
+        ("mmr_scanner","gpt-5.6-luna","low"),
+        ("mmr_docs_reviewer","gpt-5.6-luna","medium"),
+        ("mmr_docs_editor","gpt-5.6-luna","medium"),
     },
-    "medium": {("implementer","gpt-5.6-terra","medium")},
-    "review": {("test_reviewer","gpt-5.6-terra","high")},
-    "high": {("architect","gpt-5.6-sol","high")},
+    "medium": {("mmr_implementer","gpt-5.6-terra","medium")},
+    "review": {("mmr_test_reviewer","gpt-5.6-terra","high")},
+    "high": {("mmr_architect","gpt-5.6-sol","high")},
 }
 
 def fail(msg: str) -> None:
@@ -43,12 +43,23 @@ def main() -> int:
         fail("max_concurrent_threads_per_session != 3")
     if "max_threads" in ag:
         fail("legacy max_threads still present")
+    configured_agent_keys = {key for key, value in ag.items() if isinstance(value, dict)}
+    expected_agent_keys = {filename.replace("-", "_") for filename in EXPECTED}
+    if configured_agent_keys != expected_agent_keys:
+        fail(f"configured agent keys mismatch: {sorted(configured_agent_keys)}")
 
     for filename, expected in EXPECTED.items():
         p = ROOT/".codex/agents"/f"{filename}.toml"
+        if not p.is_file():
+            fail(f"agent config missing: {p.relative_to(ROOT)}")
         data = tomllib.loads(p.read_text(encoding="utf-8"))
+        if data.get("name") != filename.replace("-", "_"):
+            fail(f"{filename} name mismatch")
         if (data.get("model"), data.get("model_reasoning_effort")) != expected:
             fail(f"{filename} model/effort mismatch")
+        configured = ag.get(data["name"], {})
+        if configured.get("config_file") != f"agents/{filename}.toml":
+            fail(f"{filename} config_file mismatch")
 
     planner_path = ROOT/"memoria-bootstrap/planning/current-work.json"
     planner = json.loads(planner_path.read_text(encoding="utf-8"))
@@ -79,6 +90,9 @@ def main() -> int:
             print("WARN: git not found; ignore validation skipped")
 
     hooks = json.loads((ROOT/".codex/hooks.json").read_text(encoding="utf-8"))
+    for hook_event in ("SessionStart", "SubagentStart", "SubagentStop"):
+        if not hooks.get("hooks", {}).get(hook_event):
+            fail(f"required hook event missing: {hook_event}")
     if not (ROOT/".codex/hooks/model-routing-audit.py").is_file():
         fail("runtime audit hook script missing")
 

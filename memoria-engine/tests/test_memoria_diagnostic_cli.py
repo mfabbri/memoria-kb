@@ -667,6 +667,30 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("MISSING secure", stdout)
             self.assertEqual(stderr, "")
 
+    def test_golden_inventory_status_lines_include_ok_and_missing(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir, missing=("secure",))
+
+            code, stdout, stderr = run_cli("inventory", "--data-root", str(data_root))
+
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                stdout,
+                f"""Data root: {data_root}
+Source: --data-root
+OK risultati
+OK documenti_da_processare
+OK documenti_processati
+OK docs
+OK logs
+OK ricerche
+OK archivi
+MISSING secure
+OK database
+""",
+            )
+            self.assertEqual(stderr, "")
+
     def test_inventory_without_options_keeps_required_folder_check(self) -> None:
         with temp_workspace() as tmp_dir:
             data_root = make_data_root(tmp_dir)
@@ -715,6 +739,47 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("- processed.txt", stdout)
             self.assertEqual(stderr, "")
 
+    def test_golden_inventory_text_all_includes_present_and_empty_sections(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir)
+            (data_root / "risultati" / "run-a").mkdir()
+            (data_root / "documenti_processati" / "processed.txt").write_text("x", encoding="utf-8")
+
+            code, stdout, stderr = run_cli("inventory", "--data-root", str(data_root), "--section", "all")
+
+            self.assertEqual(code, 0)
+            self.assertEqual(
+                stdout,
+                f"""Data root: {data_root}
+Source: --data-root
+
+Section: risultati
+Path: {data_root / "risultati"}
+exists: true
+top_level_files: 0
+top_level_dirs: 1
+entries:
+- run-a/
+
+Section: documenti_processati
+Path: {data_root / "documenti_processati"}
+exists: true
+top_level_files: 1
+top_level_dirs: 0
+entries:
+- processed.txt
+
+Section: documenti_da_processare
+Path: {data_root / "documenti_da_processare"}
+exists: true
+top_level_files: 0
+top_level_dirs: 0
+entries:
+- none
+""",
+            )
+            self.assertEqual(stderr, "")
+
     def test_inventory_markdown_output_is_readable(self) -> None:
         with temp_workspace() as tmp_dir:
             data_root = make_data_root(tmp_dir)
@@ -735,6 +800,37 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("## risultati", stdout)
             self.assertIn("- Top-level directories: 1", stdout)
             self.assertIn("- `run-a/`", stdout)
+            self.assertEqual(stderr, "")
+
+    def test_golden_inventory_markdown(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir)
+            (data_root / "risultati" / "run-a").mkdir()
+
+            code, stdout, stderr = run_cli(
+                "inventory", "--data-root", str(data_root), "--section", "risultati", "--output", "markdown"
+            )
+
+            self.assertEqual(code, 0)
+            self.assertEqual(
+                stdout,
+                f"""# Memoria inventory
+
+- Data root: `{data_root}`
+- Source: `--data-root`
+
+## risultati
+
+- Path: `{data_root / "risultati"}`
+- Exists: yes
+- Top-level files: 0
+- Top-level directories: 1
+
+### Entries
+
+- `run-a/`
+""",
+            )
             self.assertEqual(stderr, "")
 
     def test_inventory_markdown_output_without_section_keeps_required_folder_check(self) -> None:
@@ -874,6 +970,35 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("- purocielo-andreoli-dino.jsonld", stdout)
             self.assertEqual(stderr, "")
 
+    def test_golden_profiles_status_text_with_missing_file(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir)
+            index_path = write_profiles_index(data_root, missing_profile=True)
+
+            code, stdout, stderr = run_cli("profiles", "status", "--data-root", str(data_root))
+
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                stdout,
+                f"""Data root: {data_root}
+Source: --data-root
+Profiles index: {index_path}
+exists: true
+index_profiles: 1
+loaded_profiles: 0
+missing_profile_files: 1
+profile_status:
+- none: 0
+review_status:
+- none: 0
+publication_status:
+- none: 0
+missing_files:
+- purocielo-andreoli-dino.jsonld
+""",
+            )
+            self.assertEqual(stderr, "")
+
     def test_profiles_status_markdown_output_is_readable(self) -> None:
         with temp_workspace() as tmp_dir:
             data_root = make_data_root(tmp_dir)
@@ -893,6 +1018,44 @@ MEMORIA_PCLOUD_CLIENT_SECRET=client-secret
             self.assertIn("## Profile status", stdout)
             self.assertIn("- `preview`: 1", stdout)
             self.assertIn("## Review status", stdout)
+            self.assertEqual(stderr, "")
+
+    def test_golden_profiles_status_markdown(self) -> None:
+        with temp_workspace() as tmp_dir:
+            data_root = make_data_root(tmp_dir)
+            index_path = write_profiles_index(data_root)
+
+            code, stdout, stderr = run_cli(
+                "profiles", "status", "--data-root", str(data_root), "--output", "markdown"
+            )
+
+            self.assertEqual(code, 0)
+            self.assertEqual(
+                stdout,
+                f"""# Memoria profiles status
+
+- Data root: `{data_root}`
+- Source: `--data-root`
+- Profiles index: `{index_path}`
+- Exists: yes
+- Index profiles: 1
+- Loaded profiles: 1
+- Missing profile files: 0
+
+## Profile status
+
+- `preview`: 1
+
+## Review status
+
+- `needs_review`: 1
+
+## Publication status
+
+- `not_publishable_without_editorial_review`: 1
+
+""",
+            )
             self.assertEqual(stderr, "")
 
     def test_review_discover_reports_candidate_runs_without_creating_session(self) -> None:

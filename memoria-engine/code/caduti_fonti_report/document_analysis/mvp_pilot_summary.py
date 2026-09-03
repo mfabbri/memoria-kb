@@ -15,6 +15,8 @@ from .mvp_pilot_summary_markdown import (
 )
 from .mvp_pilot_package_status import pilot_package_status_and_action as _pilot_package_status_and_action
 from .mvp_pilot_profile_readiness import build_profile_readiness as _build_profile_readiness
+from .mvp_pilot_image_ocr_readiness import build_image_ocr_readiness as _image_ocr_readiness
+from .mvp_pilot_document_intake import build_document_intake_blockers as _document_intake_blockers
 
 
 def build_mvp_pilot_summary(
@@ -940,126 +942,6 @@ def _document_intake_readiness(*, local_run_dir: Path | None, mvp_document_count
         "review_status": "unreviewed",
         "publication_status": "not_publishable_without_human_review",
     }
-
-
-def _document_intake_blockers(
-    *,
-    input_summary: dict[str, Any],
-    ocr_summary: dict[str, Any],
-    text_summary: dict[str, Any],
-    metadata_summary: dict[str, Any],
-    image_ocr_readiness: dict[str, Any],
-    mvp_document_count: int,
-) -> list[str]:
-    blockers: list[str] = []
-    action_counts = input_summary.get("action_counts", {})
-    ocr_required = _int_value(action_counts.get("image_ocr_required") if isinstance(action_counts, dict) else 0)
-    pdf_required = _int_value(action_counts.get("pdf_text_extraction_required") if isinstance(action_counts, dict) else 0)
-    manual_review = _int_value(action_counts.get("manual_review_required") if isinstance(action_counts, dict) else 0)
-    if input_summary.get("available") and input_summary.get("asset_count", 0) == 0:
-        blockers.append("Nessun asset raw rilevato nella run locale.")
-    if ocr_required > 0 and not ocr_summary.get("available"):
-        blocking_images = _int_value(image_ocr_readiness.get("blocking_image_count"))
-        unknown_images = _int_value(image_ocr_readiness.get("unknown_image_count"))
-        priority_images = blocking_images + unknown_images
-        if priority_images > 0:
-            blockers.append(
-                f"{priority_images} immagini richiedono OCR prioritario, ma non esiste un report OCR batch collegato."
-            )
-    if pdf_required > 0:
-        blockers.append(f"{pdf_required} PDF richiedono estrazione testo o revisione manuale.")
-    if manual_review > 0:
-        blockers.append(f"{manual_review} asset richiedono revisione manuale prima di produrre evidenze.")
-    ocr_counts = ocr_summary.get("summary", {})
-    if isinstance(ocr_counts, dict) and _int_value(ocr_counts.get("error")) > 0:
-        blockers.append(f"{_int_value(ocr_counts.get('error'))} documenti OCR sono in errore.")
-    if text_summary.get("available") and text_summary.get("extracted_count", 0) == 0 and metadata_summary.get("document_count", 0) > 0:
-        blockers.append("Nessun testo estratto dai documenti metadatati: servono OCR, trascrizione o text extraction.")
-    if mvp_document_count == 0:
-        blockers.append("Nessun documento raggiunge il riepilogo MVP come base per link o claim candidati.")
-    return blockers
-
-
-def _image_ocr_readiness(*, input_plan: dict[str, Any], metadata_report: dict[str, Any]) -> dict[str, Any]:
-    assets = [
-        asset
-        for asset in _list_items(input_plan.get("assets"))
-        if str(asset.get("recommended_action", "")) == "image_ocr_required"
-    ]
-    metadata_by_document_id: dict[str, dict[str, Any]] = {}
-    metadata_by_raw_file: dict[str, dict[str, Any]] = {}
-    for item in _list_items(metadata_report.get("documents")):
-        document_id = str(item.get("source_document_id", "")).strip()
-        raw_file = _normalized_path_key(item.get("raw_file"))
-        if document_id:
-            metadata_by_document_id[document_id] = item
-        if raw_file:
-            metadata_by_raw_file[raw_file] = item
-
-    support_images: list[dict[str, str]] = []
-    blocking_images: list[dict[str, str]] = []
-    unknown_images: list[dict[str, str]] = []
-    for asset in assets:
-        metadata = _metadata_for_asset(asset, metadata_by_document_id, metadata_by_raw_file)
-        item = {
-            "source_document_id": str(asset.get("source_document_id", "")),
-            "raw_file": str(asset.get("raw_file", "")),
-        }
-        if not metadata:
-            unknown_images.append(item)
-            continue
-        if _is_false_like(metadata.get("claim_eligible")):
-            support_images.append(item)
-        else:
-            blocking_images.append(item)
-
-    warnings: list[str] = []
-    if support_images:
-        warnings.append(
-            f"{len(support_images)} immagini di supporto claim_eligible=false non bloccano il pacchetto; restano da revisione/OCR se necessario."
-        )
-    if unknown_images:
-        warnings.append(
-            f"{len(unknown_images)} immagini richiedono metadata o sidecar piu' chiari prima di degradarle a warning."
-        )
-
-    return {
-        "@type": "MvpImageOcrReadiness",
-        "image_ocr_required_count": len(assets),
-        "blocking_image_count": len(blocking_images),
-        "support_image_count": len(support_images),
-        "unknown_image_count": len(unknown_images),
-        "blocking_images": blocking_images[:20],
-        "support_images": support_images[:20],
-        "unknown_images": unknown_images[:20],
-        "warnings": warnings,
-        "review_status": "unreviewed",
-        "publication_status": "not_publishable_without_human_review",
-    }
-
-
-def _metadata_for_asset(
-    asset: dict[str, Any],
-    metadata_by_document_id: dict[str, dict[str, Any]],
-    metadata_by_raw_file: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    document_id = str(asset.get("source_document_id", "")).strip()
-    if document_id and document_id in metadata_by_document_id:
-        return metadata_by_document_id[document_id]
-    raw_file = _normalized_path_key(asset.get("raw_file"))
-    if raw_file and raw_file in metadata_by_raw_file:
-        return metadata_by_raw_file[raw_file]
-    return {}
-
-
-def _normalized_path_key(value: Any) -> str:
-    return str(value or "").replace("\\", "/").strip().casefold()
-
-
-def _is_false_like(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value is False
-    return str(value).strip().casefold() in {"0", "false", "no", "not_claim_eligible"}
 
 
 def _document_intake_next_action(blockers: list[str]) -> str:

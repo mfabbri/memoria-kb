@@ -4,10 +4,10 @@ File installati alla radice del repository:
 
 - `AGENTS.md`
 - `.codex/config.toml`
-- `.codex/agents/scanner.toml`
-- `.codex/agents/implementer.toml`
-- `.codex/agents/test-reviewer.toml`
-- `.codex/agents/docs-reviewer.toml`
+- `.codex/agents/mmr-scanner.toml`
+- `.codex/agents/mmr-implementer.toml`
+- `.codex/agents/mmr-test-reviewer.toml`
+- `.codex/agents/mmr-docs-reviewer.toml`
 - `.agents/skills/memoria-session/SKILL.md`
 - `.agents/skills/memoria-planner/SKILL.md`
 - `.agents/skills/memoria-roadmap-selector/SKILL.md`

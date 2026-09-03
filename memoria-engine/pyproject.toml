@@ -17,6 +17,8 @@ dev = [
     "Pillow",
     "pytest",
     "ruff",
+    "jsonschema>=4.20",
+    "jsonschema>=4.20",
 ]
 ocr = [
     "Pillow",

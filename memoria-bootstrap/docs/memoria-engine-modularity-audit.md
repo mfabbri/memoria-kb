@@ -48,9 +48,10 @@ parser Bundesarchiv, diagnostica/skipped claim, renderer review e
 
 ## Selezione
 
-Il candidato scelto per il prossimo incremento è
-`mvp-demo-reconciliation-renderer`: una sola responsabilità pura, test già
-presenti, fixture offline e rischio inferiore rispetto a CLI o browser executor.
+Il candidato scelto per il corrente incremento successivo e'
+`candidate-person-profile-renderer`: il candidato 1 e' gia' chiuso; resta una
+sola responsabilita' pura, con test presenti, fixture offline e rischio
+inferiore rispetto a CLI o browser executor.
 
 Stop condition Q2: estrarre solo il rendering Markdown della riconciliazione;
 preservare ledger, readiness, payload, CLI, schema, artefatti e workflow;

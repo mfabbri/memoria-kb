@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.local_processing_runner import run_local_document_processing  # noqa: E402
 from caduti_fonti_report.document_analysis import local_processing_runner  # noqa: E402
+from caduti_fonti_report.document_analysis.local_processing_progress import ProgressReporter, progress_item  # noqa: E402
 
 
 @contextmanager
@@ -38,6 +39,30 @@ def write_raw_text_document(root_dir: Path) -> Path:
         encoding="utf-8",
     )
     return raw_path
+
+
+class LocalProcessingProgressTests(unittest.TestCase):
+    def test_progress_item_reads_current_count(self):
+        self.assertEqual(progress_item("OCR 12/40 file=x"), 12)
+        self.assertEqual(progress_item("documents=7/9"), 7)
+        self.assertEqual(progress_item("no numeric token"), 0)
+
+    def test_reporter_honors_force_item_and_time_thresholds(self):
+        now = [100.0]
+        messages: list[str] = []
+        reporter = ProgressReporter(messages.append, item_interval=5, seconds_interval=10, clock=lambda: now[0])
+
+        reporter.report("item 1/20")
+        reporter.report("item 5/20")
+        reporter.report("item 6/20")
+        now[0] += 10
+        reporter.report("item 7/20")
+        reporter.report("item 8/20", force=True)
+
+        self.assertEqual(messages, ["item 5/20", "item 7/20", "item 8/20"])
+
+    def test_reporter_without_callback_is_noop(self):
+        ProgressReporter(None).report("item 1/2", force=True)
 
 
 def write_raw_image_document(root_dir: Path) -> Path:

@@ -5,12 +5,12 @@
 The parent thread is a low-cost router:
 
 - parent/controller: `gpt-5.6-luna` / `medium`;
-- discovery: scanner -> Luna / `low`;
-- docs review: docs_reviewer -> Luna / `medium`;
-- docs/planner/agent-config edits: docs_editor -> Luna / `medium`;
-- implementation: implementer -> Terra / `medium`;
-- quality review: test_reviewer -> Terra / `high`;
-- architecture/migration: architect -> Sol / `high`.
+- discovery: mmr_scanner -> Luna / `low`;
+- docs review: mmr_docs_reviewer -> Luna / `medium`;
+- docs/planner/agent-config edits: mmr_docs_editor -> Luna / `medium`;
+- implementation: mmr_implementer -> Terra / `medium`;
+- quality review: mmr_test_reviewer -> Terra / `high`;
+- architecture/migration: mmr_architect -> Sol / `high`.
 
 Project-local `[profiles.*]` are not used. Codex ignores `profiles` in a
 project-scoped `.codex/config.toml`.
@@ -28,6 +28,16 @@ The runtime log is generated locally and ignored by Git.
 
 Project-local hooks must be reviewed/trusted by Codex after they change.
 Use `/hooks` in Codex and trust the project hook definition.
+
+## Delegation diagnostic
+
+The project configuration makes specialized agents available; it does not
+automatically create a subagent or select one from `current-work.json`. The
+parent/controller must explicitly delegate the routed task. For an active
+`high` route, absence of `SubagentStart` in the runtime audit means that the
+mmr_architect was not invoked; the parent must stop rather than perform the
+architecture review itself. This is an orchestrator/session capability, not a
+TOML setting that can be repaired inside the repository.
 
 ## Validation
 

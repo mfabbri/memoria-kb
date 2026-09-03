@@ -16,26 +16,26 @@ default_subagent_model = "gpt-5.6-terra"
 default_subagent_reasoning_effort = "medium"
 interrupt_message = true
 
-[agents.scanner]
+[agents.mmr_scanner]
 description = "Discovery read-only e ricognizione meccanica."
-config_file = "agents/scanner.toml"
+config_file = "agents/mmr-scanner.toml"
 
-[agents.docs_reviewer]
+[agents.mmr_docs_reviewer]
 description = "Verifica read-only di documentazione, contratti e guardrail."
-config_file = "agents/docs-reviewer.toml"
+config_file = "agents/mmr-docs-reviewer.toml"
 
-[agents.docs_editor]
+[agents.mmr_docs_editor]
 description = "Modifiche semplici e circoscritte a docs, planner e configurazione agent."
-config_file = "agents/docs-editor.toml"
+config_file = "agents/mmr-docs-editor.toml"
 
-[agents.implementer]
+[agents.mmr_implementer]
 description = "Fix e micro-feature nel codice entro contratti esistenti."
-config_file = "agents/implementer.toml"
+config_file = "agents/mmr-implementer.toml"
 
-[agents.test_reviewer]
+[agents.mmr_test_reviewer]
 description = "Review tecnica indipendente, regressioni, edge case e quality gate."
-config_file = "agents/test-reviewer.toml"
+config_file = "agents/mmr-test-reviewer.toml"
 
-[agents.architect]
+[agents.mmr_architect]
 description = "Architettura, migrazioni e trade-off multi-repository; usare solo dopo routing high."
-config_file = "agents/architect.toml"
+config_file = "agents/mmr-architect.toml"
