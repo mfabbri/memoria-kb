@@ -89,12 +89,14 @@ gap o conflitto
 9. Preparare il pacchetto finanziatori e il walkthrough. **T33**.
 10. Ricostruire e migrare in modo controllato i 57 profili ancora marcati come
     legacy. **T34, nuova priorità**.
-11. Riprendere storage cloud, nuove fonti o micro-refactor non bloccanti solo
-    dopo T34 o su richiesta esplicita.
+11. Chiudere operativamente la migrazione residua con revisione, dry-run,
+    backup, rollback e audit. **T34b, completato**.
+12. Riprendere il flusso del prodotto completo: post-MVP/Q2 secondo selezione
+    roadmap; storage cloud e nuove fonti restano subordinati alle priorita'.
 
-Aggiornamento operativo 2026-08-31: T34 ha chiuso la revisione preview; Q2 e'
-la prossima corsia selezionata. L'applicazione canonica T34 resta separata e
-richiede un incremento esplicito con backup, dry-run e audit.
+Aggiornamento operativo 2026-09-11: T34b ha completato applicazione canonica,
+backup, rollback metadata e audit post-run. La migrazione profili e' chiusa;
+si puo' riprendere il flusso del prodotto completo.
 
 ## Direzione CLI
 
@@ -109,8 +111,8 @@ deve ritardare T29-T33.
 
 ## Stato corrente
 
-Focus successivo: Q2, con un solo micro-refactor behavior-preserving e test
-mirati. I residui canonici T34 non rientrano in questo refactor.
+Focus successivo: selezionare il prossimo micro-incremento della roadmap del
+prodotto completo. T34b non e' piu' un blocker.
 
 Completato:
 
@@ -136,12 +138,13 @@ Capacita' gia' osservabili ma non ancora confezionate in una golden run unica:
 
 ## Focus immediato
 
-T34 e' chiusa. Il focus corrente e' Q2: un solo micro-refactor
-behavior-preserving, con test mirati e senza modificare dati esterni o profili
+T34 preview e' chiusa e T34b e' completata. I set `block5e` e `block5f`
+hanno registrato le decisioni umane sui 7 residui: 4 sono `accepted` e 3 sono
+`rejected`. Le registrazioni restano preview-only e non modificano profili
 canonici.
 
 - T26-T28 cloud restano in hold;
-- il candidato Q2 corrente proviene dall'audit di modularita' Q1;
+- Q2 e l'apertura post-MVP possono riprendere secondo la selezione roadmap;
 - i futuri interventi sui dati canonici richiedono un incremento separato e
   una decisione esplicita.
 

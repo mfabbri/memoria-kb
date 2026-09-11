@@ -1,5 +1,67 @@
 # Decision Log
 
+## 2026-09-11 - Accettazione residui T34b
+
+Decisione: accettare in modalita' preview i quattro `CandidateNewProfile`
+residui (`Marciatori Adriano`, `Saba Mario`, `Tacconi Rosa`, `Bergonzoni
+Lino`), registrando le scelte nel set esterno `review_decisions_block5f.json`.
+
+Conseguenza: la revisione umana dei nuovi profili e' completa, ma non sono
+stati creati profili canonici. Restano obbligatori dry-run, backup, rollback e
+audit prima di qualsiasi applicazione.
+
+## 2026-09-11 - Blocker materializzazione nuovi profili T34b
+
+Il preflight read-only ha verificato che il percorso esistente di
+`ProfilePatch` aggiorna profili JSON-LD gia' presenti, ma non definisce la
+creazione canonica di un `CandidateNewProfile`. Prima di qualsiasi dry-run
+applicativo va quindi definito il contratto di materializzazione, soprattutto
+per `Tacconi Rosa`, che non ha un profilo canonico corrispondente trovato nel
+data root.
+
+## 2026-09-11 - Contratto preview CandidateNewProfile T34b
+
+Implementato in `memoria-engine` il piano immutabile
+`CandidateNewProfileMaterializationPlan`, separato da `ProfilePatch`. Il piano
+consente solo preview e dry-run, conserva provenance e hash, distingue
+`create_new`, `link_existing` e `blocked_collision` e prepara manifest,
+rollback metadata e audit senza scrivere profili canonici.
+
+## 2026-09-11 - Preflight reale T34b
+
+Il nuovo adapter ha letto in sola memoria la coda T34 e il set `block5f`,
+producendo quattro piani deterministici preview-only: tre `create_new` e un
+`link_existing`. Il preflight ha mantenuto `canonical_write_count=0` e non ha
+modificato il data root esterno.
+
+## 2026-09-11 - Dry-run preview T34b
+
+Generati nella run esterna il piano aggregato e il report dry-run dei quattro
+nuovi profili. Gli artefatti dichiarano quattro piani, tre `create_new`, un
+`link_existing`, zero scritture canoniche e stato
+`ready_for_explicit_canonical_authorization`. Nessun profilo o indice e' stato
+modificato.
+
+## 2026-09-11 - Applicazione canonica T34b
+
+Con autorizzazione esplicita dell'utente sono stati creati tre profili
+canonici minimali (`Marciatori Adriano`, `Tacconi Rosa`, `Bergonzoni Lino`) e
+aggiornato l'indice da 57 a 60 voci. `Saba Mario` e' stato collegato al profilo
+esistente senza scrittura. Sono stati creati backup, audit JSON/Markdown e
+rollback condizionato agli hash; nessun claim o `verified_fact` e' stato
+promosso.
+
+## 2026-09-10 - Revisione umana residui T34b
+
+Decisione: registrare le sette scelte umane sui `CandidateNewProfile` residui
+nel set esterno `review_decisions_block5e.json`, mantenendo quattro casi in
+`needs_review` e rifiutandone tre. Il set resta `preview_only`; non sono stati
+creati profili canonici e non sono state applicate patch.
+
+Conseguenza: la migrazione T34b resta aperta per la gestione dei quattro casi
+in sospeso e per la verifica di dry-run, backup, rollback e audit prima di
+qualsiasi applicazione canonica.
+
 ## 2026-07-05 - Architettura multi-repo
 
 Decisione: adottare una Knowledge Workspace Architecture multi-repo per
@@ -486,6 +548,21 @@ Decisioni operative durevoli:
 
 Conseguenza: i conteggi, i profili e le decisioni specifiche restano negli
 artefatti dei run esterni; questo log conserva soltanto le regole riutilizzabili.
+
+## 2026-09-10 - T34b prima del post-MVP
+
+Decisione: la chiusura operativa della migrazione dei profili legacy diventa la
+priorità immediata prima dell'apertura della fase post-MVP, dei micro-refactor
+Q2 e della traiettoria cloud.
+
+Motivazione: T34 ha chiuso intake, generazione candidati e revisione preview,
+ma non deve essere considerata definitivamente conclusa finché conteggi e
+residui non sono riconciliati e non sono stati verificati dry-run, backup,
+rollback, audit e l'eventuale applicazione canonica autorizzata.
+
+Vincoli: nessuna ProfilePatch viene applicata dalla sola selezione della
+priorità; nessun claim viene promosso automaticamente; i profili senza
+copertura sufficiente restano residui legacy espliciti.
 
 ## 2026-08-31 - Revisione manuale a blocchi e correzioni auditabili
 

@@ -1154,9 +1154,10 @@ Criteri di uscita:
 Stato: chiusa il 2026-09-02. La migrazione controllata dei profili legacy è
 completata; le evidenze operative restano nel data root esterno.
 
-Chiusura operativa 2026-09-02: T34 non lascia un preflight o un'applicazione
-canonica pendente nella roadmap tecnica. Eventuali nuove modifiche ai dati
-canonici richiedono un incremento separato e autorizzato.
+Chiusura operativa 2026-09-02: T34 non lascia un preflight pendente nella fase
+di intake/revisione preview. La riconciliazione finale dei residui e
+l'eventuale applicazione canonica autorizzata sono ora tracciate separatamente
+in T34b.
 
 Aggiornamento operativo 2026-08-31: la revisione T34 e' chiusa in preview-only;
 profili canonici invariati. L'applicazione resta un incremento separato.
@@ -1169,6 +1170,64 @@ ambigui e non possono alimentare `CandidateProfileUpdate` senza disambiguazione
 e documento identificabile. Nessun profilo canonico e' stato modificato. Il
 prossimo gate e' la revisione dei report e l'associazione documentale; i quattro
 `no_results` restano residui legacy.
+
+### T34b - Chiusura operativa della migrazione profili legacy
+
+Dipendenze: T34, T17 e T18.
+
+Priorità operativa corrente: T34b precede il post-MVP, Q2 e qualsiasi riapertura
+della traiettoria cloud. T34 resta chiusa per intake, generazione candidati e
+revisione preview; T34b chiude invece il residuo operativo senza confondere
+preview e modifica canonica.
+
+Obiettivo: riconciliare lo stato effettivo dei candidati T34, completare la
+revisione umana dei casi ancora pending, preparare il dry-run auditabile e
+applicare esclusivamente le operazioni esplicitamente approvate.
+
+Perimetro obbligatorio:
+
+1. riconciliare conteggi, provenance e stato dei `CandidateProfileUpdate` e
+   `CandidateNewProfile` tra worklist e run esterne;
+2. chiudere, rifiutare o lasciare esplicitamente pending ogni candidato con
+   nota motivata e residuo legacy identificato;
+3. verificare backup, manifest, mappa legacy → profilo ricostruito, dry-run e
+   piano di rollback;
+4. applicare solo il lotto autorizzato esplicitamente, con audit post-run;
+5. verificare che nessun claim non revisionato diventi `verified_fact` e che i
+   profili senza copertura sufficiente restino invariati.
+
+Criteri di uscita:
+
+- i conteggi della coda T34 sono coerenti e riconciliati con gli artefatti
+  esterni;
+- ogni decisione sostanziale ha provenance, revisore e stato esplicito;
+- il dry-run, il backup, il rollback e l'audit post-run sono verificati;
+- eventuali `ProfilePatch` applicate corrispondono soltanto ad autorizzazioni
+  esplicite e sono tracciate;
+- i residui legacy e i casi pending sono elencati senza promozione automatica;
+- T34b è chiusa prima di selezionare il primo incremento post-MVP.
+
+Stato: priorità selezionata il 2026-09-10. I gate read-only di riconciliazione
+e inventario sono stati eseguiti il 2026-09-10: la coda contiene 51 elementi,
+44 hanno una decisione univoca dopo l'esclusione del set `block5d` invalidato,
+e i 7 residui hanno ora 4 `accepted` e 3 `rejected`. La revisione umana dei
+`CandidateNewProfile` e' completa; T34b resta aperta per dry-run, backup,
+rollback e audit, prima di qualsiasi applicazione.
+
+Aggiornamento Gate 6 del 2026-09-11: il contratto
+`CandidateNewProfileMaterializationPlan` e' implementato in preview-only con
+provenance, hash, manifest, rollback metadata e audit. L'integrazione con gli
+artefatti reali e il dry-run operativo restano un incremento separato.
+
+Aggiornamento Gate 8 del 2026-09-11: il piano aggregato e il report dry-run
+T34b sono stati scritti nella run esterna in preview-only. Quattro piani sono
+verificati con zero scritture canoniche; l'applicazione resta subordinata a
+backup, rollback, audit post-run e autorizzazione esplicita.
+
+Aggiornamento Gate 9 del 2026-09-11: applicazione canonica T34b completata con
+3 profili nuovi, 1 collegamento esistente, indice 57 -> 60, backup e audit
+verificati. T34b e' chiusa; il prossimo incremento torna alla roadmap del
+prodotto completo.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 
@@ -1221,9 +1280,9 @@ Criteri di uscita:
 - test mirati passanti;
 - documentazione aggiornata solo se cambia un confine pubblico.
 
-Stato: in corso. I micro-refactor Q2 restano limitati a una responsabilità per
-sessione; il renderer Markdown della riconciliazione MVP è stato isolato e
-verificato il 2026-09-02. La prossima selezione va ricalcolata dall'audit Q1.
+Stato: differita per decisione di priorità del 2026-09-10. I micro-refactor Q2
+restano disponibili dopo la chiusura di T34b, ma non devono precedere la
+finalizzazione della migrazione profili legacy.
 
 ### Q2b - Pulizia delle copie private legacy dei renderer funding package
 

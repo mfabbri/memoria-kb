@@ -2,6 +2,160 @@
 
 Data: 2026-09-02
 
+## Nota di sessione 2026-09-10 - priorità roadmap aggiornata
+
+Su richiesta dell'utente, la roadmap assegna priorità a `T34b - Chiusura
+operativa della migrazione profili legacy` prima del post-MVP, di Q2 e della
+traiettoria cloud. T34 resta chiusa per la fase preview, ma i conteggi dei
+candidati, i residui pending, il dry-run, il backup, il rollback e l'eventuale
+applicazione canonica autorizzata devono essere riconciliati in un gate
+separato. Non sono stati modificati profili canonici né dati esterni.
+
+## Incremento corrente
+
+T34b - Chiusura operativa della migrazione profili legacy.
+
+Obiettivo: riconciliare la coda T34, completare la revisione umana dei casi
+pending, verificare dry-run, backup, rollback e audit, quindi applicare soltanto
+le operazioni esplicitamente autorizzate.
+
+Gate 3 T34b del 2026-09-10: l'utente ha deciso `1 pending, 2 reject, 3
+pending, 4 pending, 5 pending, 6 reject, 7 reject`. La decisione e' stata
+registrata nel set esterno `review_decisions_block5e.json` con 4
+`needs_review` e 3 `rejected`; `preview_only=true` e
+`canonical_profiles_modified=false`. Nessun nuovo profilo e' stato creato e
+nessuna patch canonica e' stata applicata.
+
+Gate 4 T34b del 2026-09-11: l'utente ha accettato tutti i 4 casi residui. Le
+decisioni sono registrate nel set esterno `review_decisions_block5f.json` con
+4 `accepted`; `preview_only=true` e `canonical_profiles_modified=false`.
+Nessun profilo canonico e' stato creato.
+
+La revisione dei `CandidateNewProfile` e' completa. T34b non e' ancora chiusa:
+restano da verificare dry-run, backup, rollback e audit e da autorizzare
+esplicitamente l'eventuale applicazione canonica.
+
+Gate 5 T34b del 2026-09-11: il preflight read-only ha verificato che
+`memoria-engine` applica `ProfilePatch` a profili JSON-LD esistenti, ma non
+fornisce un percorso di materializzazione canonica per i `CandidateNewProfile`
+accettati. Sono stati trovati profili esistenti per Bergonzoni Guido, Marciatori
+Francesco e Saba Mario; non e' stato trovato un profilo canonico per Tacconi
+Rosa. Nessuna scrittura e' stata eseguita.
+
+Questo e' un blocker di contratto/migrazione: prima del dry-run applicativo
+serve definire il contratto di creazione dei nuovi profili, la mappa
+legacy/source-to-target, il manifest, il backup e il rollback. I quattro
+`accepted` restano quindi preview-only.
+
+Gate 6 T34b del 2026-09-11: implementato in `memoria-engine` il contratto
+`CandidateNewProfileMaterializationPlan` come artefatto immutabile e
+preview-only. Il piano richiede provenance completa, target canonico,
+risoluzione `create_new`/`link_existing`/`blocked_collision`, hash, manifest,
+rollback metadata e audit. I test coprono i quattro casi T34b: tre
+`create_new` e Saba Mario `link_existing`, senza scrittura canonica.
+
+Il prossimo incremento dovra' integrare il piano con gli artefatti reali e il
+dry-run operativo. Restano fuori scope la CLI, l'applicazione canonica,
+`apply_profile_patch.py`, l'indice e i profili esterni.
+
+Gate 7 T34b del 2026-09-11: il preflight in-memory ha letto la coda reale e
+`review_decisions_block5f.json` senza scrivere file. Ha prodotto 4 piani
+deterministici: `Marciatori Adriano`, `Tacconi Rosa` e `Bergonzoni Lino` in
+`create_new`, `Saba Mario` in `link_existing`. Esito aggregato:
+`preview_only=true`, `canonical_profiles_modified=false`,
+`canonical_write_count=0`.
+
+I 13 test mirati, `py_compile` e `git diff --check` sono passati. Il prossimo
+incremento puo' scrivere soltanto l'artefatto preview e produrre il dry-run
+operativo; l'applicazione canonica resta esclusa.
+
+Gate 8 T34b del 2026-09-11: scritti nella run esterna gli artefatti
+`candidate_new_profile_materialization_t34b.preview.json` e
+`candidate_new_profile_materialization_t34b.dry-run.json`. La verifica ha
+confermato 4 piani, `preview_only=true`, `canonical_profiles_modified=false`,
+`canonical_write_count=0` e risultato
+`ready_for_explicit_canonical_authorization`. Le risoluzioni sono 3
+`create_new` e 1 `link_existing`.
+
+Il dry-run e' pronto, ma non autorizza la scrittura canonica: backup, rollback
+effettivo e audit post-run restano da eseguire soltanto in un incremento
+applicativo esplicito.
+
+Gate 9 T34b del 2026-09-11: applicazione canonica autorizzata completata. Sono
+stati creati `Marciatori Adriano`, `Tacconi Rosa` e `Bergonzoni Lino` come
+profili minimali `accepted/unpublished`; `Saba Mario` e' stato collegato al
+profilo esistente senza scrittura. L'indice e' passato da 57 a 60 profili.
+Backup dell'indice, audit JSON/Markdown e rollback condizionato agli hash sono
+stati generati. Nessun claim o `verified_fact` e' stato creato.
+
+T34b e' chiusa operativamente. Il prossimo incremento puo' essere selezionato
+dalla roadmap del prodotto completo; non sono richieste ulteriori modifiche
+canoniche per questi quattro casi.
+
+Stato: priorità selezionata il 2026-09-10; l'implementazione non è ancora
+La revisione umana è registrata in `review_decisions_block5e.json` come
+T34b chiusa operativamente il 2026-09-11; revisione, piano, dry-run, backup,
+applicazione e audit post-run sono registrati negli artefatti esterni.
+
+## Ripresa roadmap prodotto - 2026-09-11
+
+Con T34b chiusa, la roadmap torna alla corsia Q2. I renderer già estratti e i
+micro-refactor precedenti risultano chiusi; il candidato successivo è
+`memoria-cli-command-groups`, da delimitare con review architetturale prima di
+modificare la superficie CLI pubblica. pCloud, nuove fonti e ulteriori
+migrazioni restano fuori scope.
+
+Restano fuori scope: Q2, pCloud T26-T28, apertura post-MVP, nuove fonti,
+promozione automatica di claim e modifiche canoniche non autorizzate.
+
+Chiusura Q2 del 2026-09-11: `q2-cli-sources-offline-renderer-v1` ha estratto il
+renderer diagnostico read-only di `sources offline` nel formatter condiviso.
+La CLI delega il rendering senza modificare handler, parser, output, return
+code o comportamento read-only; i due file di test CLI (42 test ciascuno), la
+compilazione Python, il JSON del planner e `git diff --check` passano.
+
+Gate 1 T34b del 2026-09-10: l'artefatto esterno
+`intake-t34-manual-review-queue-20260831/manual_review_queue.t34.preview.json`
+contiene 51 elementi preview-only (38 `CandidateNewProfile` e 13
+`CandidateProfileUpdate`) e dichiara `canonical_profiles_modified=false`.
+I decision set `block5a`-`block5d` e `t34_final` si sovrappongono e non possono
+essere sommati senza deduplicazione; le note storiche riportano inoltre 61
+update e 38 nuovi profili. Il gate ha quindi prodotto una riconciliazione
+read-only, ma non autorizza ancora revisione ulteriore o applicazione canonica.
+
+Gate 2 T34b del 2026-09-10: la deduplicazione per identificativo ha verificato
+che i 51 ID della coda hanno corrispondenza nei decision set grezzi. Il file
+`review_decisions_block5d.correction.json` dichiara però invalido il riepilogo
+`block5d`; usando solo i set validi e il set finale successivo risultano 44
+decisioni univoche: 24 `accepted`, 18 `rejected` e 2 `needs_review`. Restavano 7
+`CandidateNewProfile` senza decisione valida, da sottoporre a revisione; il
+successivo Gate 3 ha registrato le decisioni umane su quei 7 residui. Questo
+è un inventario meccanico, non una risoluzione storica e non genera patch.
+
+## Nota di sessione 2026-09-06 - selezione e chiusura
+
+La procedura agent-session ha verificato che lo stato precedente era chiuso e
+ha selezionato `mvp-pilot-claim-funnel-diagnostics-v1` dalla corsia Q2. La
+diagnostica pura del claim funnel è stata estratta in
+`mvp_pilot_claim_funnel.py`; `mvp_pilot_summary.py` conserva payload,
+diagnostica e workflow invariati. I test offline coprono contesto di segmento,
+claim chunk-only, skip con o senza profili candidati e stati vuoti. I 12 test
+mirati, `py_compile`, JSON e `git diff --check` sono passati; nessun dato reale,
+claim o profilo canonico è stato modificato. La prossima sessione deve
+ricalcolare un solo candidato Q2.
+
+## Nota di sessione 2026-09-03 - nuova selezione e chiusura
+
+La procedura agent-session ha verificato che lo stato precedente era chiuso e
+ha selezionato `mvp-pilot-signal-blockers-v1` dalla corsia Q2. Il calcolo puro
+dei blocker diagnostici dei segnali è stato estratto in
+`mvp_pilot_signal_blockers.py`; il summary conserva payload, diagnostica e
+workflow invariati. Il test offline copre duplicati, match nominali deboli,
+profili senza claim e il caso di segnale leggibile. I 10 test mirati,
+`py_compile`, JSON e `git diff --check` sono passati; nessun dato reale, claim
+o profilo canonico è stato modificato. La prossima sessione deve ricalcolare
+un solo candidato Q2.
+
 ## Nota di sessione 2026-09-03 - nuova selezione e chiusura
 
 La procedura agent-session ha verificato che lo stato precedente era chiuso e
@@ -74,7 +228,7 @@ Chiusura sessione 2026-09-03: il leaf diagnostico è stato estratto in
 pubblici compatibili. I 42 test diagnostici, `py_compile`, JSON e `git diff
 --check` sono passati. Nessun dato reale o profilo canonico è stato modificato.
 
-## Incremento corrente
+## Incremento storico - Q2 Golden test dei formatter diagnostici CLI
 
 Q2 - Golden test dei formatter diagnostici CLI.
 
@@ -99,14 +253,15 @@ combinato conta 48 test passanti. La review architetturale del 2026-09-02
 resta il vincolo per la sessione successiva: il modulo futuro sarà un leaf di
 sola stampa e gli helper condivisi non saranno duplicati.
 
-Q2 - Isolamento del renderer Markdown dei profili candidati.
+## Incremento storico - Q2 Isolamento del renderer Markdown dei profili candidati
 
 Obiettivo operativo corrente: estrarre il solo rendering Markdown da
 `candidate_person_profiles.py` in un modulo dedicato, mantenendo invariati
 payload, estrazione, CLI, schema, workflow e import pubblico esistente.
 
-Stato corrente: selezionato il 2026-09-02. T34 è chiusa; Q2 riprende dal
-candidato prioritario dell'audit Q1, con fixture offline e test mirati.
+Stato storico: selezionato il 2026-09-02. T34 era allora considerata chiusa;
+la priorità T34b è stata introdotta il 2026-09-10 prima della ripresa di Q2,
+con fixture offline e test mirati.
 
 Stop condition corrente: renderer unico isolato, output invariato e test
 `tests.test_candidate_person_profiles_from_documents` passanti; nessun dato esterno o profilo
