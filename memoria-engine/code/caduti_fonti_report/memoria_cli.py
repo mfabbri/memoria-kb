@@ -18,6 +18,7 @@ from caduti_fonti_report.memoria_cli_diagnostic_formatters import (
     print_profiles_status_markdown as _print_profiles_status_markdown,
     print_profiles_status_text as _print_profiles_status_text,
     print_required_dirs_markdown as _print_required_dirs_markdown,
+    print_sources_offline_discovery as _print_sources_offline_discovery_formatter,
     print_status_line as _print_status_line,
 )
 from caduti_fonti_report.document_analysis.mvp_demo_descriptor import build_mvp_demo_aligned_ledger, build_mvp_demo_descriptor
@@ -1494,34 +1495,7 @@ def _print_sources_online_discovery(
 def _print_sources_offline_discovery(resolution: DataRootResolution, *, limit: int) -> None:
     intake = inspect_inventory_section(resolution.path, "documenti_da_processare")
     processed = inspect_inventory_section(resolution.path, "documenti_processati")
-    print("Me.Mo.Ria sources offline discovery")
-    print(f"Workspace: {resolution.path}")
-    print("Modalita: preview-only/read-only")
-    print("")
-    print(f"Documenti da processare: {intake.path}")
-    print(f"  Presente: {intake.exists}")
-    print(f"  Cartelle candidate: {intake.top_level_dirs}")
-    print(f"  File candidati: {intake.top_level_files}")
-    print(f"Documenti processati: {processed.path}")
-    print(f"  Presente: {processed.exists}")
-    print(f"  Cartelle processate: {processed.top_level_dirs}")
-    print(f"  File processati: {processed.top_level_files}")
-    directories = [name for name in intake.names if name.endswith("/")][:limit]
-    files = [name for name in intake.names if not name.endswith("/")][:limit]
-    if directories:
-        print("")
-        print("Cartelle candidate:")
-        for name in directories:
-            print(f"- {name.rstrip('/')}")
-    if files:
-        print("")
-        print("File candidati:")
-        for name in files:
-            print(f"- {name}")
-    print("")
-    print("Prossimo comando:")
-    print(f'  .\\scripts\\memoria.ps1 sources offline start --auto -WorkspaceRoot "{resolution.path}"')
-    print("Nota: discovery read-only; non crea run, non avvia OCR, non scrive nello store e non modifica profili JSON-LD.")
+    _print_sources_offline_discovery_formatter(resolution, intake, processed, limit=limit)
 
 
 def _load_json_object(path: Path) -> dict[str, object] | None:

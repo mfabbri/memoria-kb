@@ -97,6 +97,37 @@ def print_required_dirs_markdown(resolution: object, checks: list[tuple[str, boo
         print(f"- [{'x' if ok else ' '}] `{name}`")
 
 
+def print_sources_offline_discovery(resolution: object, intake: object, processed: object, *, limit: int) -> None:
+    print("Me.Mo.Ria sources offline discovery")
+    print(f"Workspace: {resolution.path}")
+    print("Modalita: preview-only/read-only")
+    print("")
+    print(f"Documenti da processare: {intake.path}")
+    print(f"  Presente: {intake.exists}")
+    print(f"  Cartelle candidate: {intake.top_level_dirs}")
+    print(f"  File candidati: {intake.top_level_files}")
+    print(f"Documenti processati: {processed.path}")
+    print(f"  Presente: {processed.exists}")
+    print(f"  Cartelle processate: {processed.top_level_dirs}")
+    print(f"  File processati: {processed.top_level_files}")
+    directories = [name for name in intake.names if name.endswith("/")][:limit]
+    files = [name for name in intake.names if not name.endswith("/")][:limit]
+    if directories:
+        print("")
+        print("Cartelle candidate:")
+        for name in directories:
+            print(f"- {name.rstrip('/')}")
+    if files:
+        print("")
+        print("File candidati:")
+        for name in files:
+            print(f"- {name}")
+    print("")
+    print("Prossimo comando:")
+    print(f'  .\\scripts\\memoria.ps1 sources offline start --auto -WorkspaceRoot "{resolution.path}"')
+    print("Nota: discovery read-only; non crea run, non avvia OCR, non scrive nello store e non modifica profili JSON-LD.")
+
+
 def print_count_block(label: str, counts: tuple[tuple[str, int], ...]) -> None:
     print(f"{label}:")
     if counts:

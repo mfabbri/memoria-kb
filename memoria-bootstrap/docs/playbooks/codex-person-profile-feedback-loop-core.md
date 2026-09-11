@@ -35,6 +35,10 @@ search_run_outcome = risultato o no-result tracciato
 - `ProfilePatch` resta preview/dry-run finche' non esistono backup, decisione,
   audit e test.
 - Ogni patch conserva profilo, claim, documento, decisione, reviewer e run.
+- Per un'applicazione canonica autorizzata si applica la
+  [Checklist di applicazione canonica](codex-session-contract.md#checklist-di-applicazione-canonica),
+  inclusi piano/provenance/hash, dry-run, autorizzazione separata, backup,
+  audit post-run e rollback condizionato agli hash.
 
 ## Regole del feedback loop
 

@@ -122,6 +122,35 @@ Sorgenti canoniche:
 - Non fare refactor ampi.
 - Riportare file, test, rischi e impatto sulla golden run.
 
+## Checklist di applicazione canonica
+
+Quando un incremento autorizzato deve trasformare un artefatto preview in una
+modifica canonica, completare tutti i gate seguenti e conservarne gli artefatti
+collegati allo stesso `run_id` o identificativo equivalente:
+
+1. **Revisione umana esplicita**: ogni operazione è stata esaminata e ha una
+   decisione tracciabile, con reviewer e stato finale.
+2. **Piano, provenance e hash**: il piano dichiara target, operazioni, fonti,
+   decisioni, hash degli input e hash attesi dei target prima dell'applicazione.
+3. **Dry-run**: il dry-run deterministico conferma conteggi, operazioni,
+   collisioni, precondizioni e assenza di scritture canoniche.
+4. **Autorizzazione separata**: l'autorizzazione all'applicazione è esplicita,
+   riferita al piano e distinta dalla revisione o dalla produzione del dry-run.
+5. **Backup**: prima della scrittura esiste un backup verificabile dei target e
+   del relativo indice o manifest, con percorso, timestamp e hash.
+6. **Applicazione controllata**: si scrive soltanto il set autorizzato e si
+   registrano operazioni riuscite, saltate o fallite senza ampliare lo scope.
+7. **Audit post-run**: dopo la scrittura si verificano hash, conteggi,
+   provenance, stato dei target, backup e assenza di claim promossi
+   implicitamente; l'esito viene registrato.
+8. **Rollback condizionato agli hash**: si ripristina solo se gli hash correnti
+   corrispondono alle condizioni attese e il backup è quello del piano; in caso
+   contrario si interrompe e si richiede revisione manuale.
+
+Se un gate manca, l'operazione resta preview/dry-run e non modifica il canonico.
+La checklist è un contratto riutilizzabile: non sostituisce la revisione
+storica, l'autorizzazione dell'incremento o i contratti specifici del dominio.
+
 ## Stop condition
 
 Fermarsi o richiedere revisione umana se il task richiede:
