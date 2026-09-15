@@ -119,7 +119,11 @@ def _select_targets(
     limit: int,
 ) -> list[dict[str, Any]]:
     profile_status_by_id = _profile_status_by_id(session)
-    historical_items = [item for item in queue if _is_historical_item(item)]
+    historical_items = [
+        item
+        for item in queue
+        if _is_historical_item(item) and not _is_decided_queue_item(item)
+    ]
     historical_items.sort(key=lambda item: _target_sort_key(item, preferred_profile_ids=preferred_profile_ids))
     selected = _balanced_target_items(
         historical_items=historical_items,
@@ -209,23 +213,36 @@ def _balanced_target_items(
     max_items = max(limit, 0)
     selected: list[dict[str, Any]] = []
     selected_ids: set[int] = set()
-    for profile_id in preferred_profile_ids:
-        if len(selected) >= max_items:
-            return selected
-        for item in historical_items:
-            if id(item) in selected_ids:
-                continue
-            if str(item.get("profile_id", "")) == profile_id:
-                selected.append(item)
-                selected_ids.add(id(item))
-                break
+    items_by_profile: dict[str, list[dict[str, Any]]] = {}
+    discovered_profile_ids: list[str] = []
     for item in historical_items:
-        if len(selected) >= max_items:
+        profile_id = str(item.get("profile_id", ""))
+        items_by_profile.setdefault(profile_id, []).append(item)
+        if profile_id not in discovered_profile_ids:
+            discovered_profile_ids.append(profile_id)
+
+    profile_order: list[str] = []
+    for profile_id in [*preferred_profile_ids, *discovered_profile_ids]:
+        if profile_id not in profile_order:
+            profile_order.append(profile_id)
+
+    offsets = {profile_id: 0 for profile_id in profile_order}
+    while len(selected) < max_items:
+        added_in_round = False
+        for profile_id in profile_order:
+            profile_items = items_by_profile.get(profile_id, [])
+            offset = offsets[profile_id]
+            if offset >= len(profile_items):
+                continue
+            item = profile_items[offset]
+            offsets[profile_id] += 1
+            selected.append(item)
+            selected_ids.add(id(item))
+            added_in_round = True
+            if len(selected) >= max_items:
+                break
+        if not added_in_round:
             break
-        if id(item) in selected_ids:
-            continue
-        selected.append(item)
-        selected_ids.add(id(item))
     return selected
 
 
@@ -238,6 +255,14 @@ def _is_historical_item(item: dict[str, Any]) -> bool:
     if str(item.get("decision_type", "")) in HISTORICAL_DECISION_TYPES:
         return True
     return record.subject_kind in HISTORICAL_SUBJECT_KINDS
+
+
+def _is_decided_queue_item(item: dict[str, Any]) -> bool:
+    status = str(item.get("decision_status") or item.get("review_status") or "").strip().casefold()
+    if status in {"accepted", "rejected", "uncertain", "decided", "reviewed"}:
+        return True
+    selected_action = str(item.get("selected_action", "")).strip().casefold()
+    return bool(selected_action and selected_action != "pending")
 
 
 def _target_from_item(

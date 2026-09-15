@@ -1,5 +1,48 @@
 # Decision Log
 
+## 2026-09-15 - Flusso review post-MVP senza assunzione di run preesistente
+
+Decisione: la review CLI deve supportare sia la ripresa di una run esistente
+sia l'avvio guidato quando non esiste una sessione attiva. `review discover`
+individua le candidate; `review start --preview` seleziona la raccomandata o
+una run esplicita; `review work`, `review targets` e `review decide --preview`
+accompagnano la revisione senza scritture canoniche.
+
+Per la review multi-profilo si usa una worklist comune con filtri ripetibili
+`--profile-id`; l'identità operativa resta l'`item_id` collegato a profilo,
+documento e provenance. Il filtro non fonde profili e non sostituisce la
+revisione dei singoli target.
+
+Conseguenza: guide e nuovi workflow devono descrivere il percorso con e senza
+run preesistente. Nessun comando deve creare fatti, applicare patch, modificare
+profili canonici o evidence store durante questa fase preview-only.
+
+## 2026-09-15 - CLI come superficie per modificare JSON operativi
+
+Decisione: evitare, come regola generale, la modifica diretta dei JSON
+operativi. Quando un dato o artefatto deve essere cambiato, il percorso
+preferito è un comando della CLI `memoria` o del workflow CLI approvato, con
+validazione, provenance e audit coerenti.
+
+L'editing diretto resta ammesso solo per fixture e test, import o migrazioni
+controllati, oppure eccezioni esplicitamente motivate e verificate. La CLI
+read-only non viene considerata sufficiente: se manca il comando operativo,
+il lavoro successivo deve prima estendere la CLI entro un micro-incremento
+delimitato. Nessuna scrittura canonica è autorizzata da questa decisione.
+
+## 2026-09-15 - CLI Python come superficie operativa unica
+
+Decisione: la direzione generale post-MVP è usare esclusivamente la CLI Python
+installabile `memoria` per discovery, raccolta fonti, processazione, review,
+consolidamento e produzione degli artefatti preview. I wrapper PowerShell
+restano compatibili solo come ponte transitorio durante la migrazione, non come
+superficie finale.
+
+Conseguenza: ogni nuovo workflow operativo va introdotto nella CLI Python; la
+migrazione dei wrapper esistenti procede per micro-incrementi, mantenendo
+contratti, provenance, guardrail preview-only e compatibilità finché il
+comando equivalente non è verificato.
+
 ## 2026-09-11 - Accettazione residui T34b
 
 Decisione: accettare in modalita' preview i quattro `CandidateNewProfile`

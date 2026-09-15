@@ -26,9 +26,86 @@ from caduti_fonti_report.document_analysis.mvp_pilot_image_ocr_readiness import 
 from caduti_fonti_report.document_analysis.mvp_pilot_document_intake import (  # noqa: E402
     build_document_intake_blockers,
 )
+from caduti_fonti_report.document_analysis.mvp_pilot_signal_blockers import (  # noqa: E402
+    build_signal_blockers,
+)
+from caduti_fonti_report.document_analysis.mvp_pilot_claim_funnel import (  # noqa: E402
+    build_claim_funnel_diagnostics,
+)
 
 
 class MvpPilotSummaryRenderingTests(unittest.TestCase):
+    def test_claim_funnel_diagnostics_preserve_context_counts_and_reason_priority(self) -> None:
+        diagnostics = build_claim_funnel_diagnostics(
+            claims=[
+                {"weak_segment_id": "segment-1"},
+                {"chunk_id": "chunk-1"},
+                {"claim": "without context"},
+            ],
+            skipped_claim_entities=[
+                {"reason": "unsupported_entity_context", "candidate_profile_ids": ["person:one"]},
+                {"reason": "ambiguous_or_missing_document_person_link", "recommended_next_action": "Link"},
+                {"reason": "unsupported_entity_context", "recommended_next_action": "Review"},
+            ],
+            source_diagnostics={"@type": "ClaimFunnel", "skipped_structured_document_count": 2},
+        )
+
+        self.assertEqual(diagnostics["funnel_status"], "claims_with_reviewable_skips")
+        self.assertEqual(diagnostics["claims_with_weak_segment_id_count"], 1)
+        self.assertEqual(diagnostics["claims_with_chunk_id_only_count"], 1)
+        self.assertEqual(diagnostics["claims_without_segment_context_count"], 1)
+        self.assertEqual(diagnostics["skipped_with_candidate_profiles_count"], 1)
+        self.assertEqual(diagnostics["counts_by_skip_reason"]["unsupported_entity_context"], 2)
+        self.assertEqual(
+            diagnostics["next_action"],
+            "Rafforzare segmentazione o link documento-persona sui casi ambigui.",
+        )
+
+    def test_claim_funnel_diagnostics_preserve_empty_and_source_fallback_states(self) -> None:
+        self.assertEqual(
+            build_claim_funnel_diagnostics(claims=[], skipped_claim_entities=[], source_diagnostics={})[
+                "funnel_status"
+            ],
+            "no_claim_signal",
+        )
+        diagnostics = build_claim_funnel_diagnostics(
+            claims=[{"chunk_id": "chunk-1"}],
+            skipped_claim_entities=[],
+            source_diagnostics={"next_action": "Use source guidance"},
+        )
+        self.assertEqual(diagnostics["next_action"], "Use source guidance")
+
+    def test_signal_blockers_preserve_diagnostics_and_fallback_message(self) -> None:
+        self.assertEqual(
+            build_signal_blockers(
+                document_count=2,
+                unique_document_count=1,
+                duplicate_groups=[{"document_count": 2}],
+                weak_nominal_link_count=2,
+                link_count=2,
+                claim_count=0,
+                profiles_with_links_no_claims=[{"profile_id": "person:one"}],
+            ),
+            [
+                "1 documenti sembrano duplicati o copie dello stesso contenuto.",
+                "Tutti i link persona-documento sono match nominali deboli: serve conferma contestuale.",
+                "1 profili hanno link candidati ma zero claim.",
+                "Nessun claim candidato prodotto nonostante i link documento-persona.",
+            ],
+        )
+        self.assertEqual(
+            build_signal_blockers(
+                document_count=1,
+                unique_document_count=1,
+                duplicate_groups=[],
+                weak_nominal_link_count=0,
+                link_count=0,
+                claim_count=1,
+                profiles_with_links_no_claims=[],
+            ),
+            ["Segnale MVP leggibile: passare a review queue e decisioni umane."],
+        )
+
     def test_document_intake_blockers_preserve_priority_and_order(self) -> None:
         blockers = build_document_intake_blockers(
             input_summary={

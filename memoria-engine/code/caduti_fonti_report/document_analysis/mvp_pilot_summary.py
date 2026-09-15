@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -17,6 +16,8 @@ from .mvp_pilot_package_status import pilot_package_status_and_action as _pilot_
 from .mvp_pilot_profile_readiness import build_profile_readiness as _build_profile_readiness
 from .mvp_pilot_image_ocr_readiness import build_image_ocr_readiness as _image_ocr_readiness
 from .mvp_pilot_document_intake import build_document_intake_blockers as _document_intake_blockers
+from .mvp_pilot_signal_blockers import build_signal_blockers as _mvp_signal_blockers
+from .mvp_pilot_claim_funnel import build_claim_funnel_diagnostics as _claim_funnel_diagnostics_for_summary
 
 
 def build_mvp_pilot_summary(
@@ -756,36 +757,6 @@ def _is_weak_nominal_link(link: dict[str, Any]) -> bool:
     ) and "segment_name_match" not in reasons
 
 
-def _mvp_signal_blockers(
-    *,
-    document_count: int,
-    unique_document_count: int,
-    duplicate_groups: list[dict[str, Any]],
-    weak_nominal_link_count: int,
-    link_count: int,
-    claim_count: int,
-    profiles_with_links_no_claims: list[dict[str, Any]],
-) -> list[str]:
-    blockers: list[str] = []
-    if document_count == 0:
-        blockers.append("Nessun documento collegato al pacchetto MVP.")
-    elif duplicate_groups:
-        blockers.append(
-            f"{document_count - unique_document_count} documenti sembrano duplicati o copie dello stesso contenuto."
-        )
-    if link_count > 0 and weak_nominal_link_count == link_count:
-        blockers.append("Tutti i link persona-documento sono match nominali deboli: serve conferma contestuale.")
-    elif weak_nominal_link_count > 0:
-        blockers.append(f"{weak_nominal_link_count} link persona-documento sono match nominali deboli.")
-    if profiles_with_links_no_claims:
-        blockers.append(f"{len(profiles_with_links_no_claims)} profili hanno link candidati ma zero claim.")
-    if claim_count == 0 and link_count > 0:
-        blockers.append("Nessun claim candidato prodotto nonostante i link documento-persona.")
-    if not blockers:
-        blockers.append("Segnale MVP leggibile: passare a review queue e decisioni umane.")
-    return blockers
-
-
 def _mvp_signal_next_action(blockers: list[str]) -> str:
     joined = " ".join(blockers)
     if "duplicati" in joined or "copie dello stesso contenuto" in joined:
@@ -795,89 +766,6 @@ def _mvp_signal_next_action(blockers: list[str]) -> str:
     if "zero claim" in joined or "Nessun claim candidato" in joined:
         return "Revisionare segmentazione, qualita' testo e regole claim sui profili con link ma senza claim."
     return "Preparare review queue e pacchetto Obsidian per revisione storica."
-
-
-def _claim_funnel_diagnostics_for_summary(
-    *,
-    claims: list[dict[str, Any]],
-    skipped_claim_entities: list[dict[str, Any]],
-    source_diagnostics: Any,
-) -> dict[str, Any]:
-    source = source_diagnostics if isinstance(source_diagnostics, dict) else {}
-    counts_by_skip_reason = Counter(
-        str(item.get("reason", ""))
-        for item in skipped_claim_entities
-        if str(item.get("reason", "")).strip()
-    )
-    counts_by_next_action = Counter(
-        str(item.get("recommended_next_action", ""))
-        for item in skipped_claim_entities
-        if str(item.get("recommended_next_action", "")).strip()
-    )
-    claims_with_weak_segment = [
-        claim for claim in claims if str(claim.get("weak_segment_id", "")).strip()
-    ]
-    claims_with_chunk_only = [
-        claim
-        for claim in claims
-        if not str(claim.get("weak_segment_id", "")).strip()
-        and str(claim.get("chunk_id", "")).strip()
-    ]
-    skipped_with_candidate_profiles = [
-        item for item in skipped_claim_entities if _list_strings(item.get("candidate_profile_ids"))
-    ]
-    return {
-        "@type": "MvpClaimFunnelDiagnostics",
-        "source_type": str(source.get("@type", "ClaimFunnelDiagnostics")),
-        "funnel_status": str(source.get("funnel_status", "")) or _summary_claim_funnel_status(
-            claims=claims,
-            skipped=skipped_claim_entities,
-        ),
-        "claim_count": len(claims),
-        "skipped_entity_count": len(skipped_claim_entities),
-        "skipped_structured_document_count": _int_value(source.get("skipped_structured_document_count")),
-        "claims_with_weak_segment_id_count": len(claims_with_weak_segment),
-        "claims_with_chunk_id_only_count": len(claims_with_chunk_only),
-        "claims_without_segment_context_count": len(claims) - len(claims_with_weak_segment) - len(claims_with_chunk_only),
-        "skipped_with_candidate_profiles_count": len(skipped_with_candidate_profiles),
-        "skipped_without_candidate_profiles_count": len(skipped_claim_entities) - len(skipped_with_candidate_profiles),
-        "counts_by_skip_reason": dict(sorted(counts_by_skip_reason.items())),
-        "counts_by_recommended_next_action": dict(sorted(counts_by_next_action.items())),
-        "next_action": _summary_claim_funnel_next_action(
-            claims=claims,
-            counts_by_skip_reason=counts_by_skip_reason,
-            source_next_action=str(source.get("next_action", "")),
-        ),
-        "review_status": "unreviewed",
-        "publication_status": "not_publishable_without_human_review",
-    }
-
-
-def _summary_claim_funnel_status(*, claims: list[dict[str, Any]], skipped: list[dict[str, Any]]) -> str:
-    if claims and skipped:
-        return "claims_with_reviewable_skips"
-    if claims:
-        return "claims_available"
-    if skipped:
-        return "blocked_with_reviewable_skips"
-    return "no_claim_signal"
-
-
-def _summary_claim_funnel_next_action(
-    *,
-    claims: list[dict[str, Any]],
-    counts_by_skip_reason: Counter[str],
-    source_next_action: str,
-) -> str:
-    if counts_by_skip_reason.get("ambiguous_or_missing_document_person_link", 0):
-        return "Rafforzare segmentazione o link documento-persona sui casi ambigui."
-    if counts_by_skip_reason.get("unsupported_entity_context", 0):
-        return "Revisionare manualmente entita' non mappate a campi claim supportati."
-    if source_next_action:
-        return source_next_action
-    if claims:
-        return "Portare claim candidati e blocchi residui in review queue."
-    return "Produrre o rafforzare segnali documentali prima dei claim."
 
 
 def _document_intake_readiness(*, local_run_dir: Path | None, mvp_document_count: int) -> dict[str, Any]:

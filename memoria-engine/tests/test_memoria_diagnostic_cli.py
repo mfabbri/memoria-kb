@@ -13,7 +13,15 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
-from caduti_fonti_report.memoria_cli import REQUIRED_DATA_ROOT_DIRS, main  # noqa: E402
+from caduti_fonti_report.memoria_cli import (  # noqa: E402
+    REQUIRED_DATA_ROOT_DIRS,
+    _command_sources_offline_discover,
+    _command_sources_offline_status,
+    _command_sources_online_discover,
+    _command_sources_online_status,
+    build_parser,
+    main,
+)
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError  # noqa: E402
 
 
@@ -1513,6 +1521,31 @@ missing_files:
             self.assertIn("non avvia rete", stdout)
             self.assertFalse(session_path.exists())
             self.assertEqual(stderr, "")
+
+    def test_sources_parser_preserves_namespaces_handlers_and_defaults(self) -> None:
+        parser = build_parser()
+        cases = (
+            (("sources", "online", "discover"), _command_sources_online_discover, "sources_online_command"),
+            (("sources", "online", "status"), _command_sources_online_status, "sources_online_command"),
+            (("sources", "offline", "discover"), _command_sources_offline_discover, "sources_offline_command"),
+            (("sources", "offline", "status"), _command_sources_offline_status, "sources_offline_command"),
+        )
+
+        for argv, handler, command_dest in cases:
+            with self.subTest(argv=argv):
+                args = parser.parse_args(argv)
+
+                self.assertEqual(args.command, "sources")
+                self.assertEqual(args.sources_kind, argv[1])
+                self.assertEqual(getattr(args, command_dest), argv[2])
+                self.assertIs(args.handler, handler)
+                self.assertEqual(args.data_root, "")
+                self.assertEqual(args.limit, 5)
+                if argv[1] == "online":
+                    self.assertEqual(args.profile_id, "")
+                    self.assertEqual(args.subject_kind, "")
+                    self.assertEqual(args.subject_id, "")
+                    self.assertEqual(args.subject_label, "")
 
     def test_sources_online_status_reads_existing_active_session(self) -> None:
         with temp_workspace() as tmp_dir:

@@ -5,6 +5,7 @@ import json
 import sys
 from collections import Counter
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Sequence
 
@@ -21,8 +22,13 @@ from caduti_fonti_report.memoria_cli_diagnostic_formatters import (
     print_sources_offline_discovery as _print_sources_offline_discovery_formatter,
     print_status_line as _print_status_line,
 )
+from caduti_fonti_report.memoria_cli_sources_group import register_sources_group
 from caduti_fonti_report.document_analysis.mvp_demo_descriptor import build_mvp_demo_aligned_ledger, build_mvp_demo_descriptor
 from caduti_fonti_report.document_analysis.mvp_final_gate import build_mvp_final_gate_report
+from caduti_fonti_report.document_analysis.mvp_historical_review_targets import build_mvp_historical_review_targets
+from caduti_fonti_report.document_analysis.mvp_review_decisions import build_mvp_review_decisions_summary
+from caduti_fonti_report.document_analysis.verified_facts_preview import build_verified_facts_preview
+from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
     DataRootResolution,
@@ -823,6 +829,108 @@ def _command_review_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def _review_focus_worklist(session_payload: dict[str, object]) -> list[dict[str, object]]:
+    review_focus = session_payload.get("review_focus")
+    if not isinstance(review_focus, dict):
+        return []
+    worklist: list[dict[str, object]] = []
+    display_number = 1
+    for profile in _list_items(review_focus.get("profiles")):
+        profile_id = str(profile.get("profile_id", ""))
+        profile_label = str(profile.get("canonical_name", ""))
+        for item in _list_items(profile.get("items")):
+            worklist.append(
+                {
+                    "display_number": display_number,
+                    "item_id": str(item.get("item_id", "")),
+                    "source_item_id": str(item.get("source_item_id", "")),
+                    "profile_id": profile_id,
+                    "profile_label": profile_label,
+                    "subject_kind": str(item.get("subject_kind", "")),
+                    "item_type": str(item.get("item_type", "")),
+                    "question": str(item.get("question", "")),
+                    "source_document_id": str(item.get("source_document_id", "")),
+                    "raw_file": str(item.get("raw_file", "")),
+                    "metadata_file": str(item.get("metadata_file", "")),
+                    "allowed_decisions": list(item.get("allowed_decisions", []))
+                    if isinstance(item.get("allowed_decisions"), list)
+                    else [],
+                    "selected_action": str(item.get("selected_action", "pending")),
+                    "decision_status": str(item.get("decision_status", "pending")),
+                }
+            )
+            display_number += 1
+    return worklist
+
+
+def _command_review_start(args: argparse.Namespace) -> int:
+    resolution = _resolve_existing_data_root_for_command(args)
+    if resolution is None:
+        return 1
+    if not args.preview:
+        print("ERROR Per creare una sessione specificare --preview.", file=sys.stderr)
+        return 1
+
+    session_path = _active_review_session_path(resolution.path)
+    existing = _load_json_object(session_path)
+    if existing is not None:
+        print("Me.Mo.Ria review start")
+        print(f"Workspace: {resolution.path}")
+        print("Modalita: preview-only")
+        print(f"Run attiva: {existing.get('selected_run_id', '')}")
+        print(f"Sessione già attiva: {session_path}")
+        print("Nota: sessione già presente; nessuna riscrittura eseguita.")
+        return 0
+
+    candidates = inspect_review_run_candidates(resolution.path)
+    requested_run_id = str(args.run_id).strip()
+    candidate = next((item for item in candidates if item.run_id == requested_run_id), None) if requested_run_id else (candidates[0] if candidates else None)
+    if candidate is None:
+        if requested_run_id:
+            print(f"ERROR Run review non trovata: {requested_run_id}", file=sys.stderr)
+            return 1
+        print("Nessuna run review trovata in risultati/runs.")
+        print("Modalita: preview-only")
+        return 0
+
+    review_payload = _load_json_object(candidate.review_session_path)
+    if review_payload is None:
+        print(f"ERROR Review session non valida: {candidate.review_session_path}", file=sys.stderr)
+        return 1
+    worklist = _review_focus_worklist(review_payload)
+    created_at = datetime.now(UTC).isoformat()
+    session = {
+        "@type": "MemoriaReviewSession",
+        "created_at": created_at,
+        "updated_at": created_at,
+        "preview_only": True,
+        "review_status": "unreviewed",
+        "publication_status": "not_publishable_without_human_review",
+        "selected_run_id": candidate.run_id,
+        "selected_run_dir": str(candidate.run_dir),
+        "discovery_score": candidate.score,
+        "discovery_reason": candidate.reason,
+        "review_session_json": str(candidate.review_session_path),
+        "review_queue_json": str(candidate.review_queue_path),
+        "review_decisions_summary_json": str(candidate.review_decisions_path),
+        "consolidated_ledger_json": str(candidate.ledger_path),
+        "worklist_item_count": len(worklist),
+        "worklist": worklist,
+        "note": "Sessione operativa preview-only: non registra decisioni, non crea verified_facts e non modifica profili JSON-LD.",
+    }
+    write_json(session_path, session)
+    print("Me.Mo.Ria review start")
+    print(f"Workspace: {resolution.path}")
+    print("Modalita: preview-only")
+    print(f"Run selezionata: {candidate.run_id}")
+    print(f"Worklist item: {len(worklist)}")
+    print(f"Sessione: {session_path}")
+    print("")
+    print(f'Prossimo comando: memoria review work --data-root "{resolution.path}"')
+    print("Nota: sessione preview-only; non registra decisioni e non crea verified_facts.")
+    return 0
+
+
 def _command_review_work(args: argparse.Namespace) -> int:
     resolution = _resolve_existing_data_root_for_command(args)
     if resolution is None:
@@ -866,6 +974,185 @@ def _command_review_work(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_review_targets(args: argparse.Namespace) -> int:
+    resolution = _resolve_existing_data_root_for_command(args)
+    if resolution is None:
+        return 1
+
+    session = _load_json_object(_active_review_session_path(resolution.path))
+    if session is not None:
+        run_id = str(session.get("selected_run_id", "")).strip()
+        queue_path = Path(str(session.get("review_queue_json", "")).strip())
+        session_path = Path(str(session.get("review_session_json", "")).strip())
+    else:
+        candidates = inspect_review_run_candidates(resolution.path)
+        if not candidates:
+            if args.format == "json":
+                print(
+                    json.dumps(
+                        {
+                            "@type": "MvpHistoricalReviewTargets",
+                            "source_mode": "none",
+                            "review_status": "no_review_run",
+                            "publication_status": "not_publishable_without_human_review",
+                            "preview_only": True,
+                            "target_count": 0,
+                            "counts_by_item_type": {},
+                            "counts_by_profile": {},
+                            "targets": [],
+                        },
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                )
+                return 0
+            print("Nessuna run review trovata in risultati/runs.")
+            print("Modalita: preview-only/read-only")
+            return 0
+        candidate = candidates[0]
+        run_id = candidate.run_id
+        queue_path = candidate.review_queue_path
+        session_path = candidate.review_session_path
+
+    if not queue_path.is_file():
+        print(f"ERROR Coda review non trovata: {queue_path}", file=sys.stderr)
+        return 1
+    payload = build_mvp_historical_review_targets(
+        review_queue_json=queue_path,
+        review_session_json=session_path if session_path.is_file() else None,
+        limit=args.limit,
+    )
+    profile_ids = {profile_id.strip() for profile_id in args.profile_id if profile_id.strip()}
+    if profile_ids:
+        payload["targets"] = [
+            target for target in payload["targets"] if str(target.get("profile_id", "")).strip() in profile_ids
+        ]
+        payload["target_count"] = len(payload["targets"])
+        payload["counts_by_profile"] = dict(Counter(str(target.get("profile_id", "")) for target in payload["targets"]))
+    if args.format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+    print("Me.Mo.Ria review targets")
+    print(f"Workspace: {resolution.path}")
+    print(f"Run: {run_id or 'non selezionata'}")
+    print("Modalita: preview-only/read-only")
+    if profile_ids:
+        print(f"Filtro profilo: {', '.join(sorted(profile_ids))}")
+    print(f"Target storici: {payload['target_count']}")
+    print("")
+    for target in payload["targets"]:
+        print(
+            f"- {target.get('canonical_name', '')} | {target.get('item_type', '')} | "
+            f"{target.get('review_status', '')}"
+        )
+        print(f"  Profilo: {target.get('profile_id', '')}")
+        print(f"  Documento: {target.get('source_document_id', '')}")
+        print(f"  Domanda: {target.get('historian_question', '')}")
+        print(f"  Provenance: {', '.join(target.get('provenance', []))}")
+    print("")
+    print("Nota: comando Python read-only; non crea decisioni e non modifica profili o store.")
+    return 0
+
+
+def _command_review_decide(args: argparse.Namespace) -> int:
+    resolution = _resolve_existing_data_root_for_command(args)
+    if resolution is None:
+        return 1
+    if not args.preview:
+        print("ERROR Per registrare una decisione specificare --preview.", file=sys.stderr)
+        return 1
+
+    session_path = _active_review_session_path(resolution.path)
+    session = _load_json_object(session_path)
+    if session is None:
+        print("ERROR Nessuna sessione review attiva.", file=sys.stderr)
+        return 1
+
+    requested_item = str(args.item).strip()
+    worklist = _list_items(session.get("worklist"))
+    work_item = next(
+        (
+            item
+            for item in worklist
+            if str(item.get("item_id", "")).strip() == requested_item
+            or str(item.get("display_number", "")).strip() == requested_item
+        ),
+        None,
+    )
+    if work_item is None:
+        print(f"ERROR Item review non trovato nella sessione attiva: {requested_item}", file=sys.stderr)
+        return 1
+    if _is_decided_work_item(work_item):
+        print(f"ERROR Item review già deciso: {requested_item}", file=sys.stderr)
+        return 1
+
+    action = str(args.action).strip()
+    allowed_actions = [value.strip() for value in _string_list(work_item.get("allowed_decisions")) if value.strip()]
+    if not allowed_actions:
+        print("ERROR Item senza allowed_decisions: impossibile registrare una decisione sicura.", file=sys.stderr)
+        return 1
+    if action not in allowed_actions:
+        print(
+            f"ERROR Azione non ammessa: {action}. Azioni ammesse: {', '.join(allowed_actions)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    reviewed_at = datetime.now(UTC).isoformat()
+    item_id = str(work_item.get("item_id", "")).strip()
+    decisions_path = _review_decisions_compiled_path_from_session(resolution.path, session)
+    queue_path = _review_queue_path_from_session(resolution.path, session)
+    summary_path = _review_decisions_path_from_session(resolution.path, session)
+    if not queue_path.is_file():
+        print(f"ERROR Review queue non trovata: {queue_path}", file=sys.stderr)
+        return 1
+    if summary_path is None:
+        print("ERROR Percorso summary decisioni non determinabile.", file=sys.stderr)
+        return 1
+    payload = _load_json_object(decisions_path) or {"@type": "MvpReviewDecisions", "decisions": []}
+    decisions = _list_items(payload.get("decisions"))
+    decision = next((item for item in decisions if str(item.get("item_id", "")).strip() == item_id), None)
+    if decision is None:
+        decision = {"@type": "ReviewDecision", "item_id": item_id}
+        decisions.append(decision)
+    decision.update(
+        {
+            "selected_action": action,
+            "reviewer": "memoria-cli",
+            "reviewed_at": reviewed_at,
+            "notes": "Decisione preview-only tramite memoria review decide.",
+        }
+    )
+    payload["decisions"] = decisions
+    write_json(decisions_path, payload)
+    build_mvp_review_decisions_summary(
+        review_queue_json=queue_path,
+        decisions_json=decisions_path,
+        output_json=summary_path,
+    )
+
+    display_number = str(work_item.get("display_number", "")).strip()
+    work_item["selected_action"] = action
+    work_item["decision_status"] = "accepted"
+    session["updated_at"] = reviewed_at
+    session["last_decision_item_number"] = _int_value(display_number, 0)
+    session["last_decision_item_id"] = item_id
+    session["last_selected_action"] = action
+    write_json(session_path, session)
+
+    print("Me.Mo.Ria review decide")
+    print(f"Workspace: {resolution.path}")
+    print("Modalita: preview-only")
+    print(f"Run attiva: {session.get('selected_run_id', '')}")
+    print(f"Item: [{display_number}] {item_id}")
+    print(f"Azione selezionata: {action}")
+    print(f"Decisioni compilate: {decisions_path}")
+    print(f"Sessione aggiornata: {session_path}")
+    print("")
+    print("Nota: non crea verified_facts e non modifica profili JSON-LD o evidence store.")
+    return 0
+
+
 def _command_review_decisions(args: argparse.Namespace) -> int:
     resolution = _resolve_existing_data_root_for_command(args)
     if resolution is None:
@@ -886,6 +1173,64 @@ def _command_review_decisions(args: argparse.Namespace) -> int:
     _print_count_block("subject_kind", status.subject_kinds)
     print("")
     print("Nota: comando Python read-only; non registra decisioni e non modifica profili o store.")
+    return 0
+
+
+def _command_review_verified_facts(args: argparse.Namespace) -> int:
+    resolution = _resolve_existing_data_root_for_command(args)
+    if resolution is None:
+        return 1
+    if not args.preview:
+        print("ERROR Per generare verified facts specificare --preview.", file=sys.stderr)
+        return 1
+
+    session_path = _active_review_session_path(resolution.path)
+    session = _load_json_object(session_path)
+    candidate = None
+    if session is not None:
+        run_id = str(session.get("selected_run_id", "")).strip()
+        review_session_json = str(session.get("review_session_json", "")).strip()
+        review_dir = Path(review_session_json).parent if review_session_json else (
+            resolution.path / "risultati" / "runs" / run_id / "historian_review"
+        )
+    else:
+        candidates = inspect_review_run_candidates(resolution.path)
+        candidate = candidates[0] if candidates else None
+        if candidate is None:
+            print("Nessuna run review trovata in risultati/runs.")
+            print("Modalita: preview-only")
+            return 0
+        run_id = candidate.run_id
+        review_dir = candidate.run_dir / "historian_review"
+
+    evidence_db = resolution.path / "database" / "evidence.sqlite"
+    output_json = Path(args.output_json).expanduser().resolve() if args.output_json.strip() else review_dir / "verified_facts.preview.json"
+    output_md = Path(args.output_md).expanduser().resolve() if args.output_md.strip() else review_dir / "verified_facts.preview.md"
+    profile_ids = [value.strip() for value in args.profile_id if value.strip()]
+    try:
+        preview = build_verified_facts_preview(
+            evidence_db=evidence_db,
+            evidence_source_run_id=[run_id],
+            profile_id=profile_ids,
+            output_json=output_json,
+            output_md=output_md,
+            limit=args.limit,
+        )
+    except (FileNotFoundError, ValueError, OSError) as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 1
+
+    print("Me.Mo.Ria review verified-facts")
+    print(f"Workspace: {resolution.path}")
+    print("Modalita: preview-only")
+    print(f"Run: {run_id}")
+    print(f"Evidence DB: {evidence_db}")
+    print(f"Output JSON preview: {output_json}")
+    print(f"Output Markdown preview: {output_md}")
+    print(f"Fatti preview: {preview['fact_count']}")
+    print(f"Decisioni escluse: {preview['excluded_decision_count']}")
+    print("")
+    print("Nota: non crea verified_facts canonici, non applica ProfilePatch e non modifica profili JSON-LD o evidence store.")
     return 0
 
 
@@ -1684,6 +2029,28 @@ def _review_decisions_path_from_session(data_root: Path, session: dict[str, obje
     return None
 
 
+def _review_queue_path_from_session(data_root: Path, session: dict[str, object]) -> Path:
+    explicit_path = str(session.get("review_queue_json", "")).strip()
+    if explicit_path:
+        return Path(explicit_path)
+    review_session_json = str(session.get("review_session_json", "")).strip()
+    if review_session_json:
+        return Path(review_session_json).parent / "review_queue.json"
+    selected_run_id = str(session.get("selected_run_id", "")).strip()
+    return data_root / "risultati" / "runs" / selected_run_id / "historian_review" / "review_queue.json"
+
+
+def _review_decisions_compiled_path_from_session(data_root: Path, session: dict[str, object]) -> Path:
+    explicit_path = str(session.get("review_decisions_compiled_json", "")).strip()
+    if explicit_path:
+        return Path(explicit_path)
+    review_session_json = str(session.get("review_session_json", "")).strip()
+    if review_session_json:
+        return Path(review_session_json).parent / "review_decisions.compilato.json"
+    selected_run_id = str(session.get("selected_run_id", "")).strip()
+    return data_root / "risultati" / "runs" / selected_run_id / "historian_review" / "review_decisions.compilato.json"
+
+
 def _active_sources_online_session_path(data_root: Path) -> Path:
     return data_root / "database" / "memoria_sources_online_session.active.json"
 
@@ -1930,13 +2297,38 @@ def build_parser() -> argparse.ArgumentParser:
     for command_name, command_help, handler in (
         ("discover", "Scopre run review candidate senza creare sessioni.", _command_review_discover),
         ("status", "Mostra stato review o discovery se non esiste una sessione attiva.", _command_review_status),
+        ("start", "Crea la sessione review attiva in modalità preview tramite CLI.", _command_review_start),
         ("work", "Mostra la worklist della sessione review attiva senza applicare decisioni.", _command_review_work),
+        ("targets", "Mostra i target storici della run review in sola lettura.", _command_review_targets),
+        ("decide", "Registra una decisione review preview tramite CLI.", _command_review_decide),
         ("decisions", "Mostra il riepilogo decisioni review senza registrare nuove decisioni.", _command_review_decisions),
+        ("verified-facts", "Genera verified facts preview dalle decisioni nello evidence store.", _command_review_verified_facts),
     ):
         command = review_subparsers.add_parser(command_name, help=command_help)
         command.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
         if command_name != "decisions":
             command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
+        if command_name == "targets":
+            command.add_argument("--profile-id", action="append", default=[], help="Filtra per profilo; ripetibile.")
+            command.add_argument(
+                "--format",
+                choices=("text", "json"),
+                default="text",
+                help="Formato output; text è il default compatibile, json restituisce il payload strutturato.",
+            )
+        if command_name == "decide":
+            command.add_argument("--item", required=True, help="Numero display o item_id della worklist review.")
+            command.add_argument("--action", required=True, help="Azione esatta fra quelle ammesse dall'item.")
+            command.add_argument("--preview", action="store_true", help="Conferma la scrittura esclusivamente preview.")
+        if command_name == "verified-facts":
+            command.add_argument("--profile-id", action="append", default=[], help="Filtra per profilo; ripetibile.")
+            command.add_argument("--output-json", default="", help="Output JSON preview; default nella cartella historian_review.")
+            command.add_argument("--output-md", default="", help="Output Markdown preview; default nella cartella historian_review.")
+            command.add_argument("--preview", action="store_true", help="Conferma la scrittura esclusivamente preview.")
+        if command_name == "start":
+            command.set_defaults(handler=_command_review_start)
+            command.add_argument("--run-id", default="", help="Run review esplicita; default: run raccomandata.")
+            command.add_argument("--preview", action="store_true", help="Conferma la creazione esclusivamente preview.")
         command.set_defaults(handler=handler)
 
     consolidate = subparsers.add_parser("consolidate", help="Bridge read-only dei workflow consolidate MVP.")
@@ -1950,33 +2342,13 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
         command.set_defaults(handler=handler)
 
-    sources = subparsers.add_parser("sources", help="Bridge read-only dei workflow sources MVP.")
-    sources_subparsers = sources.add_subparsers(dest="sources_kind", required=True)
-    sources_online = sources_subparsers.add_parser("online", help="Orientamento read-only sulle fonti online.")
-    sources_online_subparsers = sources_online.add_subparsers(dest="sources_online_command", required=True)
-    for command_name, command_help, handler in (
-        ("discover", "Mostra registry, profili e fonti candidate senza avviare rete.", _command_sources_online_discover),
-        ("status", "Mostra sessione sources online attiva o discovery read-only.", _command_sources_online_status),
-    ):
-        command = sources_online_subparsers.add_parser(command_name, help=command_help)
-        command.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
-        command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
-        command.add_argument("--profile-id", default="", help="Profilo persona candidato per il contesto sources online.")
-        command.add_argument("--subject-kind", default="", help="Tipo soggetto candidato: person, place o event.")
-        command.add_argument("--subject-id", default="", help="ID soggetto candidato.")
-        command.add_argument("--subject-label", default="", help="Etichetta soggetto candidata.")
-        command.set_defaults(handler=handler)
-
-    sources_offline = sources_subparsers.add_parser("offline", help="Orientamento read-only sulle fonti offline.")
-    sources_offline_subparsers = sources_offline.add_subparsers(dest="sources_offline_command", required=True)
-    for command_name, command_help, handler in (
-        ("discover", "Mostra documenti offline candidati senza creare run.", _command_sources_offline_discover),
-        ("status", "Mostra stato offline read-only senza creare run.", _command_sources_offline_status),
-    ):
-        command = sources_offline_subparsers.add_parser(command_name, help=command_help)
-        command.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
-        command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
-        command.set_defaults(handler=handler)
+    register_sources_group(
+        subparsers,
+        online_discover_handler=_command_sources_online_discover,
+        online_status_handler=_command_sources_online_status,
+        offline_discover_handler=_command_sources_offline_discover,
+        offline_status_handler=_command_sources_offline_status,
+    )
 
     return parser
 

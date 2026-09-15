@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import io
 import shutil
 import subprocess
 import sys
 import unittest
 import uuid
 from contextlib import contextmanager
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 
@@ -14,6 +16,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR / "code"))
 
 from caduti_fonti_report.sqlite_store import SQLiteEvidenceStore  # noqa: E402
+from caduti_fonti_report.memoria_cli import main as memoria_main  # noqa: E402
 
 
 @contextmanager
@@ -510,6 +513,385 @@ def write_consolidate_workspace(workspace: Path) -> None:
 
 
 class MemoriaCliTests(unittest.TestCase):
+    def test_review_targets_bridge_is_read_only_and_uses_recommended_run(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            before = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "targets", "--data-root", str(workspace), "--limit", "1"])
+            after = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("Me.Mo.Ria review targets", output.getvalue())
+        self.assertIn("Run: run-forte-pipeline", output.getvalue())
+        self.assertIn("Target storici: 1", output.getvalue())
+        self.assertIn("Questo documento conferma il claim?", output.getvalue())
+        self.assertIn("preview-only/read-only", output.getvalue())
+        self.assertEqual(before, after)
+
+    def test_review_targets_bridge_handles_missing_run_without_writing(self) -> None:
+        with workspace_temp_dir() as workspace:
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "targets", "--data-root", str(workspace)])
+
+        self.assertEqual(result, 0)
+        self.assertIn("Nessuna run review trovata", output.getvalue())
+        self.assertIn("preview-only/read-only", output.getvalue())
+
+    def test_review_start_preview_creates_active_session_from_recommended_run(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "start", "--data-root", str(workspace), "--preview"])
+
+            session_path = workspace / "database" / "memoria_review_session.active.json"
+            session = json.loads(session_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("Run selezionata: run-forte-pipeline", output.getvalue())
+        self.assertEqual(session["selected_run_id"], "run-forte-pipeline")
+        self.assertEqual(session["review_session_json"], str(strong_run / "historian_review" / "review_session.json"))
+        self.assertTrue(session["preview_only"])
+        self.assertEqual(session["worklist_item_count"], 2)
+        self.assertEqual(session["worklist"][0]["display_number"], 1)
+        self.assertEqual(session["worklist"][0]["item_id"], "review:item:1")
+
+    def test_review_start_preview_is_idempotent_for_existing_session(self) -> None:
+        with workspace_temp_dir() as workspace:
+            write_review_workspace(workspace)
+            session_path = workspace / "database" / "memoria_review_session.active.json"
+            existing = {"selected_run_id": "existing-run", "preview_only": True}
+            write_json(session_path, existing)
+            before = session_path.read_text(encoding="utf-8")
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "start", "--data-root", str(workspace), "--preview"])
+            after = session_path.read_text(encoding="utf-8")
+
+        self.assertEqual(result, 0)
+        self.assertIn("Sessione già attiva", output.getvalue())
+        self.assertEqual(before, after)
+
+    def test_review_start_preview_handles_missing_run_without_writing(self) -> None:
+        with workspace_temp_dir() as workspace:
+            before = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "start", "--data-root", str(workspace), "--preview"])
+            after = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("Nessuna run review trovata", output.getvalue())
+        self.assertEqual(before, after)
+
+    def test_review_targets_bridge_filters_one_or_more_profiles(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            queue_path = strong_run / "historian_review" / "review_queue.json"
+            queue = json.loads(queue_path.read_text(encoding="utf-8"))
+            queue["items"].append(
+                {
+                    "item_id": "review:item:3",
+                    "profile_id": "person:purocielo:second",
+                    "source_document_id": "source-document:second",
+                    "subject_kind": "claim",
+                    "item_type": "candidate_claim_review",
+                    "question": "Secondo profilo?",
+                }
+            )
+            write_json(queue_path, queue)
+
+            single_output = io.StringIO()
+            with redirect_stdout(single_output):
+                single_result = memoria_main(
+                    ["review", "targets", "--data-root", str(workspace), "--profile-id", "person:purocielo:second"]
+                )
+            multiple_output = io.StringIO()
+            with redirect_stdout(multiple_output):
+                multiple_result = memoria_main(
+                    [
+                        "review", "targets", "--data-root", str(workspace),
+                        "--profile-id", "person:purocielo:test",
+                        "--profile-id", "person:purocielo:second",
+                    ]
+                )
+            missing_output = io.StringIO()
+            with redirect_stdout(missing_output):
+                missing_result = memoria_main(
+                    ["review", "targets", "--data-root", str(workspace), "--profile-id", "person:missing"]
+                )
+
+        self.assertEqual(single_result, 0)
+        self.assertIn("Filtro profilo: person:purocielo:second", single_output.getvalue())
+        self.assertIn("Target storici: 1", single_output.getvalue())
+        self.assertIn("Secondo profilo?", single_output.getvalue())
+        self.assertEqual(multiple_result, 0)
+        self.assertIn("Target storici: 2", multiple_output.getvalue())
+        self.assertEqual(missing_result, 0)
+        self.assertIn("Target storici: 0", missing_output.getvalue())
+
+    def test_review_targets_json_output_preserves_payload_and_profile_filter(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            queue_path = strong_run / "historian_review" / "review_queue.json"
+            queue = json.loads(queue_path.read_text(encoding="utf-8"))
+            queue["items"].append(
+                {
+                    "item_id": "review:item:3",
+                    "profile_id": "person:purocielo:second",
+                    "source_document_id": "source-document:second",
+                    "subject_kind": "claim",
+                    "item_type": "candidate_claim_review",
+                    "question": "Secondo profilo?",
+                }
+            )
+            write_json(queue_path, queue)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(
+                    [
+                        "review", "targets", "--data-root", str(workspace),
+                        "--profile-id", "person:purocielo:second", "--format", "json",
+                    ]
+                )
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(payload["@type"], "MvpHistoricalReviewTargets")
+        self.assertTrue(payload["preview_only"])
+        self.assertEqual(payload["target_count"], 1)
+        self.assertEqual(payload["counts_by_profile"], {"person:purocielo:second": 1})
+        self.assertEqual(payload["targets"][0]["profile_id"], "person:purocielo:second")
+        self.assertTrue(payload["targets"][0]["provenance"])
+
+    def test_review_targets_json_output_handles_no_match(self) -> None:
+        with workspace_temp_dir() as workspace:
+            write_review_workspace(workspace)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(
+                    [
+                        "review", "targets", "--data-root", str(workspace),
+                        "--profile-id", "person:missing", "--format", "json",
+                    ]
+                )
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(payload["target_count"], 0)
+        self.assertEqual(payload["targets"], [])
+        self.assertEqual(payload["counts_by_profile"], {})
+
+    def test_review_targets_json_output_handles_missing_run(self) -> None:
+        with workspace_temp_dir() as workspace:
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(["review", "targets", "--data-root", str(workspace), "--format", "json"])
+
+        payload = json.loads(output.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(payload["review_status"], "no_review_run")
+        self.assertEqual(payload["target_count"], 0)
+        self.assertTrue(payload["preview_only"])
+
+    def test_review_decide_preview_updates_decisions_and_session_via_cli(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            session_path = workspace / "database" / "memoria_review_session.active.json"
+            write_json(
+                session_path,
+                {
+                    "preview_only": True,
+                    "selected_run_id": "run-forte-pipeline",
+                    "review_session_json": str(strong_run / "historian_review" / "review_session.json"),
+                    "worklist": [
+                        {
+                            "display_number": 1,
+                            "item_id": "review:item:1",
+                            "selected_action": "pending",
+                            "decision_status": "pending",
+                            "allowed_decisions": ["confirm", "reject_false_positive", "uncertain"],
+                        }
+                    ],
+                },
+            )
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(
+                    [
+                        "review", "decide", "--data-root", str(workspace),
+                        "--item", "1", "--action", "confirm", "--preview",
+                    ]
+                )
+
+            compiled_path = strong_run / "historian_review" / "review_decisions.compilato.json"
+            summary_path = strong_run / "historian_review" / "review_decisions_summary.json"
+            compiled = json.loads(compiled_path.read_text(encoding="utf-8"))
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            session = json.loads(session_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("Azione selezionata: confirm", output.getvalue())
+        decision = next(item for item in compiled["decisions"] if item["item_id"] == "review:item:1")
+        self.assertEqual(decision["selected_action"], "confirm")
+        self.assertEqual(decision["reviewer"], "memoria-cli")
+        self.assertEqual(summary["accepted_count"], 1)
+        self.assertEqual(summary["pending_count"], 1)
+        self.assertEqual(summary["invalid_count"], 0)
+        self.assertEqual(summary["counts_by_action"]["confirm"], 1)
+        self.assertEqual(summary["review_status"], "partial_review")
+        self.assertEqual(session["last_decision_item_id"], "review:item:1")
+        self.assertEqual(session["last_selected_action"], "confirm")
+        self.assertEqual(session["worklist"][0]["decision_status"], "accepted")
+
+    def test_review_decide_preview_rejects_invalid_action_without_writing(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            session_path = workspace / "database" / "memoria_review_session.active.json"
+            write_json(
+                session_path,
+                {
+                    "selected_run_id": "run-forte-pipeline",
+                    "review_session_json": str(strong_run / "historian_review" / "review_session.json"),
+                    "worklist": [
+                        {
+                            "display_number": 1,
+                            "item_id": "review:item:1",
+                            "selected_action": "pending",
+                            "decision_status": "pending",
+                            "allowed_decisions": ["confirm", "uncertain"],
+                        }
+                    ],
+                },
+            )
+            before = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+            error = io.StringIO()
+            with redirect_stderr(error):
+                result = memoria_main(
+                    [
+                        "review", "decide", "--data-root", str(workspace),
+                        "--item", "1", "--action", "reject_false_positive", "--preview",
+                    ]
+                )
+            after = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+
+        self.assertEqual(result, 1)
+        self.assertIn("Azione non ammessa", error.getvalue())
+        self.assertEqual(before, after)
+
+    def test_review_decide_preview_updates_summary_for_uncertain(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            session_path = workspace / "database" / "memoria_review_session.active.json"
+            write_json(
+                session_path,
+                {
+                    "preview_only": True,
+                    "selected_run_id": "run-forte-pipeline",
+                    "review_session_json": str(strong_run / "historian_review" / "review_session.json"),
+                    "worklist": [
+                        {
+                            "display_number": 1,
+                            "item_id": "review:item:1",
+                            "decision_status": "pending",
+                            "allowed_decisions": ["confirm", "uncertain"],
+                        }
+                    ],
+                },
+            )
+            with redirect_stdout(io.StringIO()):
+                result = memoria_main(
+                    [
+                        "review", "decide", "--data-root", str(workspace),
+                        "--item", "review:item:1", "--action", "uncertain", "--preview",
+                    ]
+                )
+            summary = json.loads(
+                (strong_run / "historian_review" / "review_decisions_summary.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(summary["accepted_count"], 1)
+        self.assertEqual(summary["pending_count"], 1)
+        self.assertEqual(summary["counts_by_action"]["uncertain"], 1)
+        self.assertEqual(summary["decisions"][0]["decision_status"], "accepted")
+
+    def test_review_verified_facts_preview_uses_active_run_without_canonical_writes(self) -> None:
+        with workspace_temp_dir() as workspace:
+            _, strong_run = write_review_workspace(workspace)
+            evidence_db = workspace / "database" / "evidence.sqlite"
+            store = SQLiteEvidenceStore(evidence_db)
+            store.init_schema()
+            store.insert_evidence_import_batch(
+                {
+                    "import_batch_id": "evidence-import:cli-verified-facts",
+                    "source_run_id": "run-forte-pipeline",
+                    "imported_at": "2026-09-15T10:00:00+00:00",
+                    "source_run_dir": str(strong_run),
+                    "record_count": 1,
+                    "payload_hash": "batch-hash",
+                }
+            )
+            store.insert_evidence_record(
+                {
+                    "record_id": "evidence-record:cli-verified-fact",
+                    "import_batch_id": "evidence-import:cli-verified-facts",
+                    "source_run_id": "run-forte-pipeline",
+                    "record_kind": "historical_review_decision",
+                    "subject_id": "person:purocielo:test",
+                    "source_document_id": "source-document:test",
+                    "review_status": "accepted",
+                    "payload_hash": "decision-hash",
+                    "payload": {
+                        "@type": "HistoricalReviewDecision",
+                        "item_id": "review:item:1",
+                        "source_item_id": "candidate:test:1",
+                        "profile_id": "person:purocielo:test",
+                        "source_document_id": "source-document:test",
+                        "subject_kind": "claim",
+                        "selected_action": "confirm",
+                        "decision_status": "accepted",
+                        "reviewer": "storico-test",
+                        "reviewed_at": "2026-09-15",
+                        "candidate": {"field": "birth.date", "value": "1921"},
+                    },
+                }
+            )
+            profile_path = workspace / "ricerche" / "person_profiles" / "purocielo-test.jsonld"
+            profile_before = profile_path.read_bytes()
+            records_before = store.count("evidence_records")
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(
+                    ["review", "verified-facts", "--data-root", str(workspace), "--preview"]
+                )
+            preview_path = strong_run / "historian_review" / "verified_facts.preview.json"
+            preview = json.loads(preview_path.read_text(encoding="utf-8"))
+            profile_after = profile_path.read_bytes()
+            records_after = store.count("evidence_records")
+
+        self.assertEqual(result, 0)
+        self.assertIn("Me.Mo.Ria review verified-facts", output.getvalue())
+        self.assertEqual(preview["fact_count"], 2)
+        self.assertTrue(preview["preview_only"])
+        self.assertIn("birth.date", {fact["field"] for fact in preview["facts"]})
+        self.assertEqual(profile_after, profile_before)
+        self.assertEqual(records_after, records_before)
+
+    def test_review_verified_facts_preview_handles_missing_run_without_writing(self) -> None:
+        with workspace_temp_dir() as workspace:
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main(
+                    ["review", "verified-facts", "--data-root", str(workspace), "--preview"]
+                )
+
+        self.assertEqual(result, 0)
+        self.assertIn("Nessuna run review trovata", output.getvalue())
+
     def test_review_commands_discover_best_fixture_run(self) -> None:
         shell = powershell_exe()
         if shell is None:

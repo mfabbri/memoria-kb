@@ -2,34 +2,35 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-10T02:00:00+02:00",
-  "updated_at": "2026-09-11T09:40:00+02:00",
+  "selected_at": "2026-09-15T00:00:00+02:00",
+  "updated_at": "2026-09-15T00:00:00+02:00",
   "roadmap_basis": [
-    {"path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "section": "T34b - Chiusura operativa della migrazione profili legacy", "reason": "Il gate 1 read-only deve riconciliare gli artefatti prima di revisione e applicazione."},
-    {"path": "memoria-bootstrap/docs/current-next-increment.md", "section": "Gate 3 T34b del 2026-09-10", "reason": "La revisione umana ha registrato il set block5e preview-only: 4 needs_review e 3 rejected."},
+    {"path": "memoria-bootstrap/docs/roadmap/00-roadmap-master.md", "section": "Riprendere il flusso del prodotto completo", "reason": "Il MVP tecnico e' dimostrato; il primo incremento prodotto deve rendere ripetibile la review curatoriale."},
+    {"path": "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md", "section": "Revisione storica assistita; Feedback loop operativo", "reason": "La selezione idempotente dei batch riduce duplicazioni nella review e conserva il ciclo preview-only."},
+    {"path": "memoria-bootstrap/docs/current-next-increment.md", "section": "Selezione post-summary - verified facts preview CLI", "reason": "Dopo sessione, decisioni e summary, il primo artefatto downstream ancora dipendente dal workflow PowerShell è il verified facts preview."},
     {"path": "memoria-bootstrap/docs/agent-session-prompt.md", "section": "Procedura sessione e routing", "reason": "La procedura impone un solo micro-incremento e guardrail preview-only."}
   ],
   "increment": {
-    "id": "q2-cli-sources-offline-renderer-v1",
-    "title": "Isolamento renderer sources offline CLI",
-    "objective": "Estrarre il rendering diagnostico read-only di sources offline dalla CLI, preservando handler, parser, output e workflow.",
-    "scope": ["Estrarre il corpo di _print_sources_offline_discovery in memoria_cli_diagnostic_formatters.py.", "Lasciare invariati _command_sources_offline_discover e _command_sources_offline_status.", "Verificare output, limiti, return code e comportamento read-only con test mirati."],
-    "out_of_scope": ["Nuove fonti, pCloud, dati esterni, profili canonici e migrazione T34b.", "Modifiche a schema, output CLI o compatibilità pubblica.", "Estrazione di più gruppi nella stessa sessione."],
-    "candidate_files": ["memoria-engine/code/caduti_fonti_report/memoria_cli.py", "memoria-engine/code/caduti_fonti_report/memoria_cli_diagnostic_formatters.py", "memoria-engine/tests/test_memoria_cli.py", "memoria-engine/tests/test_memoria_diagnostic_cli.py", "memoria-bootstrap/planning/current-work.json"],
-    "stop_condition": "Rendering isolato nel formatter esistente, parser/handler/output/return code/read-only invariati, test passanti e nessun dato esterno modificato."
+    "id": "review-verified-facts-cli-preview-v1",
+    "title": "Verified facts preview generato dalla CLI review",
+    "objective": "Esporre nella CLI Python la generazione preview-only dei verified facts a partire da queue e decisioni compilate, mantenendo provenance e revisione umana obbligatoria.",
+    "scope": ["Aggiungere un comando memoria review verified-facts --preview che risolva la sessione o la run candidata.", "Riutilizzare il builder esistente per produrre l'artefatto verified_facts.preview.json con decisioni e provenance coerenti.", "Aggiungere test offline per decisione accettata, pending/uncertain, assenza di run e guardrail su profili ed evidence store."],
+    "out_of_scope": ["Applicazione canonica, aggiornamento di profili o promozione a verified facts definitivi.", "Nuove fonti, accesso cloud, scraping, OCR, consolidamento o ProfilePatch.", "Rimozione dei wrapper PowerShell già compatibili e modifica dei contratti storici esistenti."],
+    "candidate_files": ["memoria-engine/code/caduti_fonti_report/memoria_cli.py", "memoria-engine/code/caduti_fonti_report/document_analysis/verified_facts_preview.py", "memoria-engine/tests/test_memoria_cli.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+    "stop_condition": "Il comando preview genera verified_facts.preview.json dalla run/sessione corretta, conserva provenance e stato preview-only, gestisce assenza di run/errori senza scritture canoniche e i test mirati passano."
   },
   "verification": {
-    "tests": ["python -m unittest memoria-engine/tests/test_memoria_cli.py", "python -m unittest memoria-engine/tests/test_memoria_diagnostic_cli.py", "python -m py_compile memoria-engine/code/caduti_fonti_report/memoria_cli.py memoria-engine/code/caduti_fonti_report/memoria_cli_diagnostic_formatters.py", "python -m json.tool memoria-bootstrap/planning/current-work.json", "git diff --check"],
-    "documentation_touchpoints": ["memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+    "tests": ["python -m unittest tests.test_memoria_cli (workdir: memoria-engine)", "python -m py_compile code/caduti_fonti_report/memoria_cli.py (workdir: memoria-engine)", "python -m json.tool memoria-bootstrap/planning/current-work.json", "git diff --check"],
+    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
     "result": "passed",
-    "notes": "T34b chiusa con indice 57->60, 3 profili creati, 1 link esistente, backup e audit verificati. Q2 CLI: renderer sources offline estratto nel formatter esistente; handler, parser, output, return code e read-only invariati.",
+    "notes": "Implementato memoria review verified-facts --preview con sessione attiva o run raccomandata, filtri multi-profilo e output preview. 20 test CLI, py_compile, JSON planner e git diff --check passano; profili canonici ed evidence store invariati.",
     "task_envelope": {
-      "mode": "discovery-lite",
-      "repositories": ["memoria-bootstrap"],
+      "mode": "feature-slice",
+      "repositories": ["memoria-engine", "memoria-bootstrap"],
       "read_set": ["AGENTS.md", "memoria-bootstrap/docs/agent-session-prompt.md", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/planning/current-work.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\manual_review_queue.t34.preview.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5a.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5b.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5c.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5d.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_t34_final.json"],
-      "write_set": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; python -m unittest memoria-engine/tests/test_candidate_new_profile_materialization.py memoria-engine/tests/test_candidate_profile_updates.py; python -m py_compile memoria-engine/code/caduti_fonti_report/candidate_new_profile_materialization.py; git diff --check",
-      "stop_conditions": ["gruppo unico selezionato", "write set e test delimitati", "compatibilità pubblica esplicitata", "nessun dato esterno modificato"]
+      "write_set": ["memoria-engine/code/caduti_fonti_report/memoria_cli.py", "memoria-engine/code/caduti_fonti_report/document_analysis/verified_facts_preview.py", "memoria-engine/tests/test_memoria_cli.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "Set-Location memoria-engine; python -m unittest tests.test_memoria_cli; python -m py_compile code/caduti_fonti_report/memoria_cli.py; Set-Location ..; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check",
+      "stop_conditions": ["comando verified-facts --preview disponibile", "artefatto preview con provenance coerente", "assenza di scritture canoniche", "test CLI passanti"]
     }
   },
   "routing": {
@@ -37,12 +38,12 @@
     "tier": "medium",
     "task_class": "implementation",
     "agent": "mmr_implementer",
-    "model": "terra",
-    "reasoning_effort": "high",
-    "rationale": "La review architetturale ha delimitato un leaf di rendering read-only con contratti CLI invariati.",
-    "trace": [{"event": "selected", "at": "2026-09-11T08:00:00+02:00", "tier": "high", "agent": "mmr_architect", "model": "sol", "reasoning_effort": "high", "reason": "Delimitazione di un solo gruppo diagnostico CLI dopo la chiusura T34b."}, {"event": "handoff", "at": "2026-09-11T09:00:00+02:00", "tier": "medium", "agent": "mmr_implementer", "model": "terra", "reasoning_effort": "medium", "reason": "Implementazione del renderer sources offline nel write set delimitato."}]
+    "model": "gpt-5.6-terra",
+    "reasoning_effort": "medium",
+    "rationale": "Il task aggiunge un micro-workflow CLI entro contratti preview esistenti, con output downstream verificabile e senza mutazioni canoniche.",
+    "trace": [{"event": "selected", "at": "2026-09-15T00:00:00+02:00", "tier": "medium", "agent": "mmr_implementer", "model": "gpt-5.6-terra", "reasoning_effort": "medium", "reason": "Micro-slice CLI per generare verified facts preview dalla review, riusando contratti e provenance esistenti."}]
   },
   "blockers": [],
-  "session_notes": ["Sessione avviata dalla procedura agent-session-prompt.md.", "Gate 1-8 T34b hanno riconciliato, revisionato e preparato il lotto preview.", "Gate 9 ha applicato 3 profili nuovi e verificato 1 link esistente; indice 57->60.", "Backup indice, audit JSON/Markdown e rollback condizionato agli hash presenti nella run esterna.", "Il worktree contiene modifiche preesistenti non attribuite a questa selezione e da preservare.", "Nessun claim o verified_fact e' stato creato."],
-  "next_action": {"mode": "recalculate", "description": "Selezionare il prossimo micro-incremento Q2 o post-MVP nella prossima sessione; nessun altro gruppo CLI nella stessa sessione."}
+  "session_notes": ["Sessione avviata dalla procedura agent-session-prompt.md.", "Il worktree contiene modifiche preesistenti non attribuite a questa selezione e da preservare.", "Nessun claim o verified_fact e' stato creato.", "MVP tecnico chiuso; pCloud resta in hold.", "Filtro CLI read-only dei target per profilo implementato e verificato senza modifiche canoniche."],
+  "next_action": {"mode": "recalculate", "description": "Selezionare il prossimo micro-incremento dalla roadmap post-MVP; pCloud resta in hold."}
 }

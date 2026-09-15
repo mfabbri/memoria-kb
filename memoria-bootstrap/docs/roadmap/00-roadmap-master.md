@@ -104,6 +104,18 @@ La superficie canonica futura e' il console script Python installabile
 `memoria`, utilizzabile su Windows e Linux. I wrapper OS-specifici devono
 progressivamente diventare facciate sottili.
 
+Regola operativa: le modifiche agli artefatti e ai dati JSON operativi devono
+passare dalla CLI o da un workflow CLI approvato, non dall'editing manuale dei
+file. Fixture, test, import/migrazioni controllati ed eccezioni motivate sono
+gli unici casi ammessi, sempre con validazione e audit.
+
+Direzione generale post-MVP: la CLI Python installabile `memoria` deve diventare
+l'unica superficie operativa per discovery, raccolta fonti, processazione,
+review, consolidamento e produzione degli artefatti preview. I wrapper
+PowerShell restano solo un ponte compatibile durante la migrazione; ogni nuovo
+workflow va aggiunto alla CLI Python e i wrapper esistenti vanno sostituiti per
+micro-incrementi verificabili.
+
 Per l'MVP finanziatori, i workflow PowerShell gia' validati possono restare la
 superficie operativa per le azioni preview che scrivono artefatti. La CLI Python
 fornisce orientamento e stato read-only. La migrazione completa dei workflow non

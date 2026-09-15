@@ -56,6 +56,13 @@ I wrapper OS-specifici restano ammessi, ma come facciate sottili:
 - la migrazione dei workflow operativi nella CLI Python richiede incrementi
   dedicati, test mirati e nessun cambio di output osservabile.
 
+Obiettivo post-MVP: eliminare progressivamente la dipendenza operativa dai
+wrapper PowerShell. Discovery, raccolta da fonti, processazione, review,
+consolidamento e scrittura degli artefatti preview devono essere esposti dalla
+CLI Python `memoria`. Ogni migrazione deve essere incrementale,
+behavior-preserving, verificata offline e mantenere provenance, audit e
+guardrail.
+
 Per l'MVP da mostrare ai finanziatori resta accettato usare PowerShell come
 superficie operativa primaria, per ridurre il rischio della demo. Questa scelta
 e' una compatibilita' temporanea, non la destinazione architetturale finale.
@@ -783,8 +790,9 @@ Criteri di uscita:
 - test live opzionale disabilitato di default;
 - nessuna scrittura cloud eseguita dai test standard.
 
-Stato: futuro candidato in hold finche' l'accesso API pCloud non e' risolto o
-finche' non viene autorizzato un incremento solo mock senza accesso live.
+Stato: chiusa il 2026-09-12 per il perimetro read-only con mock HTTP; l'accesso
+live resta in hold finche' l'API pCloud non e' verificata e non viene data
+autorizzazione esplicita con credenziali locali.
 
 ### T26a - Bridge CLI Python review decisions read-only
 
@@ -1211,8 +1219,9 @@ Stato: priorità selezionata il 2026-09-10. I gate read-only di riconciliazione
 e inventario sono stati eseguiti il 2026-09-10: la coda contiene 51 elementi,
 44 hanno una decisione univoca dopo l'esclusione del set `block5d` invalidato,
 e i 7 residui hanno ora 4 `accepted` e 3 `rejected`. La revisione umana dei
-`CandidateNewProfile` e' completa; T34b resta aperta per dry-run, backup,
-rollback e audit, prima di qualsiasi applicazione.
+`CandidateNewProfile` e' completa e T34b e' chiusa operativamente: dry-run,
+backup, applicazione autorizzata, rollback condizionato e audit post-run sono
+verificati. Nessun claim o `verified_fact` e' stato promosso.
 
 Aggiornamento Gate 6 del 2026-09-11: il contratto
 `CandidateNewProfileMaterializationPlan` e' implementato in preview-only con

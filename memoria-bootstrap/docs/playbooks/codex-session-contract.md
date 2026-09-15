@@ -54,6 +54,35 @@ fornisce orientamento read-only.
 scrivono artefatti preview gia' validati. Non introdurre nuova logica di dominio
 nei wrapper e non bloccare T29-T33 per completare la migrazione CLI.
 
+### Flusso operativo review post-MVP
+
+La sequenza ordinaria usa esclusivamente la CLI Python e non richiede apertura
+o modifica manuale dei JSON operativi:
+
+```text
+memoria review discover
+  -> memoria review start --preview [--run-id <id>]
+  -> memoria review status / work
+  -> memoria review targets [--profile-id <id> ...]
+  -> memoria review decide --item <numero|item-id> --action <azione> --preview
+  -> memoria review decisions
+```
+
+Se non esiste una run o una sessione attiva, `discover` individua le run
+candidate e `start --preview` seleziona quella raccomandata oppure una run
+esplicita. La sessione attiva e la worklist sono artefatti preview-only; non si
+deve presumere che l'operatore parta da una run già esistente.
+
+Per più profili si ripete `--profile-id` nella stessa richiesta. Il filtro è
+read-only, l'ordine resta deterministico e ogni target conserva `item_id`,
+`profile_id`, documento sorgente e provenance. La decisione si registra usando
+l'ID o il numero mostrato dalla worklist; il summary viene ricostruito dalla
+queue e dal payload compilato, non corretto a mano.
+
+L'editing diretto dei JSON resta limitato a fixture/test, import o migrazioni
+controllati ed eccezioni motivate. Se manca un comando operativo, si introduce
+prima un micro-incremento CLI delimitato.
+
 ## Priorita' corrente
 
 La corsia prioritaria e':

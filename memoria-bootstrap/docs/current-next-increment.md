@@ -2,6 +2,162 @@
 
 Data: 2026-09-02
 
+## Nota di sessione 2026-09-15 - verified facts preview via CLI
+
+Implementato `memoria review verified-facts --preview`: usa la sessione attiva
+oppure la run review raccomandata, legge lo evidence store in sola lettura e
+genera `verified_facts.preview.json` e Markdown nella run. Supporta filtri
+multi-profilo e output espliciti; non modifica profili canonici, verified facts
+definitivi o evidence store. Suite CLI: 20 test passati.
+
+## Nota di sessione 2026-09-15 - prossimo incremento verified facts CLI
+
+Selezionato `review-verified-facts-cli-preview-v1`: portare nella CLI Python
+la generazione di `verified_facts.preview.json` a partire da queue e decisioni
+compilate. Il comando sarà preview-only, manterrà provenance e revisione umana
+obbligatoria e non modificherà profili canonici o evidence store.
+
+## Nota di sessione 2026-09-15 - consolidamento documentale
+
+Consolidate nei playbook e nel decision log le regole riutilizzabili emerse
+nella sessione: CLI Python come superficie operativa, percorso esplicito con o
+senza run preesistente, e review multi-profilo basata su filtri, ID e
+provenance. Nessun codice runtime o dato reale modificato.
+
+## Nota di sessione 2026-09-15 - summary decisioni via CLI
+
+Selezionato `review-decision-summary-cli-v1`: dopo `memoria review decide
+--preview`, aggiornare tramite CLI anche `review_decisions_summary.json`,
+allineando conteggi e decisioni al payload compilato. Il micro-incremento resta
+preview-only e non modifica profili canonici, verified facts o evidence store.
+
+Chiusura: `memoria review decide --preview` ricostruisce ora il summary dalla
+queue e da `review_decisions.compilato.json`, mantenendo conteggi, stato,
+provenance e validazione coerenti. Coperti conferma, `uncertain`, azione non
+ammessa e assenza di scritture canoniche; 25 test mirati/combinati passano.
+
+## Nota di sessione 2026-09-15 - direzione CLI unica
+
+Decisione generale: la destinazione post-MVP è usare solo la CLI Python
+installabile `memoria` per discovery, raccolta fonti, processazione, review,
+consolidamento e artefatti preview. I wrapper PowerShell restano un ponte
+transitorio compatibile; la loro sostituzione avverrà per micro-incrementi
+verificabili, senza editing diretto dei JSON operativi.
+
+## Nota di sessione 2026-09-15 - avvio sessione review via CLI
+
+Selezionato `review-start-cli-preview-v1`: introdurre `memoria review start
+--preview` per creare la sessione review attiva sulla run raccomandata,
+preparando worklist e percorsi coerenti con il workflow esistente. Il comando
+scriverà solo artefatti preview della sessione; decisioni, profili canonici,
+verified facts ed evidence store restano fuori scope.
+
+Chiusura: implementato `memoria review start --preview` con selezione della run
+raccomandata, worklist coerente e comportamento idempotente su sessione già
+attiva. I 24 test mirati, help CLI, compilazione Python, JSON planner e
+`git diff --check` passano. Nessun profilo, decisione o evidence store è stato
+modificato.
+
+## Nota di sessione 2026-09-15 - prossimo incremento CLI operativo
+
+Selezionato `review-decision-cli-preview-v1`: introdurre `memoria review
+decide --preview` per registrare una decisione sulla sessione review attiva,
+usando numero o ID della worklist e validando le azioni ammesse. Il comando
+aggiornerà solo gli artefatti preview previsti dal workflow; profili canonici,
+verified facts ed evidence store restano fuori scope. Questo incremento applica
+la regola metodologica di evitare l'editing diretto dei JSON operativi.
+
+Chiusura: implementato `memoria review decide --preview` con aggiornamento via
+CLI degli artefatti preview di decisione e della sessione attiva. Validazione
+item/azione, rifiuto delle azioni non ammesse e assenza di sessione sono coperti
+da test; 21 test mirati, compilazione Python, JSON planner e `git diff --check`
+passano. Nessun profilo canonico o evidence store è stato modificato.
+
+## Nota di sessione 2026-09-15 - regola operativa CLI
+
+Decisione metodologica: evitare l'editing diretto dei JSON operativi. Le
+prossime modifiche dovranno usare la CLI `memoria` o un workflow CLI approvato;
+se il comando non esiste, va introdotto prima in un micro-incremento delimitato.
+Fixture, test, import/migrazioni controllati ed eccezioni motivate restano i
+soli casi ammessi per editing diretto, con validazione e audit.
+
+## Nota di sessione 2026-09-15 - selezione post-MVP
+
+Selezionato il micro-incremento `review-targets-cli-json-output-v1`: aggiungere
+un formato JSON esplicito a `memoria review targets`, mantenendo il testo come
+default, i filtri multi-profilo, l'ordine deterministico, la provenance e il
+confine preview-only/read-only. Il formato strutturato serve a rendere la
+coda consumabile da integrazioni e report futuri senza introdurre scritture.
+La verifica prevista copre JSON senza filtro, filtro su uno o piu' profili,
+nessun match e invariance dell'output testuale.
+
+Implementazione avviata: `memoria review targets --format json` espone il
+payload filtrato senza banner testuale; `text` resta il default. Il caso senza
+run produce un payload JSON vuoto preview-only, senza scritture.
+
+Chiusura: incremento completato. I 19 test mirati, la compilazione Python, la
+validazione JSON del planner e `git diff --check` passano. Nessun file operativo,
+profilo canonico, decisione o store è stato modificato.
+
+## Nota di sessione 2026-09-12 - review-targets-cli-profile-filter
+
+Chiuso il filtro CLI `--profile-id` ripetibile per `memoria review targets`.
+La vista può ora essere concentrata su uno o più profili senza alterare il
+builder, il bilanciamento predefinito o la provenance. Il caso senza match è
+gestito come lista vuota, sempre read-only/preview-only. I 16 test della suite
+CLI e target passano; pCloud resta in hold.
+
+## Nota di sessione 2026-09-12 - review-targets-cli-read-only-bridge
+
+Chiuso il bridge CLI Python `memoria review targets`: legge la sessione attiva
+o la run review consigliata e mostra i target storici con limite e provenance
+essenziale. Il comando gestisce anche l'assenza di run senza scrivere artefatti,
+creare decisioni o modificare profili/store. Suite CLI e test mirati passano;
+pCloud resta in hold.
+
+## Nota di sessione 2026-09-12 - review-targets-multi-profile-balance
+
+Chiuso il secondo micro-incremento del prodotto finale: i batch queue-mode
+bilanciano in modo deterministico i target pending tra i profili preferiti e
+quelli scoperti nella coda. Gli item gia' decisi restano esclusi; provenance,
+limite e output preview-only sono invariati. Test mirati e suite review
+correlate passano; pCloud resta in hold.
+
+## Nota di sessione 2026-09-12 - review-targets-idempotent-batches
+
+Chiuso il primo micro-incremento del prodotto finale: la selezione dei target
+storici in batch esclude gli item gia' decisi quando la review queue viene
+riesportata con stato aggiornato. Il confine resta preview-only, con provenance
+invariata e nessuna modifica allo evidence store o ai profili canonici.
+Test mirati e suite review correlate passano; il prossimo incremento va
+selezionato per estendere il workflow su piu' profili.
+
+## Nota di sessione 2026-09-12 - mvp-narrative-dry-run
+
+La prova asciutta della presentazione finanziatori in sei schermate e' stata
+verificata come completata: tutti i blocchi narrativi passano, i guardrail
+preview-only restano espliciti e non sono state eseguite scritture o
+pubblicazioni. Il gate MVP tecnico e' chiuso; resta una revisione umana del
+racconto prima di qualsiasi presentazione esterna. Il prossimo incremento va
+selezionato dalla roadmap del prodotto finale.
+
+## Nota di sessione 2026-09-12 - t26-pcloud-read-only-mock-contract
+
+La procedura di sessione ha verificato che il driver pCloud read-only, il
+resolver provider-aware e i test mock HTTP sono gia' presenti nel checkout.
+T26 e' quindi riconciliata come chiusa per il perimetro offline/mock; l'accesso
+live resta in hold e richiede autorizzazione esplicita e credenziali locali.
+Nessuna chiamata cloud, scrittura remota o modifica runtime e' stata eseguita.
+
+## Nota di sessione 2026-09-11 - memoria-cli-command-groups
+
+Incremento chiuso nel confine approvato: estratto il solo wiring argparse
+`sources` in un leaf dedicato, con handler, patch point, output, formatter,
+wrapper PowerShell e comportamento read-only invariati. Il test parser copre i
+quattro namespace `sources` e i default compatibili; 43 test diagnostici, 6
+test CLI, compilazione Python, JSON e `git diff --check` sono passati. Nessun
+dato esterno e' stato coinvolto.
+
 ## Nota di sessione 2026-09-10 - priorità roadmap aggiornata
 
 Su richiesta dell'utente, la roadmap assegna priorità a `T34b - Chiusura
@@ -31,9 +187,10 @@ decisioni sono registrate nel set esterno `review_decisions_block5f.json` con
 4 `accepted`; `preview_only=true` e `canonical_profiles_modified=false`.
 Nessun profilo canonico e' stato creato.
 
-La revisione dei `CandidateNewProfile` e' completa. T34b non e' ancora chiusa:
-restano da verificare dry-run, backup, rollback e audit e da autorizzare
-esplicitamente l'eventuale applicazione canonica.
+La revisione dei `CandidateNewProfile` e' completa e T34b e' stata chiusa
+operativamente con il Gate 9 dell'11 settembre 2026. Dry-run, backup, audit e
+rollback condizionato sono verificati; l'applicazione canonica autorizzata ha
+creato soltanto i tre profili previsti e collegato il caso gia' esistente.
 
 Gate 5 T34b del 2026-09-11: il preflight read-only ha verificato che
 `memoria-engine` applica `ProfilePatch` a profili JSON-LD esistenti, ma non

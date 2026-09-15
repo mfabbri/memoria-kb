@@ -134,6 +134,43 @@ def write_review_session(root: Path) -> Path:
 
 
 class MvpHistoricalReviewTargetsTests(unittest.TestCase):
+    def test_balances_discovered_profiles_after_preferred_profile(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            queue_json = write_review_queue(tmp_dir)
+
+            payload = build_mvp_historical_review_targets(
+                review_queue_json=queue_json,
+                preferred_profile_ids=["person:purocielo:andreoli-dino"],
+                limit=3,
+            )
+
+        self.assertEqual(
+            [target["profile_id"] for target in payload["targets"]],
+            [
+                "person:purocielo:andreoli-dino",
+                "person:purocielo:balboni-william",
+                "person:purocielo:bendini-ateo",
+            ],
+        )
+
+    def test_excludes_decided_queue_items_from_next_batch(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            queue_json = write_review_queue(tmp_dir)
+            queue = json.loads(queue_json.read_text(encoding="utf-8"))
+            queue["items"][1]["review_status"] = "accepted"
+            queue["items"][2]["decision_status"] = "rejected"
+            queue["items"][3]["review_status"] = "uncertain"
+            queue_json.write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            payload = build_mvp_historical_review_targets(
+                review_queue_json=queue_json,
+                limit=0,
+            )
+
+        self.assertEqual(payload["target_count"], 1)
+        self.assertEqual(payload["targets"][0]["source_review_queue_item_id"], "mvp-review-item:0005")
+        self.assertEqual(payload["targets"][0]["review_status"], "pending")
+
     def test_markdown_renderer_keeps_front_matter_empty_state_and_provenance(self) -> None:
         markdown = render_mvp_historical_review_targets_markdown(
             {

@@ -3,9 +3,9 @@
 Data: 2026-08-09
 
 Stato: checklist riallineata alla golden run canonica a tre casi promossa.
-La demo tecnica e' pronta per uso interno; il racconto in sei schermate deve
-ancora superare una prova asciutta e una nuova revisione umana. Il blocco sulla
-pubblicazione storica resta invariato.
+La demo tecnica e' pronta per uso interno; la prova asciutta del racconto in
+sei schermate e' completata, ma resta una nuova revisione umana prima dell'uso
+esterno. Il blocco sulla pubblicazione storica resta invariato.
 
 ## Scope
 
@@ -27,7 +27,7 @@ Vincoli rispettati:
 
 | Livello | Stato | Significato |
 |---|---|---|
-| Presentazione finanziatori | `ready_for_narrative_dry_run` | Il percorso e' ridotto a sei schermate e usa la run promossa a tre casi, ma non e' ancora approvato per uso esterno. |
+| Presentazione finanziatori | `pending_human_review` | La prova asciutta delle sei schermate e' passata; il racconto non e' ancora approvato per uso esterno. |
 | Demo interna tecnica | `ready_for_internal_demo` | Il descriptor attivo conferma run, artefatti e safety flag preview-only. |
 | Pubblicazione storica | `blocked` | Restano decisioni storiche pending e output preview non approvati. |
 | Schede canoniche | `not_authorized` | Nessuna patch e nessun fatto canonico devono essere applicati da T33. |
@@ -82,7 +82,7 @@ fonti eterogenee
 | Coorte pilota di 5 profili visibile | `pass_draft` | schermata 3 del nuovo entrypoint |
 | Patrimonio di 57 profili contestualizzato | `pass_draft` | dichiarato come perimetro disponibile, non come risultato |
 | Percorso ridotto a sei schermate | `pass_draft` | nuovo entrypoint della presentazione |
-| Prova orale comprensibile | `pending_dry_run` | da verificare prima dell'impaginazione |
+| Prova orale comprensibile | `pass_dry_run` | prova asciutta completata; resta la revisione umana |
 | Via libera alla presentazione esterna | `blocked` | richiede nuova approvazione umana |
 
 ## Condizioni per presentare

@@ -96,6 +96,29 @@ Quando una worklist contiene molti candidati:
 Un riepilogo per nome non sostituisce il controllo sugli ID: nomi ripetuti,
 alias e frammenti estratti dal contesto possono produrre mapping ambiguo.
 
+## Review multi-profilo via CLI
+
+La review di più profili è una sola sessione preview-only con una worklist
+comune, non una fusione dei profili. Il percorso raccomandato è:
+
+1. usare `memoria review discover` per verificare le run candidate;
+2. usare `memoria review start --preview`, con `--run-id` solo quando la scelta
+   della run deve essere esplicita;
+3. usare `memoria review targets --profile-id <id> --profile-id <id>` per
+   restringere la vista ai profili interessati;
+4. mostrare e decidere i target con `item_id` o numero di worklist;
+5. verificare summary, conteggi e provenance con `memoria review decisions`.
+
+Il filtro multi-profilo non altera queue, profili o evidence store. Non si
+riconosce un target dal solo nome: il mapping minimo è profilo + documento +
+`item_id`. Una decisione su un profilo non approva né modifica automaticamente
+claim o profili omonimi.
+
+Se non esiste una run, il flusso si ferma dopo `discover` con esito esplicito:
+prima si prepara o si seleziona una run tramite il workflow autorizzato, poi si
+avvia la review. Non si crea una decisione vuota e non si modifica il profilo
+per “iniziare” la raccolta.
+
 ## Gate finale della migrazione
 
 Prima di dichiarare chiusa la revisione verificare:
