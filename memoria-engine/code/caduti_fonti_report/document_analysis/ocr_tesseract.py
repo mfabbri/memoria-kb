@@ -8,11 +8,17 @@ import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
+import yaml
+
 from .image_preprocessing import preprocess_dark_foreground_for_ocr
 from .transcription_registration import register_document_transcription
 
 CommandRunner = Callable[[list[str]], subprocess.CompletedProcess[str]]
 OCR_FALLBACK_PAGE_SEGMENTATION_MODES = ("12", "6", "11")
+OCR_QUALITY_MIN_ALPHANUMERIC_TOKENS = 2
+OCR_QUALITY_MIN_ALPHANUMERIC_LINES = 1
+OCR_QUALITY_MIN_MEAN_CONFIDENCE = 35.0
+OCR_QUALITY_MAX_LOW_CONFIDENCE_RATIO = 0.75
 
 
 def run_document_ocr(
@@ -35,39 +41,35 @@ def run_document_ocr(
     image_path = Path(file_path)
     if not image_path.exists() or not image_path.is_file():
         raise FileNotFoundError(f"Documento immagine non trovato: {image_path}")
+    source_document_id = _source_document_id_from_sidecar(file_path=image_path, sidecar_path=sidecar_path)
 
     with tempfile.TemporaryDirectory(prefix="caduti-ocr-preprocess-") as tmp_dir:
-        ocr_image_path = image_path
-        preprocessing_report: dict[str, Any] | None = None
+        initial_image_path = image_path
+        initial_preprocessing_report: dict[str, Any] | None = None
         if preprocess_before_ocr:
-            preprocessed_path = Path(tmp_dir) / "preprocessed.png"
-            preprocessing_report = preprocess_dark_foreground_for_ocr(
-                file_path=image_path,
-                output_file=preprocessed_path,
-                overwrite=True,
+            initial_image_path = Path(tmp_dir) / "preprocessed.png"
+            initial_preprocessing_report = preprocess_dark_foreground_for_ocr(
+                file_path=image_path, output_file=initial_image_path, overwrite=True,
             )
-            ocr_image_path = preprocessed_path
 
-        ocr_text_result = _run_tesseract_with_fallbacks(
-            image_path=ocr_image_path,
+        ocr_text_result = _run_tesseract_with_quality_retries(
+            image_path=initial_image_path,
+            original_image_path=image_path,
             language=language,
             tesseract_path=tesseract_path,
             page_segmentation_mode=page_segmentation_mode,
             engine_mode=engine_mode,
             dpi=dpi,
+            source_document_id=source_document_id,
+            temporary_dir=Path(tmp_dir),
+            initial_preprocessing_report=initial_preprocessing_report,
             command_runner=command_runner,
         )
         ocr_text = ocr_text_result["text"]
         effective_page_segmentation_mode = ocr_text_result["page_segmentation_mode"]
-        ocr_quality = _read_tesseract_quality(
-            image_path=ocr_image_path,
-            language=language,
-            tesseract_path=tesseract_path,
-            page_segmentation_mode=effective_page_segmentation_mode,
-            engine_mode=engine_mode,
-            dpi=dpi,
-            command_runner=command_runner,
-        )
+        ocr_quality = ocr_text_result["quality"]
+        ocr_image_path = ocr_text_result["image_path"]
+        preprocessing_report = ocr_text_result["preprocessing_report"]
         ocr_metadata = {
             "ocr_engine": "tesseract",
             "ocr_language": language,
@@ -83,10 +85,13 @@ def run_document_ocr(
             "ocr_page_width": ocr_quality["ocr_page_width"],
             "ocr_page_height": ocr_quality["ocr_page_height"],
             "ocr_line_count": ocr_quality["ocr_line_count"],
+            "ocr_layout_lines": ocr_quality["ocr_layout_lines"],
             "ocr_footnote_candidates": ocr_quality["ocr_footnote_candidates"],
             "ocr_reference_candidates": ocr_quality["ocr_reference_candidates"],
-            "ocr_preprocessing_enabled": preprocess_before_ocr,
-            "ocr_preprocessing_status": "preprocessed_temporary" if preprocessing_report is not None else "not_requested",
+            "ocr_preprocessing_enabled": preprocessing_report is not None,
+            "ocr_preprocessing_status": ocr_text_result["preprocessing_status"],
+            "ocr_quality_gate_status": "accepted",
+            "ocr_quality_gate_score": ocr_text_result["quality_score"],
         }
         if preprocessing_report is not None:
             ocr_metadata["ocr_preprocessing_method"] = preprocessing_report["preprocessing_method"]
@@ -131,60 +136,127 @@ def run_document_ocr(
     return result
 
 
-def _run_tesseract_with_fallbacks(
+def _run_tesseract_with_quality_retries(
     *,
     image_path: Path,
+    original_image_path: Path,
     language: str,
     tesseract_path: str,
     page_segmentation_mode: str = "",
     engine_mode: str = "",
     dpi: str = "",
+    source_document_id: str,
+    temporary_dir: Path,
+    initial_preprocessing_report: dict[str, Any] | None,
     command_runner: CommandRunner | None = None,
 ) -> dict[str, Any]:
-    modes = _fallback_page_segmentation_modes(page_segmentation_mode)
-    attempts: list[dict[str, str]] = []
-    last_empty_error = ""
-    for mode in modes:
-        try:
-            text = _run_tesseract(
-                image_path=image_path,
-                language=language,
-                tesseract_path=tesseract_path,
-                page_segmentation_mode=mode,
-                engine_mode=engine_mode,
-                dpi=dpi,
-                command_runner=command_runner,
-            )
-        except ValueError as exc:
-            last_empty_error = str(exc)
-            attempts.append(
-                {
-                    "page_segmentation_mode": mode,
-                    "status": "empty",
-                    "reason": str(exc),
-                }
-            )
-            continue
-        attempts.append(
-            {
-                "page_segmentation_mode": mode,
-                "status": "extracted",
-                "reason": "",
-            }
+    attempts: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+    primary_mode, alternate_mode = _quality_retry_page_segmentation_modes(page_segmentation_mode)
+    primary = _evaluate_ocr_candidate(
+        image_path=image_path, input_kind="requested_preprocessed" if initial_preprocessing_report else "original",
+        language=language, tesseract_path=tesseract_path, page_segmentation_mode=primary_mode,
+        engine_mode=engine_mode, dpi=dpi, source_document_id=source_document_id, command_runner=command_runner,
+    )
+    attempts.append(primary["attempt"])
+    candidates.append(primary)
+    if not primary["usable"]:
+        alternate = _evaluate_ocr_candidate(
+            image_path=image_path, input_kind="requested_preprocessed" if initial_preprocessing_report else "original", language=language, tesseract_path=tesseract_path,
+            page_segmentation_mode=alternate_mode, engine_mode=engine_mode, dpi=dpi,
+            source_document_id=source_document_id, command_runner=command_runner,
         )
-        return {
-            "text": text,
-            "page_segmentation_mode": mode,
-            "attempts": attempts,
-        }
-    raise ValueError(last_empty_error or "OCR Tesseract vuoto.")
+        attempts.append(alternate["attempt"])
+        candidates.append(alternate)
+    usable = [candidate for candidate in candidates if candidate["usable"]]
+    preprocessing_report = initial_preprocessing_report
+    preprocessing_status = "preprocessed_temporary" if initial_preprocessing_report else "not_requested"
+    if not usable:
+        best = max(candidates, key=lambda candidate: candidate["quality_score"])
+        preprocessed_path = temporary_dir / "preprocessed-quality-retry.png"
+        try:
+            retry_report = preprocess_dark_foreground_for_ocr(
+                file_path=original_image_path, output_file=preprocessed_path, overwrite=True,
+            )
+        except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
+            attempts.append({"input": "temporary_preprocessed", "page_segmentation_mode": best["page_segmentation_mode"], "status": "preprocess_failed", "reason": str(exc)})
+        else:
+            preprocessed = _evaluate_ocr_candidate(
+                image_path=preprocessed_path, input_kind="temporary_preprocessed", language=language,
+                tesseract_path=tesseract_path, page_segmentation_mode=best["page_segmentation_mode"],
+                engine_mode=engine_mode, dpi=dpi, source_document_id=source_document_id, command_runner=command_runner,
+            )
+            attempts.append(preprocessed["attempt"])
+            candidates.append(preprocessed)
+            preprocessing_report = retry_report
+            preprocessing_status = "quality_retry_temporary"
+            usable = [candidate for candidate in candidates if candidate["usable"]]
+    if not usable:
+        reasons = "; ".join(str(attempt.get("reason", "")) for attempt in attempts if attempt.get("reason"))
+        raise ValueError(f"OCR Tesseract qualitativamente insufficiente prima della registrazione.{(' ' + reasons) if reasons else ''}")
+    selected = max(usable, key=lambda candidate: candidate["quality_score"])
+    for attempt in attempts:
+        if attempt.get("candidate_id") == selected["candidate_id"]:
+            attempt["status"] = "selected"
+    return {
+        "text": selected["text"], "quality": selected["quality"], "quality_score": selected["quality_score"],
+        "image_path": selected["image_path"], "page_segmentation_mode": selected["page_segmentation_mode"],
+        "attempts": attempts, "preprocessing_report": preprocessing_report if selected["input_kind"] != "original" else None,
+        "preprocessing_status": preprocessing_status if selected["input_kind"] != "original" else "not_requested",
+    }
 
 
-def _fallback_page_segmentation_modes(primary_mode: str) -> list[str]:
+def _quality_retry_page_segmentation_modes(primary_mode: str) -> tuple[str, str]:
     primary = primary_mode.strip()
-    modes = [primary]
-    modes.extend(mode for mode in OCR_FALLBACK_PAGE_SEGMENTATION_MODES if mode != primary)
-    return modes
+    alternate = next((mode for mode in OCR_FALLBACK_PAGE_SEGMENTATION_MODES if mode != primary), "6")
+    return primary, alternate
+
+
+def _evaluate_ocr_candidate(
+    *, image_path: Path, input_kind: str, language: str, tesseract_path: str, page_segmentation_mode: str,
+    engine_mode: str, dpi: str, source_document_id: str, command_runner: CommandRunner | None,
+) -> dict[str, Any]:
+    candidate_id = f"{input_kind}:{page_segmentation_mode or 'default'}"
+    try:
+        text = _run_tesseract(image_path=image_path, language=language, tesseract_path=tesseract_path,
+                              page_segmentation_mode=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
+                              command_runner=command_runner)
+    except ValueError as exc:
+        return {"candidate_id": candidate_id, "input_kind": input_kind, "image_path": image_path,
+                "page_segmentation_mode": page_segmentation_mode, "text": "", "quality": _quality_payload(word_confidences=[], reasons=["ocr_empty"]),
+                "quality_score": 0.0, "usable": False,
+                "attempt": {"candidate_id": candidate_id, "input": input_kind, "page_segmentation_mode": page_segmentation_mode, "status": "empty", "reason": str(exc), "quality_score": 0.0}}
+    quality = _read_tesseract_quality(image_path=image_path, language=language, tesseract_path=tesseract_path,
+                                      page_segmentation_mode=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
+                                      source_document_id=source_document_id, command_runner=command_runner)
+    score, usable, reasons = _quality_gate_score(text=text, quality=quality)
+    status = "usable" if usable else "quality_rejected"
+    return {"candidate_id": candidate_id, "input_kind": input_kind, "image_path": image_path,
+            "page_segmentation_mode": page_segmentation_mode, "text": text, "quality": quality,
+            "quality_score": score, "usable": usable,
+            "attempt": {"candidate_id": candidate_id, "input": input_kind, "page_segmentation_mode": page_segmentation_mode,
+                        "status": status, "reason": ",".join(reasons), "quality_score": score,
+                        "word_count": quality["ocr_word_count"], "line_count": quality["ocr_line_count"]}}
+
+
+def _quality_gate_score(*, text: str, quality: dict[str, Any]) -> tuple[float, bool, list[str]]:
+    alpha_tokens = re.findall(r"[^\W_]+", text, flags=re.UNICODE)
+    alpha_lines = [line for line in quality.get("ocr_layout_lines", []) if re.search(r"[^\W_]", str(line.get("text", "")), flags=re.UNICODE)]
+    word_count = int(quality.get("ocr_word_count", 0) or 0)
+    low_count = int(quality.get("ocr_low_confidence_words_count", 0) or 0)
+    mean_confidence = quality.get("ocr_mean_confidence")
+    low_ratio = (low_count / word_count) if word_count else 1.0
+    score = (float(mean_confidence) if mean_confidence is not None else 0.0) + min(len(alpha_tokens), 20) * 2 + min(len(alpha_lines), 10) - low_ratio * 25
+    reasons: list[str] = []
+    if len(alpha_tokens) < OCR_QUALITY_MIN_ALPHANUMERIC_TOKENS:
+        reasons.append("too_few_alphanumeric_tokens")
+    if len(alpha_lines) < OCR_QUALITY_MIN_ALPHANUMERIC_LINES:
+        reasons.append("no_alphanumeric_tsv_lines")
+    if mean_confidence is None or float(mean_confidence) < OCR_QUALITY_MIN_MEAN_CONFIDENCE:
+        reasons.append("mean_confidence_below_threshold")
+    if low_ratio > OCR_QUALITY_MAX_LOW_CONFIDENCE_RATIO:
+        reasons.append("diffuse_low_confidence")
+    return round(score, 2), not reasons, reasons
 
 
 def _run_tesseract(
@@ -195,6 +267,7 @@ def _run_tesseract(
     page_segmentation_mode: str = "",
     engine_mode: str = "",
     dpi: str = "",
+    source_document_id: str = "",
     command_runner: CommandRunner | None = None,
 ) -> str:
     command = _build_tesseract_command(
@@ -231,6 +304,7 @@ def _read_tesseract_quality(
     page_segmentation_mode: str = "",
     engine_mode: str = "",
     dpi: str = "",
+    source_document_id: str = "",
     command_runner: CommandRunner | None = None,
 ) -> dict[str, Any]:
     command = _build_tesseract_command(
@@ -255,7 +329,7 @@ def _read_tesseract_quality(
     return _quality_payload(
         word_confidences=[record["confidence"] for record in records["words"]],
         reasons=[],
-        layout=_layout_payload(records),
+        layout=_layout_payload(records=records, source_document_id=source_document_id),
     )
 
 
@@ -417,7 +491,7 @@ def _group_words_by_line(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
         grouped.setdefault(key, []).append(word)
 
     lines: list[dict[str, Any]] = []
-    for key_words in grouped.values():
+    for line_key, key_words in grouped.items():
         sorted_words = sorted(key_words, key=lambda item: item["left"])
         left = min(word["left"] for word in sorted_words)
         top = min(word["top"] for word in sorted_words)
@@ -433,9 +507,23 @@ def _group_words_by_line(words: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "height": bottom - top,
                 "confidence": round(sum(confidences) / len(confidences), 2),
                 "word_count": len(sorted_words),
+                "page_num": line_key[0],
+                "block_num": line_key[1],
+                "par_num": line_key[2],
+                "line_num": line_key[3],
             }
         )
-    return sorted(lines, key=lambda item: (item["top"], item["left"]))
+    return sorted(
+        lines,
+        key=lambda item: (
+            _int_or_zero(str(item["page_num"])),
+            item["top"],
+            item["left"],
+            _int_or_zero(str(item["block_num"])),
+            _int_or_zero(str(item["par_num"])),
+            _int_or_zero(str(item["line_num"])),
+        ),
+    )
 
 
 def _float_or_none(value: str) -> float | None:
@@ -452,7 +540,7 @@ def _int_or_zero(value: str) -> int:
         return 0
 
 
-def _layout_payload(records: dict[str, Any]) -> dict[str, Any]:
+def _layout_payload(*, records: dict[str, Any], source_document_id: str) -> dict[str, Any]:
     page = records.get("page") or {}
     page_height = int(page.get("height", 0) or 0)
     page_width = int(page.get("width", 0) or 0)
@@ -463,13 +551,22 @@ def _layout_payload(records: dict[str, Any]) -> dict[str, Any]:
             "ocr_page_width": page_width or None,
             "ocr_page_height": page_height or None,
             "ocr_line_count": len(lines),
+            "ocr_layout_lines": [],
             "ocr_footnote_candidates": [],
             "ocr_reference_candidates": [],
         }
 
     footnotes: list[dict[str, Any]] = []
     references: list[dict[str, Any]] = []
-    for line in lines:
+    layout_lines = [
+        _layout_line_from_tsv(
+            line=line,
+            read_order=index,
+            source_document_id=source_document_id,
+        )
+        for index, line in enumerate(lines, start=1)
+    ]
+    for line in layout_lines:
         reasons = _line_candidate_reasons(line=line, page_height=page_height)
         if "bottom_page_region" in reasons and _has_note_or_reference_signal(line["text"]):
             footnotes.append(_candidate_from_line(line=line, reasons=reasons))
@@ -480,8 +577,38 @@ def _layout_payload(records: dict[str, Any]) -> dict[str, Any]:
         "ocr_page_width": page_width,
         "ocr_page_height": page_height,
         "ocr_line_count": len(lines),
+        "ocr_layout_lines": layout_lines,
         "ocr_footnote_candidates": footnotes[:20],
         "ocr_reference_candidates": references[:20],
+    }
+
+
+def _layout_line_from_tsv(*, line: dict[str, Any], read_order: int, source_document_id: str) -> dict[str, Any]:
+    page_number = _int_or_zero(str(line["page_num"]))
+    block_number = _int_or_zero(str(line["block_num"]))
+    paragraph_number = _int_or_zero(str(line["par_num"]))
+    line_number = _int_or_zero(str(line["line_num"]))
+    region_id = (
+        f"tesseract-region-p{page_number}-b{block_number}"
+        f"-par{paragraph_number}-l{line_number}"
+    )
+    return {
+        "source_document_id": source_document_id,
+        "ocr_line_id": f"tesseract-line-p{page_number}-b{block_number}-par{paragraph_number}-l{line_number}",
+        "page_id": f"tesseract-page-{page_number}",
+        "page_number": page_number,
+        "region_id": region_id,
+        "read_order": read_order,
+        "read_order_status": "inferred",
+        "read_order_basis": "page_top_then_left_then_tsv_hierarchy",
+        "text": line["text"],
+        "left": line["left"],
+        "top": line["top"],
+        "width": line["width"],
+        "height": line["height"],
+        "confidence": line["confidence"],
+        "word_count": line["word_count"],
+        "review_status": "unreviewed",
     }
 
 
@@ -500,6 +627,10 @@ def _line_candidate_reasons(*, line: dict[str, Any], page_height: int) -> list[s
 
 def _candidate_from_line(*, line: dict[str, Any], reasons: list[str]) -> dict[str, Any]:
     return {
+        "source_document_id": line["source_document_id"],
+        "ocr_line_id": line["ocr_line_id"],
+        "page_id": line["page_id"],
+        "region_id": line["region_id"],
         "text": line["text"],
         "left": line["left"],
         "top": line["top"],
@@ -510,6 +641,16 @@ def _candidate_from_line(*, line: dict[str, Any], reasons: list[str]) -> dict[st
         "reasons": sorted(set(reasons)),
         "review_status": "unreviewed",
     }
+
+
+def _source_document_id_from_sidecar(*, file_path: Path, sidecar_path: Path | None) -> str:
+    resolved_sidecar = sidecar_path or file_path.with_name(f"{file_path.name}.document.yaml")
+    if not resolved_sidecar.exists():
+        resolved_sidecar = file_path.with_name("document.yaml")
+    if not resolved_sidecar.exists():
+        return ""
+    payload = yaml.safe_load(resolved_sidecar.read_text(encoding="utf-8")) or {}
+    return str(payload.get("document_id", "")).strip() if isinstance(payload, dict) else ""
 
 
 def _has_note_or_reference_signal(text: str) -> bool:
@@ -552,6 +693,7 @@ def _quality_payload(
             "ocr_page_width": None,
             "ocr_page_height": None,
             "ocr_line_count": 0,
+            "ocr_layout_lines": [],
             "ocr_footnote_candidates": [],
             "ocr_reference_candidates": [],
         }),

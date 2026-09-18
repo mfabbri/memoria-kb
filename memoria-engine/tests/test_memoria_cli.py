@@ -10,6 +10,7 @@ import uuid
 from contextlib import contextmanager
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -513,6 +514,147 @@ def write_consolidate_workspace(workspace: Path) -> None:
 
 
 class MemoriaCliTests(unittest.TestCase):
+    def test_documents_process_preview_is_read_only_and_lists_candidates(self) -> None:
+        with workspace_temp_dir() as workspace:
+            root = workspace / "immagini"
+            image_path = root / "pagina.jpg"
+            image_path.parent.mkdir(parents=True)
+            image_path.write_bytes(b"\xff\xd8\xffpagina\xff\xd9")
+            sidecar = image_path.with_name("pagina.jpg.document.yaml")
+            sidecar.write_text(f"source_id: manual_uploads\ndocument_id: pagina-1\nlocal_path: {image_path}\n", encoding="utf-8")
+            before = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+            output = io.StringIO()
+            with redirect_stdout(output), patch("caduti_fonti_report.memoria_cli.run_document_ocr_batch") as run_batch:
+                result = memoria_main(["documents", "process", "--root", str(root), "--output-dir", str(workspace / "ocr")])
+            after = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("preview read-only", output.getvalue())
+        self.assertIn("Da processare: 1", output.getvalue())
+        self.assertIn(f"would_process: {image_path}", output.getvalue())
+        self.assertEqual(before, after)
+        run_batch.assert_not_called()
+
+    def test_documents_process_apply_delegates_to_existing_batch_runner(self) -> None:
+        with workspace_temp_dir() as workspace:
+            root = workspace / "immagini"
+            output_dir = workspace / "ocr"
+            root.mkdir()
+            fake_report = {"root_dir": str(root), "output_dir": str(output_dir), "documents": [
+                {"status": "processed", "file": str(root / "ok.jpg"), "text_path": str(output_dir / "ok.text.json")},
+                {"status": "error", "file": str(root / "bad.jpg"), "error": "OCR Tesseract vuoto."},
+            ]}
+            output = io.StringIO()
+            with redirect_stdout(output), patch("caduti_fonti_report.memoria_cli.run_document_ocr_batch", return_value=fake_report) as run_batch:
+                result = memoria_main(["documents", "process", "--root", str(root), "--output-dir", str(output_dir), "--language", "deu", "--max-workers", "4", "--apply"])
+
+        self.assertEqual(result, 0)
+        self.assertIn("apply esplicito", output.getvalue())
+        self.assertIn("Processate: 1", output.getvalue())
+        self.assertIn("Errori: 1", output.getvalue())
+        self.assertIn("OCR Tesseract vuoto.", output.getvalue())
+        run_batch.assert_called_once_with(root_dir=root, output_dir=output_dir, language="deu", tesseract_path="tesseract", page_segmentation_mode="", engine_mode="", dpi="", preprocess_before_ocr=False, enable_region_ocr=False, review_status="unreviewed", overwrite=False, max_workers=4, progress_callback=print, progress_every=25)
+
+    def test_documents_process_rejects_missing_root(self) -> None:
+        with workspace_temp_dir() as workspace:
+            error = io.StringIO()
+            with redirect_stderr(error):
+                result = memoria_main(["documents", "process", "--root", str(workspace / "missing"), "--output-dir", str(workspace / "ocr")])
+            self.assertEqual(result, 1)
+            self.assertIn("Root OCR batch non trovata", error.getvalue())
+
+    def test_documents_markdown_preview_is_read_only_and_apply_writes_page(self) -> None:
+        with workspace_temp_dir() as workspace:
+            root = workspace / "ocr"
+            output_dir = workspace / "markdown"
+            write_json(root / "manual" / "doc-1.text.json", {
+                "@type": "ProcessedDocumentText", "source_document_id": "doc-1", "raw_file": "scan.jpg",
+                "ocr_engine": "tesseract", "ocr_language": "ita", "ocr_quality_gate_status": "accepted", "review_status": "unreviewed",
+                "ocr_layout_lines": [{"page_id": "tesseract-page-1", "ocr_line_id": "line-1", "region_id": "region-1", "text": "# OCR", "left": 1, "top": 2, "width": 3, "height": 4, "confidence": 90, "review_status": "unreviewed", "read_order": 1, "read_order_status": "inferred", "read_order_basis": "page_top_then_left"}],
+            })
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                result = memoria_main(["documents", "markdown", "--root", str(root), "--output-dir", str(output_dir)])
+            self.assertEqual(result, 0)
+            self.assertIn("preview read-only", stdout.getvalue())
+            self.assertFalse(output_dir.exists())
+            with redirect_stdout(io.StringIO()):
+                result = memoria_main(["documents", "markdown", "--root", str(root), "--output-dir", str(output_dir), "--apply"])
+            self.assertEqual(result, 0)
+            self.assertTrue((output_dir / "doc-1" / "tesseract-page-1.md").is_file())
+
+    def test_documents_register_preview_is_recursive_and_read_only(self) -> None:
+        with workspace_temp_dir() as workspace:
+            image_path = workspace / "immagini" / "cartella" / "pagina.jpg"
+            image_path.parent.mkdir(parents=True)
+            image_path.write_bytes(b"\xff\xd8\xffpagina\xff\xd9")
+            before = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+            output = io.StringIO()
+            with redirect_stdout(output):
+                result = memoria_main([
+                    "documents", "register", "--root", str(workspace / "immagini"),
+                    "--source-id", "manual_uploads", "--archival-reference", "Raccolta",
+                ])
+            after = sorted(path.relative_to(workspace).as_posix() for path in workspace.rglob("*"))
+
+        self.assertEqual(result, 0)
+        self.assertIn("preview read-only", output.getvalue())
+        self.assertIn("Da registrare: 1", output.getvalue())
+        self.assertIn(str(image_path), output.getvalue())
+        self.assertIn(str(image_path.with_name("pagina.jpg.document.yaml")), output.getvalue())
+        self.assertEqual(before, after)
+
+    def test_documents_register_apply_skips_existing_sidecars_idempotently(self) -> None:
+        with workspace_temp_dir() as workspace:
+            root = workspace / "immagini"
+            image_path = root / "pagina.jpg"
+            image_path.parent.mkdir(parents=True)
+            image_path.write_bytes(b"\xff\xd8\xffpagina\xff\xd9")
+            args = [
+                "documents", "register", "--root", str(root), "--source-id", "manual_uploads",
+                "--archival-reference", "Raccolta", "--apply",
+            ]
+            first_output = io.StringIO()
+            with redirect_stdout(first_output):
+                first_result = memoria_main(args)
+            sidecar = image_path.with_name("pagina.jpg.document.yaml")
+            first_sidecar = sidecar.read_bytes()
+            second_output = io.StringIO()
+            with redirect_stdout(second_output):
+                second_result = memoria_main(args)
+            second_sidecar = sidecar.read_bytes()
+
+        self.assertEqual(first_result, 0)
+        self.assertIn("Registrate: 1", first_output.getvalue())
+        self.assertEqual(second_result, 0)
+        self.assertIn("Sidecar esistenti saltati: 1", second_output.getvalue())
+        self.assertEqual(second_sidecar, first_sidecar)
+
+    def test_documents_register_rejects_missing_or_empty_input(self) -> None:
+        with workspace_temp_dir() as workspace:
+            empty_output = io.StringIO()
+            with redirect_stdout(empty_output):
+                empty_directory_result = memoria_main([
+                    "documents", "register", "--root", str(workspace),
+                    "--source-id", "manual_uploads", "--archival-reference", "Raccolta",
+                ])
+            error = io.StringIO()
+            with redirect_stderr(error):
+                missing_result = memoria_main([
+                    "documents", "register", "--root", str(workspace / "missing"),
+                    "--source-id", "manual_uploads", "--archival-reference", "Raccolta",
+                ])
+                empty_result = memoria_main([
+                    "documents", "register", "--root", str(workspace),
+                    "--source-id", "", "--archival-reference", "Raccolta",
+                ])
+
+        self.assertEqual(empty_directory_result, 0)
+        self.assertIn("Immagini trovate: 0", empty_output.getvalue())
+        self.assertEqual(missing_result, 1)
+        self.assertEqual(empty_result, 1)
+        self.assertIn("Root registrazione batch non trovata", error.getvalue())
+        self.assertIn("source_id obbligatorio", error.getvalue())
     def test_review_targets_bridge_is_read_only_and_uses_recommended_run(self) -> None:
         with workspace_temp_dir() as workspace:
             _, strong_run = write_review_workspace(workspace)

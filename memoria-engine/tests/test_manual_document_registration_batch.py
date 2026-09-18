@@ -14,6 +14,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.manual_registration_batch import (  # noqa: E402
+    preview_manual_documents_batch,
     register_manual_documents_batch,
     write_batch_report,
 )
@@ -33,6 +34,23 @@ def workspace_temp_dir():
 
 
 class ManualDocumentRegistrationBatchTests(unittest.TestCase):
+    def test_preview_is_recursive_and_does_not_create_sidecars(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            root_dir = tmp_dir / "foto"
+            image_path = root_dir / "cartella" / "pagina-1.jpg"
+            image_path.parent.mkdir(parents=True)
+            image_path.write_bytes(b"\xff\xd8\xffpagina-1\xff\xd9")
+
+            report = preview_manual_documents_batch(
+                root_dir=root_dir,
+                source_id="manual_uploads",
+                archival_reference="Raccolta",
+            )
+
+            self.assertTrue(report["preview_only"])
+            self.assertEqual(report["summary"]["would_register"], 1)
+            self.assertFalse(image_path.with_name("pagina-1.jpg.document.yaml").exists())
+
     def test_registers_images_recursively_without_modifying_files(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             root_dir = tmp_dir / "foto"

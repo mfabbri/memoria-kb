@@ -28,6 +28,12 @@ from caduti_fonti_report.document_analysis.mvp_final_gate import build_mvp_final
 from caduti_fonti_report.document_analysis.mvp_historical_review_targets import build_mvp_historical_review_targets
 from caduti_fonti_report.document_analysis.mvp_review_decisions import build_mvp_review_decisions_summary
 from caduti_fonti_report.document_analysis.verified_facts_preview import build_verified_facts_preview
+from caduti_fonti_report.document_analysis.manual_registration_batch import (
+    preview_manual_documents_batch,
+    register_manual_documents_batch,
+)
+from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates, run_document_ocr_batch
+from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
@@ -1705,6 +1711,118 @@ def _command_sources_offline_status(args: argparse.Namespace) -> int:
     return _command_sources_offline_discover(args)
 
 
+def _command_documents_register(args: argparse.Namespace) -> int:
+    try:
+        options = {
+            "root_dir": Path(args.root),
+            "source_id": args.source_id,
+            "archival_reference": args.archival_reference,
+            "access_date": args.access_date,
+            "title_template": args.title_template,
+            "review_status": args.review_status,
+        }
+        report = register_manual_documents_batch(**options) if args.apply else preview_manual_documents_batch(**options)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Errore documents register: {exc}", file=sys.stderr)
+        return 1
+
+    summary = report["summary"]
+    print("Me.Mo.Ria documents register")
+    print(f"Root: {report['root_dir']}")
+    print(f"Source ID: {report['source_id']}")
+    print(f"Riferimento archivistico: {report['archival_reference']}")
+    print(f"Modalita: {'apply esplicito' if args.apply else 'preview read-only'}")
+    print(f"Immagini trovate: {summary['total']}")
+    print(f"Da registrare: {summary['would_register']}")
+    print(f"Registrate: {summary['registered']}")
+    print(f"Sidecar esistenti saltati: {summary['skipped_existing_sidecar']}")
+    if not args.apply:
+        candidates = [item for item in report["documents"] if item.get("status") == "would_register"]
+        if candidates:
+            print("Candidati preview:")
+            for candidate in candidates:
+                print(f"- {candidate['file']} -> {candidate['sidecar_path']}")
+        print("Per creare i sidecar mancanti, ripeti il comando con --apply.")
+    return 0
+
+
+def _command_documents_process(args: argparse.Namespace) -> int:
+    root_dir = Path(args.root)
+    output_dir = Path(args.output_dir)
+    try:
+        if not root_dir.is_dir():
+            raise FileNotFoundError(f"Root OCR batch non trovata: {root_dir}")
+        if args.apply:
+            report = run_document_ocr_batch(
+                root_dir=root_dir, output_dir=output_dir, language=args.language,
+                tesseract_path=args.tesseract_path, page_segmentation_mode=args.psm,
+                engine_mode=args.oem, dpi=args.dpi, preprocess_before_ocr=args.preprocess_before_ocr,
+                enable_region_ocr=args.enable_region_ocr, review_status=args.review_status,
+                overwrite=args.overwrite, max_workers=args.max_workers, progress_callback=print,
+                progress_every=args.progress_every,
+            )
+        else:
+            documents = _collect_candidates(root=root_dir, output_dir=output_dir, overwrite=args.overwrite)
+            for item in documents:
+                if item["status"] == "pending":
+                    item["status"] = "would_process"
+            report = {"root_dir": str(root_dir), "output_dir": str(output_dir), "documents": documents}
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Errore documents process: {exc}", file=sys.stderr)
+        return 1
+
+    documents = report["documents"]
+    counts = Counter(str(item.get("status", "")) for item in documents)
+    print("Me.Mo.Ria documents process")
+    print(f"Root: {report['root_dir']}")
+    print(f"Output OCR: {report['output_dir']}")
+    print(f"Modalita: {'apply esplicito' if args.apply else 'preview read-only'}")
+    print(f"Immagini considerate: {len(documents)}")
+    print(f"Da processare: {counts['would_process']}")
+    print(f"Processate: {counts['processed']}")
+    print(f"Gia' presenti: {counts['skipped_existing_text']}")
+    print(f"Errori: {counts['error']}")
+    if documents:
+        print("Risultati per documento:")
+        for item in documents:
+            detail = item.get("reason") or item.get("error") or item.get("text_path", "")
+            suffix = f" | {detail}" if detail else ""
+            print(f"- {item.get('status', '')}: {item.get('file', '')}{suffix}")
+    if not args.apply:
+        print("Per eseguire OCR e scrivere gli output, ripeti il comando con --apply.")
+    return 0
+
+
+def _command_documents_markdown(args: argparse.Namespace) -> int:
+    try:
+        report = export_ocr_pages_markdown(
+            root_dir=Path(args.root), output_dir=Path(args.output_dir), apply=args.apply,
+        )
+    except FileNotFoundError as exc:
+        print(f"Errore documents markdown: {exc}", file=sys.stderr)
+        return 1
+
+    documents = report["documents"]
+    counts = Counter(str(item.get("status", "")) for item in documents)
+    print("Me.Mo.Ria documents markdown")
+    print(f"Root OCR: {report['root_dir']}")
+    print(f"Output Markdown: {report['output_dir']}")
+    print(f"Modalita: {'apply esplicito' if args.apply else 'preview read-only'}")
+    print(f"Pagine candidate: {len(documents)}")
+    print(f"Da scrivere: {counts['would_write']}")
+    print(f"Scritte: {counts['written']}")
+    print(f"Output gia' presenti: {counts['skipped_existing_output']}")
+    print(f"Layout vuoti: {counts['skipped_empty_layout']}")
+    print(f"JSON/documenti non validi: {counts['skipped_invalid_json'] + counts['skipped_invalid_document']}")
+    for item in documents:
+        detail = item.get("reason") or item.get("output_path", "")
+        suffix = f" | {detail}" if detail else ""
+        print(f"- {item.get('status', '')}: {item.get('text_path', '')}{suffix}")
+    if not args.apply:
+        print("Per scrivere i Markdown per pagina, ripeti il comando con --apply.")
+    return 0
+
+
 def _resolve_existing_data_root_for_command(args: argparse.Namespace) -> DataRootResolution | None:
     try:
         resolution = resolve_data_root(explicit_data_root=args.data_root)
@@ -2341,6 +2459,42 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
         command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
         command.set_defaults(handler=handler)
+
+    documents = subparsers.add_parser("documents", help="Intake documenti locali con registrazione esplicita.")
+    documents_subparsers = documents.add_subparsers(dest="documents_command", required=True)
+    documents_register = documents_subparsers.add_parser(
+        "register",
+        help="Mostra immagini ricorsive; crea sidecar solo con --apply.",
+    )
+    documents_register.add_argument("--root", required=True, help="Directory radice da scandire ricorsivamente.")
+    documents_register.add_argument("--source-id", required=True, help="Identificativo della fonte dichiarativa.")
+    documents_register.add_argument("--archival-reference", required=True, help="Riferimento archivistico obbligatorio.")
+    documents_register.add_argument("--access-date", default="", help="Data accesso opzionale (YYYY-MM-DD).")
+    documents_register.add_argument("--title-template", default="{filename}", help="Template titolo: filename, stem, relative_path, parent.")
+    documents_register.add_argument("--review-status", default="unreviewed", help="Stato iniziale di revisione.")
+    documents_register.add_argument("--apply", action="store_true", help="Crea solo i sidecar mancanti; non sovrascrive quelli esistenti.")
+    documents_register.set_defaults(handler=_command_documents_register)
+    documents_process = documents_subparsers.add_parser("process", help="Mostra il batch OCR; esegue e scrive output solo con --apply.")
+    documents_process.add_argument("--root", required=True, help="Directory radice delle immagini gia' registrate.")
+    documents_process.add_argument("--output-dir", required=True, help="Directory esplicita per i testi OCR processati.")
+    documents_process.add_argument("--language", default="ita", help="Lingua OCR Tesseract.")
+    documents_process.add_argument("--tesseract-path", default="tesseract", help="Comando o percorso Tesseract locale.")
+    documents_process.add_argument("--psm", default="", help="Page segmentation mode Tesseract opzionale.")
+    documents_process.add_argument("--oem", default="", help="Engine mode Tesseract opzionale.")
+    documents_process.add_argument("--dpi", default="", help="DPI sorgente opzionale.")
+    documents_process.add_argument("--preprocess-before-ocr", action="store_true", help="Abilita preprocessing gia' supportato dal runner.")
+    documents_process.add_argument("--enable-region-ocr", action="store_true", help="Abilita OCR per regioni gia' supportato dal runner.")
+    documents_process.add_argument("--review-status", default="unreviewed", help="Stato iniziale dei testi OCR.")
+    documents_process.add_argument("--overwrite", action="store_true", help="Consenti al runner di sostituire output OCR esistenti.")
+    documents_process.add_argument("--max-workers", type=int, default=2, help="Numero massimo di worker OCR.")
+    documents_process.add_argument("--progress-every", type=int, default=25, help="Intervallo dei messaggi di avanzamento.")
+    documents_process.add_argument("--apply", action="store_true", help="Esegue OCR e scrive output; senza questo flag il comando e' read-only.")
+    documents_process.set_defaults(handler=_command_documents_process)
+    documents_markdown = documents_subparsers.add_parser("markdown", help="Esporta righe OCR in Markdown per pagina; scrive solo con --apply.")
+    documents_markdown.add_argument("--root", required=True, help="Directory dei ProcessedDocumentText OCR da leggere ricorsivamente.")
+    documents_markdown.add_argument("--output-dir", required=True, help="Directory esplicita per Markdown per pagina.")
+    documents_markdown.add_argument("--apply", action="store_true", help="Scrive solo output mancanti; senza questo flag il comando e' read-only.")
+    documents_markdown.set_defaults(handler=_command_documents_markdown)
 
     register_sources_group(
         subparsers,
