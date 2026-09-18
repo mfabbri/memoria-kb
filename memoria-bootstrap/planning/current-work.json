@@ -2,35 +2,65 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-15T00:00:00+02:00",
-  "updated_at": "2026-09-15T00:00:00+02:00",
+  "selected_at": "2026-09-18T23:56:00+02:00",
+  "updated_at": "2026-09-18T23:57:00+02:00",
   "roadmap_basis": [
-    {"path": "memoria-bootstrap/docs/roadmap/00-roadmap-master.md", "section": "Riprendere il flusso del prodotto completo", "reason": "Il MVP tecnico e' dimostrato; il primo incremento prodotto deve rendere ripetibile la review curatoriale."},
-    {"path": "memoria-bootstrap/docs/funding-demo-t33-funding-roadmap.md", "section": "Revisione storica assistita; Feedback loop operativo", "reason": "La selezione idempotente dei batch riduce duplicazioni nella review e conserva il ciclo preview-only."},
-    {"path": "memoria-bootstrap/docs/current-next-increment.md", "section": "Selezione post-summary - verified facts preview CLI", "reason": "Dopo sessione, decisioni e summary, il primo artefatto downstream ancora dipendente dal workflow PowerShell è il verified facts preview."},
-    {"path": "memoria-bootstrap/docs/agent-session-prompt.md", "section": "Procedura sessione e routing", "reason": "La procedura impone un solo micro-incremento e guardrail preview-only."}
+    {
+      "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "section": "Valutazione dedicata Qwen locale per OCR",
+      "reason": "La valutazione Qwen su fixture sintetiche è stata eseguita; su richiesta esplicita dell'utente, avviare ora la prova appaiata sugli stessi TIFF T314 R1275 con provenance e modalità read-only."
+    }
   ],
   "increment": {
-    "id": "review-verified-facts-cli-preview-v1",
-    "title": "Verified facts preview generato dalla CLI review",
-    "objective": "Esporre nella CLI Python la generazione preview-only dei verified facts a partire da queue e decisioni compilate, mantenendo provenance e revisione umana obbligatoria.",
-    "scope": ["Aggiungere un comando memoria review verified-facts --preview che risolva la sessione o la run candidata.", "Riutilizzare il builder esistente per produrre l'artefatto verified_facts.preview.json con decisioni e provenance coerenti.", "Aggiungere test offline per decisione accettata, pending/uncertain, assenza di run e guardrail su profili ed evidence store."],
-    "out_of_scope": ["Applicazione canonica, aggiornamento di profili o promozione a verified facts definitivi.", "Nuove fonti, accesso cloud, scraping, OCR, consolidamento o ProfilePatch.", "Rimozione dei wrapper PowerShell già compatibili e modifica dei contratti storici esistenti."],
-    "candidate_files": ["memoria-engine/code/caduti_fonti_report/memoria_cli.py", "memoria-engine/code/caduti_fonti_report/document_analysis/verified_facts_preview.py", "memoria-engine/tests/test_memoria_cli.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-    "stop_condition": "Il comando preview genera verified_facts.preview.json dalla run/sessione corretta, conserva provenance e stato preview-only, gestisce assenza di run/errori senza scritture canoniche e i test mirati passano."
+    "id": "ocr-markdown-cli-test-fixture-quality-gate-v1",
+    "title": "Allineare il fixture CLI Markdown al quality gate OCR",
+    "objective": "Aggiornare il payload sintetico del test CLI Markdown affinché rappresenti un documento OCR accettato dal quality gate, senza cambiare il runtime.",
+    "scope": [
+      "Inspect the current Markdown export acceptance contract and the failing CLI test fixture.",
+      "Add the minimal accepted quality-gate fields to the synthetic ProcessedDocumentText payload used by the CLI test.",
+      "Keep runtime code, output contracts and unrelated changes untouched."
+    ],
+    "out_of_scope": [
+      "Change runtime behavior or export policy.",
+      "Modify tests unrelated to the failing CLI Markdown fixture."
+    ],
+    "candidate_files": [
+      "memoria-engine/tests/test_memoria_cli.py",
+      "memoria-bootstrap/planning/current-work.json"
+    ],
+    "stop_condition": "The targeted Markdown CLI test passes with a quality-gate-accepted fixture; no runtime files change; planner JSON and diff checks pass."
   },
   "verification": {
-    "tests": ["python -m unittest tests.test_memoria_cli (workdir: memoria-engine)", "python -m py_compile code/caduti_fonti_report/memoria_cli.py (workdir: memoria-engine)", "python -m json.tool memoria-bootstrap/planning/current-work.json", "git diff --check"],
-    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-    "result": "passed",
-    "notes": "Implementato memoria review verified-facts --preview con sessione attiva o run raccomandata, filtri multi-profilo e output preview. 20 test CLI, py_compile, JSON planner e git diff --check passano; profili canonici ed evidence store invariati.",
+    "tests": [
+      "cd memoria-engine; python -m unittest tests.test_memoria_cli.MemoriaCliTests.test_documents_markdown_preview_is_read_only_and_apply_writes_page",
+      "cd memoria-engine; python -m unittest tests.test_document_ocr_tesseract tests.test_manual_document_registration_batch tests.test_memoria_cli tests.test_ocr_markdown tests.test_ocr_benchmark",
+      "python -m json.tool memoria-bootstrap/planning/current-work.json",
+      "git diff --check"
+    ],
+    "documentation_touchpoints": [
+      "memoria-engine/tests/test_memoria_cli.py",
+      "memoria-bootstrap/planning/current-work.json"
+    ],
+      "result": "passed",
+      "notes": "Fixture CLI Markdown aggiornato con ocr_quality_gate_status=accepted; il test mirato passa. Suite OCR documenti/CLI/Markdown/benchmark: 70/70, planner JSON valido e git diff --check pulito. Nessun codice runtime modificato dall'hotfix del test.",
     "task_envelope": {
-      "mode": "feature-slice",
+      "mode": "scoped-fix",
       "repositories": ["memoria-engine", "memoria-bootstrap"],
-      "read_set": ["AGENTS.md", "memoria-bootstrap/docs/agent-session-prompt.md", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/planning/current-work.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\manual_review_queue.t34.preview.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5a.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5b.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5c.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_block5d.json", "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\intake-t34-manual-review-queue-20260831\\review_decisions_t34_final.json"],
-      "write_set": ["memoria-engine/code/caduti_fonti_report/memoria_cli.py", "memoria-engine/code/caduti_fonti_report/document_analysis/verified_facts_preview.py", "memoria-engine/tests/test_memoria_cli.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "Set-Location memoria-engine; python -m unittest tests.test_memoria_cli; python -m py_compile code/caduti_fonti_report/memoria_cli.py; Set-Location ..; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check",
-      "stop_conditions": ["comando verified-facts --preview disponibile", "artefatto preview con provenance coerente", "assenza di scritture canoniche", "test CLI passanti"]
+      "read_set": [
+        "AGENTS.md",
+        "memoria-engine/tests/test_memoria_cli.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_markdown.py"
+      ],
+      "write_set": [
+        "memoria-engine/tests/test_memoria_cli.py",
+        "memoria-bootstrap/planning/current-work.json"
+      ],
+      "test_command": "cd memoria-engine; python -m unittest tests.test_memoria_cli.MemoriaCliTests.test_documents_markdown_preview_is_read_only_and_apply_writes_page; python -m json.tool ../memoria-bootstrap/planning/current-work.json; git diff --check",
+      "stop_conditions": [
+        "il singolo test CLI Markdown passa con fixture accepted",
+        "nessuna modifica runtime",
+        "planner valido e diff-check pulito"
+      ]
     }
   },
   "routing": {
@@ -40,10 +70,794 @@
     "agent": "mmr_implementer",
     "model": "gpt-5.6-terra",
     "reasoning_effort": "medium",
-    "rationale": "Il task aggiunge un micro-workflow CLI entro contratti preview esistenti, con output downstream verificabile e senza mutazioni canoniche.",
-    "trace": [{"event": "selected", "at": "2026-09-15T00:00:00+02:00", "tier": "medium", "agent": "mmr_implementer", "model": "gpt-5.6-terra", "reasoning_effort": "medium", "reason": "Micro-slice CLI per generare verified facts preview dalla review, riusando contratti e provenance esistenti."}]
+    "rationale": "Correzione mirata di fixture test che non rispecchia il gate runtime accettato, senza cambiare codice applicativo.",
+    "trace": [
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:56:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Correggere il fixture di un test CLI Markdown che non dichiara il quality-gate status richiesto."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:56:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornare solo il ProcessedDocumentText sintetico nel test, senza modificare il runtime."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:42:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Consolidare in roadmap e playbook gli apprendimenti riutilizzabili della sessione OCR."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:42:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Correggere path canonico e formalizzare verifica pixel-level, preprocessing e trattamento di output vuoto."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review documentale read-only della correzione path e delle regole riutilizzabili di benchmark OCR."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Verificare che roadmap/playbook restino coerenti e che la regola non confonda hash del PNG con identità pixel-level."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T23:47:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "low",
+        "reason": "La review ha rilevato il passo appaiato ancora formulato come futuro nella roadmap e suggerito di registrare lo stato; aggiungere anche mode colore/orientamento quando applicati."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:47:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Allineare lo stato roadmap con la prova conclusa e completare i campi di riproducibilità del preprocessing."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:47:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Registrare outcome sintetico di Qwen 4B/8B/Tesseract, limiti di comparabilità e prossimo step, senza duplicare il report completo della sessione."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:50:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review finale dello stato aggiornato della roadmap OCR e del playbook di riproducibilità."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:50:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Confermare che i risultati siano registrati come valutazione e non come claim, e che il prossimo passo non selezioni uno stack."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T23:52:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "low",
+        "reason": "Rifinire una formulazione ridondante nella regola pixel-level del playbook dopo il PASS documentale."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:52:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Sostituire 'equivalenza equivalente' con 'verifica equivalente' senza cambiare il requisito."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:52:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Micro-revisione testuale del solo playbook document analysis."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:25:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Valutare il cambio di tag da qwen3-vl:8b a qwen3-vl:4b sugli stessi input e parametri."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:25:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Eseguire Qwen 4B su fixture sintetiche e input T314, mantenendo provenance e nessuna scrittura."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:31:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornare la nota corrente con provenance, risultato 4B e confronto qualitativo con 8B."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:31:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiungere una nota circoscritta Qwen3-VL 4B lasciando intatti risultati/provenance 8B e Tesseract."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:34:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review read-only della nota comparativa 4B/8B e della provenance registrata."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:34:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Verificare coerenza della nuova nota, limiti ground truth e nessuna affermazione di accuratezza reale."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T23:37:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "low",
+        "reason": "La review documentale ha richiesto digest PNG completi e dimensioni trasformate per rendere verificabile la provenance."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:37:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Integrare digest payload completi e formattazione esplicita delle latenze dopo la review."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:37:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornare la nota comparativa con provenance completa dei PNG, senza alterare dati sorgente o di altri engine."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:40:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Confermare che la nota risolve il rilievo su hash/raster e mantiene corretti i caveat OCR."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:40:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Seconda review mirata dopo il completamento della provenance PNG 4B."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T23:42:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "low",
+        "reason": "La review chiarisce che i PNG 4B e 8B hanno digest/byte diversi e manca verifica pixel-level; qualificare il confronto come stessi TIFF originali, preprocessing 4B documentato e non payload identici."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:42:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Rendere espliciti i limiti di comparabilità del preprocessing tra i run 4B e 8B."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:42:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Correggere la formulazione, mantenendo l'esito comparabile soltanto sugli originali TIFF e senza claim di payload identici."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Verificare la cautela aggiunta sul livello di comparabilità tra payload 4B e 8B."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review finale mirata della nota dopo aver limitato il confronto agli stessi TIFF originali."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:23:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review finale della nota dopo aggiunta di Tesseract ita/deu e dei relativi caveat."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:23:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Controllare coerenza semantica, provenance e assenza di claim accuracy nella nota aggiornata."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:22:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornare l'esito del confronto con la configurazione Tesseract tedesca disponibile localmente."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:22:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Nota sintetica su Tesseract deu, output e latenza per gli stessi TIFF; nessuna accuracy senza ground truth."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:17:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review finale della nota con esiti Qwen/Tesseract, provenance e caveat ground truth."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:17:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Confermare che note, percorso canonico, hash e risultati non attribuiscano accuratezza non misurata."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:16:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Registrare l'esito della prova appaiata e il risultato Qwen sulle fixture in current-next."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:16:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Nota sintetica con provenance, output vuoto Qwen, trascrizioni Tesseract e caveat ground truth; nessun OCR nei file."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T23:10:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Avviare la prova T314 richiesta subito dopo la valutazione Qwen su due TIFF identici per engine."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:10:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Eseguire Tesseract e Qwen read-only sugli stessi TIFF, raccogliendo provenance senza salvare output OCR."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T23:05:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Verifica indipendente della correzione di rete e dei test per endpoint locale."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:05:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review read-only del fix loopback, della test suite e della nota aggiornata."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T23:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "La review ha rilevato trasmissione possibile a host remoti; correggere il confine di rete e aggiungere test prima della chiusura.",
+        "from_tier": "review"
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T23:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Limitare endpoint all'Ollama locale, correggere test e nota, senza ripetere OCR live."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T22:45:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Gate indipendente sull'adapter Ollama multimodale e sul perimetro di trasmissione immagini."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:45:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review read-only dei nuovi test, dell'adapter Qwen e del risultato di esecuzione locale sintetico."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T22:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementare il runner Qwen locale sulle fixture OCR sintetiche con provenance e trasporto testabile offline."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Realizzare adapter, test iniettati e documentazione del benchmark locale Qwen senza accesso ai documenti esterni."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T22:20:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "La review documentale PASS ha rilevato due miglioramenti circoscritti di riproducibilità e navigazione.",
+        "from_tier": "low"
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:20:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Integrare l'hash prompt e un riferimento alla roadmap senza modifiche fuori scope."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:18:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Review documentale indipendente della roadmap e della nota current-next aggiornate."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T22:18:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_reviewer",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Verifica documentale mirata dei requisiti e dei guardrail prima della chiusura."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T22:16:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Registrare nella roadmap il confronto appaiato Tesseract/Qwen richiesto dall'utente, da svolgere dopo la valutazione Qwen."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T22:08:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Quality gate indipendente dell'adapter Tesseract e del benchmark reale su fixture sintetiche."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:08:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Revisione read-only del runner benchmark Tesseract, dei test e della provenance."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T22:07:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Il prossimo passo roadmap collega le fixture sintetiche a Tesseract locale prima del confronto con Qwen."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:07:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementare runner benchmark Tesseract entro i file del task envelope."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T22:02:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Ripetere il gate indipendente dopo la validazione completa dei chunk e dei dati PNG."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:02:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Verificare regressioni su PNG troncati, CRC, IDAT, dimensioni, filtri e path fixture."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T22:01:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "La review rileva che il controllo PNG legge solo l'header e non rifiuta contenuto troncato; aggiungere validazione integrale e test.",
+        "from_tier": "review"
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:01:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Chiudere il difetto di integrità PNG entro il workset benchmark già approvato."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T22:00:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Quality gate indipendente su fixture raster, provenance SHA-256, parsing PNG e containment dei path."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T22:00:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Revisione read-only del benchmark OCR con input visuali sintetici."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T21:42:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "La roadmap richiede fixture offline visuali prima del confronto riproducibile Qwen/Tesseract."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T21:42:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Aggiungere raster sintetici e provenance immagine nel task envelope delimitato."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T00:40:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Confermare in gate indipendente le correzioni alle metriche, al containment delle fixture e ai casi limite."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T00:40:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Revisione read-only della patch OCR benchmark dopo le correzioni."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-18T00:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Il quality gate ha rilevato metriche duplicate, edge case denominatore zero e containment symlink da correggere.",
+        "from_tier": "review"
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T00:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Correggere le metriche e la validazione dei percorsi secondo il report review, aggiungendo test mirati."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-18T00:20:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Quality gate indipendente su metriche, fail-closed manifest, provenance e fixture offline."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T00:20:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Revisione read-only dell'implementazione OCR benchmark foundation."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-18T00:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "La roadmap richiede un confronto OCR riproducibile; il primo incremento implementa dataset sintetico e valutatore puro offline."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-18T00:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementare il benchmark foundation entro i file indicati nel task envelope."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-17T22:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementare il quality gate e i retry automatici definiti dalla revisione architetturale."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-17T22:10:00+02:00",
+        "tier": "high",
+        "agent": "mmr_architect",
+        "model": "gpt-5.6-sol",
+        "reasoning_effort": "high",
+        "reason": "La revisione architetturale ha definito il confine qualità/retry prima dell'implementazione."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-17T22:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementazione circoscritta al runner OCR, exporter Markdown, test e touchpoint roadmap."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-17T22:30:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Eseguire un gate indipendente su regressioni, soglie provvisorie, provenance e skip Markdown legacy."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-17T22:30:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Revisione read-only dei test e del quality gate per il micro-incremento OCR."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-17T22:40:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Il quality reviewer ha indicato correzioni implementative circoscritte; torno al tier medium per chiuderle prima del gate finale.",
+        "from_tier": "review"
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-17T22:40:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Chiudere fail-closed per gate sconosciuto e aggiungere regressioni soglia e preservazione JSON."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-17T22:38:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Ripetere il gate indipendente dopo le correzioni fail-closed e i nuovi test di preservazione/soglia."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-17T22:38:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Confermare le correzioni richieste nella prima review in modalità read-only."
+      }
+      ,
+      {
+        "event": "fallback",
+        "at": "2026-09-17T22:41:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Dopo il quality gate completato, il residuo richiesto dall'utente è un aggiornamento documentale circoscritto.",
+        "from_tier": "review"
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-17T22:41:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiungere requisiti roadmap per l'ottimizzazione e il benchmark offline di Qwen nell'OCR locale."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-17T22:41:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Edit documentale limitato a roadmap OCR e nota di sessione."
+      }
+    ]
   },
   "blockers": [],
-  "session_notes": ["Sessione avviata dalla procedura agent-session-prompt.md.", "Il worktree contiene modifiche preesistenti non attribuite a questa selezione e da preservare.", "Nessun claim o verified_fact e' stato creato.", "MVP tecnico chiuso; pCloud resta in hold.", "Filtro CLI read-only dei target per profilo implementato e verificato senza modifiche canoniche."],
-  "next_action": {"mode": "recalculate", "description": "Selezionare il prossimo micro-incremento dalla roadmap post-MVP; pCloud resta in hold."}
+  "session_notes": [
+    "L'elaborazione OCR deve includere controllo qualità e retry adattivi; non va presentato come utile un OCR vuoto o palesemente degradato.",
+    "Sono presenti modifiche preesistenti in memoria-engine e memoria-bootstrap; la revisione architetturale e' read-only e non deve sovrascriverle.",
+    "Su richiesta dell'utente, prima della chiusura e' stata aggiunta alla roadmap la valutazione di Qwen locale per OCR, con risultati del pilot, strategie da confrontare e benchmark offline richiesto; nessuna selezione di stack o benchmark runtime effettuati."
+  ],
+    "next_action": {
+      "mode": "recalculate",
+      "description": "Selezionare il prossimo micro-incremento dalla roadmap nella prossima sessione; il quality gate OCR mirato è concluso."
+  }
 }

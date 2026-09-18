@@ -1,5 +1,70 @@
 # Current Next Increment
 
+## Nota di sessione 2026-09-18 - valutazione Qwen e confronto appaiato
+
+Aggiornamento: il tag `qwen3-vl:4b` era già installato; nessun download è
+stato eseguito. Con Ollama 0.34.2, digest
+`1343d82ebee38e26a4dd6b0180b915eb91550184e67c505dea97509571c8f683`, lo
+stesso prompt (SHA-256
+`04f17ecf2f4bad0f35e24eb34cd74593967434c4e86a7114c33ded07fad85dab`),
+`num_ctx=8192`, `num_predict=128` e `think=false`, Qwen 4B ha restituito output
+vuoti su tutte e tre le fixture sintetiche: 0/35 token, metriche aggregate
+0.0, latenze 67,671 secondi, 56,684 secondi e 56,133 secondi. Sugli stessi TIFF diretti canonici
+`T314-1275-00026.tif` e `T314-1275-00028.tif` ha restituito 0 caratteri in
+43,995 secondi e 43,693 secondi. I TIFF originali misurano 3632×6192 pixel e
+22.489.956 byte; applicando a entrambi la procedura dichiarata di conversione
+RGB e ridimensionamento in memoria al massimo lato 1600, i payload PNG 939×1600
+sono rispettivamente 908.614 byte (SHA-256
+`4b0c3ac7eff4ea9d6a56954cf5c470c1aeda983fa0517a5a12cbf0bf0b39fde5`) e
+849.905 byte (SHA-256
+`8ebb1177ea906ed7b8f6993ded0c575b4971090910480402e6535fba0cf053df`).
+La conversione Pillow ha decodificato/caricato le immagini, convertito in RGB,
+ridimensionato con dimensione arrotondata e codificato PNG in `BytesIO`; nessuna
+scrittura è stata eseguita. Il confronto con Qwen 8B riguarda gli stessi TIFF
+originali; non è stata verificata l'equivalenza pixel-level dei payload inviati
+ai due modelli, quindi non si afferma un confronto sugli stessi payload. Le
+differenze di codifica possono spiegare hash diversi, ma non provano da sole
+l'equivalenza delle immagini. L'esito qualitativo osservato è uguale a Qwen 8B;
+senza ground truth umana validata non si dichiara accuratezza sui TIFF.
+
+Completato `ocr-qwen-offline-benchmark-runner-v1`: l'adapter usa le fixture sintetiche del manifest, invia immagini in memoria a Ollama locale e conserva provenance. Con `qwen3-vl:8b` (digest `901cae73216286ea8c5aba8b46d307ff7188f737285ec500c795a12f05225d28`), Ollama 0.34.2, prompt SHA-256 `04f17ecf2f4bad0f35e24eb34cd74593967434c4e86a7114c33ded07fad85dab`, `num_ctx=8192`, `num_predict=128`, `think=false`, tutti e tre gli output sintetici sono vuoti: 0/35 token di riferimento, con latenze 89,7 s, 81,8 s e 107,9 s. Test mirati 13/13 e quality review indipendente PASS.
+
+Subito dopo e' stata eseguita la prova richiesta con entrambi gli engine sui due TIFF presenti nella directory canonica `P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`. Il percorso letterale fornito (`documenti\_da\_processare`) non esisteva; sono stati usati soltanto i due TIFF diretti della directory canonica. Gli originali misurano 3632x6192 pixel e 22.489.956 byte ciascuno; per Qwen sono stati convertiti in memoria in PNG RGB ridimensionati a 939x1600, senza scrivere file. SHA-256 originali: `00026`: `9a150b91cb1793d5c4b014546d73d90c642b4c5d0714f5a3ced1c6dea0ac03af`, `00028`: `661d6b0728033fa0526dcb83b9f4451b237a5fe52d986fc9d7a4f62d1779cab8`. SHA-256 PNG inviati a Qwen: `00026`: `ebeb3aef856fc89604f1f9d3a5afe4c652cb0963fda660c653122ea2bcfcc059`, `00028`: `f9555e62c4d0ac848904764db02a4f310689c18faf98ad3cb7314abc23e99c36`.
+
+Tesseract 5.5.0.20241111 con `ita`, OEM 1 e PSM 6 ha prodotto rispettivamente 1250 caratteri in 3916 ms e 994 caratteri in 2208 ms. Con la lingua `deu` disponibile, sugli stessi file ha prodotto 1054 caratteri in 1417 ms (`00026`) e 922 caratteri in 1517 ms (`00028`). Il campione `00028` appare piu' coerente con il testo tedesco, ma resta rumoroso. Qwen ha restituito output vuoti, rispettivamente in 179230 ms e 66396 ms. Non era disponibile una trascrizione validata da una persona: non si riportano metriche di accuratezza. Il testo prodotto da Tesseract resta rumoroso e non sostiene affermazioni sui fatti. Nessun file sorgente o di output e' stato scritto. Prima di concludere sull'accuratezza, valutare una diversa strategia di input immagini per Qwen o un diverso modello/runtime.
+
+## Nota di sessione 2026-09-18 - runner benchmark Tesseract offline
+
+Completato `ocr-tesseract-offline-benchmark-runner-v1`: l'adapter esegue OCR
+sui soli PNG sintetici, valuta il testo e riporta versione, lingua, OEM, PSM e
+comandi, senza registrare `ProcessedDocumentText` o scrivere file operativi.
+Con Tesseract v5.5.0.20241111, lingua `ita`, OEM 1 e PSM 6, l'accuratezza
+testuale è stata 1.00 sul caso pulito, 0.75 sul degradato e 0.36 sul tabellare
+(0.69 aggregata). Suite simulata 9/9 e quality review indipendente PASS. Sono
+risultati su sole fixture sintetiche; le metriche non misurano layout/struttura
+e non calibrano le soglie su scansioni reali. Nessun modello Qwen è stato usato.
+
+## Nota di sessione 2026-09-18 - input raster per benchmark OCR
+
+Completato `ocr-visual-fixtures-provenance-v1`: aggiunti tre PNG sintetici
+1200×1600 con testo pulito, degradato e tabella con glifi nelle celle. Il
+manifest registra file, dimensioni e trasformazioni; il report conserva SHA-256
+delle immagini. La validazione indipendente dei PNG controlla chunk, CRC,
+decompressione, dimensioni e filtri; containment fail-closed per traversal e
+symlink. Test mirati 6/6 e review indipendente PASS. Nessun OCR/modello invocato;
+le metriche restano text-only e non valutano la fedeltà strutturale.
+
+## Nota di sessione 2026-09-18 - fondazione benchmark OCR offline
+
+Completato `ocr-offline-benchmark-foundation-v1`: aggiunti tre casi sintetici
+con trascrizione attesa e valutatore deterministico per accuratezza testuale,
+copertura, completezza, omissioni e aggiunte, con hash SHA-256 e provenance.
+Test mirati 5/5 e quality review indipendente PASS. Manifest e output mancanti
+o sconosciuti e ground truth esterni alla directory vengono rifiutati. Il caso
+tabella/layout misura soltanto il testo, non fedeltà strutturale o ordine di
+lettura. Nessun OCR o modello è stato invocato; le soglie quality gate non sono
+state calibrate con fixture sintetiche.
+
 Data: 2026-09-02
 
 ## Nota di sessione 2026-09-15 - verified facts preview via CLI
@@ -3030,3 +3095,129 @@ worklist sono state classificate. Generati i registri finali e una raccolta di
 10 operazioni `ProfilePatch` preview; restano 2 conflitti `needs_review`
 (Brini Adelmo e Bagni Alfonso). Nessuna modifica canonica o pubblicazione e'
 stata eseguita.
+## Nota roadmap 2026-09-17 - intake immagini e OCR strutturato
+
+Sono stati consolidati nella roadmap tecnica i requisiti post-MVP per un
+workflow CLI Python end-to-end: discovery/intake idempotente, OCR per lotto,
+trascrizione Markdown strutturata con provenance di pagina/regione, trattamento
+distinto di tabelle, diagrammi e cartine, quindi candidati per review e possibile
+arricchimento dei profili. L'OCR e i report Markdown attuali non ricostruiscono
+ancora semanticamente tabelle o mappe. Restano obbligatori incertezza esplicita,
+revisione umana e preview-only: nessuna promozione automatica o modifica canonica.
+
+Riferimento: `memoria-bootstrap/docs/roadmap/02-technical-roadmap.md`, sezione
+"Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili".
+L'implementazione va selezionata come un singolo micro-incremento successivo;
+questo aggiornamento registra requisiti, non introduce capacità runtime.
+
+## Nota di sessione 2026-09-17 - intake immagini CLI preview-first
+
+Implementato `memoria documents register --root ... --source-id ...
+--archival-reference ...`: la modalità predefinita scansiona ricorsivamente le
+immagini supportate e mostra cosa registrerebbe senza scrivere file. Solo
+`--apply` crea i sidecar mancanti; quelli già presenti sono saltati e gli
+originali restano invariati. I test coprono preview read-only, applicazione,
+input vuoto/inesistente e rerun idempotente (28 test mirati passati). Questo
+passo non esegue OCR: il prossimo incremento dovrà collegare il processamento
+OCR alla CLI, mantenendo output e limiti dichiarati nella roadmap.
+
+## Nota di sessione 2026-09-17 - OCR batch dalla CLI
+
+Implementato `memoria documents process --root ... --output-dir ...`: senza
+`--apply` il comando mostra in sola lettura immagini registrate, output OCR
+attesi e motivi di salto, senza avviare Tesseract o scrivere file. Con `--apply`
+delega al runner OCR batch locale esistente e riporta risultati o errori per
+documento. I test offline coprono preview, delega esplicita e root inesistente;
+non sono stati modificati runner, dipendenze, profili, claim o dati esterni.
+
+## Integrazione requisiti roadmap 2026-09-17 - Markdown con layout di pagina
+
+Il deliverable futuro non è limitato a OCR o testo estratto: per ogni immagine
+o pagina dovrà essere prodotto un Markdown che ricostruisce in modo
+semplificato pagine, blocchi, titoli, paragrafi, colonne/ordine di lettura,
+liste, didascalie e tabelle quando rilevabili, con riferimenti alle regioni
+originali. Strutture inferite e incertezze vanno marcate; il testo illeggibile
+non va inventato. La ricostruzione della pagina non interpreta mappe né la
+semantica dei simboli.
+
+La roadmap richiede inoltre una valutazione comparativa di pipeline OCR/layout
+e LLM locali, anche multimodali, come opzioni senza selezionare ora modello o
+stack. Le opzioni locali dovranno poter operare offline, tutelare la privacy e
+registrare modello/versione/configurazione, provenance e dati per la
+riproducibilità. Il confronto considera fedeltà del layout, copertura delle
+regioni, tabelle, qualità, costo/risorse e revisione umana; i criteri offline
+includono fixture con scansioni multi-colonna, header/footer, tabelle, layout
+misto e testo degradato, con Markdown atteso. È un aggiornamento di requisiti:
+nessun benchmark o cambiamento runtime è stato eseguito.
+
+## Nota di sessione 2026-09-17 - evidenze layout line-level OCR
+
+Completato `ocr-line-layout-evidence-v1`: `ProcessedDocumentText` conserva in
+`ocr_layout_lines` le righe estratte dal TSV Tesseract, con ID stabili di riga,
+pagina e regione, testo, coordinate, confidence media e `review_status:
+unreviewed`. I candidati di nota e riferimento restano output separati e
+collegano la riga/regione che li ha originati. TSV assente o fallito produce una
+lista vuota e mantiene i metadati OCR compatibili.
+
+Correzione quality gate in corso: le righe e i candidati riportano anche
+`source_document_id`; `read_order` è marcato `inferred` con base
+`page_top_then_left_then_tsv_hierarchy`, quindi non dichiara un ordine di lettura
+verificato né una struttura semantica. La suite OCR e la compilazione passano;
+il planner resta `in_progress` fino al secondo gate indipendente.
+
+## Nota di sessione 2026-09-17 - export Markdown OCR per pagina
+
+Completato `ocr-page-markdown-export-v1`: `memoria documents markdown --root
+... --output-dir ...` mostra i file candidati in preview read-only e scrive
+solo con `--apply`. L'export crea un file per pagina nel percorso sanificato
+`source_document_id/page_id.md`, conserva documento e file sorgente, motore,
+lingua, regione, bounding box, confidence, revisione e ordine inferito con la
+sua base. Il testo OCR resta letterale in fence sicure e non viene interpretato
+come Markdown, titolo, tabella o claim. JSON non validi, layout vuoti,
+collisioni e output esistenti sono riportati per documento senza sovrascrittura.
+
+Correzione quality gate: la scrittura in apply usa creazione esclusiva. Se un
+file compare tra il preflight e l'apertura, l'export lo segnala come esistente e
+ne conserva il contenuto; il planner resta in attesa del secondo gate.
+
+## Nota di sessione 2026-09-17 - quality gate OCR e retry limitati
+
+Completato `ocr-quality-gated-retry-v1`: il runner controlla testo e TSV prima
+di registrare `ProcessedDocumentText`. Un candidato degradato puo' attivare al
+massimo un PSM alternativo e una derivata temporanea preprocessata con il PSM
+piu' promettente. Se nessun candidato passa, restituisce un errore prima della
+scrittura e conserva gli output esistenti. Il payload scelto registra una sintesi
+di `ocr_fallback_attempts`; il Markdown salta documenti gia' rifiutati e righe
+senza testo alfanumerico. Nel pilot le soglie sono: almeno 2 token alfanumerici,
+una riga TSV alfanumerica, confidence media >= 35 e quota low-confidence <= 75%.
+Sono euristiche tecniche, non giudizi archivistici: vanno calibrate con fixture
+di scansioni rappresentative prima di fissarle.
+Il gate decide soltanto la registrazione del JSON OCR `ProcessedDocumentText`;
+un `*.metadata.json` separato conserva metadati indipendenti e non costituisce
+un output OCR vuoto.
+
+## Nota di sessione 2026-09-17 - valutazione Qwen locale per OCR
+
+Inserita in roadmap una valutazione dedicata di Qwen3-VL 8B locale e delle
+varianti `instruct`/`thinking`, senza selezione preventiva dello stack. Il pilot
+con `qwen3-vl:8b` ha saturato il context 4096 sull'immagine intera ad alta
+risoluzione; con crop ridotto e context piu' ampio il budget e' stato comunque
+consumato dai token di thinking e la risposta finale e' rimasta vuota o
+incompleta. Prossimo lavoro candidato: benchmark offline contro Tesseract su
+fixture con riferimento, testo degradato e tabella/layout misto; valutare
+prompt letterali nella lingua sorgente, budget e modalita' thinking,
+dimensionamento/crop/tiling, accuratezza, copertura, completezza,
+non-invenzione, struttura e risorse/latency CPU-GPU. Registrare tag/digest,
+versione/configurazione Ollama, hash del prompt e trasformazioni per rendere i
+risultati riproducibili.
+
+## Debito tecnico CLI - dispatcher PowerShell duplicato
+
+La roadmap tecnica registra come debito la coesistenza della CLI Python
+installabile `memoria` e dell'implementazione autonoma `scripts/memoria.ps1`,
+che non inoltra tutti i comandi. La CLI Python deve diventare l'unica autorita'
+dei comandi. Dopo aver inventariato e migrato i comportamenti PowerShell mancanti
+e verificato la parita' con test, l'implementazione autonoma PowerShell va
+rimossa immediatamente; l'eventuale `.ps1` residuo e' soltanto un launcher
+sottile che inoltra ogni argomento alla CLI Python. Nessun periodo di doppia
+implementazione e' ammesso.

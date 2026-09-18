@@ -41,31 +41,26 @@ backend locale compatibile, non vincolo architetturale permanente.
 
 ## Strategia CLI cross-platform
 
-La superficie canonica futura per i workflow operativi deve essere la CLI Python
-installabile `memoria`, non un wrapper specifico di piattaforma. La CLI deve
-restare eseguibile come console script su Windows e Linux, usando path espliciti,
-`MEMORIA_DATA_ROOT` o manifest per risolvere il data root.
+La CLI Python installabile `memoria` e' l'unica autorita' per i workflow
+operativi. Deve restare eseguibile come console script su Windows e Linux,
+usando path espliciti, `MEMORIA_DATA_ROOT` o manifest per risolvere il data root.
 
-I wrapper OS-specifici restano ammessi, ma come facciate sottili:
+Debito tecnico CLI: `scripts/memoria.ps1` contiene una superficie PowerShell
+autonoma che si sovrappone alla CLI Python e non inoltra tutti i comandi. La
+coesistenza di dispatcher con lo stesso nome e' una duplicazione di interfaccia
+da rimuovere. Inventariare i comandi e i comportamenti PowerShell, migrare nella
+CLI Python quelli ancora mancanti e verificare la parita' con test. Subito dopo
+la migrazione completa, eliminare l'implementazione autonoma PowerShell: nella
+stessa chiusura il percorso `.ps1` puo' restare soltanto come launcher sottile
+che inoltra senza filtri ogni argomento alla CLI Python. Non mantenere un
+periodo di doppia implementazione o comandi divergenti.
 
-- `scripts/memoria.ps1` continua a servire l'MVP e i workflow Windows gia'
-  validati;
-- un futuro wrapper shell Linux potra' offrire ergonomia equivalente;
-- la logica di dominio, selezione run, review, fonti e decisioni non deve essere
-  duplicata in PowerShell e shell script;
-- la migrazione dei workflow operativi nella CLI Python richiede incrementi
-  dedicati, test mirati e nessun cambio di output osservabile.
-
-Obiettivo post-MVP: eliminare progressivamente la dipendenza operativa dai
-wrapper PowerShell. Discovery, raccolta da fonti, processazione, review,
-consolidamento e scrittura degli artefatti preview devono essere esposti dalla
-CLI Python `memoria`. Ogni migrazione deve essere incrementale,
+I wrapper OS-specifici sono ammessi esclusivamente come launcher sottili. La
+logica di dominio, selezione run, review, fonti e decisioni deve vivere una
+sola volta nella CLI Python. Ogni migrazione deve essere incrementale,
 behavior-preserving, verificata offline e mantenere provenance, audit e
-guardrail.
-
-Per l'MVP da mostrare ai finanziatori resta accettato usare PowerShell come
-superficie operativa primaria, per ridurre il rischio della demo. Questa scelta
-e' una compatibilita' temporanea, non la destinazione architetturale finale.
+guardrail. L'MVP finanziatori non giustifica una seconda implementazione CLI:
+anche i workflow Windows gia' validati rientrano nell'inventario di parita'.
 
 ## Milestone tecniche
 
@@ -1237,6 +1232,188 @@ Aggiornamento Gate 9 del 2026-09-11: applicazione canonica T34b completata con
 3 profili nuovi, 1 collegamento esistente, indice 57 -> 60, backup e audit
 verificati. T34b e' chiusa; il prossimo incremento torna alla roadmap del
 prodotto completo.
+
+## Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili
+
+Obiettivo: consentire di portare un insieme di immagini dalla cartella di
+ingresso a trascrizioni revisionabili e candidati collegabili ai profili usando
+la CLI Python `memoria`, senza richiedere editing diretto di JSON o wrapper
+PowerShell come interfaccia operativa. È una sequenza candidata da selezionare
+in micro-incrementi: non implica che tutte le capacità siano già disponibili.
+
+### Requisiti del flusso CLI
+
+1. Discovery e intake: individuare i file supportati in un percorso esplicito,
+   mostrare un preflight/preview prima dell'elaborazione e registrare identità
+   stabile del documento, hash, percorso relativo e stato. L'originale resta
+   immutato; ripetere l'operazione non deve duplicare documenti né sovrascrivere
+   silenziosamente risultati precedenti.
+2. OCR e risultati: invocare il processamento per lotto dalla CLI e produrre
+   artefatti ispezionabili per documento e run. Conservare testo, pagina,
+   lingua/configurazione e motore, confidence disponibile, errori e riferimenti
+   alle regioni; riportare esplicitamente pagine o porzioni non lette e incerte.
+3. Trascrizione Markdown per pagina: produrre un file Markdown per ogni immagine
+   o pagina, non soltanto OCR o testo estratto, ricostruendo in forma
+   semplificata e verificabile la gerarchia e il layout: pagina, blocchi, titoli,
+   paragrafi, colonne e ordine di lettura, liste, didascalie e tabelle quando
+   rilevabili. Ogni elemento deve poter rinviare alla regione dell'immagine
+   originale (coordinate o identificatore stabile). Distinguere chiaramente
+   testo trascritto da struttura inferita; marcare ordine/strutture incerte e
+   passaggi da revisionare. Non inventare testo illeggibile: usare un marcatore
+   esplicito di illeggibilità/incertezza senza completamenti congetturali.
+   Coordinate e confidence, se disponibili, devono restare riconducibili
+   all'immagine originale.
+4. Tabelle e layout misti: rilevare aree tabellari e, quando supportato,
+   ricostruire righe/celle mantenendo ordine, pagina, coordinate e stato di
+   verifica. Celle ambigue o mancanti vanno segnalate, non completate per
+   supposizione. Criteri di qualità e soglie saranno definiti con fixture
+   rappresentative prima di scegliere o fissare un'implementazione.
+5. Valutazione comparativa di pipeline e modelli: confrontare approcci OCR e
+   rilevamento layout (inclusi pipeline modulari/deterministiche) con LLM locali,
+   anche multimodali, come opzioni e non come decisione di stack. Valutare
+   fedeltà della gerarchia e del layout/ordine di lettura, copertura delle
+   regioni, ricostruzione di tabelle, qualità della trascrizione, costo e
+   risorse necessarie, nonché il carico e la necessità di revisione umana.
+   Nessun modello o stack viene scelto in questa fase. Un'eventuale opzione
+   locale deve funzionare offline, rispettare la privacy, e conservare identità
+   e versione del modello, configurazione, provenance degli input/output e
+   informazioni sufficienti a riprodurre l'elaborazione.
+6. Diagrammi e cartine: trattarli come una classe separata. La ricostruzione
+   della pagina descrive blocchi, posizioni e testo visibile, ma non equivale
+   all'interpretazione di mappe né alla semantica dei simboli. Il testo OCR di
+   etichette e legenda è un indizio, non una lettura semantica della mappa.
+   Diagrammi semplici possono conservare testo, didascalie e regioni; relazioni
+   grafiche non sono fatti finché non sono verificate. Georeferenziazione,
+   controllo punti e interpretazione geografica sono capacità distinte, non
+   implicate dall'OCR.
+7. Collegamento ai profili: inviare documenti processati alla pipeline offline
+   esistente o alla sua evoluzione CLI per generare candidati di associazione e
+   claim. Ogni candidato deve rinviare a documento sorgente, hash, pagina e
+   regione quando disponibili. CLI di ispezione/review separa proposta, evidenza
+   e decisione umana; eventuali patch restano preview-only fino ad audit e
+   autorizzazione esplicita. Nessuna modifica canonica automatica.
+
+### Criteri di accettazione trasversali
+
+- il workflow completo si avvia e si ispeziona con CLI Python installabile;
+- test offline con fixture che includano almeno scansione multi-colonna,
+  header/footer, tabella, layout misto e testo degradato; verificare per ciascuna
+  la copertura delle regioni, la gerarchia/ordine ricostruiti e la corrispondente
+  fixture Markdown attesa, inclusi marcatori per inferenze e testo illeggibile;
+- confrontare su tali fixture le alternative OCR/layout e le eventuali opzioni
+  LLM locali per fedeltà del layout, copertura delle regioni, tabelle,
+  qualità/costo/risorse e necessità di revisione umana, senza richiedere un
+  benchmark o una selezione di modello in questa fase;
+- risultati ripetibili e idempotenti, con errori per file isolati e riepilogo
+  per lotto;
+- trascrizione, regioni e candidati sono riconducibili all'originale e le
+  incertezze non scompaiono nel passaggio Markdown;
+- nessuna acquisizione massiva non richiesta, promozione automatica di fatti o
+  scrittura di profili canonici.
+
+La ricostruzione Markdown riguarda la struttura visibile della pagina e il suo
+ordine di lettura, non l'interpretazione semantica di mappe o simboli. Un testo
+degradato o non leggibile resta esplicitamente tale e richiede revisione umana;
+non viene ricostruito per supposizione.
+
+### Stato e limiti osservati
+
+Il runner OCR locale attuale usa Tesseract per estrarre testo e diagnostica di
+qualità/layout; il testo viene normalizzato e non costituisce una ricostruzione
+semantica di tabelle o cartine. Produce artefatti strutturati per il
+processamento e report Markdown operativi, ma questi report non sono una
+trascrizione Markdown strutturata pagina/regioni. Il catalogo cartografico può
+segnalare mappe candidate, ma non interpreta la mappa né la georeferenzia.
+Questi limiti sono il punto di partenza per selezionare i successivi
+micro-incrementi, non una promessa di accuratezza OCR universale.
+
+Stato: requisiti consolidati il 2026-09-17. Primo passo completato: la CLI
+`memoria documents register` offre discovery ricorsiva in preview read-only e
+crea sidecar solo con `--apply`, saltando quelli esistenti. Il comando registra
+documenti per il successivo processamento ma non avvia OCR; gli altri requisiti
+restano da implementare per micro-incrementi.
+
+Passo successivo completato: `memoria documents process` mostra in preview
+read-only i candidati OCR e delega al runner batch locale soltanto con
+`--apply`. Trascrizione Markdown strutturata, layout e valutazione comparativa
+restano da implementare e verificare con fixture dedicate.
+
+Incremento `ocr-line-layout-evidence-v1` in quality gate: il payload OCR
+Tesseract conserva righe TSV con identificatori stabili di documento, pagina e
+regione, testo, bounding box, confidence media e stato `unreviewed`. L'ordine
+derivato dal sorting geometrico top/left è una proposta inferita e riporta la
+sua base, senza rappresentare struttura semantica. Le righe restano distinte dai
+candidati di nota o riferimento, che rinviano a documento, riga e regione di
+origine. In assenza di TSV il formato resta compatibile con una lista di righe
+vuota. Nessuna ricostruzione Markdown o inferenza di layout semantico è stata
+introdotta.
+
+Incremento `ocr-page-markdown-export-v1` completato: la CLI esporta in preview
+read-only, o con `--apply` esplicito, un Markdown per pagina dalle righe OCR
+gia' tracciate. Il file conserva provenance, coordinate, confidence, review e
+ordine inferito; il testo OCR non fidato e' recintato come letterale. Non sono
+state introdotte inferenze di titoli, colonne, tabelle, claim o profili.
+
+Incremento `ocr-quality-gated-retry-v1` completato: prima della registrazione il
+runner valuta congiuntamente testo e TSV. Se il risultato e' insufficiente prova
+un PSM alternativo e, soltanto allora, una derivata temporanea preprocessata con
+il PSM migliore; i tentativi sono al massimo tre e la sintesi resta nel payload
+scelto. Nessun JSON OCR viene creato o sovrascritto se nessun candidato supera
+il gate; l'export Markdown salta documenti rifiutati e righe senza caratteri
+alfanumerici. Le soglie del pilot sono provvisorie: almeno 2 token alfanumerici,
+una riga TSV alfanumerica, confidence media >= 35 e non oltre il 75% di token a
+confidence bassa. Servono fixture di scansioni reali rappresentative per
+calibrarle prima di trattarle come criteri archivistici stabili.
+Il gate riguarda esclusivamente il JSON `ProcessedDocumentText`: i file
+`*.metadata.json` separati conservano metadati indipendenti e non sono trattati
+come output OCR vuoti.
+
+### Valutazione dedicata Qwen locale per OCR
+
+Attivita' candidata, non selezione di stack: valutare Qwen3-VL 8B in esecuzione
+locale e le varianti `instruct`/`thinking` effettivamente disponibili. Il pilot
+del 2026-09-17 con `qwen3-vl:8b` ha lasciato vuota la risposta finale dopo aver
+esaurito il budget nei token di thinking. L'immagine intera ad alta risoluzione
+ha saturato il context da 4096 token; anche il crop ridotto con context piu'
+ampio ha consumato il budget in thinking senza una trascrizione finale completa.
+Questi esiti motivano una valutazione mirata, ma non determinano il modello o
+lo stack da adottare.
+
+La valutazione dovra' usare fixture offline con trascrizione di riferimento,
+includendo testo degradato e pagine con tabella/layout misto, e confrontare
+Qwen con Tesseract. Provare prompt di trascrizione letterale nella lingua
+sorgente (senza traduzioni o completamenti), limiti `context`/`num_predict`,
+modalita' thinking, dimensionamento delle immagini, crop e tiling. Misurare
+accuratezza e copertura del testo, completezza, non-invenzione, fedelta' della
+struttura e del layout, oltre a latenza e risorse CPU/GPU. Conservare provenance
+riproducibile: tag e digest del modello, versione Ollama e configurazione,
+hash del prompt e trasformazioni/crop applicati. La scelta resta aperta fino al
+confronto riproducibile e alla revisione dei risultati.
+
+Prova appaiata Qwen/Tesseract completata il 2026-09-18 sui file in
+`P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`, in sola
+lettura e senza registrare `ProcessedDocumentText`. Qwen3-VL 8B e 4B hanno
+restituito output vuoto sulle fixture sintetiche e sui due TIFF; Tesseract con
+lingue `ita` e `deu` ha prodotto testo sui TIFF, ancora rumoroso. Non essendoci
+ground truth umana validata, non sono state calcolate né dichiarate accuratezza.
+Il confronto 4B/8B ha usato gli stessi originali, ma gli hash dei PNG inviati
+sono diversi e l'identità pixel-level non è stata verificata; non si assume
+quindi che i due modelli abbiano ricevuto input pixel-identici. Nessun risultato
+costituisce un claim storico o seleziona uno stack OCR.
+
+Prossimo passo candidato: provare una strategia diversa di input, prompt o
+runtime su un campione con trascrizione umana validata; mantenere aperta la
+scelta dello stack fino alla revisione di un confronto riproducibile.
+
+Per rendere confrontabili gli input immagine, registrare anche la pipeline
+esatta di decode e trasformazione (formato, algoritmo e dimensioni del resize),
+l'hash dei byte effettivamente inviati al modello e, quando si dichiara identità
+pixel-level tra modelli, un hash canonico dei pixel decodificati o una verifica
+equivalente. Un hash PNG diverso non dimostra da solo che i pixel siano diversi;
+stessa sorgente e stesse dimensioni non dimostrano da sole che il payload sia
+identico. Un output vuoto o a zero token va riportato come nessuna trascrizione,
+non come copertura utile. L'accuratezza su immagini reali si valuta solo con
+ground truth umana validata.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

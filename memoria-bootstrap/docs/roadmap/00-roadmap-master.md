@@ -93,6 +93,9 @@ gap o conflitto
     backup, rollback e audit. **T34b, completato**.
 12. Riprendere il flusso del prodotto completo: post-MVP/Q2 secondo selezione
     roadmap; storage cloud e nuove fonti restano subordinati alle priorita'.
+13. Rendere il flusso di acquisizione immagini, OCR e revisione dei candidati
+    utilizzabile dalla CLI Python, con trascrizioni strutturate e provenance;
+    requisiti e fasi sono definiti nella roadmap tecnica post-MVP.
 
 Aggiornamento operativo 2026-09-11: T34b ha completato applicazione canonica,
 backup, rollback metadata e audit post-run. La migrazione profili e' chiusa;
@@ -115,6 +118,14 @@ review, consolidamento e produzione degli artefatti preview. I wrapper
 PowerShell restano solo un ponte compatibile durante la migrazione; ogni nuovo
 workflow va aggiunto alla CLI Python e i wrapper esistenti vanno sostituiti per
 micro-incrementi verificabili.
+
+Il flusso per immagini e documenti con elementi grafici deve distinguere
+intake e tracciamento dei file, OCR, ricostruzione della struttura e
+interpretazione. L'OCR attuale produce testo e diagnostica; un report Markdown
+di stato non equivale a una trascrizione Markdown strutturata. Tabelle,
+diagrammi e cartine richiedono capacità e verifiche dedicate. L'output può
+proporre collegamenti e claim candidati, ma non promuovere fatti né modificare
+profili canonici senza revisione umana.
 
 Per l'MVP finanziatori, i workflow PowerShell gia' validati possono restare la
 superficie operativa per le azioni preview che scrivono artefatti. La CLI Python
