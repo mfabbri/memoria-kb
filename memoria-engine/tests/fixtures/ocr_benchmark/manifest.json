@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "dataset_id": "synthetic-ocr-foundation-v1",
+  "synthetic": true,
+  "evaluation_scope": "Text-only baseline: mixed-table-layout does not score geometry, cells or reading order.",
+  "cases": [
+    {
+      "fixture_id": "clean-text",
+      "category": "clean_text",
+      "ground_truth_file": "clean-text.txt",
+      "image_file": "clean-text.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 1600},
+      "synthetic_transformations": ["rendered monospaced glyphs on a uniform white page"],
+      "description": "Synthetic clean single-column text."
+    },
+    {
+      "fixture_id": "degraded-text",
+      "category": "degraded_text",
+      "ground_truth_file": "degraded-text.txt",
+      "image_file": "degraded-text.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 1600},
+      "synthetic_transformations": ["rendered monospaced glyphs", "deterministic Gaussian softening", "deterministic white dropout rectangles"],
+      "description": "Synthetic text with an explicitly unreadable token."
+    },
+    {
+      "fixture_id": "mixed-table-layout",
+      "category": "mixed_table_layout",
+      "ground_truth_file": "mixed-table-layout.txt",
+      "image_file": "mixed-table-layout.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 1600},
+      "synthetic_transformations": ["rendered heading glyphs", "three-column ruled table with cell glyphs", "rendered trailing note glyphs"],
+      "description": "Synthetic heading, table and trailing note."
+    }
+  ]
+}

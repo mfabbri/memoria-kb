@@ -1,0 +1,5 @@
+Registro sintetico
+Codice | Stato | Nota
+ALFA | completo | prova
+BETA | parziale | verifica
+Fine del registro.
