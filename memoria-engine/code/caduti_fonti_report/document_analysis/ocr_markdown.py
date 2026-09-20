@@ -46,21 +46,20 @@ def _export_document(*, text_path: Path, output_dir: Path, apply: bool, planned_
         return [{"status": "skipped_invalid_document", "text_path": str(text_path), "reason": "source_document_id o ocr_layout_lines non validi"}]
 
     pages: dict[str, list[dict[str, Any]]] = {}
-    skipped_empty_lines = 0
     for line in lines:
-        if isinstance(line, dict) and str(line.get("page_id", "")).strip() and _has_alphanumeric_text(line.get("text", "")):
+        if isinstance(line, dict) and str(line.get("page_id", "")).strip():
             pages.setdefault(str(line["page_id"]), []).append(line)
-        elif isinstance(line, dict):
-            skipped_empty_lines += 1
     if not pages:
-        return [{"status": "skipped_empty_layout", "text_path": str(text_path), "source_document_id": source_document_id, "reason": "ocr_layout_lines assente, vuoto o senza testo alfanumerico"}]
+        return [{"status": "skipped_empty_layout", "text_path": str(text_path), "source_document_id": source_document_id, "reason": "ocr_layout_lines assente, vuoto o senza page_id valido"}]
 
     results: list[dict[str, Any]] = []
     for page_id, page_lines in sorted(pages.items()):
         target = output_dir / _safe_path_part(source_document_id) / f"{_safe_path_part(page_id)}.md"
         item = {
             "text_path": str(text_path), "source_document_id": source_document_id,
-            "page_id": page_id, "output_path": str(target), "line_count": len(page_lines), "skipped_empty_lines": skipped_empty_lines,
+            "page_id": page_id, "output_path": str(target), "line_count": len(page_lines),
+            "skipped_empty_lines": 0,
+            "unavailable_text_lines": sum(not _has_alphanumeric_text(line.get("text", "")) for line in page_lines),
         }
         normalized_target = target.resolve()
         try:
@@ -109,7 +108,7 @@ def render_ocr_page_markdown(*, document: dict[str, Any], page_id: str, lines: l
             f"- Confidence: `{_number(line.get('confidence'))}`",
             f"- Review status: `{_code(line.get('review_status', 'unreviewed'))}`",
             f"- Read order: `{_integer(line.get('read_order'))}` ({_code(line.get('read_order_status', ''))}; base: `{_code(line.get('read_order_basis', ''))}`)",
-            "- OCR text (untrusted):", "", _literal_fence(str(line.get("text", ""))), "",
+            *_render_ocr_text(line.get("text", "")), "",
         ])
     return "\n".join(rendered).rstrip() + "\n"
 
@@ -119,6 +118,12 @@ def _literal_fence(text: str) -> str:
     while fence in text:
         fence += "`"
     return f"{fence}text\n{text}\n{fence}"
+
+
+def _render_ocr_text(value: object) -> list[str]:
+    if not _has_alphanumeric_text(value):
+        return ["- OCR text (untrusted): `OCR text unavailable`"]
+    return ["- OCR text (untrusted):", "", _literal_fence(str(value))]
 
 
 def _code(value: object) -> str:
@@ -152,6 +157,8 @@ def _sort_order(value: object) -> int:
 
 
 def _has_alphanumeric_text(value: object) -> bool:
+    if value is None:
+        return False
     return any(character.isalnum() for character in str(value))
 
 

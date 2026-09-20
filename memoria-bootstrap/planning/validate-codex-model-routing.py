@@ -13,10 +13,10 @@ EXPECTED = {
     "mmr-docs-editor": ("gpt-5.6-luna", "medium"),
     "mmr-implementer": ("gpt-5.6-terra", "medium"),
     "mmr-test-reviewer": ("gpt-5.6-terra", "high"),
-    "mmr-architect": ("gpt-5.6-sol", "high"),
+    "mmr-architect": ("gpt-6-astra", "low"),
 }
 
-ROUTES = {
+ROUTES_V20 = {
     "low": {
         ("mmr_scanner","gpt-5.6-luna","low"),
         ("mmr_docs_reviewer","gpt-5.6-luna","medium"),
@@ -26,6 +26,12 @@ ROUTES = {
     "review": {("mmr_test_reviewer","gpt-5.6-terra","high")},
     "high": {("mmr_architect","gpt-5.6-sol","high")},
 }
+
+ROUTES_V21 = {
+    **{key: value for key, value in ROUTES_V20.items() if key != "high"},
+    "high": {("mmr_architect","gpt-6-astra","low")},
+}
+
 
 def fail(msg: str) -> None:
     print("FAIL:", msg)
@@ -68,9 +74,13 @@ def main() -> int:
     if active and not route:
         fail("active planner has no routing block")
     if route:
+        policy_version = route.get("policy_version", "2.0")
+        if active and policy_version != "2.1":
+            fail("active planner must be re-routed with policy_version 2.1")
+        routes = ROUTES_V21 if policy_version == "2.1" else ROUTES_V20
         tup = (route.get("agent"), route.get("model"), route.get("reasoning_effort"))
-        if tup not in ROUTES.get(route.get("tier"), set()):
-            fail(f"unsupported planner route: {route.get('tier')} {tup}")
+        if tup not in routes.get(route.get("tier"), set()):
+            fail(f"unsupported planner route for policy {policy_version}: {route.get('tier')} {tup}")
 
     try:
         import jsonschema
@@ -96,7 +106,7 @@ def main() -> int:
     if not (ROOT/".codex/hooks/model-routing-audit.py").is_file():
         fail("runtime audit hook script missing")
 
-    print("OK: Codex model routing v2 is structurally coherent")
+    print("OK: Codex model routing v2.1 is structurally coherent")
     if route:
         print(f"planner: tier={route['tier']} agent={route['agent']} model={route['model']} effort={route['reasoning_effort']}")
 

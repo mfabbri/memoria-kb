@@ -32,12 +32,27 @@ Criteri obbligatori:
 - almeno un feedback loop realmente chiuso;
 - dossier e walkthrough collegati alla stessa golden run.
 
-Priorita' corrente: T29-T33.
+Stato: T29-T33 completati; T34/T34b hanno chiuso la migrazione controllata dei profili legacy.
 
-## Phase 2 — Historian workspace
+## Phase 2 — Historian workspace e document intelligence
 
 Dashboard di revisione, decision trail, conflitti, patch controllate e
 suggerimenti di nuove ricerche su un perimetro piu' ampio.
+
+Priorita' corrente: T35-T40 per il flusso immagini/OCR:
+
+```text
+PP-OCRv5 structured evidence
+  -> high-resolution crop/tiling
+  -> deterministic DocumentStructure
+  -> Markdown derivato
+  -> reference e metriche
+  -> eventuale VLM selettivo
+  -> integrazione CLI
+```
+
+Il VLM non e' un sostituto page-level dell'OCR. PP-StructureV3 e Docling restano
+comparativi, non dipendenze del percorso corrente.
 
 ## Phase 3 — Multi-source expansion
 

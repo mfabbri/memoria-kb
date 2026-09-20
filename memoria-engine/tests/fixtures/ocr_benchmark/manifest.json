@@ -6,6 +6,7 @@
   "cases": [
     {
       "fixture_id": "clean-text",
+      "language": "ita",
       "category": "clean_text",
       "ground_truth_file": "clean-text.txt",
       "image_file": "clean-text.png",
@@ -16,6 +17,7 @@
     },
     {
       "fixture_id": "degraded-text",
+      "language": "ita",
       "category": "degraded_text",
       "ground_truth_file": "degraded-text.txt",
       "image_file": "degraded-text.png",
@@ -26,6 +28,7 @@
     },
     {
       "fixture_id": "mixed-table-layout",
+      "language": "ita",
       "category": "mixed_table_layout",
       "ground_truth_file": "mixed-table-layout.txt",
       "image_file": "mixed-table-layout.png",
@@ -33,6 +36,39 @@
       "image_dimensions": {"width": 1200, "height": 1600},
       "synthetic_transformations": ["rendered heading glyphs", "three-column ruled table with cell glyphs", "rendered trailing note glyphs"],
       "description": "Synthetic heading, table and trailing note."
+    },
+    {
+      "fixture_id": "german-text",
+      "language": "deu",
+      "category": "clean_text",
+      "ground_truth_file": "german-text.txt",
+      "image_file": "german-text.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 500},
+      "synthetic_transformations": ["rendered Unicode glyphs on a uniform white page"],
+      "description": "Synthetic German single-column text with umlauts."
+    },
+    {
+      "fixture_id": "english-text",
+      "language": "eng",
+      "category": "clean_text",
+      "ground_truth_file": "english-text.txt",
+      "image_file": "english-text.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 500},
+      "synthetic_transformations": ["rendered Unicode glyphs on a uniform white page"],
+      "description": "Synthetic English single-column text."
+    },
+    {
+      "fixture_id": "russian-text",
+      "language": "rus",
+      "category": "clean_text",
+      "ground_truth_file": "russian-text.txt",
+      "image_file": "russian-text.png",
+      "image_format": "png",
+      "image_dimensions": {"width": 1200, "height": 500},
+      "synthetic_transformations": ["rendered Cyrillic glyphs on a uniform white page"],
+      "description": "Synthetic Russian single-column text in Cyrillic."
     }
   ]
 }

@@ -34,3 +34,17 @@ La demo finanziatori deve usare una sola golden run e mostrare:
 L'AI propone estrazioni, collegamenti e strategie. Lo storico valida, rigetta,
 fonde, lascia incerto o rilancia ricerche. Fonte, trasformazione e decisione
 restano sempre visibili. Nessun output preview e' automaticamente pubblicabile.
+
+## Flusso documentale OCR post-MVP
+
+Per scansioni storiche il percorso selezionato separa i livelli:
+
+```text
+immagine -> OcrPageEvidence -> DocumentStructure -> Markdown -> review
+```
+
+PP-OCRv5 e' il recognizer primario del pilot corrente; Tesseract resta seconda
+lettura. La geometria e la confidence sono parte dell'evidenza, mentre il
+Markdown e' una view derivata. La struttura viene ricostruita prima con regole
+deterministiche; un VLM puo' intervenire solo su regioni ambigue e non sostituisce
+la review storica.

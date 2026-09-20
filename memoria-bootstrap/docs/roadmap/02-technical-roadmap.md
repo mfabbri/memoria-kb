@@ -1380,15 +1380,22 @@ Questi esiti motivano una valutazione mirata, ma non determinano il modello o
 lo stack da adottare.
 
 La valutazione dovra' usare fixture offline con trascrizione di riferimento,
-includendo testo degradato e pagine con tabella/layout misto, e confrontare
-Qwen con Tesseract. Provare prompt di trascrizione letterale nella lingua
-sorgente (senza traduzioni o completamenti), limiti `context`/`num_predict`,
-modalita' thinking, dimensionamento delle immagini, crop e tiling. Misurare
-accuratezza e copertura del testo, completezza, non-invenzione, fedelta' della
-struttura e del layout, oltre a latenza e risorse CPU/GPU. Conservare provenance
-riproducibile: tag e digest del modello, versione Ollama e configurazione,
-hash del prompt e trasformazioni/crop applicati. La scelta resta aperta fino al
-confronto riproducibile e alla revisione dei risultati.
+includendo testo degradato e pagine con tabella/layout misto. Le quattro lingue
+minime supportate e verificate sono italiano (`ita`), tedesco (`deu`), inglese
+(`eng`) e russo (`rus`); il russo richiede copertura esplicita dell'alfabeto
+cirillico. Confrontare Tesseract aggiornato e i suoi language pack, PP-OCRv5,
+e modelli vision locali disponibili (fra cui Qwen3-VL e GLM-OCR quando
+installabili) sugli stessi input e ground truth. Provare prompt di
+trascrizione letterale nella lingua sorgente (senza traduzioni o completamenti),
+limiti `context`/`num_predict`, modalita' thinking, dimensionamento delle
+immagini, crop e tiling. Misurare accuratezza e copertura del testo,
+completezza, non-invenzione, fedelta' della struttura e del layout, oltre a
+latenza e risorse CPU/GPU. Conservare provenance riproducibile: tag e digest
+del modello, versione/runtime e configurazione, hash del prompt e trasformazioni/
+crop applicati. I risultati vanno disaggregati per lingua e difficolta'; un
+buon punteggio aggregato non deve nascondere il fallimento su una lingua. La
+scelta resta aperta fino al confronto riproducibile e alla revisione dei
+risultati.
 
 Prova appaiata Qwen/Tesseract completata il 2026-09-18 sui file in
 `P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`, in sola
@@ -1401,9 +1408,120 @@ sono diversi e l'identità pixel-level non è stata verificata; non si assume
 quindi che i due modelli abbiano ricevuto input pixel-identici. Nessun risultato
 costituisce un claim storico o seleziona uno stack OCR.
 
-Prossimo passo candidato: provare una strategia diversa di input, prompt o
-runtime su un campione con trascrizione umana validata; mantenere aperta la
-scelta dello stack fino alla revisione di un confronto riproducibile.
+Calibrazione multimodale locale del 2026-09-19, solo su fixture sintetiche con
+ground truth: Ollama 0.33.2 espone `llava-llama3:latest` (digest
+`44c161b1f46523301da9c0cc505afa4a4a0cc62f580581d98a430bb21acd46de`). Il tag
+`qwen3-vl` non e' installato; `llama3.2-vision:latest` e' presente ma Ollama
+rifiuta l'esecuzione per incompatibilita' e propone di riscaricarlo, operazione
+non effettuata. Il benchmark conserva prompt esatto/hash, temperatura,
+`num_ctx`, `num_predict`, `think`, digest del modello e hash SHA-256 di ogni
+risposta, senza salvare le trascrizioni.
+
+Sul manifest `synthetic-ocr-foundation-v1` (SHA-256
+`8a48595d3a1e9d2abc09e2dc2e4cf0b314cd67f26ddad0e015e46f6191f05c28`), con
+`num_predict=256` e `think=false`, il baseline LLaVA con prompt italiano hash
+`04f17ecf2f4bad0f35e24eb34cd74593967434c4e86a7114c33ded07fad85dab`,
+`temperature=0` e `num_ctx=4096` ha ottenuto accuratezza testuale aggregata
+0.686 e tasso di aggiunte 0.273. Ripetendo la configurazione, gli hash delle
+risposte sono rimasti identici per tutte le tre immagini: clean
+`303f21ef6cb5cb4dc7999bffa5492e17721affee8450f7538bfe00c5e82b24a3`,
+degraded `616658743aa337537e4e64aa81b07e168fca1f1e9c87eb1e219ec894e785e74b`,
+mixed `602efe9e1584ecf044965e850e1ded8d26ec8c4b996ec8c51b733e361df438a8`.
+Portare solo `num_ctx` a 8192 non ha cambiato hash o metriche. Un prompt
+italiano che richiede `[illeggibile]` (hash
+`8e08180699e69b9e2f0604a3c7526c3c574e3cfc36de3ff1693c7214ed7a38fd`) con
+temperatura 0 ha portato l'accuratezza aggregata a 0.714 e le aggiunte a 0.242,
+ma il fixture misto resta a 0.50. Il prompt inglese ha peggiorato il risultato
+(0.622 di accuratezza; 0.378 di aggiunte). Temperatura 0.2 non ha migliorato
+l'aggregato e ripetendo gli stessi parametri ha prodotto hash diversi: la
+temperatura zero e' necessaria per la ripetibilita' osservata, non sufficiente
+per accuratezza.
+
+Valutazione LLaVA con prompt selezionato per lingua, completata il
+2026-09-19 sulle sei fixture sintetiche: Ollama 0.33.2, modello
+`llava-llama3:latest` (digest
+`44c161b1f46523301da9c0cc505afa4a4a0cc62f580581d98a430bb21acd46de`), engine
+`ollama-vision` su localhost, timeout 120 s, `num_ctx=4096`,
+`num_predict=256`, `think=false`, `temperature=0`. Su 66 token di riferimento
+ha prodotto 193 token con 38 match: accuratezza 0.196891, copertura 0.575758,
+invenzione 0.803109. Metriche per lingua accuracy/coverage/invention:
+`ita` 0.657143/0.657143/0.281250 (3 fixture), `deu` 0.363636/0.400000/0.636364,
+`eng` 1/1/0 e `rus` 0/0/1 (una fixture ciascuna per le ultime tre lingue).
+SHA-256 prompt/risposta e latenza ms per fixture: clean-text
+`1f1134efd78479978bbeba3f98a44e04c858d4266c0e14fd841ef4aa9cf16181` /
+`1d3ecf83612720e6ef0308c97158bab23a3d4c9983e3098d85e2661f66bf711c` /
+23859.808; degraded-text stesso prompt /
+`88e05129b8d7c74f0d31f7cf6d04911159d45c32eb400ce6f1ed9246869b5dab` /
+12609.975; mixed-table-layout stesso prompt /
+`602efe9e1584ecf044965e850e1ded8d26ec8c4b996ec8c51b733e361df438a8` /
+11742.573; german-text
+`edf845ecb8bde0fb2d047fed411bd95e8853660e118b49a55927adb238f24f83` /
+`84e697e4f17ee1c50bbecd736b653ab90382c3387d3edcf22cbd55eece69015b` /
+12495.317; english-text
+`3aa64c709d67eeef5348b745cb0322312e571a72c7cdba1e0f6189663750524d` /
+`bda71f65e5161ca833b61769cb5b64a1f1a86b0d52a2bd1da65a8c698468154e` /
+10771.983; russian-text
+`f4b0b472bd127b6dca36e552f6fe5461b713c04cb1a1fa1bd4159412165ee27b` /
+`ce03d538e7014940483b7ea830f6e08fb047c64ce5041f259150fb91e35eede4` /
+55281.920. Code review PASS; nessun test aggiunto o eseguito. Paddle/PaddleOCR
+non sono installati; LLaMA 3.2 Vision è installato ma incompatibile con
+l'attuale Ollama e non è stato eseguito; Qwen3-VL non è disponibile. Il risultato
+non selezionava ancora alcun engine; al 2026-09-19 il prossimo candidato era l'integrazione PP-OCRv5
+e dei modelli vision disponibili. Solo fixture sintetiche, nessun claim.
+
+Sul medesimo manifest Tesseract 5.5.0.20241111, lingua `ita`, OEM 1 e PSM 6 ha
+ottenuto accuratezza aggregata 0.686: clean 1.00, degraded 0.75 e mixed 0.357.
+Il piccolo corpus non dimostra accuratezza su scansioni storiche e non supporta
+la selezione di un modello. Tesseract e il suo quality gate costituiscono il
+baseline/riferimento corrente del benchmark, in attesa di un confronto
+riproducibile e della revisione umana. Questa era la conclusione della fase
+esplorativa al 2026-09-19; la decisione del 2026-09-20 riportata piu' sotto
+seleziona PP-OCRv5 come recognizer primario del prossimo pilot. Il modello vision
+resta una lettura indipendente e nessun engine corregge automaticamente la
+trascrizione di un altro.
+
+Sequenza di valutazione: (1) estendere le fixture sintetiche controllate a
+italiano, tedesco, inglese e russo e misurare le lingue separatamente -
+completato; (2) aggiornare Tesseract e confrontare configurazioni e language
+pack - completato con Tesseract 5.5.3.20260724, OEM 1/PSM 6, sulle sei fixture
+sintetiche: accuratezza `ita` 0.714286 (3 fixture; baseline 5.5.0 0.685714),
+`deu`/`eng`/`rus` 1.0 (una fixture pulita ciascuno), totale 0.848485 su 66
+token di riferimento; (3) adapter PP-OCRv5 opt-in/lazy e benchmark runtime
+completati sulle stesse sei fixture sintetiche: PaddleOCR 3.7.0, PaddlePaddle
+CPU 3.3.0, modelli PP-OCRv5 mobile e `enable_mkldnn=false`. Risultato aggregato
+su 66 token di riferimento: 67 output, 65 match, 1 omissione e 2 aggiunte;
+accuratezza 0.970149, copertura 0.984848, completezza 1.0 e invenzione
+0.029851. Per lingua accuracy/coverage/invention: `ita` 0.944444/0.971429/
+0.055556 (35 riferimenti, 36 output, 34 match), `deu` 1/1/0 (10/10/10),
+`eng` 1/1/0 (11/11/11), `rus` 1/1/0 (10/10/10). Cinque fixture perfette;
+la fixture italiana degradata: accuratezza 0.833333, copertura 0.909091,
+invenzione 0.166667. Latenza 1.469-3.959 s per fixture. La ripetizione con
+filtraggio dei file `.cache` ha confermato i sei hash di risposta. SHA-256 del
+manifest `08a51b197d34400fdc40943ddfa7a681a4a12d4004bc2f348a38ce8346cbf436`;
+pesi detector `afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b`,
+Latin `53cdc8b481a7394bb108f96d0fb3432b0a8f392e22c7d18f06dbb2d42b8b25f9`,
+English `3ec8a97ed6cefe8568d3e2ee90bb193299b566a7661aa4fd52d224b96b59f66b`,
+East Slavic `f11057b05d8517868bca505271278973d706600d9dcc184cbcf5c4512091c32b`.
+La provenance verifica localmente i file attesi e gli hash, non certifica una
+firma ufficiale. Il corpus e' sintetico e text-only: non valuta struttura o
+layout, non supporta claim su scansioni storiche e non seleziona/promuove uno
+stack. (4) prossimo: validare un campione limitato di scansioni rappresentative
+con trascrizione umana verificata, mantenendo distinti gli output dei motori.
+Riferimenti: [OCR pipeline](https://www.paddleocr.ai/main/en/version3.x/pipeline_usage/OCR.html)
+e [modelli PP-OCRv5 multilingue](https://www.paddleocr.ai/latest/en/version3.x/algorithm/PP-OCRv5/PP-OCRv5_multi_languages.html).
+Installer ufficiale Tesseract 5.5.3.20260724:
+https://github.com/tesseract-ocr/tesseract/releases/download/5.5.3/tesseract-ocr-w64-setup-5.5.3.20260724.exe,
+SHA-256 `BEE9E3434BD94FD65387D9BE28CD467A41F61B1275383B55B0F59A1331270AE4`
+(coincide con il manifest ScoopInstaller/Main); certificato Authenticode
+scaduto/non verificabile. Modelli `deu`/`rus` da
+https://github.com/tesseract-ocr/tessdata_fast (raw `main`), SHA-256
+`19D219BBB6672C869D20A9636C6816A81EB9A71796CB93EBE0CB1530E2CDB22D` e
+`E16E5E036CCE1D9EC2B00063CF8B54472625B9E14D893A169E2B0DEDEB4DF225`;
+staging temporaneo in Temp e `TESSDATA_PREFIX` per la prova. Risultati solo
+sintetici: nessuna scansione reale, approvazione di claim o selezione di stack.
+Nota storica 2026-09-19: la scelta dello stack era mantenuta aperta fino alla
+revisione del confronto. La decisione 2026-09-20 piu' sotto chiude questa fase
+esplorativa senza autorizzare correzioni o sovrascritture automatiche fra engine.
 
 Per rendere confrontabili gli input immagine, registrare anche la pipeline
 esatta di decode e trasformazione (formato, algoritmo e dimensioni del resize),
@@ -1414,6 +1532,274 @@ stessa sorgente e stesse dimensioni non dimostrano da sole che il payload sia
 identico. Un output vuoto o a zero token va riportato come nessuna trascrizione,
 non come copertura utile. L'accuratezza su immagini reali si valuta solo con
 ground truth umana validata.
+
+Confronto offline delle pipeline (candidati, non selezionati):
+
+1. OCR con testo grezzo, token/regione, bounding box e confidence; aggiungere
+   analisi layout e struttura tabellare, con un eventuale LLM solo per
+   formattazione o proposte di correzione.
+2. Conversione documentale diretta da immagine/pagina con un VLM.
+3. Pipeline end-to-end di parsing documentale come PaddleOCR PP-StructureV3 o
+   Docling. Sono alternative da valutare, non una selezione di stack.
+
+Strategia incrementale preview-only da valutare:
+
+1. OCR e layout creano un pacchetto di evidenze che conserva il testo grezzo,
+   regioni/token, coordinate e confidence, hash/configurazione/trasformazioni,
+   oltre a ipotesi esplicite di ordine di lettura e celle.
+2. Un LLM locale riceve il pacchetto e produce una preview JSON/Markdown con
+   riferimenti alle evidenze per ogni elemento. Il testo OCR originale rimane
+   invariato; l'incertezza e' marcata e non si completa o corregge testo senza
+   confronto visivo con la pagina.
+3. La proposta e' revisionata contro la pagina e misurata con metriche testuali
+   e strutturali separate. Una reference umana e' necessaria per dichiarare
+   accuratezza, non per l'ispezione qualitativa.
+
+Il primo pilot riusa i risultati gia' salvati per la pagina 00028 e un modello
+locale gia' installato, senza download e senza servizi remoti. L'output resta
+preview-only: non seleziona o promuove uno stack e non modifica la trascrizione
+OCR grezza.
+
+Esito del pilot locale su 00028 con `qwen2.5-coder:1.5b` via Ollama: due
+risposte estese sono state troncate; una richiesta JSON compatta ha restituito
+45/45 region ID una volta ciascuno, ma soltanto un heading e un paragraph con
+gli altri 44 ID. Non ha ricostruito la tabella e non consente claim di
+accuratezza. Gli output persistenti sono in
+`%LOCALAPPDATA%\MeMoRiA\ocr-review\T314-1275-00028-hybrid-reconstruction`.
+L'artefatto `markdown\test-images-661d6b0728033fa0\tesseract-page-1.md`
+presente nella cartella `P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`
+e' un Markdown Tesseract `deu`, `unreviewed`, timestamp 2026-09-17, e non il
+run GPU. La variante `documenti\_da\_processare` non esiste; nel percorso
+esaminato non sono stati identificati nuovi artefatti GPU. Non attribuire a quel
+run risultati o output.
+
+Conservare sempre l'output OCR grezzo separato. Ogni testo formattato o corretto
+deve rinviare ai token/regione/bounding box di origine, confidence,
+motore/modello e trasformazioni applicate; mantenere esplicita l'incertezza e
+non completare testo senza evidenza. Valutare separatamente accuratezza e
+coverage testuale, struttura delle celle e reading order, invenzioni,
+formattazione e latenza/risorse; disaggregare i risultati per lingua e
+difficolta' su fixture offline con reference umana.
+
+La geometria OCR da sola non assegna semantica alle celle e non recupera lo
+stile tipografico visivo. Markdown e Word sono derivati e non costituiscono una
+trascrizione archivistica verificata. Questa conclusione resta valida; la scelta
+implementativa viene invece fissata dalla decisione 2026-09-20 seguente.
+
+Riferimenti upstream ufficiali, da usare per descrivere le interfacce e
+impostare il confronto, non come evidenza di qualita' o supporto linguistico:
+[PaddleOCR PP-StructureV3](https://paddlepaddle.github.io/PaddleOCR/main/en/version3.x/pipeline_usage/PP-StructureV3.html)
+documenta la pipeline di parsing; [Docling usage](https://docling-project.github.io/docling/usage/)
+documenta la conversione del documento con esportazione Markdown.
+
+## Decisione OCR strutturato 2026-09-20
+
+La fase esplorativa OCR/layout viene chiusa come confronto aperto e passa a una
+direzione implementativa selezionata. Documento di riferimento:
+`memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`.
+
+Direzione:
+
+```text
+immagine
+  -> PP-OCRv5 structured regions
+  -> OcrPageEvidence
+  -> ricostruzione deterministica della struttura
+  -> DocumentStructure
+  -> Markdown derivato
+  -> review
+```
+
+PP-OCRv5 e' il recognizer primario del prossimo pilot; Tesseract resta seconda
+lettura/fallback e comparatore. La scelta e' relativa alla traiettoria corrente
+e non implica accuratezza universale su qualunque scansione storica.
+PP-StructureV3 e Docling restano strumenti di confronto, non dipendenze del
+critical path. I VLM non ricevono il compito page-level di riscrivere la pagina:
+possono essere introdotti soltanto dopo il baseline deterministico e su crop
+ambigui, se una misura separata ne dimostra il beneficio.
+
+Il testo piatto normalizzato non e' la sorgente canonica per layout o Markdown.
+L'evidenza primaria conserva regioni, geometria, confidence, engine/modello e
+trasformazioni; il Markdown e' una view derivata con riferimenti alle regioni.
+
+### T35 - PP-OCRv5 structured evidence contract e adapter
+
+Dipendenze: T34b chiusa; benchmark PP-OCRv5 e pilot OCR/layout del 2026-09-19.
+
+Obiettivo: trasformare l'adapter PP-OCRv5 da benchmark text-only a produttore di
+evidenza OCR strutturata engine-neutral.
+
+Criteri di uscita:
+
+- `rec_texts`, `rec_scores` e geometria disponibile (`rec_polys`/`rec_boxes`)
+  sono conservati senza perdita nel nuovo contratto;
+- ogni regione ha ID stabile, testo, confidence, geometria e provenance;
+- gli ID regione derivano dall'ordine dei risultati e non sono ancore persistenti
+  da soli; per riusare annotazioni vanno associati all'hash/versione
+  dell'artefatto o del run;
+- la trasformazione immagine e il riferimento alla pagina sorgente sono
+  tracciabili;
+- l'import PaddleOCR resta lazy/opt-in;
+- Tesseract legacy resta compatibile;
+- test offline/injected mirati passano o le failure preesistenti sono separate e
+  documentate;
+- nessuna inferenza di heading, paragraph, list, table o Markdown in T35.
+
+Stato: **completata il 2026-09-20**. Il contratto strutturato conserva testo,
+confidence, geometria neutra polygon/bbox, ID, hash/provenance di trasformazione,
+engine e lingua; test offline/injected e review: PASS. Gli ID restano relativi
+all'ordine dei risultati e non si dichiara accuratezza su scansioni storiche.
+
+### T36 - High-resolution transform e tiling pilot
+
+Dipendenze: T35.
+
+Obiettivo: evitare che il downscale globale diventi una perdita obbligatoria di
+informazione su scansioni degradate. Pilot controllato sui due TIFF guida.
+
+Il pilot rende gli output verificabili insieme all'utente: mostrare
+trasformazioni applicate, crop/tile generati, risultati OCR e collegamento alla
+pagina sorgente con hash e parametri. Usare le pagine guida `00028` e `00026`;
+non avviare un lotto esteso prima della revisione condivisa degli output.
+
+Criteri di uscita:
+
+- trasformazioni nominate e riproducibili con hash/parametri;
+- almeno raw/grayscale, contrast enhancement e threshold come varianti separate;
+- supporto pilot per crop/tile o bande sovrapposte a risoluzione vicina
+  all'originale;
+- merge delle regioni con coordinate ricondotte alla pagina sorgente;
+- nessuna modifica agli originali e nessun preprocessing distruttivo imposto
+  come unico percorso;
+- confronto qualitativo documentato su `T314-1275-00026` e `00028`.
+
+Chiusura tecnica 2026-09-20: pilot completato su due TIFF da 3632x6192. Gli hash
+dei byte grezzi coincidono con gli originali. Per ciascuna pagina sono state
+prodotte quattro varianti full-page (raw, grayscale, contrast, threshold) e sei
+tile raw 2400x2400 con overlap 200: 8 output full-page e 12 tile, 20 output OCR
+totali. Provenance e geometrie sono state verificate; review tecnica PASS senza
+rilievi. Il runtime ha comunque segnalato `max_side_limit=4000` nonostante
+`8192` configurato, mentre i tile nativi restano 2400. Il threshold danneggia
+in particolare `00026`. Confidence non equivale ad accuratezza; nessuna
+accuratezza e' dichiarata. Gli output restano `unreviewed` e la revisione
+visiva dell'utente e' pendente.
+
+Stato: **completata tecnicamente il 2026-09-20**; revisione visiva dell'utente
+pendente.
+
+### T37 - Deterministic structure reconstruction e Markdown
+
+Dipendenze: T36.
+
+Obiettivo: introdurre il contratto `DocumentStructure` e ricostruire Markdown
+senza chiedere a un modello generativo di riscrivere l'intera pagina.
+
+Primi profili documentali:
+
+- `leader_list_report` per sezioni, label, dot leader e valori allineati; caso
+  guida `00028`;
+- `numbered_report` per titoli, sezioni numerate, paragrafi e continuation line;
+  caso guida `00026`.
+
+Criteri di uscita:
+
+- blocchi `heading`, `paragraph`, `key_value`, `list`, `table` o `unknown` con
+  `source_region_ids`;
+- parser basato prima su geometria, distanze, indentazione e pattern espliciti;
+- stato/confidence della struttura distinto dalla confidence OCR;
+- renderer Markdown legge `DocumentStructure`, non la stringa OCR normalizzata;
+- nessun testo aggiunto senza regione sorgente, salvo marcatori espliciti di
+  illeggibilita'/incertezza;
+- golden fixture strutturali per i due profili iniziali.
+
+Stato: futuro.
+
+### T38 - Reference umana e metriche OCR/struttura
+
+Dipendenze: T37.
+
+Obiettivo: misurare separatamente fedelta' testuale e ricostruzione della
+struttura su un campione piccolo ma verificato.
+
+Reference minima:
+
+- pagina `00028` completa;
+- crop rappresentativi di `00026`, inclusi testo leggibile, degradato e
+  abbreviazioni difficili.
+
+Metriche minime:
+
+- testo: CER/WER o misura equivalente, coverage e invenzioni;
+- struttura: reading order, heading/paragraph, continuation e pairing
+  label-valore;
+- review: numero di regioni/blocchi che richiedono intervento umano;
+- risorse: latenza e trasformazioni usate.
+
+Criteri di uscita:
+
+- nessuna accuratezza su scansioni reali viene dichiarata senza reference;
+- il quality gate tecnico viene descritto come processabilita', distinto da
+  accuratezza e review;
+- threshold per l'eventuale resolver visuale T39 definiti da errori misurati.
+
+Per preparare la scala, costruire poi un campione iniziale complessivo di
+30-50 pagine, stratificate per lingua, leggibilita' e tipologia. Il numero e'
+esplorativo e non garantisce rappresentativita' statistica. Separare pagine di
+calibrazione e holdout prima di fissare soglie o scalare; includere l'intera `00028` e crop
+rappresentativi della `00026` nel pilot guida, senza confonderli con un holdout
+indipendente. Verificare inoltre casualmente una quota degli output non segnalati
+dal triage.
+
+Stato: futuro.
+
+### T39 - Selective visual ambiguity resolver
+
+Dipendenze: T38.
+
+Ingresso condizionale: eseguire soltanto se T38 mostra categorie di errore per
+le quali un resolver visuale locale puo' aggiungere valore misurabile.
+
+Obiettivo: usare un VLM solo su crop ambigui, mai come page-to-Markdown libero.
+
+Criteri di uscita:
+
+- trigger espliciti, per esempio bassa confidence o discordanza tra recognizer;
+- input limitato a crop originale + candidati OCR + provenance;
+- output schema-constrained: testo visibile o `[illeggibile]`;
+- temperatura zero e nessun completamento congetturale;
+- confronto con reference T38 e mantenimento del candidato OCR originale;
+- se non emerge un vantaggio misurabile, T39 si chiude senza integrazione VLM.
+
+Stato: futuro e condizionale.
+
+### T40 - Integrazione CLI del flusso OCR validato
+
+Dipendenze: T37 e T38; T39 solo se adottato.
+
+Obiettivo: esporre tramite CLI Python il percorso validato da documento a
+trascrizione Markdown revisionabile, senza introdurre una pipeline parallela.
+
+Criteri di uscita:
+
+- `memoria documents process` o comando equivalente usa il contratto strutturato;
+- preview/apply, idempotenza, error isolation e provenance restano espliciti;
+- raw OCR, `OcrPageEvidence`, `DocumentStructure` e Markdown derivato restano
+  distinguibili;
+- extraction e claim possono consumare solo artefatti tracciabili secondo le
+  regole di review esistenti;
+- per ogni lotto registrare throughput, latenza p95, costo per 1000 pagine e
+  minuti di revisione umana per 100 pagine; introdurre checkpoint idempotenti,
+  retry limitati e isolamento degli errori;
+- confidence, disaccordo e processabilita' sono segnali per ordinare la review,
+  non attestazioni di correttezza; ogni fatto pubblicabile mantiene fonte
+  tracciabile e revisione umana;
+- nessuna scrittura canonica di profili o fatti senza workflow autorizzato.
+
+Stato: futuro.
+
+Stop condition della traiettoria: non aggiungere un nuovo framework OCR/layout
+prima di T35-T37, salvo un difetto misurato che il percorso selezionato non puo'
+coprire.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

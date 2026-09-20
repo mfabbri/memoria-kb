@@ -10,10 +10,15 @@ The parent thread is a low-cost router:
 - docs/planner/agent-config edits: mmr_docs_editor -> Luna / `medium`;
 - implementation: mmr_implementer -> Terra / `medium`;
 - quality review: mmr_test_reviewer -> Terra / `high`;
-- architecture/migration: mmr_architect -> Sol / `high`.
+- architecture/migration: mmr_architect -> GPT-6 Astra / `low`.
 
 Project-local `[profiles.*]` are not used. Codex ignores `profiles` in a
 project-scoped `.codex/config.toml`.
+
+Astra is intentionally limited to architecture/migration work. The project does
+not fan out subagents by default: one delegated agent is preferred, and parallel
+work is reserved for genuinely independent workstreams. Keep inter-agent
+messages compact and reference paths/symbols instead of duplicating file bodies.
 
 ## Two levels of traceability
 

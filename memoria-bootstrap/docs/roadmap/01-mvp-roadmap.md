@@ -190,3 +190,29 @@ Fino alla chiusura di T33:
 - estensione indiscriminata a nuove fonti;
 - migrazione cloud massiva;
 - dashboard general-purpose prima della stabilizzazione della golden run.
+
+## Direzione post-MVP OCR dopo la golden run
+
+Aggiornamento 2026-09-20: questa sezione non modifica il contratto della golden
+run finanziatori gia' completata. Definisce il percorso del prodotto completo
+per trasformare nuove scansioni in materiale revisionabile.
+
+La pipeline OCR non deve produrre direttamente fatti o schede. La sequenza
+selezionata e':
+
+```text
+scansione
+  -> evidenza OCR strutturata
+  -> struttura di pagina derivata
+  -> Markdown revisionabile
+  -> extraction/candidate claim
+  -> review storica
+```
+
+Il recognizer primario del prossimo pilot e' PP-OCRv5, mantenendo Tesseract come
+seconda lettura. Layout e Markdown vengono ricostruiti con regole deterministiche
+prima di introdurre un VLM. Ogni elemento derivato mantiene provenance verso le
+regioni dell'immagine.
+
+La sequenza tecnica T35-T40 e il contratto dettagliato sono definiti in
+`02-technical-roadmap.md` e `../ocr-structured-evidence-strategy.md`.

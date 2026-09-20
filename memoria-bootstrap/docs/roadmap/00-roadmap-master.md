@@ -94,8 +94,10 @@ gap o conflitto
 12. Riprendere il flusso del prodotto completo: post-MVP/Q2 secondo selezione
     roadmap; storage cloud e nuove fonti restano subordinati alle priorita'.
 13. Rendere il flusso di acquisizione immagini, OCR e revisione dei candidati
-    utilizzabile dalla CLI Python, con trascrizioni strutturate e provenance;
-    requisiti e fasi sono definiti nella roadmap tecnica post-MVP.
+    utilizzabile dalla CLI Python. La direzione e' ora T35-T40: evidenza
+    strutturata PP-OCRv5, high-resolution tiling, struttura deterministica,
+    Markdown derivato, reference/metriche, eventuale VLM selettivo e integrazione
+    CLI.
 
 Aggiornamento operativo 2026-09-11: T34b ha completato applicazione canonica,
 backup, rollback metadata e audit post-run. La migrazione profili e' chiusa;
@@ -132,10 +134,30 @@ superficie operativa per le azioni preview che scrivono artefatti. La CLI Python
 fornisce orientamento e stato read-only. La migrazione completa dei workflow non
 deve ritardare T29-T33.
 
+## Direzione OCR strutturato selezionata - 2026-09-20
+
+Dopo i pilot Tesseract, PP-OCRv5, Qwen, PP-StructureV3 e Docling, il post-MVP
+non prosegue aggiungendo framework in parallelo. La traiettoria scelta e':
+
+```text
+immagine
+  -> PP-OCRv5 con regioni/geometria/confidence
+  -> OcrPageEvidence
+  -> struttura deterministica
+  -> DocumentStructure
+  -> Markdown derivato e revisionabile
+```
+
+Tesseract resta fallback/comparatore. VLM solo su crop ambigui e soltanto dopo
+metriche con reference umana. PP-StructureV3 e Docling restano fuori dal
+critical path. Il documento autorevole e'
+`memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`; la sequenza tecnica e' T35-T40.
+
 ## Stato corrente
 
-Focus successivo: selezionare il prossimo micro-incremento della roadmap del
-prodotto completo. T34b non e' piu' un blocker.
+Focus successivo: **T35 - PP-OCRv5 structured evidence contract e adapter**.
+T34b non e' piu' un blocker; la fase esplorativa OCR/layout e' stata tradotta in
+una sequenza implementativa T35-T40.
 
 Completato:
 

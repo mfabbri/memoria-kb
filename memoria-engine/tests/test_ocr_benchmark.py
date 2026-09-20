@@ -20,6 +20,9 @@ from caduti_fonti_report.document_analysis.ocr_benchmark import (  # noqa: E402
     QWEN_OCR_TRANSCRIPTION_PROMPT,
     evaluate_ocr_benchmark,
     load_ocr_benchmark_manifest,
+    paddle_ocr_v5_structured_evidence,
+    run_ollama_vision_ocr_benchmark,
+    run_paddle_ocr_v5_benchmark,
     run_qwen_ollama_ocr_benchmark,
     run_tesseract_ocr_benchmark,
 )
@@ -29,12 +32,131 @@ FIXTURE_DIR = ROOT_DIR / "tests" / "fixtures" / "ocr_benchmark"
 
 
 class OcrBenchmarkTests(unittest.TestCase):
-    def test_evaluates_synthetic_cases_with_deterministic_metrics_and_provenance(self) -> None:
-        outputs = {
-            "clean-text": "Documento sintetico numero quarantadue Questa riga verifica la trascrizione pulita",
-            "degraded-text": "Documento sintetico degradato Una parola resta nella scansione di inventata prova",
-            "mixed-table-layout": "Registro sintetico Codice Stato Nota ALFA completo prova BETA parziale verifica Fine del registro",
+    def test_paddle_structured_evidence_preserves_regions_geometry_and_provenance(self) -> None:
+        prediction = [
+            {
+                "res": {
+                    "rec_texts": ["Prima riga", "Seconda riga"],
+                    "rec_scores": [0.97, 0.81],
+                    "rec_polys": [
+                        [[1, 2], [11, 2], [11, 6], [1, 6]],
+                        [[1, 8], [14, 8], [14, 12], [1, 12]],
+                    ],
+                    "rec_boxes": [[1, 2, 11, 6], [1, 8, 14, 12]],
+                }
+            }
+        ]
+        first = paddle_ocr_v5_structured_evidence(
+            prediction,
+            page_id="fixture-page-01",
+            source_image_hash="a" * 64,
+            transform_id="raw-v1",
+            engine="paddle-ocr-v5",
+            language="ita",
+            source_page={"document_id": "synthetic-document", "page_number": 1},
+            model={"engine": "paddle-ocr-v5", "ocr_version": "PP-OCRv5"},
+            image_transform={"id": "raw", "parameters": {}},
+        )
+        second = paddle_ocr_v5_structured_evidence(
+            prediction,
+            page_id="fixture-page-01",
+            source_image_hash="a" * 64,
+            transform_id="raw-v1",
+            engine="paddle-ocr-v5",
+            language="ita",
+            source_page={"document_id": "synthetic-document", "page_number": 1},
+            model={"engine": "paddle-ocr-v5", "ocr_version": "PP-OCRv5"},
+            image_transform={"id": "raw", "parameters": {}},
+        )
+
+        self.assertEqual(first, second)
+        self.assertEqual(first["@type"], "OcrPageEvidence")
+        self.assertEqual(first["source_image_hash"], "a" * 64)
+        self.assertEqual(first["transform_id"], "raw-v1")
+        self.assertEqual(first["engine"], "paddle-ocr-v5")
+        self.assertEqual(first["language"], "ita")
+        self.assertEqual(first["source_page"], {"document_id": "synthetic-document", "page_number": 1})
+        self.assertEqual(first["model"], {"engine": "paddle-ocr-v5", "ocr_version": "PP-OCRv5"})
+        self.assertEqual(first["image_transform"], {"id": "raw", "parameters": {}})
+        self.assertEqual([region["text"] for region in first["regions"]], ["Prima riga", "Seconda riga"])
+        self.assertEqual([region["confidence"] for region in first["regions"]], [0.97, 0.81])
+        self.assertEqual(first["regions"][0]["geometry"], {
+            "polygon": [[1, 2], [11, 2], [11, 6], [1, 6]],
+            "bbox": [1, 2, 11, 6],
+        })
+        self.assertEqual(first["regions"][1]["geometry"]["bbox"], [1, 8, 14, 12])
+        self.assertEqual(first["regions"][0]["raw_provenance"], {"paddle_ocr": {
+            "rec_polys": [[1, 2], [11, 2], [11, 6], [1, 6]],
+            "rec_boxes": [1, 2, 11, 6],
+        }})
+        self.assertNotEqual(first["regions"][0]["region_id"], first["regions"][1]["region_id"])
+
+    def test_paddle_benchmark_records_structured_evidence_and_keeps_legacy_text_runner(self) -> None:
+        def structured_runner(image_path: Path, language: str) -> list[dict[str, object]]:
+            return [{"res": {
+                "rec_texts": ["testo"],
+                "rec_scores": [0.5],
+                "rec_boxes": [[0, 0, 1, 1]],
+            }}]
+
+        report = run_paddle_ocr_v5_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", prediction_runner=structured_runner
+        )
+        first_request = report["engine_provenance"]["requests"][0]
+        structured_page = first_request["structured_page"]
+        self.assertEqual(structured_page["page_id"], "clean-text")
+        self.assertEqual(structured_page["source_image_hash"], self._sha256(FIXTURE_DIR / "clean-text.png"))
+        self.assertEqual(structured_page["transform_id"], "synthetic-manifest-declared-v1")
+        self.assertEqual(structured_page["engine"], "paddle-ocr-v5")
+        self.assertEqual(structured_page["language"], "ita")
+        self.assertEqual(structured_page["source_page"]["fixture_id"], "clean-text")
+        self.assertEqual(structured_page["image_transform"], {
+            "synthetic_transformations": ["rendered monospaced glyphs on a uniform white page"]
+        })
+        self.assertEqual(structured_page["regions"][0]["geometry"]["bbox"], [0, 0, 1, 1])
+        self.assertEqual(report["engine_provenance"]["runner"], "injected-unverified")
+
+        legacy_report = run_paddle_ocr_v5_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", prediction_runner=lambda image_path, language: "legacy text"
+        )
+        legacy = legacy_report["engine_provenance"]["requests"][0]["structured_page"]
+        self.assertEqual(legacy["regions"], [{
+            "region_id": legacy["regions"][0]["region_id"],
+            "text": "legacy text",
+            "confidence": None,
+            "geometry": {"polygon": None, "bbox": None},
+        }])
+
+    def test_paddle_structured_evidence_rejects_misaligned_optional_fields(self) -> None:
+        with self.assertRaisesRegex(ValueError, "rec_scores non allineato"):
+            paddle_ocr_v5_structured_evidence(
+                [{"res": {"rec_texts": ["uno", "due"], "rec_scores": [0.9]}}],
+                page_id="fixture-page-01",
+                source_image_hash="a" * 64,
+                transform_id="raw-v1",
+                engine="paddle-ocr-v5",
+                language="ita",
+                source_page={},
+                model={},
+            )
+
+    def test_paddle_structured_evidence_requires_page_provenance(self) -> None:
+        arguments = {
+            "page_id": "fixture-page-01",
+            "source_image_hash": "a" * 64,
+            "transform_id": "raw-v1",
+            "engine": "paddle-ocr-v5",
+            "language": "ita",
+            "source_page": {},
+            "model": {},
         }
+        for field, value in (("source_image_hash", "not-a-hash"), ("transform_id", ""), ("engine", ""), ("language", "")):
+            with self.subTest(field=field), self.assertRaisesRegex(ValueError, field):
+                paddle_ocr_v5_structured_evidence([], **{**arguments, field: value})
+
+    def test_evaluates_synthetic_cases_with_deterministic_metrics_and_provenance(self) -> None:
+        outputs = self._exact_outputs()
+        outputs["degraded-text"] = "Documento sintetico degradato Una parola resta nella scansione di inventata prova"
 
         first = evaluate_ocr_benchmark(manifest_path=FIXTURE_DIR / "manifest.json", ocr_outputs=outputs)
         second = evaluate_ocr_benchmark(manifest_path=FIXTURE_DIR / "manifest.json", ocr_outputs=outputs)
@@ -42,7 +164,10 @@ class OcrBenchmarkTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first["normalization"], NORMALIZATION_ID)
         self.assertTrue(first["synthetic_dataset"])
-        self.assertEqual([case["fixture_id"] for case in first["cases"]], ["clean-text", "degraded-text", "mixed-table-layout"])
+        self.assertEqual(
+            [case["fixture_id"] for case in first["cases"]],
+            ["clean-text", "degraded-text", "mixed-table-layout", "german-text", "english-text", "russian-text"],
+        )
         self.assertEqual(first["cases"][0]["metrics"]["text_accuracy"], 1.0)
         degraded = first["cases"][1]["metrics"]
         self.assertEqual(degraded["omitted_token_count"], 1)
@@ -54,6 +179,13 @@ class OcrBenchmarkTests(unittest.TestCase):
         self.assertEqual(provenance["fixtures"][0]["image_sha256"], self._sha256(FIXTURE_DIR / "clean-text.png"))
         self.assertEqual(provenance["fixtures"][2]["image_dimensions"], {"width": 1200, "height": 1600})
         self.assertEqual(provenance["fixtures"][2]["image_format"], "png")
+        self.assertEqual(provenance["fixtures"][5]["language"], "rus")
+        self.assertEqual(first["cases"][5]["language"], "rus")
+        self.assertEqual(set(first["language_metrics"]), {"ita", "deu", "eng", "rus"})
+        self.assertEqual(first["language_metrics"]["ita"]["fixture_count"], 3)
+        self.assertEqual(first["language_metrics"]["deu"]["metrics"]["text_accuracy"], 1.0)
+        self.assertEqual(first["language_metrics"]["eng"]["metrics"]["text_accuracy"], 1.0)
+        self.assertEqual(first["language_metrics"]["rus"]["metrics"]["text_accuracy"], 1.0)
 
     def test_metrics_count_missing_reference_tokens_and_added_tokens_separately(self) -> None:
         outputs = self._exact_outputs()
@@ -80,6 +212,28 @@ class OcrBenchmarkTests(unittest.TestCase):
         self.addCleanup(invalid.unlink, missing_ok=True)
         with self.assertRaisesRegex(ValueError, "sintetiche"):
             load_ocr_benchmark_manifest(invalid)
+
+        invalid.write_text(json.dumps({"dataset_id": "bad", "synthetic": True, "cases": [
+            {**self._case("unsupported-language", "unsupported-language.txt"), "language": "fra"},
+        ]}), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "language OCR supportata"):
+            load_ocr_benchmark_manifest(invalid)
+
+    def test_legacy_v1_manifest_without_language_defaults_to_italian(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture_dir = Path(tmp)
+            (fixture_dir / "truth.txt").write_text("testo", encoding="utf-8")
+            self._write_png(fixture_dir / "image.png")
+            manifest = fixture_dir / "manifest.json"
+            legacy_case = self._case("legacy", "truth.txt")
+            del legacy_case["language"]
+            manifest.write_text(json.dumps({"schema_version": "1.0", "dataset_id": "legacy", "synthetic": True, "cases": [legacy_case]}), encoding="utf-8")
+
+            loaded = load_ocr_benchmark_manifest(manifest)
+            report = evaluate_ocr_benchmark(manifest_path=manifest, ocr_outputs={"legacy": "testo"})
+
+        self.assertEqual(loaded["cases"][0]["language"], "ita")
+        self.assertEqual(report["language_metrics"]["ita"]["fixture_count"], 1)
 
     def test_empty_output_has_no_invention_and_empty_reference_cases_are_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -234,7 +388,10 @@ class OcrBenchmarkTests(unittest.TestCase):
         self.assertEqual(provenance["configuration"], {"executable": "tesseract-local", "language": "ita", "oem": "1", "psm": "6", "output": "stdout"})
         self.assertEqual(commands[0], ["tesseract-local", "--version"])
         self.assertEqual(commands[1], ["tesseract-local", str(FIXTURE_DIR / "clean-text.png"), "stdout", "-l", "ita", "--psm", "6", "--oem", "1"])
-        self.assertEqual([command["fixture_id"] for command in provenance["commands"][1:]], ["clean-text", "degraded-text", "mixed-table-layout"])
+        self.assertEqual(
+            [command["fixture_id"] for command in provenance["commands"][1:]],
+            [case["fixture_id"] for case in load_ocr_benchmark_manifest(FIXTURE_DIR / "manifest.json")["cases"]],
+        )
 
     def test_tesseract_empty_output_is_evaluated_as_empty_text(self) -> None:
         def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -245,6 +402,41 @@ class OcrBenchmarkTests(unittest.TestCase):
 
         self.assertEqual(report["metrics"]["output_token_count"], 0)
         self.assertEqual(report["metrics"]["reference_token_coverage"], 0.0)
+
+    def test_tesseract_uses_fixture_languages_when_no_override_is_supplied(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            stdout = "tesseract 5.5.0\\n" if command[-1] == "--version" else self._exact_outputs()[Path(command[1]).stem]
+            return subprocess.CompletedProcess(command, 0, stdout, "")
+
+        report = run_tesseract_ocr_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", tesseract_path="tesseract-local", language=None, command_runner=runner
+        )
+
+        self.assertEqual(report["metrics"]["text_accuracy"], 1.0)
+        self.assertEqual(report["engine_provenance"]["configuration"]["language"], "fixture-specific")
+        self.assertEqual(
+            [entry["language"] for entry in report["engine_provenance"]["commands"][1:]],
+            ["ita", "ita", "ita", "deu", "eng", "rus"],
+        )
+        self.assertEqual(commands[-1][-2:], ["-l", "rus"])
+
+    def test_tesseract_default_language_remains_italian(self) -> None:
+        commands: list[list[str]] = []
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+            commands.append(command)
+            stdout = "tesseract 5.5.0\n" if command[-1] == "--version" else ""
+            return subprocess.CompletedProcess(command, 0, stdout, "")
+
+        report = run_tesseract_ocr_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", tesseract_path="tesseract-local", command_runner=runner
+        )
+
+        self.assertEqual(report["engine_provenance"]["configuration"]["language"], "ita")
+        self.assertTrue(all(command[-2:] == ["-l", "ita"] for command in commands[1:]))
 
     def test_tesseract_runner_rejects_nonzero_and_missing_executable(self) -> None:
         def failed_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
@@ -290,6 +482,8 @@ class OcrBenchmarkTests(unittest.TestCase):
             num_ctx=8192,
             num_predict=2048,
             think=False,
+            prompt="Trascrivi il testo visibile, riga per riga.",
+            temperature=0.25,
             transport=transport,
         )
 
@@ -297,22 +491,75 @@ class OcrBenchmarkTests(unittest.TestCase):
         provenance = report["engine_provenance"]
         self.assertEqual(provenance["ollama_version"], "0.12.3")
         self.assertEqual(provenance["model"], {"tag": "qwen3-vl:latest", "digest": "sha256:qwen-test"})
-        self.assertEqual(provenance["prompt"]["sha256"], hashlib.sha256(QWEN_OCR_TRANSCRIPTION_PROMPT.encode("utf-8")).hexdigest())
-        self.assertEqual(provenance["configuration"]["options"], {"num_ctx": 8192, "num_predict": 2048})
-        self.assertEqual([entry["image_sha256"] for entry in provenance["requests"]], [
-            self._sha256(FIXTURE_DIR / "clean-text.png"),
-            self._sha256(FIXTURE_DIR / "degraded-text.png"),
-            self._sha256(FIXTURE_DIR / "mixed-table-layout.png"),
-        ])
+        self.assertEqual(provenance["prompt"], {
+            "text": "Trascrivi il testo visibile, riga per riga.",
+            "sha256": hashlib.sha256("Trascrivi il testo visibile, riga per riga.".encode("utf-8")).hexdigest(),
+        })
+        self.assertEqual(provenance["configuration"]["options"], {"num_ctx": 8192, "num_predict": 2048, "temperature": 0.25})
+        self.assertEqual(
+            [entry["image_sha256"] for entry in provenance["requests"]],
+            [self._sha256(FIXTURE_DIR / case["image_file"])
+             for case in load_ocr_benchmark_manifest(FIXTURE_DIR / "manifest.json")["cases"]],
+        )
+        self.assertEqual(
+            [entry["response_sha256"] for entry in provenance["requests"]],
+            [hashlib.sha256(self._exact_outputs()[case["fixture_id"]].encode("utf-8")).hexdigest()
+             for case in load_ocr_benchmark_manifest(FIXTURE_DIR / "manifest.json")["cases"]],
+        )
         self.assertEqual(calls[0], ("http://127.0.0.1:11434/api/version", {}, 30))
         self.assertEqual(calls[1], ("http://127.0.0.1:11434/api/tags", {}, 30))
         request = calls[2][1]
         self.assertEqual(request["model"], "qwen3-vl:latest")
-        self.assertEqual(request["prompt"], QWEN_OCR_TRANSCRIPTION_PROMPT)
-        self.assertEqual(request["options"], {"num_ctx": 8192, "num_predict": 2048})
+        self.assertEqual(request["prompt"], "Trascrivi il testo visibile, riga per riga.")
+        self.assertEqual(request["options"], {"num_ctx": 8192, "num_predict": 2048, "temperature": 0.25})
         self.assertFalse(request["think"])
         self.assertFalse(request["stream"])
         self.assertEqual(base64.b64decode(request["images"][0]), (FIXTURE_DIR / "clean-text.png").read_bytes())
+
+    def test_qwen_ollama_defaults_keep_the_transcription_prompt_and_stable_temperature(self) -> None:
+        calls: list[tuple[str, dict[str, object], float]] = []
+
+        def transport(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
+            calls.append((url, payload, timeout))
+            if url.endswith("/api/version"):
+                return {"version": "0.12.3"}
+            if url.endswith("/api/tags"):
+                return {"models": [{"name": "qwen3-vl:latest", "digest": "sha256:qwen-test"}]}
+            return {"response": ""}
+
+        report = run_qwen_ollama_ocr_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", model="qwen3-vl:latest", transport=transport
+        )
+
+        self.assertEqual(report["engine_provenance"]["prompt"], {
+            "text": QWEN_OCR_TRANSCRIPTION_PROMPT,
+            "sha256": hashlib.sha256(QWEN_OCR_TRANSCRIPTION_PROMPT.encode("utf-8")).hexdigest(),
+        })
+        self.assertEqual(calls[2][1]["options"], {"num_ctx": 4096, "num_predict": 4096, "temperature": 0.0})
+
+    def test_qwen_ollama_rejects_invalid_prompt_or_temperature_before_transport(self) -> None:
+        def unexpected_transport(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
+            self.fail("Il transport non deve essere chiamato per configurazione non valida.")
+
+        invalid_prompts: tuple[object, ...] = ("", "   ", None, 1)
+        for prompt in invalid_prompts:
+            with self.subTest(prompt=prompt), self.assertRaisesRegex(ValueError, "prompt"):
+                run_qwen_ollama_ocr_benchmark(
+                    manifest_path=FIXTURE_DIR / "manifest.json",
+                    model="qwen3-vl:latest",
+                    prompt=prompt,  # type: ignore[arg-type]
+                    transport=unexpected_transport,
+                )
+
+        invalid_temperatures: tuple[object, ...] = (-0.01, 2.01, float("nan"), float("inf"), True, "0.1")
+        for temperature in invalid_temperatures:
+            with self.subTest(temperature=temperature), self.assertRaisesRegex(ValueError, "temperature"):
+                run_qwen_ollama_ocr_benchmark(
+                    manifest_path=FIXTURE_DIR / "manifest.json",
+                    model="qwen3-vl:latest",
+                    temperature=temperature,  # type: ignore[arg-type]
+                    transport=unexpected_transport,
+                )
 
     def test_qwen_ollama_empty_output_is_evaluated_as_empty_text(self) -> None:
         def transport(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
@@ -328,6 +575,22 @@ class OcrBenchmarkTests(unittest.TestCase):
 
         self.assertEqual(report["metrics"]["output_token_count"], 0)
         self.assertEqual(report["metrics"]["reference_token_coverage"], 0.0)
+
+    def test_ollama_vision_api_attributes_a_non_qwen_model_accurately(self) -> None:
+        def transport(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
+            if url.endswith("/api/version"):
+                return {"version": "0.12.3"}
+            if url.endswith("/api/tags"):
+                return {"models": [{"name": "llava-llama3:latest", "digest": "sha256:llava-test"}]}
+            return {"response": ""}
+
+        report = run_ollama_vision_ocr_benchmark(
+            manifest_path=FIXTURE_DIR / "manifest.json", model="llava-llama3:latest", transport=transport
+        )
+
+        provenance = report["engine_provenance"]
+        self.assertEqual(provenance["engine"], "ollama-vision")
+        self.assertEqual(provenance["model"], {"tag": "llava-llama3:latest", "digest": "sha256:llava-test"})
 
     def test_qwen_ollama_rejects_api_errors_missing_model_and_unreachable_service(self) -> None:
         def api_error(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
@@ -386,6 +649,7 @@ class OcrBenchmarkTests(unittest.TestCase):
     def _case(fixture_id: str, ground_truth_file: str, *, image_file: str = "image.png") -> dict[str, object]:
         return {
             "fixture_id": fixture_id,
+            "language": "ita",
             "ground_truth_file": ground_truth_file,
             "image_file": image_file,
             "image_format": "png",

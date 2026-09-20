@@ -647,3 +647,48 @@ Conseguenza: il validator richiede corrispondenza uno-a-uno tra chiave
 `[agents.*]`, file TOML, campo `name` e route del planner. Gli hook restano
 la fonte di evidenza dell'effettiva delega: una configurazione valida non
 sostituisce l'avvio runtime del subagent.
+
+## 2026-09-20 - Routing GPT-6 Astra e disciplina token
+
+Decisione: mantenere l'architettura di routing Codex v2 e aggiornarla in modo
+minimo a v2.1. Luna resta parent/router e modello dei task low; Terra resta per
+implementazione ordinaria e quality review; il solo tier `high` passa da
+`gpt-5.6-sol`/`high` a `gpt-6-astra`/`low`.
+
+Motivazione: le indicazioni OpenAI correnti posizionano Astra sul lavoro piu'
+complesso e raccomandano di partire da reasoning basso, mentre Luna/Terra
+restano adatti ai workload mirati e quotidiani. La migrazione globale ad Astra
+non migliorerebbe il rapporto qualita'/utilizzo per Me.Mo.Ri.A.
+
+Regola di efficienza: un solo subagent per default. Il parallelismo e' ammesso
+solo per workstream realmente indipendenti con beneficio concreto; handoff e
+risultati devono usare task envelope, path, simboli ed evidenze concise invece
+di duplicare file. Test e riletture gia' riusciti non vanno ripetuti senza nuove
+modifiche, failure o rischi residui.
+
+Compatibilita': i nuovi routing record usano `policy_version: 2.1`; lo schema
+continua ad accettare `2.0` per planner e trace storici. Gli eventi Sol/high
+preesistenti non vengono riscritti. Se Astra non e' disponibile nel workspace
+Codex, il tier high resta bloccato finche' non viene registrato un fallback
+esplicito; non e' ammessa sostituzione silenziosa.
+
+## 2026-09-20 - Strategia OCR misurabile prima della scala
+
+Decisione: per la traiettoria OCR accettata dall'utente, procedere per gate
+T36-T40. T36 rende verificabile il pilot sui TIFF guida (`00028` intero e crop
+rappresentativi di `00026`) esponendo risultati, crop e provenance per review
+condivisa. T37 ricostruisce struttura e Markdown in modo deterministico; T38
+introduce reference umana stratificata, calibrazione e holdout; T39 valuta un
+VLM soltanto su crop ambigui se il confronto con la reference mostra beneficio;
+T40 integra il flusso validato nella CLI e aumenta progressivamente il batch.
+
+Per pianificare migliaia di immagini, il campione iniziale complessivo e' di
+30-50 pagine, stratificate per lingua, leggibilita' e tipologia; e' esplorativo
+e non garantisce rappresentativita' statistica. Confidence,
+disaccordo tra motori e processabilita' orientano il triage, non certificano
+accuratezza. E' previsto un audit casuale anche degli output non segnalati e la
+misura di throughput, p95, costo per 1000 pagine e minuti di review per 100.
+Batch e trasformazioni richiedono provenance, checkpoint idempotenti, retry
+limitati ed error isolation. Nessuna soglia numerica o accuratezza sulle
+scansioni reali e' dichiarata in questa decisione; i fatti pubblicabili
+richiedono sempre fonte tracciabile e revisione umana.

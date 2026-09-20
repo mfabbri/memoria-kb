@@ -9,10 +9,15 @@
 | `low` | modificare solo docs/planner/config agent | `mmr_docs_editor` | Luna / medium |
 | `medium` | fix/micro-feature runtime | `mmr_implementer` | Terra / medium |
 | `review` | audit, regressione, edge case | `mmr_test_reviewer` | Terra / high |
-| `high` | architettura, migrazione, conflitti di contratto | `mmr_architect` | Sol / high |
+| `high` | architettura, migrazione, conflitti di contratto | `mmr_architect` | Astra / low |
 
 Il parent Luna/medium classifica, delega e sintetizza. Non deve assorbire
-direttamente task medium/review/high.
+direttamente task medium/review/high. Astra e' riservato al tier high e parte da
+reasoning `low`; un effort maggiore non va usato per compensare accessi o
+requisiti mancanti.
+
+Token discipline: una delega per default. Parallelizzare solo workstream
+indipendenti; passare task envelope, path e simboli anziche' contenuti duplicati.
 
 ## Procedura
 

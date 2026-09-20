@@ -44,7 +44,7 @@ in base alla forma e al rischio del lavoro, non alla dimensione del repository:
 - `low`: modifica solo docs/planner/config agent -> `mmr_docs_editor` / Luna `medium`;
 - `medium`: codice o micro-feature entro contratti esistenti -> `mmr_implementer` / Terra `medium`;
 - `review`: regressioni, edge case, provenance o quality gate -> `mmr_test_reviewer` / Terra `high`;
-- `high`: architettura, migrazioni o trade-off multi-repository -> `mmr_architect` / Sol `high`.
+- `high`: architettura, migrazioni o trade-off multi-repository -> `mmr_architect` / Astra `low`.
 
 Ogni selezione intenzionale va registrata in
 `memoria-bootstrap/planning/current-work.json` nel blocco `routing`.
@@ -57,6 +57,19 @@ La traccia runtime effettiva e' separata dal planner: gli hook Codex registrano
 il model slug realmente usato per sessione e subagent in
 `memoria-bootstrap/planning/.runtime/model-routing.ndjson`. Il file runtime e'
 locale e ignorato da Git; il planner conserva invece la decisione auditabile.
+
+Disciplina token/context:
+
+- usa un solo subagent alla volta come default; il parallelismo richiede task
+  realmente indipendenti e un beneficio concreto di qualita' o latenza;
+- non duplicare nei messaggi inter-agent il contenuto di file gia' accessibili:
+  passa path, simboli, task envelope e risultati sintetici;
+- non rileggere file invariati dopo una delega salvo conflitto, diff inatteso o
+  quality gate che lo richieda;
+- esegui il test piu' piccolo che dimostra il cambiamento; amplia o ripeti i test
+  solo dopo nuove modifiche, failure o rischi residui;
+- non aumentare model tier o reasoning per compensare file, permessi, fonti o
+  requisiti mancanti.
 
 Non usare profili project-local `[profiles.*]`: Codex li ignora nella
 `.codex/config.toml` del progetto.

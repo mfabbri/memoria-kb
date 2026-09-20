@@ -88,11 +88,11 @@
       "additionalProperties": false,
       "required": ["policy_version", "tier", "task_class", "agent", "model", "reasoning_effort", "rationale", "trace"],
       "properties": {
-        "policy_version": { "const": "2.0" },
+        "policy_version": { "enum": ["2.0", "2.1"] },
         "tier": { "enum": ["low", "medium", "review", "high"] },
         "task_class": { "enum": ["discovery", "documentation", "implementation", "quality", "architecture", "migration"] },
         "agent": { "enum": ["mmr_scanner", "mmr_docs_reviewer", "mmr_docs_editor", "mmr_implementer", "mmr_test_reviewer", "mmr_architect"] },
-        "model": { "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
+        "model": { "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-6-astra"] },
         "reasoning_effort": { "enum": ["low", "medium", "high"] },
         "rationale": { "type": "string", "minLength": 1 },
         "trace": {
@@ -107,7 +107,7 @@
               "event": { "enum": ["selected", "delegated", "escalated", "fallback"] },
               "tier": { "enum": ["low", "medium", "review", "high"] },
               "agent": { "enum": ["mmr_scanner", "mmr_docs_reviewer", "mmr_docs_editor", "mmr_implementer", "mmr_test_reviewer", "mmr_architect"] },
-              "model": { "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol"] },
+              "model": { "enum": ["gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "gpt-6-astra"] },
               "reasoning_effort": { "enum": ["low", "medium", "high"] },
               "reason": { "type": "string", "minLength": 1 },
               "from_tier": { "type": ["string", "null"], "enum": ["low", "medium", "review", "high", null] }

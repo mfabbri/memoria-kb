@@ -1,5 +1,276 @@
 # Current Next Increment
 
+## Strategia accettata 2026-09-20 - qualità OCR su larga scala
+
+Strategia approvata dall'utente: iniziare con T36 sui TIFF guida `00028` (pagina
+intera) e `00026` (crop rappresentativi), esponendo output, crop e provenance
+per la revisione condivisa. Proseguire con T37 (struttura/Markdown deterministici),
+T38 (reference stratificata e metriche), T39 (VLM condizionale su crop ambigui,
+solo se il confronto con reference dimostra beneficio) e T40 (CLI e batch
+progressivo).
+
+Per la calibrazione su scala, il campione iniziale di 30-50 pagine è esplorativo,
+non una garanzia statistica; separare calibrazione e holdout e controllare
+casualmente anche output non segnalati. Confidence, disaccordo e processabilità
+servono solo al triage. Il batch deve mantenere provenance, checkpoint
+idempotenti, retry limitati ed error isolation; monitorare throughput, p95,
+costo per 1000 pagine e minuti di review per 100. Nessuna soglia numerica o
+accuratezza sulle scansioni reali è dichiarata. I fatti pubblicabili richiedono
+sempre fonte tracciabile e revisione umana.
+
+## Chiusura T36 2026-09-20 - pilot trasformazioni e tile OCR
+
+Pilot tecnico sui due TIFF guida (3632x6192): byte hash raw uguali agli
+originali, prova della fedelta' della copia TIFF ma non della correttezza della
+trascrizione; per pagina, quattro varianti full-page (raw/grayscale/contrast/
+threshold) e sei tile raw 2400x2400 con overlap 200. Totale: 8 output full-page,
+12 tile e 20 output OCR. Provenance e geometrie verificate; review tecnica PASS,
+senza rilievi. Il runtime segnala `max_side_limit=4000` anche con 8192
+configurato; i tile restano a 2400. Il threshold danneggia soprattutto 00026.
+Full-page e tile divergono su parole ambigue, incluso il caso "Vecohis"/"Boden":
+non si sceglie ne' promuove una lettura. Confidence piu' alta dopo contrast non
+prova accuratezza. Tesseract, LLM o VLM non correggono automaticamente e in
+silenzio il testo; un VLM sara' valutato solo condizionalmente su crop ambigui,
+dopo una reference umana e se una prova mostra beneficio. Gli output sono in
+`%TEMP%\memoria-t36-ocr-transform-pilot-20260920-final` e restano `unreviewed`:
+il prossimo passo e' la revisione visiva dell'utente. Nessun batch su migliaia di
+immagini o T37 prima di tale verifica.
+
+## Chiusura 2026-09-20 - T35 PP-OCRv5 structured evidence
+
+Stato: **completato il 2026-09-20**.
+
+### Chiusura 2026-09-20
+
+Il contratto conserva per regione testo, confidence, geometria neutra
+polygon/bbox, ID stabili, hash e provenance della trasformazione, engine/modello
+e lingua. I test offline/injected sono passati e la review è PASS. La stabilità
+degli ID è relativa all'ordine dei risultati; non è stata dichiarata accuratezza
+OCR su scansioni storiche.
+
+Decisione di riferimento:
+`memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`.
+
+### Obiettivo
+
+Portare PP-OCRv5 dal ruolo di adapter benchmark text-only a sorgente di evidenza
+OCR strutturata e tracciabile. Il nuovo contratto deve conservare per regione
+`text`, `confidence`, `polygon`/`bbox`, lingua, engine/modello, trasformazione e
+identificatore stabile. Non deve ancora inferire titoli, paragrafi, tabelle o
+Markdown semantico.
+
+### Motivazione
+
+Il benchmark corrente conserva `rec_texts` ma scarta dal contratto applicativo
+`rec_scores`, `rec_polys` e `rec_boxes`. Questa perdita impedisce di usare
+PP-OCRv5 come base della ricostruzione strutturale. I pilot PP-StructureV3,
+Docling e Qwen page-level non hanno dimostrato un vantaggio sufficiente da
+giustificare un altro framework nel critical path.
+
+### Write set atteso
+
+- `memoria-engine/code/caduti_fonti_report/document_analysis/` per contratto e
+  adapter PP-OCRv5;
+- test OCR dedicati sotto `memoria-engine/tests/`;
+- documentazione solo se il contratto pubblico cambia.
+
+### Non obiettivi
+
+- nessun VLM/LLM;
+- nessuna ricostruzione Markdown;
+- nessuna classificazione semantica di layout;
+- nessuna modifica ai TIFF originali o al data root;
+- nessuna promozione automatica di PP-OCRv5 a verita' archivistica;
+- nessuna rimozione del percorso Tesseract legacy.
+
+### Criteri di accettazione
+
+- un payload engine-neutral conserva testo, score e geometria PP-OCRv5 senza
+  ridurli a una sola stringa;
+- region ID stabili e provenance permettono di risalire alla pagina e alla
+  trasformazione applicata;
+- il contratto tollera polygon/bbox secondo quanto disponibile dal motore;
+- l'import PaddleOCR resta lazy/opt-in e non diventa dipendenza obbligatoria dei
+  test standard;
+- test offline/injected verificano mapping, ordine e perdita zero dei campi
+  strutturali rilevanti;
+- nessun renderer Markdown o parser semantico viene aggiunto in T35.
+
+### Validazione minima
+
+Baseline verificata il 2026-09-20:
+`python -m pytest -q tests/test_document_ocr_batch.py tests/test_document_ocr_tesseract.py tests/test_ocr_markdown.py`
+restituisce `31 passed, 2 failed`. Le due failure sono preesistenti nei fixture
+batch che usano il token singolo `OCR` contro il gate a due token. T35 deve
+separare chiaramente eventuali regressioni nuove da questa baseline e, se tocca
+il gate, correggere test/semantica in un micro-incremento esplicito.
+
+### Stop condition
+
+Chiudere T35 quando l'evidenza PP-OCRv5 e' conservata in modo strutturato e
+testabile. Il passo successivo e' T36, dedicato a crop/tiling e trasformazioni
+ad alta risoluzione sui due TIFF guida; non anticipare T37-T40.
+
+## Nota operativa 2026-09-19 - ambiente locale PP-OCRv5
+
+Per riprodurre il setup Python su Windows, dalla cartella
+`D:\CaDiMalanca\me.mo.ri.a-kb\memoria-engine` usare il venv esistente:
+verificare `.venv\Scripts\python.exe`, installare `paddlepaddle==3.3.0` con
+l'indice CPU ufficiale `https://www.paddlepaddle.org.cn/packages/stable/cpu/`,
+installare `paddleocr==3.7.0` e verificare versioni/import con lo stesso
+interprete. Prima dell'invocazione del runner impostare `$env:PYTHONPATH =
+'code'`. La sequenza PowerShell copiabile è nel playbook
+`playbooks/codex-document-analysis-core.md`.
+
+I pesi non facevano parte dell'installazione dei pacchetti: erano già scaricati
+ed estratti sotto `%TEMP%\memoria-ppocr-v5-20260919\models`. Le directory usate
+erano detection `PP-OCRv5_mobile_det_infer` e recognition
+`latin_PP-OCRv5_mobile_rec_infer`, `en_PP-OCRv5_mobile_rec_infer` e
+`eslav_PP-OCRv5_mobile_rec_infer`. Il primo tentativo fallì perché presumeva
+percorsi annidati `en\PP-OCRv5_mobile_rec_infer` ed
+`eslav\PP-OCRv5_mobile_rec_infer`; verificare i percorsi effettivi. Non è
+stato ricostruito un comando affidabile per scaricare i pesi. Non installare
+pacchetti nel Python globale e non conservare i modelli nei repository.
+
+## Chiusura 2026-09-19 - benchmark runtime PP-OCRv5
+
+Completato il benchmark runtime sulle sei fixture sintetiche multilingue con
+PaddleOCR 3.7.0, PaddlePaddle CPU 3.3.0 e PP-OCRv5 mobile; inferenza CPU con
+`enable_mkldnn=false`. Su 66 token di riferimento, output 67, match 65,
+omissioni 1 e aggiunte 2: accuratezza `0.970149`, copertura `0.984848`,
+completezza `1.0`, invenzione `0.029851`. Metriche per lingua
+accuracy/coverage/invention: `ita` `0.944444/0.971429/0.055556` (35 token di
+riferimento, 36 output, 34 match); `deu`, `eng` e `rus` `1/1/0` (10/10/10,
+11/11/11 e 10/10/10 rispettivamente). Cinque fixture sono perfette; la
+fixture italiana degradata ha accuratezza `0.833333`, copertura `0.909091` e
+invenzione `0.166667`. Latenze: 1.469-3.959 secondi per fixture. La seconda
+esecuzione, con i file `.cache` esclusi dalla provenance dei modelli, ha
+restituito gli stessi sei hash di risposta della prima esecuzione valida.
+
+Provenance: SHA-256 manifest
+`08a51b197d34400fdc40943ddfa7a681a4a12d4004bc2f348a38ce8346cbf436`;
+hash dei pesi rilevatore `afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b`,
+Latin `53cdc8b481a7394bb108f96d0fb3432b0a8f392e22c7d18f06dbb2d42b8b25f9`,
+English `3ec8a97ed6cefe8568d3e2ee90bb193299b566a7661aa4fd52d224b96b59f66b` ed
+East Slavic `f11057b05d8517868bca505271278973d706600d9dcc184cbcf5c4512091c32b`.
+La verifica locale registra file attesi e hash, non autentica una firma
+ufficiale del modello. Corpus solo sintetico e text-only: non sostiene claim
+sull'OCR di scansioni storiche, non misura struttura/layout e non seleziona o
+promuove uno stack. Prossimo passo candidato: validare un campione limitato di
+scansioni rappresentative con trascrizione umana verificata, mantenendo separati
+gli output dei motori.
+
+## Chiusura 2026-09-19 - adapter benchmark PP-OCRv5
+
+Completato l'adapter opt-in PP-OCRv5: l'import del runtime PaddleOCR è lazy e
+non introduce dipendenze obbligatorie. L'esecuzione richiede directory di
+modello locali con `inference.json`, `inference.pdiparams` e `inference.yml`;
+la selezione linguistica mappa `ita`/`deu` a Latin, `eng` a English e `rus` a
+East Slavic. Il report registra hash degli asset e versioni Paddle/PaddleOCR.
+Le immagini sono lette dalle fixture locali; output e report restano in memoria,
+senza scritture. L'interfaccia injected e' stata verificata dal benchmark
+runtime, completato nella nota soprastante. Non ne deriva una selezione o
+promozione dello stack.
+
+## Chiusura 2026-09-19 - LLaVA con prompt per lingua
+
+Completata la valutazione di `llava-llama3:latest` su sei fixture
+sintetiche, con Ollama 0.33.2 (digest
+`44c161b1f46523301da9c0cc505afa4a4a0cc62f580581d98a430bb21acd46de`), engine
+`ollama-vision` su localhost, timeout 120 s, `num_ctx=4096`,
+`num_predict=256`, `think=false`, `temperature=0`. Riferimenti/output/match:
+66/193/38; accuratezza 0.196891, copertura 0.575758, invenzione 0.803109.
+Per lingua: `ita` 0.657143/0.657143/0.281250 (3 fixture: accuracy/coverage/
+invention); `deu` 0.363636/0.400000/0.636364; `eng` 1/1/0; `rus` 0/0/1 (una
+fixture ciascuno per `deu`, `eng`, `rus`). Prompt per fixture registrati via
+SHA-256: clean-text `1f1134efd78479978bbeba3f98a44e04c858d4266c0e14fd841ef4aa9cf16181`,
+risposta `1d3ecf83612720e6ef0308c97158bab23a3d4c9983e3098d85e2661f66bf711c`,
+23859.808 ms; degraded-text stesso prompt, risposta
+`88e05129b8d7c74f0d31f7cf6d04911159d45c32eb400ce6f1ed9246869b5dab`,
+12609.975 ms; mixed-table-layout stesso prompt, risposta
+`602efe9e1584ecf044965e850e1ded8d26ec8c4b996ec8c51b733e361df438a8`,
+11742.573 ms; german-text prompt
+`edf845ecb8bde0fb2d047fed411bd95e8853660e118b49a55927adb238f24f83`, risposta
+`84e697e4f17ee1c50bbecd736b653ab90382c3387d3edcf22cbd55eece69015b`,
+12495.317 ms; english-text prompt
+`3aa64c709d67eeef5348b745cb0322312e571a72c7cdba1e0f6189663750524d`, risposta
+`bda71f65e5161ca833b61769cb5b64a1f1a86b0d52a2bd1da65a8c698468154e`,
+10771.983 ms; russian-text prompt
+`f4b0b472bd127b6dca36e552f6fe5461b713c04cb1a1fa1bd4159412165ee27b`, risposta
+`ce03d538e7014940483b7ea830f6e08fb047c64ce5041f259150fb91e35eede4`,
+55281.920 ms.
+
+Il code review è PASS; per istruzione non sono stati aggiunti o eseguiti test.
+Paddle/PaddleOCR non è installato; LLaMA 3.2 Vision è installato ma
+incompatibile con Ollama in uso e non è stato eseguito; Qwen3-VL non è
+disponibile. Valutazione solo sintetica: nessuna scansione reale, claim o
+selezione/promozione di engine. Prossimo candidato: integrazione PP-OCRv5 e
+modelli vision disponibili nel benchmark.
+
+## Chiusura 2026-09-19 - confronto Tesseract 5.5.3
+
+Completato il confronto offline del corpus di sei fixture sintetiche con
+Tesseract 5.5.3.20260724, OEM 1 e PSM 6. Accuratezza testuale: `ita` 0.714286
+(3 fixture; baseline Tesseract 5.5.0: 0.685714), `deu` 1.0, `eng` 1.0 e
+`rus` 1.0 (una fixture pulita ciascuna); totale 0.848485 su 66 token di
+riferimento. I language pack `deu` e `rus` provengono dal repository ufficiale
+`tessdata_fast` (`main`), con SHA-256 rispettivamente
+`19D219BBB6672C869D20A9636C6816A81EB9A71796CB93EBE0CB1530E2CDB22D` e
+`E16E5E036CCE1D9EC2B00063CF8B54472625B9E14D893A169E2B0DEDEB4DF225`; i pack
+sono stati staged in Temp e la prova ha usato `TESSDATA_PREFIX`. Installer del
+rilascio ufficiale:
+https://github.com/tesseract-ocr/tesseract/releases/download/5.5.3/tesseract-ocr-w64-setup-5.5.3.20260724.exe,
+SHA-256 `BEE9E3434BD94FD65387D9BE28CD467A41F61B1275383B55B0F59A1331270AE4`
+(corrispondente al manifest ScoopInstaller/Main). Il certificato del
+firmatario risultava scaduto/non verificabile: questo caveat di provenance
+resta esplicito.
+
+Valutazione limitata a fixture sintetiche: nessuna scansione reale, claim
+approvato o stack OCR selezionato/promosso. Il punto 2 della sequenza roadmap
+è chiuso; prossimo candidato: punto 3, integrare PP-OCRv5 e i modelli vision
+disponibili nel benchmark offline.
+
+## Nota di sessione 2026-09-19 - fixture OCR multilingue
+
+Il benchmark offline ora dichiara lingua e metriche separate per italiano
+(`ita`), tedesco (`deu`), inglese (`eng`) e russo (`rus`), con una fixture
+cirillica sintetica. Il report conserva lingua, hash della fixture e, quando
+Tesseract usa la selezione automatica, la lingua effettiva per ogni comando.
+Sul baseline locale Tesseract 5.5.0.20241111, OEM 1 e PSM 6: `deu`, `eng` e
+`rus` sono 1.00 sui rispettivi casi puliti; i tre casi italiani restano 0.686
+aggregati, incluso testo degradato e tabella. Sono risultati di sole fixture
+sintetiche, non una selezione di engine né una stima per le scansioni reali.
+
+Il confronto Tesseract 5.5.3 è stato completato nell'incremento successivo;
+il prossimo candidato è integrare PP-OCRv5 e i modelli vision disponibili sul
+medesimo corpus multilingue.
+
+## Nota di sessione 2026-09-19 - sweep OCR LLM locale
+
+Calibrato LLaVA (`llava-llama3:latest`, Ollama 0.33.2) sui tre fixture
+sintetici: baseline `temperature=0`, `num_ctx=4096`, `num_predict=256`, prompt
+italiano = 0.686 accuratezza; la ripetizione ha restituito gli stessi hash.
+`num_ctx=8192` non ha cambiato output. Il prompt italiano con marker
+`[illeggibile]` ha raggiunto 0.714, ma il fixture misto resta a 0.50; il prompt
+inglese scende a 0.622. `temperature=0.2` non migliora l'aggregato e non e'
+ripetibile a parita' di parametri. Tesseract 5.5.0, ita/OEM 1/PSM 6 ottiene
+0.686 (clean 1.00, degradato 0.75, misto 0.357). Llama 3.2 Vision e' installato
+ma incompatibile con Ollama 0.33.2; Qwen3-VL non e' installato. Risultati solo
+sintetici: nessun modello vision e' promosso per scansioni reali. Tesseract e il
+quality gate restano il percorso primario; il VLM e' una seconda lettura da
+tenere separata. Prossimo passo: confronto su pagine con trascrizione umana
+verificata, poi valutazione di crop/tiling.
+
+## Nota di sessione 2026-09-19 - marker per testo OCR non disponibile
+
+L'export Markdown per pagina conserva ora le righe OCR senza testo alfanumerico
+con il marker letterale `OCR text unavailable`, mantenendo ID riga/regione e
+bounding box senza esporre punteggiatura o valori nulli come trascrizioni. Il
+report aggiunge `unavailable_text_lines` e mantiene `skipped_empty_lines` a 0
+per compatibilità. Test OCR Markdown: 9/9; quality review indipendente PASS;
+planner JSON valido e `git diff --check` pulito. Nessun runtime OCR, soglia o
+contenuto storico è stato modificato.
+
 ## Nota di sessione 2026-09-18 - valutazione Qwen e confronto appaiato
 
 Aggiornamento: il tag `qwen3-vl:4b` era già installato; nessun download è
@@ -3221,3 +3492,145 @@ e verificato la parita' con test, l'implementazione autonoma PowerShell va
 rimossa immediatamente; l'eventuale `.ps1` residuo e' soltanto un launcher
 sottile che inoltra ogni argomento alla CLI Python. Nessun periodo di doppia
 implementazione e' ammesso.
+
+## Nota di sessione 2026-09-19 - preflight campione OCR bloccato
+
+Preflight eseguito solo sui nomi nella cartella
+`P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`:
+risultano due TIFF e due sidecar `.document.yaml`. Nessuna scansione e' stata
+aperta o elaborata e nessun contenuto dei sidecar e' stato inferito. Non e'
+stata individuata una trascrizione umana verificata; prima di proseguire e'
+stato chiesto all'utente di indicare il file o percorso del riferimento umano.
+
+## Nota di sessione 2026-09-19 - run Tesseract su due immagini
+
+Su chiarimento dell'utente, la trascrizione umana non e' un prerequisito per la
+revisione qualitativa degli output. Run batch completato con Tesseract 5.5.3,
+lingua `ita`: 2 immagini processate, 0 errori. Report `ocr_batch_report.json`,
+`ocr_batch_report.md` e log `ocr_batch.log` sono esclusivamente in
+`C:\Users\info\AppData\Local\Temp\memoria-ocr-review-20260919`.
+
+Entrambi gli output hanno `ocr_quality_status=low_confidence`. `00028`: 425
+caratteri, 65 parole, confidence 62.80 e 22 parole low-confidence; propone
+etichette tedesche ma contiene caratteri corrotti. `00026`: 3.111 caratteri,
+1.002 parole, confidence 36.99 e 691 parole low-confidence; il testo e' quasi
+tutto rumore. Per `00026` i retry default e PSM12 sono stati rifiutati;
+`temporary_preprocessed` PSM12 e' stato selezionato ma resta `low_confidence`.
+Il gate `accepted` nel report non indica qualita' attendibile. Tesseract ha
+solo `eng`, `ita`, `ita_old` e `osd`, non `deu`. Originali e sidecar sono
+rimasti intatti; nessun output e' stato scritto su `P:`. Non sono stati usati
+LLM o claim, non sono state calcolate metriche di accuratezza e non sono stati
+eseguiti test. Prossimo passo: review condivisa degli output; valutare in
+seguito OCR con modello multilingue senza pre-caricare un'implementazione.
+
+## Nota di sessione 2026-09-19 - confronto Tesseract deu e PP-OCRv5
+
+Tesseract 5.5.3 e' stato eseguito con `deu`, OEM1, PSM6 e `tessdata-dir` sotto
+Temp. Il runner quality-gated ha riportato 0 processati e 2 errori dopo 3
+retry, per `no_alphanumeric_tsv_lines`, bassa confidence e low-confidence
+diffusa. I raw text sono comunque disponibili in
+`%TEMP%\memoria-ocr-review-20260919-tesseract-deu\raw\T314-1275-00026.txt`
+e `...00028.txt`: `00028` ha righe tedesche leggibili, `00026` e' rumoroso.
+
+PP-OCRv5 e' stato eseguito su CPU con MKLDNN=false, detector mobile,
+recognition Latin e auto-resize del lato massimo da 6192 a 4000. `00026`:
+49 righe, 2289 caratteri, score medio 0.723182, 48.646 s. `00028`: 59 righe,
+531 caratteri, score medio 0.843398, 29.299 s. Il report
+`%TEMP%\memoria-ocr-review-20260919-ppocrv5\ppocrv5_report.json` conserva testi,
+score per riga, hash delle immagini e hash del manifest dei pesi.
+
+Il setup dell'adapter ha richiesto di correggere il nome interno del modello:
+`inference.yml` non corrispondeva al nome della directory. Il rilancio e'
+riuscito senza download. Gli output sono candidati per revisione e non misurano
+accuratezza. Originali e sidecar sono rimasti intatti; nessuna modifica runtime,
+claim o test. Prossimo passo: review condivisa dei due engine; valutare in
+seguito OCR multilingue senza pre-caricare un'implementazione.
+
+## Nota di sessione 2026-09-19 - asset OCR in percorsi persistenti
+
+Installati sotto `C:\Users\info\AppData\Local\MeMoRiA\ocr-assets\` il
+detector PP-OCRv5 e i recognizer Latin, English ed East Slavic come directory
+modello dirette. La directory `tessdata` contiene `deu`, `eng`, `ita`,
+`ita_old`, `osd` e `rus`. `TESSDATA_PREFIX` e' stato persistito per l'utente
+con `setx` e verificato; `tesseract --list-langs` elenca tutte e sei le lingue.
+Gli hash SHA-256 sorgente/destinazione coincidono per i quattro modelli
+PP-OCRv5 e i traineddata staged.
+
+Program Files ha negato la scrittura, quindi l'installazione e' stata completata
+nel percorso per-utente senza privilegi amministrativi. Dopo la rimozione del
+venv temporaneo, `memoria-engine/.venv` continua a importare Paddle 3.3.0 e
+PaddleOCR 3.7.0. Rimosse da Temp solo `memoria-ppocr-v5-20260919` (venv, cache
+e modelli duplicati) e `tesseract-5.5.3-language-data`; le cartelle Temp con i
+report OCR sono rimaste. Non e' stato scaricato nulla e non sono state aggiunte
+dipendenze runtime o riportati testi OCR reali.
+
+## Nota di sessione 2026-09-19 - review geometrica OCR affiancata
+
+Tesseract 5.5.3 `deu` ha usato gli asset persistenti e prodotto TSV/hOCR con
+token, bounding box e confidence. PP-OCRv5 ha usato i modelli persistenti; il
+report JSON e' in
+`%TEMP%\memoria-ocr-review-20260919-persistent-layout\ppocrv5\ppocrv5_layout_report.json`.
+Lato massimo ridimensionato da 6192 a 4000. `00026`: 49 linee, score medio
+0.723182, 46.681 s; output confuso con box larghi e inclinati. `00028`: 59
+linee, score medio 0.843398, 28.012 s; etichette circa tra x=694 e 1622 e
+valori tra x=2296 e 2816 in fasce successive.
+
+Senza reference umana validata non e' stata misurata accuratezza. I bounding
+box OCR non equivalgono a celle tabellari e non preservano gli stili tipografici.
+Nessun nuovo modello o test e' stato eseguito; immagini e sidecar sono intatti.
+
+## Nota di sessione 2026-09-19 - pipeline OCR/layout e parsing documentale
+
+Aggiornata la sezione roadmap con tre candidati di confronto offline, senza
+selezione: OCR con geometria/layout ed eventuale LLM per formattazione o
+correzioni; conversione documentale VLM diretta; parsing end-to-end PP-StructureV3
+o Docling. Ogni proposta formattata/corretta deve restare collegata all'OCR
+grezzo e alla provenance di token/regione, confidence, motore/modello e
+trasformazioni; incertezza esplicita e nessun completamento senza evidenza.
+Richieste metriche distinte per accuratezza/coverage, celle/reading order,
+invenzioni, formattazione e risorse/latency, disaggregate per lingua e difficolta'
+su fixture con reference umana. Specificato che i bbox non attribuiscono
+semantica alle celle o recuperano lo stile tipografico; Markdown/Word sono
+derivati, non trascrizioni archivistiche verificate. Aggiunti riferimenti alle
+documentazioni upstream ufficiali PaddleOCR PP-StructureV3 e Docling senza claim
+su qualita' o lingue. Nessun runtime o test applicativo modificato/eseguito.
+
+## Nota di sessione 2026-09-19 - confronto PP-StructureV3 e Docling su 00028
+
+Confronto completato su `T314-1275-00028.tif` (SHA-256
+`661d6b0728033fa0526dcb83b9f4451b237a5fe52d986fc9d7a4f62d1779cab8`). Output
+permanenti sotto
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-review\T314-1275-00028-structure-compare`:
+Docling `docling_native.json/.md`; PP-StructureV3
+`T314-1275-00028-longedge-2400_0_res.json/.md` e la derivata
+`T314-1275-00028-longedge-2400.tif` (1408x2400); sintesi `comparison.md` e
+provenance per engine nelle rispettive cartelle.
+
+Docling ha rilevato una tabella 1x1 usando OCR `tesseract-cli` in lingua `deu`
+in circa 75 secondi. PP-StructureV3 ha restituito 45 regioni di testo OCR e 2
+blocchi di layout con MKL-DNN disabilitato; ha rilevato titolo/corpo e dot
+leaders, ma nessuna griglia di celle, con corruzioni di umlaut/caratteri
+sostitutivi. Il run a piena risoluzione ha incontrato un bug OneDNN; il risultato
+PP riportato usa la derivata ridimensionata. Non e' disponibile una reference
+umana, quindi non e' stata dichiarata accuratezza. Originale e sidecar intatti.
+
+## Nota di sessione 2026-09-19 - pilot OCR + LLM locale su 00028
+
+La roadmap ora formalizza il flusso OCR/layout -> pacchetto di evidenze -> LLM
+locale -> proposta preview-only tracciabile. Pilot eseguito sul pacchetto
+persistente di 00028 con `qwen2.5-coder:1.5b` via Ollama locale, senza download
+né servizi remoti. Due risposte estese sono state troncate; la richiesta
+compatta ha restituito JSON valido con tutti i 45 ID delle regioni, ciascuno
+presente una volta. La struttura proposta è però debole: un solo ID è marcato
+heading e i restanti 44 sono raggruppati in un unico paragraph; non ricostruisce
+le sezioni né la tabella. Nessuna correzione OCR, accuratezza dichiarata o
+test applicativo. Input, risposta grezza, proposta e verifica sono in
+`%LOCALAPPDATA%\MeMoRiA\ocr-review\T314-1275-00028-hybrid-reconstruction`.
+Audit del percorso sorgente: in `P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275\test`
+esiste `markdown\test-images-661d6b0728033fa0\tesseract-page-1.md`, output
+Tesseract `deu` con stato `unreviewed` e timestamp 2026-09-17; non e' il run GPU.
+La variante `documenti\_da\_processare` non esiste e nel percorso verificato
+non risultano nuovi artefatti GPU. Nessun output e' attribuito a quel run.
+Prossimo passo candidato: rivedere il risultato e restringere il task strutturale
+per righe/colonne usando le coordinate OCR come evidenza, poi confrontare la
+proposta con l'immagine senza richiedere una trascrizione umana preventiva.

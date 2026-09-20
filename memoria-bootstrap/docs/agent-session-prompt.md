@@ -27,13 +27,19 @@ Il parent Luna/medium e' il router/controller:
 - discovery e docs semplici -> agent Luna;
 - implementazione runtime -> mmr_implementer Terra/medium;
 - quality review -> mmr_test_reviewer Terra/high;
-- architettura o migrazione -> mmr_architect Sol/high.
+- architettura o migrazione -> mmr_architect Astra/low.
 
 Se un subagent non e' disponibile, il parent puo' eseguire direttamente solo un
 micro-slice runtime `medium` gia' delimitato dal planner, registrando il
 fallback e mantenendo write_set, stop condition e quality gate. Review e high
 restano bloccati senza l'agente dedicato. Non sostituire silenziosamente un
 modello non disponibile.
+
+Usa un solo subagent per default. Parallelizza soltanto lavori realmente
+indipendenti quando migliora concretamente qualita' o latenza. Nei messaggi tra
+agenti passa task envelope, path e simboli invece di ricopiare contenuti gia'
+accessibili. Esegui il quality gate minimo significativo e non ripetere test o
+letture gia' riusciti senza una nuova modifica, failure o rischio concreto.
 
 Per un incremento runtime `medium` selected o in_progress, la selezione e il
 planner sono soltanto precondizioni: nella stessa sessione devi produrre un

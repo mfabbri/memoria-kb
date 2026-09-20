@@ -11,7 +11,7 @@ Il lavoro viene delegato in base al task:
 discovery/docs          -> Luna
 implementation          -> Terra
 quality review          -> Terra/high
-architecture/migration  -> Sol/high
+architecture/migration  -> Astra/low
 ```
 
 ## Tracciabilita'
@@ -21,6 +21,18 @@ Gli hook registrano il modello effettivo su SessionStart/SubagentStart/SubagentS
 in un log NDJSON locale ignorato da Git.
 
 Questo evita di confondere "modello richiesto" con "modello realmente avviato".
+
+## Aggiornamento Astra e token 2026-09-20
+
+Il tier high usa ora GPT-6 Astra con reasoning `low`, al posto di Sol/high.
+Luna e Terra restano invariati per discovery, documentazione e implementazione
+ordinaria. La scelta segue la raccomandazione di partire con reasoning piu' basso
+e aumentare capacita' solo quando il task lo richiede.
+
+Per contenere i token, non fare fan-out automatico: un solo subagent e' il
+default. Passare path, simboli e task envelope invece di copiare file nei
+messaggi inter-agent; ampliare test o riletture solo dopo nuove modifiche, failure
+o rischi concreti.
 
 ## Validazione
 
