@@ -1,0 +1,60 @@
+{
+  "synthetic": true,
+  "cases": [
+    {
+      "name": "leader_list_report",
+      "profile": "leader_list_report",
+      "evidence": {
+        "@type": "OcrPageEvidence",
+        "page_id": "synthetic-00028",
+        "source_image_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "transform_id": "contrast-x1.8",
+        "engine": "synthetic-ocr",
+        "language": "ita",
+        "source_page": {"page_number": 1},
+        "model": {"name": "synthetic"},
+        "image_transform": {"name": "contrast", "factor": 1.8},
+        "regions": [
+          {"region_id": "r-title", "text": "REPORT", "confidence": 0.11, "geometry": {"bbox": [10, 10, 210, 30]}},
+          {"region_id": "r-label", "text": "Population", "confidence": 0.99, "geometry": {"bbox": [10, 55, 130, 75]}},
+          {"region_id": "r-value", "text": "42", "confidence": 0.03, "geometry": {"bbox": [240, 55, 300, 75]}},
+          {"region_id": "r-unknown", "text": "...", "confidence": 0.88, "geometry": {"bbox": [10, 90, 30, 100]}},
+          {"region_id": "r-unrecognized", "text": "Narrative note", "confidence": 0.88, "geometry": {"bbox": [10, 120, 140, 140]}}
+        ]
+      },
+      "expected": {
+        "kinds": ["heading", "key_value", "unknown", "unknown"],
+        "sources": [["r-title"], ["r-label", "r-value"], ["r-unknown"], ["r-unrecognized"]],
+        "statuses": ["inferred", "inferred", "uncertain", "unrecognized"],
+        "markdown_fragments": ["## REPORT", "**Population:** 42", "[illeggibile]", "Narrative note"]
+      }
+    },
+    {
+      "name": "numbered_report",
+      "profile": "numbered_report",
+      "evidence": {
+        "@type": "OcrPageEvidence",
+        "page_id": "synthetic-00026",
+        "source_image_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "transform_id": "raw",
+        "engine": "synthetic-ocr",
+        "language": "ita",
+        "source_page": {"page_number": 2},
+        "model": {"name": "synthetic"},
+        "image_transform": {"name": "raw"},
+        "regions": [
+          {"region_id": "r-section", "text": "1. INTRODUCTION", "confidence": 0.02, "geometry": {"bbox": [10, 10, 250, 30]}},
+          {"region_id": "r-first", "text": "This is a report paragraph", "confidence": 0.95, "geometry": {"bbox": [10, 50, 220, 70]}},
+          {"region_id": "r-continuation", "text": "continued on the next visual line", "confidence": 0.12, "geometry": {"bbox": [28, 76, 260, 96]}},
+          {"region_id": "r-empty", "text": "", "confidence": 0.87, "geometry": {"bbox": [10, 120, 20, 130]}}
+        ]
+      },
+      "expected": {
+        "kinds": ["heading", "paragraph", "unknown"],
+        "sources": [["r-section"], ["r-first", "r-continuation"], ["r-empty"]],
+        "statuses": ["inferred", "inferred", "uncertain"],
+        "markdown_fragments": ["## 1. INTRODUCTION", "This is a report paragraph continued on the next visual line", "[illeggibile]"]
+      }
+    }
+  ]
+}

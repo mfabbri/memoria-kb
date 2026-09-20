@@ -1681,11 +1681,14 @@ totali. Provenance e geometrie sono state verificate; review tecnica PASS senza
 rilievi. Il runtime ha comunque segnalato `max_side_limit=4000` nonostante
 `8192` configurato, mentre i tile nativi restano 2400. Il threshold danneggia
 in particolare `00026`. Confidence non equivale ad accuratezza; nessuna
-accuratezza e' dichiarata. Gli output restano `unreviewed` e la revisione
-visiva dell'utente e' pendente.
+accuratezza e' dichiarata. La revisione visiva utente ha preferito
+`contrast-x1.8` per entrambe le pagine; per `00028` tutte le varianti sono
+risultate ragionevolmente leggibili. Gli overview `visual-review` mostrano solo
+la zona alta a sinistra e appaiono ritagliati. Questo e' feedback sugli
+artefatti visivi, non validazione OCR.
 
-Stato: **completata tecnicamente il 2026-09-20**; revisione visiva dell'utente
-pendente.
+Stato: **completata il 2026-09-20**; la review visiva non approva trascrizioni
+o claim.
 
 ### T37 - Deterministic structure reconstruction e Markdown
 
@@ -1712,7 +1715,16 @@ Criteri di uscita:
   illeggibilita'/incertezza;
 - golden fixture strutturali per i due profili iniziali.
 
-Stato: futuro.
+Stato: **completata il 2026-09-20**. Il modulo separato costruisce i due
+profili geometry-first solo da fixture OCR sintetiche: i blocchi mantengono
+`source_region_ids`, `status` e `structure_confidence` distinti dalla confidence
+OCR; il renderer Markdown consuma soltanto `DocumentStructure`. Il materiale
+vuoto o non riconosciuto resta esplicitamente incerto. I golden test non usano
+immagini o trascrizioni storiche e non producono claim di accuratezza. Sei
+test mirati sono passati e la review indipendente conclusiva e' PASS. Il
+residuo e' che i profili sono verificati solo su input sintetici: non si
+dichiara accuratezza OCR o strutturale su documenti reali. Prossimo candidato
+T38, previa disponibilita' di reference umana verificata.
 
 ### T38 - Reference umana e metriche OCR/struttura
 

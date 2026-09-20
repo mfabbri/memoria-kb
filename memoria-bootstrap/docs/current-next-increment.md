@@ -32,9 +32,34 @@ non si sceglie ne' promuove una lettura. Confidence piu' alta dopo contrast non
 prova accuratezza. Tesseract, LLM o VLM non correggono automaticamente e in
 silenzio il testo; un VLM sara' valutato solo condizionalmente su crop ambigui,
 dopo una reference umana e se una prova mostra beneficio. Gli output sono in
-`%TEMP%\memoria-t36-ocr-transform-pilot-20260920-final` e restano `unreviewed`:
-il prossimo passo e' la revisione visiva dell'utente. Nessun batch su migliaia di
-immagini o T37 prima di tale verifica.
+`%TEMP%\memoria-t36-ocr-transform-pilot-20260920-final` e restano `unreviewed`.
+La review visiva utente ha preferito `contrast-x1.8` per entrambe le pagine;
+per `00028` le varianti sono tutte ragionevolmente leggibili. Gli overview
+`visual-review` mostrano solo la parte alta a sinistra e appaiono ritagliati.
+Questa e' una segnalazione sugli artefatti visivi, non una validazione OCR.
+
+## Chiusura T37 2026-09-20 - struttura deterministica e Markdown
+
+Stato: **completato il 2026-09-20**. Sei test mirati T37 sono passati; il
+controllo `python -m json.tool` sul planner e `git diff --check` sono PASS. La
+review indipendente finale e' PASS.
+
+`DocumentStructure` e' stato introdotto come derivato page-scoped di
+`OcrPageEvidence`. I profili espliciti `leader_list_report` e `numbered_report`
+usano geometria, ordine verticale, indentazione e pattern semplici. Ogni blocco
+mantiene `source_region_ids`; `status` e `structure_confidence` descrivono la
+regola strutturale e restano distinti dalla confidence OCR. Il Markdown deriva
+solo da questa struttura e annota ogni blocco con la provenance. Materiale
+vuoto o non riconosciuto diventa `[illeggibile]` o `unknown`, senza completare
+testo. I golden test usano soltanto OCR sintetico: non sono state processate
+immagini reali e non e' dichiarata accuratezza. La revisione visiva T36 ha
+preferito `contrast-x1.8` per entrambe le pagine; le varianti `00028` sono
+state giudicate abbastanza leggibili, mentre gli overview mostravano solo la
+parte alta a sinistra e apparivano ritagliati. Questo feedback riguarda gli
+artefatti visivi e non verifica il testo OCR o la sua accuratezza. Il rischio
+residuo T37 resta limitato a profili verificati con fixture sintetiche, senza
+claim di accuratezza su documenti reali. Prossimo candidato: T38, subordinato
+alla disponibilita' di una reference umana verificata.
 
 ## Chiusura 2026-09-20 - T35 PP-OCRv5 structured evidence
 

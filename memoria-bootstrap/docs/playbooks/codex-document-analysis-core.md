@@ -139,7 +139,9 @@ sequenza:
 4. Ricostruire `DocumentStructure` con geometria e regole deterministiche. I
    primi profili sono `leader_list_report` (00028) e `numbered_report` (00026).
 5. Generare Markdown soltanto da `DocumentStructure`, mantenendo
-   `source_region_ids`.
+   `source_region_ids` per ogni blocco. La confidence/status della struttura
+   descrive la regola di layout, resta distinta dalla confidence OCR e non e'
+   una misura di accuratezza.
 6. Introdurre un VLM soltanto su crop ambigui se una reference umana mostra un
    vantaggio misurabile. Nessun page-to-Markdown libero.
 7. PP-StructureV3 e Docling restano comparatori; non aggiungerli al runtime
@@ -148,4 +150,9 @@ sequenza:
 Il quality gate OCR corrente misura processabilita' tecnica, non accuratezza.
 Non usare `accepted` come sinonimo di testo affidabile o revisionato.
 
-Prossimo incremento: T36. Il pilot resta limitato ai due TIFF guida e non anticipa T37-T40.
+T37 e' completato: i due profili emettono blocchi con provenance e Markdown
+derivato da fixture OCR sintetiche; i sei test mirati e la review indipendente
+finale sono PASS. Il passo candidato e' T38, subordinato a una reference umana
+verificata prima di qualsiasi metrica su scansioni reali. Il feedback visivo
+T36 (preferenza per `contrast-x1.8`; overview ritagliati) riguarda gli
+artefatti e non convalida trascrizioni OCR o accuratezza.

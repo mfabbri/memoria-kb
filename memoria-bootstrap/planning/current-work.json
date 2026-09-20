@@ -2,97 +2,95 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-20T18:40:00+02:00",
-  "updated_at": "2026-09-20T19:50:00+02:00",
+  "selected_at": "2026-09-20T21:43:16+02:00",
+  "updated_at": "2026-09-20T22:35:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T36-T40",
-      "reason": "Roadmap T36 dopo T35; richiesta utente esplicita di eseguire il pilot e verificare insieme gli output dei TIFF guida."
+      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T37",
+      "reason": "T36 verificata visivamente dall'utente; la roadmap autorizza ora la ricostruzione deterministica T37."
     }
   ],
   "increment": {
-    "id": "t36-ocr-high-resolution-transform-tiling-pilot",
-    "title": "T36 pilot di trasformazioni, crop e tiling OCR ad alta risoluzione",
-    "objective": "Confrontare OCR raw e varianti riproducibili sui TIFF guida 00026/00028, conservando provenienza e coordinate riportate alla pagina, con artefatti ispezionabili dall'utente.",
+    "id": "t37-deterministic-document-structure-markdown",
+    "title": "T37 ricostruzione deterministica di struttura documentale e Markdown",
+    "objective": "Introdurre DocumentStructure con i profili leader_list_report e numbered_report, preservando la provenance delle regioni OCR e renderizzando Markdown solo dalla struttura derivata.",
     "scope": [
-      "Implementare un runner opt-in per i soli input espliciti, producendo varianti raw/grayscale, contrast e threshold con parametri/hash registrati.",
-      "Eseguire un pilot limitato sui TIFF 00026/00028, includendo crop/tile a risoluzione nativa e rimappatura delle geometrie alla pagina sorgente.",
-      "Produrre report OCR grezzo e indice Markdown con link ad immagini, crop e provenienza per revisione visiva condivisa.",
-      "Mantenere gli originali immutati e nessuna affermazione di accuratezza senza reference umana."
+      "Definire DocumentStructure con blocchi tipizzati, source_region_ids e stato/confidence distinti dalla confidence OCR.",
+      "Implementare parsing deterministico geometry-first per leader_list_report e numbered_report, con pattern espliciti di supporto.",
+      "Renderizzare Markdown solo da DocumentStructure; ogni blocco cita le regioni sorgente salvo marcatori espliciti di incertezza.",
+      "Aggiungere golden fixture offline sintetiche per entrambi i profili, senza trascrizioni storiche reali."
     ],
     "out_of_scope": [
       "Elaborazione di documenti diversi dai due TIFF guida.",
-      "Ricostruzione semantica Markdown, correzione con LLM/VLM o approvazione della trascrizione.",
+      "Correzione OCR, interpretazione generativa o approvazione di letture storiche.",
       "Batch massivo, soglie di qualità o dichiarazioni di accuratezza prive di reference verificata.",
       "Scritture sui TIFF originali o sulla fonte archivistica."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
-      "memoria-engine/scripts/run_ocr_transform_pilot.ps1",
-      "memoria-engine/tests/test_ocr_transform_pilot.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
+      "memoria-engine/tests/test_document_structure.py",
+      "memoria-engine/tests/fixtures/document_structure/t37-golden.json",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Entrambi i TIFF hanno output raw e trasformati/tiled riproducibili, manifest con hash/parametri/provenance, geometrie rimappate alla pagina e artefatti leggibili per review; gli originali non cambiano e nessun claim di accuratezza è prodotto."
+    "stop_condition": "I due profili T37 producono, da sole fixture OCR sintetiche, DocumentStructure e Markdown derivato con source_region_ids per ogni blocco, stato/confidence strutturali distinti dall'OCR e marcatori espliciti per il materiale incerto; i test golden mirati passano senza claim di accuratezza."
   },
   "verification": {
     "tests": [
-      "Test mirati per trasformazioni, coordinate e provenance del pilot.",
-      "Esecuzione T36 limitata ai due TIFF guida; verifica output contro manifest e immagini sorgenti.",
+      "Test offline mirati per parsing geometrico, provenance, blocchi incerti e rendering Markdown dei due profili.",
+      "Golden fixture sintetiche per leader_list_report e numbered_report; nessun run su immagini reali.",
       "git diff --check e python -m json.tool memoria-bootstrap/planning/current-work.json."
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md",
-      "memoria-bootstrap/docs/decision-log.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "passed",
-    "notes": "Pilot T36 completato sui soli T314-1275-00026.tif e T314-1275-00028.tif: raw SHA-256 identici agli originali; 8 output full-page, 12 tile nativi e 20 inferenze OCR; provenance e coordinate verificate; test mirati 3/3 PASS; quality review PASS senza rilievi. La nota current-next chiarisce che hash raw prova la fedeltà della copia, non l'accuratezza OCR; full-page e tile divergono su parole ambigue e confidence non è accuratezza. Artefatti unreviewed: revisione visiva utente pendente, nessuna accuracy claim o revisione archivistica.",
+    "notes": "T36: l'utente preferisce contrast-x1.8 per entrambe le pagine; le varianti 00028 sono abbastanza leggibili; gli overview visual-review mostrano solo la parte alta a sinistra e appaiono ritagliati. Feedback esclusivamente visivo: non valida trascrizioni OCR né accuratezza. T37: 6/6 test mirati PASS; python -m json.tool PASS; git diff --check PASS; review indipendente finale PASS. I profili sono verificati solo con fixture sintetiche: nessuna accuratezza OCR o strutturale su documenti reali è dichiarata.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": ["memoria-engine", "memoria-bootstrap"],
       "read_set": [
         "AGENTS.md",
         "AGENTS.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T36",
-        "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md#T36",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T37",
+        "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md#T37",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_markdown.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_benchmark.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/image_preprocessing.py",
         "memoria-engine/tests/test_ocr_benchmark.py",
-        "P:\\Comune\\Me.Mo.Ri.a\\documenti_da_processare\\foto\\T314 R1275\\test\\T314-1275-00026.tif",
-        "P:\\Comune\\Me.Mo.Ri.a\\documenti_da_processare\\foto\\T314 R1275\\test\\T314-1275-00028.tif"
+        "memoria-engine/tests/test_ocr_markdown.py"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
-        "memoria-engine/scripts/run_ocr_transform_pilot.ps1",
-        "memoria-engine/tests/test_ocr_transform_pilot.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
+        "memoria-engine/tests/test_document_structure.py",
+        "memoria-engine/tests/fixtures/document_structure/t37-golden.json",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "$env:PYTHONPATH='code'; .\\.venv\\Scripts\\python.exe -m unittest tests.test_ocr_transform_pilot; PowerShell pilot per i soli due TIFF guida; git diff --check e python -m json.tool.",
+      "test_command": "$env:PYTHONPATH='code'; .\\.venv\\Scripts\\python.exe -m unittest tests.test_document_structure; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
       "stop_conditions": [
-        "Non modificare TIFF originali o usare input diversi dai due TIFF guida.",
-        "Tutti i derivati vanno in una nuova directory sotto TEMP e rifiutano overwrite implicito.",
-        "Conservare dati OCR grezzi e provenance; geometrie sempre espresse anche nello spazio pagina.",
-        "Nessuna correzione/interpretazione LLM e nessuna accuratezza senza reference umana."
+        "Usare solo fixture OCR sintetiche e non incorporare dati storici reali.",
+        "Preservare OCR raw, region ID e geometria; ogni blocco emesso cita le regioni sorgente.",
+        "Non aggiungere testo senza provenance salvo marcatori espliciti di incertezza.",
+        "Nessun VLM, correzione OCR o claim di accuratezza storica."
       ]
     }
   },
   "routing": {
-    "policy_version": "2.0",
+    "policy_version": "2.1",
     "tier": "low",
-    "task_class": "documentation-edit",
+    "task_class": "documentation",
     "agent": "mmr_docs_editor",
-    "model": "gpt-5.6-luna",
+    "model": "gpt-5.6-terra",
     "reasoning_effort": "medium",
-    "rationale": "Consolidare nella nota di sessione gli apprendimenti e le cautele richiesti dopo la lunga sessione T36.",
+    "rationale": "La review conclusiva T37 e' PASS; allineare gli stati roadmap, current-next, playbook e planner alla chiusura verificata e indicare T38 come prossimo gate candidato.",
     "trace": [
       {
         "event": "selected",
@@ -327,16 +325,156 @@
         "model": "gpt-5.6-luna",
         "reasoning_effort": "medium",
         "reason": "Edit limitato a current-next: fedeltà raw, divergenze full-page/tile, confidence non-accuratezza e revisione visiva pendente."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-20T21:43:16+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementazione T37 di DocumentStructure, parsing deterministico dei due profili e Markdown provenance-safe secondo roadmap; review visiva T36 ricevuta."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-20T22:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega T37 nel write set dichiarato: contratti strutturali, parser geometry-first, renderer Markdown e golden test sintetici."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-20T21:58:41+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review read-only del quality gate T37 per provenance, edge case dei parser deterministici e Markdown derivato."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-20T21:58:41+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Delega quality review read-only dei file T37 nel write set dichiarato."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-20T22:03:03+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "La review ha rilevato perdita di provenance e incompatibilita' con bbox null: ritorno al tier implementation per correggere gli edge case prima della chiusura."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-20T22:20:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "La remediation dei finding T37 e' pronta; nuova quality review indipendente necessaria prima di chiudere l'incremento."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-20T22:20:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review dei fix per provenance, bbox null, dot leader e ID duplicati, in base ai finding bloccanti precedenti."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-20T22:20:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Delega della seconda review read-only T37 sul diff corretto e sui test mirati aggiornati."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-20T22:25:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "La seconda review ha richiesto di includere tutti i metadati canonici nel Markdown e aggiungere il test unrecognized; ritorno all'implementazione per completare il contratto."
+      },
+      {
+        "event": "escalated",
+        "at": "2026-09-20T22:25:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "Le due correzioni richieste dalla seconda review sono implementate e coperte; serve il gate indipendente conclusivo."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-20T22:25:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review conclusiva T37 di provenance serializzata, marker e copertura del ramo unrecognized."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-20T22:25:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Delega della review conclusiva read-only sul diff corretto e sui sei test T37."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-20T22:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "Quality review T37 PASS; il passo residuo e' una modifica documentale di chiusura al planner, roadmap, playbook e nota corrente."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-20T22:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Allineare la documentazione di sessione dopo il PASS indipendente del quality gate T37."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-20T22:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Chiusura documentale limitata a roadmap T37, playbook, current-next e stato del planner."
       }
     ]
   },
   "blockers": [],
   "session_notes": [
-    "Output finali: %TEMP%\\memoria-t36-ocr-transform-pilot-20260920-final; report e varianti restano unreviewed fino alla verifica visiva con l'utente.",
-    "Dopo la revisione utente decidere se procedere a T37; VLM resta condizionale su crop ambigui solo dopo reference umana e beneficio misurato."
+    "Revisione visiva T36 ricevuta: contrast-x1.8 preferita per 00026 e 00028; anteprime overview ritagliate alla zona alta a sinistra, difetto annotato per il prossimo aggiornamento degli artefatti.",
+    "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Condividere con l'utente report e immagini finali per la revisione visiva di T36; dopo il suo riscontro, rivalidare dalla roadmap se procedere a T37."
+    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap; T38 è il candidato, subordinato alla disponibilità di una reference umana verificata."
   }
 }
