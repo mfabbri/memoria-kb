@@ -61,6 +61,23 @@ residuo T37 resta limitato a profili verificati con fixture sintetiche, senza
 claim di accuratezza su documenti reali. Prossimo candidato: T38, subordinato
 alla disponibilita' di una reference umana verificata.
 
+## Chiusura sotto-incremento T38 2026-09-21 - contratto reference e metriche offline
+
+Il micro-incremento `t38-human-reference-contract-offline-metrics` è
+completato. `OcrPageReference` lega testo e annotazioni strutturali a una
+pagina originale tramite identità stabile; l'evaluator confronta CER/WER,
+coverage e invenzioni, ordine/tipo dei blocchi e pairing label-valore. I
+risultati mantengono la provenance OCR completa e distinguono la pagina
+originale da crop e varianti. L'eleggibilità per misure reali richiede audit
+`human_verified`, reference verificata e identità pagina corrispondente.
+
+I 17 test mirati e la review indipendente conclusiva sono PASS; la fixture JSON
+è sintetica e valida solo il comportamento deterministico. Non è stata
+prodotta né usata una reference umana, non sono state misurate scansioni reali
+e non si dichiara accuratezza. Il prossimo passo T38 è acquisire una reference
+umana verificata per la pagina 00028 e crop rappresentativi della 00026; T39
+resta subordinato a errori misurati su tale reference.
+
 ## Chiusura 2026-09-20 - T35 PP-OCRv5 structured evidence
 
 Stato: **completato il 2026-09-20**.

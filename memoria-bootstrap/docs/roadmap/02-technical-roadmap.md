@@ -1762,7 +1762,22 @@ rappresentativi della `00026` nel pilot guida, senza confonderli con un holdout
 indipendente. Verificare inoltre casualmente una quota degli output non segnalati
 dal triage.
 
-Stato: futuro.
+Stato: **contratto ed evaluator offline completati il 2026-09-21**; la
+valutazione delle pagine guida resta in attesa di una reference umana verificata.
+
+Il sotto-incremento `t38-human-reference-contract-offline-metrics` introduce
+`OcrPageReference` page-scoped e un evaluator per CER/WER, coverage e
+invenzioni, ordine e tipi dei blocchi, nonché pairing label-valore. I risultati
+conservano la provenance OCR completa e l'anchor stabile alla pagina originale
+emesso da T36, distinguendolo da crop e varianti. Le metriche sono eleggibili
+per una valutazione reale solo con audit `human_verified`, reference verificata
+e identità della pagina corrispondente. Fixture sintetiche verificano soltanto
+il determinismo del contratto e dell'evaluator: non è disponibile una
+trascrizione/reference umana per le pagine guida e non si dichiara accuratezza
+su scansioni reali.
+
+T39 resta condizionale: procedere solo dopo misure su reference verificata che
+identifichino errori per cui un resolver visuale possa dimostrare beneficio.
 
 ### T39 - Selective visual ambiguity resolver
 

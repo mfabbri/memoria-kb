@@ -1,0 +1,34 @@
+{
+  "synthetic": true,
+  "reference": {
+    "@type": "OcrPageReference",
+    "schema_version": "1.0",
+    "reference_id": "t38-synthetic-00028",
+    "origin": "synthetic",
+    "review_status": "verified",
+    "page": {"page_id": "synthetic-00028", "source_image_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "original_page": {"page_id": "synthetic-00028", "source_file": "synthetic-00028.tif", "source_dimensions": {"width": 300, "height": 160}, "source_image_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+    "text": "REPORT Population 42 Narrative note",
+    "blocks": [
+      {"kind": "heading", "text": "REPORT"},
+      {"kind": "key_value", "text": "Population", "value": "42"},
+      {"kind": "unknown", "text": "Narrative note"}
+    ]
+  },
+  "evidence": {
+    "@type": "OcrPageEvidence",
+    "page_id": "synthetic-00028",
+    "source_image_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "transform_id": "contrast-x1.8",
+    "engine": "synthetic-ocr",
+    "language": "ita",
+    "source_page": {"original_page": {"page_id": "synthetic-00028", "source_file": "synthetic-00028.tif", "source_dimensions": {"width": 300, "height": 160}, "source_image_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "crop": {"left": 0, "top": 0, "right": 300, "bottom": 160}},
+    "model": {"name": "synthetic"},
+    "image_transform": {"name": "contrast", "factor": 1.8},
+    "regions": [
+      {"region_id": "r-title", "text": "REPORT", "geometry": {"bbox": [10, 10, 210, 30]}},
+      {"region_id": "r-label", "text": "Population", "geometry": {"bbox": [10, 55, 130, 75]}},
+      {"region_id": "r-value", "text": "42", "geometry": {"bbox": [240, 55, 300, 75]}},
+      {"region_id": "r-note", "text": "Narrative note", "geometry": {"bbox": [10, 120, 140, 140]}}
+    ]
+  }
+}

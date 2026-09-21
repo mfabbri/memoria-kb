@@ -320,10 +320,15 @@ def _run_target_ocr(*, target: Mapping[str, Any], page_id: str, source: Path, so
     latency_ms = round((time.perf_counter() - started) * 1000, 3)
     stable_prediction = prediction if isinstance(prediction, str) else list(prediction)
     normalized_prediction = _json_prediction(stable_prediction)
+    source_hash = _sha256_file(source)
     evidence = paddle_ocr_v5_structured_evidence(
-        normalized_prediction, page_id=f"{page_id}:{variant['variant_id']}:{target['kind']}:{target.get('tile_id', 'full')}",
-        source_image_hash=_sha256_file(source), transform_id=variant["transform"]["id"], engine="paddle-ocr-v5", language=language,
-        source_page={"source_file": str(source), "source_dimensions": dict(source_dimensions), "variant_id": variant["variant_id"], "target": target["kind"], "tile_id": target.get("tile_id")},
+        normalized_prediction, page_id=page_id, source_image_hash=source_hash,
+        transform_id=variant["transform"]["id"], engine="paddle-ocr-v5", language=language,
+        source_page={
+            "original_page": {"page_id": page_id, "source_file": str(source),
+                              "source_dimensions": dict(source_dimensions), "source_image_hash": source_hash},
+            "variant_id": variant["variant_id"], "target": target["kind"], "tile_id": target.get("tile_id"),
+        },
         model=model, image_transform=variant["transform"],
     )
     left, top, _, _ = target["source_bbox"]

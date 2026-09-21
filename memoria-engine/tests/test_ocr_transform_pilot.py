@@ -9,6 +9,8 @@ from pathlib import Path
 from PIL import Image
 
 from caduti_fonti_report.document_analysis.ocr_transform_pilot import create_local_paddle_ocr_v5_runner, run_ocr_transform_pilot
+from caduti_fonti_report.document_analysis.document_structure import reconstruct_document_structure
+from caduti_fonti_report.document_analysis.ocr_reference_metrics import evaluate_page_reference
 
 
 MODEL = {
@@ -65,12 +67,20 @@ class OcrTransformPilotTests(unittest.TestCase):
             self.assertEqual(page["source"]["sha256"], first_hash)
             self.assertEqual([variant["variant_id"] for variant in page["variants"]], ["raw", "grayscale", "contrast", "threshold"])
             raw = page["variants"][0]
+            grayscale = page["variants"][1]
             self.assertEqual(raw["sha256"], first_hash)
             self.assertEqual(len(raw["tiles"]), 4)
             for variant in page["variants"][1:]:
                 self.assertEqual(variant["tiles"], [])
                 self.assertEqual([output["target"] for output in variant["ocr_outputs"]], ["full_page"])
             tile_output = next(output for output in raw["ocr_outputs"] if output["tile_id"] == "tile-r000-c001")
+            full_output = raw["ocr_outputs"][0]
+            self.assertEqual(full_output["structured_evidence"]["page_id"], "first")
+            self.assertEqual(tile_output["structured_evidence"]["page_id"], "first")
+            anchor = tile_output["structured_evidence"]["source_page"]["original_page"]
+            self.assertEqual(anchor["page_id"], "first")
+            self.assertEqual(anchor["source_image_hash"], first_hash)
+            self.assertEqual(anchor["source_dimensions"], {"width": 5, "height": 4})
             region = tile_output["structured_evidence"]["regions"][0]
             self.assertEqual(tile_output["source_bbox"], [2, 0, 5, 3])
             self.assertEqual(region["geometry"]["source_page_polygon"], [[3, 2], [5, 2], [5, 4], [3, 4]])
@@ -86,6 +96,21 @@ class OcrTransformPilotTests(unittest.TestCase):
             report = Path(result["report_path"]).read_text(encoding="utf-8")
             self.assertIn("[Crop o immagine OCR](pages/first/tiles/raw/tile-r000-c001.png)", report)
             self.assertIn("tile e OCR dei tile sono eseguiti soltanto su `raw`", report)
+
+            reference = {
+                "@type": "OcrPageReference", "reference_id": "synthetic-first", "origin": "human_verified",
+                "review_status": "verified", "page": {"page_id": "first", "source_image_hash": first_hash,
+                "original_page": anchor}, "text": "Vecohis", "blocks": [{"kind": "unknown", "text": "Vecohis"}],
+                "audit": {"reviewer": "test", "decision_reference": "test-decision", "verified_at": "2026-09-21T00:00:00Z"},
+            }
+            grayscale_output = grayscale["ocr_outputs"][0]
+            for output in (full_output, grayscale_output, tile_output):
+                evidence = output["structured_evidence"]
+                structure = reconstruct_document_structure(evidence=evidence, profile="leader_list_report")
+                self.assertTrue(evaluate_page_reference(reference=reference, evidence=evidence, structure=structure)["accuracy_eligible"])
+            other_evidence = manifest["pages"][1]["variants"][0]["ocr_outputs"][0]["structured_evidence"]
+            other_structure = reconstruct_document_structure(evidence=other_evidence, profile="leader_list_report")
+            self.assertFalse(evaluate_page_reference(reference=reference, evidence=other_evidence, structure=other_structure)["accuracy_eligible"])
 
     def test_refuses_existing_output_or_other_than_two_tiffs(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

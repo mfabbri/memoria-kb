@@ -2,24 +2,24 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-20T21:43:16+02:00",
-  "updated_at": "2026-09-20T22:35:00+02:00",
+  "selected_at": "2026-09-21T06:57:20+02:00",
+  "updated_at": "2026-09-21T07:31:41+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T37",
-      "reason": "T36 verificata visivamente dall'utente; la roadmap autorizza ora la ricostruzione deterministica T37."
+      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T38",
+      "reason": "Il sotto-incremento offline T38 e' completato; la valutazione sulle pagine guida resta subordinata a reference umana verificata."
     }
   ],
   "increment": {
-    "id": "t37-deterministic-document-structure-markdown",
-    "title": "T37 ricostruzione deterministica di struttura documentale e Markdown",
-    "objective": "Introdurre DocumentStructure con i profili leader_list_report e numbered_report, preservando la provenance delle regioni OCR e renderizzando Markdown solo dalla struttura derivata.",
+    "id": "t38-human-reference-contract-offline-metrics",
+    "title": "T38 contratto reference umana e metriche offline OCR/struttura",
+    "objective": "Implementare un contratto verificabile per reference OCR e un evaluator offline di testo e struttura, che distingua fixture sintetiche da reference umane verificate e conservi l'identita' della pagina sorgente.",
     "scope": [
-      "Definire DocumentStructure con blocchi tipizzati, source_region_ids e stato/confidence distinti dalla confidence OCR.",
-      "Implementare parsing deterministico geometry-first per leader_list_report e numbered_report, con pattern espliciti di supporto.",
-      "Renderizzare Markdown solo da DocumentStructure; ogni blocco cita le regioni sorgente salvo marcatori espliciti di incertezza.",
-      "Aggiungere golden fixture offline sintetiche per entrambi i profili, senza trascrizioni storiche reali."
+      "Definire reference page-scoped con source image hash, stato di verifica, testo e annotazioni strutturali dichiarate.",
+      "Calcolare metriche testuali deterministiche (CER/WER, coverage e invenzioni) e metriche strutturali confrontabili con DocumentStructure.",
+      "Rendere i risultati non idonei a claim di accuratezza quando la reference e' sintetica, draft o non corrisponde all'identita' della pagina.",
+      "Aggiungere fixture sintetiche offline senza trascrizioni o dati storici reali."
     ],
     "out_of_scope": [
       "Elaborazione di documenti diversi dai due TIFF guida.",
@@ -28,20 +28,22 @@
       "Scritture sui TIFF originali o sulla fonte archivistica."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
-      "memoria-engine/tests/test_document_structure.py",
-      "memoria-engine/tests/fixtures/document_structure/t37-golden.json",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
+      "memoria-engine/tests/test_ocr_reference_metrics.py",
+      "memoria-engine/tests/test_ocr_transform_pilot.py",
+      "memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "I due profili T37 producono, da sole fixture OCR sintetiche, DocumentStructure e Markdown derivato con source_region_ids per ogni blocco, stato/confidence strutturali distinti dall'OCR e marcatori espliciti per il materiale incerto; i test golden mirati passano senza claim di accuratezza."
+    "stop_condition": "Reference ed evaluator preservano identita' e provenance; metriche testuali/strutturali sono deterministiche sulle fixture sintetiche; reference sintetiche, draft o con hash discordante non risultano accuracy-eligible; i test mirati passano senza claim su scansioni reali."
   },
   "verification": {
     "tests": [
-      "Test offline mirati per parsing geometrico, provenance, blocchi incerti e rendering Markdown dei due profili.",
-      "Golden fixture sintetiche per leader_list_report e numbered_report; nessun run su immagini reali.",
+      "Test offline mirati per metriche testo, coverage/invenzioni, metriche strutturali, identity/provenance e gating delle reference.",
+      "Fixture sintetica; nessun run su immagini o trascrizioni reali.",
       "git diff --check e python -m json.tool memoria-bootstrap/planning/current-work.json."
     ],
     "documentation_touchpoints": [
@@ -57,29 +59,30 @@
       "repositories": ["memoria-engine", "memoria-bootstrap"],
       "read_set": [
         "AGENTS.md",
-        "AGENTS.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T37",
-        "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md#T37",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_markdown.py",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T38",
+        "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md#T38",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_benchmark.py",
         "memoria-engine/tests/test_ocr_benchmark.py",
-        "memoria-engine/tests/test_ocr_markdown.py"
+        "memoria-engine/tests/test_document_structure.py"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
-        "memoria-engine/tests/test_document_structure.py",
-        "memoria-engine/tests/fixtures/document_structure/t37-golden.json",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
+        "memoria-engine/tests/test_ocr_reference_metrics.py",
+        "memoria-engine/tests/test_ocr_transform_pilot.py",
+        "memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "$env:PYTHONPATH='code'; .\\.venv\\Scripts\\python.exe -m unittest tests.test_document_structure; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
+      "test_command": "$env:PYTHONPATH='code'; .\\.venv\\Scripts\\python.exe -m unittest tests.test_ocr_reference_metrics tests.test_ocr_transform_pilot tests.test_document_structure; python -m json.tool memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
       "stop_conditions": [
         "Usare solo fixture OCR sintetiche e non incorporare dati storici reali.",
-        "Preservare OCR raw, region ID e geometria; ogni blocco emesso cita le regioni sorgente.",
-        "Non aggiungere testo senza provenance salvo marcatori espliciti di incertezza.",
-        "Nessun VLM, correzione OCR o claim di accuratezza storica."
+        "Preservare hash pagina e provenienza OCR/strutturale in ogni risultato confrontato.",
+        "Solo reference umane esplicitamente verificate e corrispondenti alla pagina sono eleggibili per misurazioni su scansioni reali.",
+        "Usare esclusivamente fixture sintetiche; nessun VLM, correzione OCR o claim di accuratezza storica."
       ]
     }
   },
@@ -88,9 +91,9 @@
     "tier": "low",
     "task_class": "documentation",
     "agent": "mmr_docs_editor",
-    "model": "gpt-5.6-terra",
+    "model": "gpt-5.6-luna",
     "reasoning_effort": "medium",
-    "rationale": "La review conclusiva T37 e' PASS; allineare gli stati roadmap, current-next, playbook e planner alla chiusura verificata e indicare T38 come prossimo gate candidato.",
+    "rationale": "La review indipendente conclusiva T38 e' PASS; aggiornare roadmap, playbook e nota corrente registrando il deliverable offline completato e il gate reale ancora subordinato a reference umana verificata.",
     "trace": [
       {
         "event": "selected",
@@ -465,16 +468,223 @@
         "model": "gpt-5.6-luna",
         "reasoning_effort": "medium",
         "reason": "Chiusura documentale limitata a roadmap T37, playbook, current-next e stato del planner."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Selezionato il sotto-incremento runtime T38: contratto reference ed evaluator offline con metriche testuali/strutturali e gating di accuracy eligibility."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Implementazione T38 nei tre file del write set; suite mirata 10 test PASS."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "Il deliverable introduce metriche e gating provenance, quindi richiede quality review indipendente prima della chiusura."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Verificare regressioni, edge case di CER/WER e metriche strutturali, provenance della reference e accuracy eligibility."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review indipendente FAIL: finding verificabili su extra/missing blocchi, pair duplicati, full provenance e identita' variante/page."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "Ritorno all'implementazione per correggere cinque finding circoscritti della review T38 mantenendo write set e stop condition."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Fix per blocchi extra/mancanti/ordine, pairing duplicati, full provenance, anchor originale distinta dal crop e audit della verifica umana; test mirati 12 PASS."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "Rieseguire il quality gate indipendente dopo la correzione dei finding T38."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Verificare le correzioni T38, il gate di audit umano e le metriche strutturali con casi extra/missing/duplicati e crop alternativi."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Seconda review ha isolato due finding residui: T36 non emette anchor originale stabile e timestamp audit accetta date impossibili."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "Esteso il write set al producer T36 e ai suoi test perché il gate T38 dipende da un'identità page-scoped stabile tra crop/varianti."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Producer/evaluator T38 corretti con anchor originale, provenance varianti conservata e validazione calendario; integrazione mirata 16 test PASS."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "Revisione indipendente finale richiesta dopo l'allineamento del producer T36 al gate di identita' T38."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review completa del gate OCR, anchor originale, metadata audit e integrazione T36 varianti/crop dopo tutti i fix."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review finale ha trovato che page_id/hash annidati in original_page possono contraddire l'envelope senza bloccare accuracy eligibility."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "Correggere la coerenza interna dell'identita' esterna/anchor originale e aggiungere test per page_id/hash discordanti."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Contraddizioni di page_id e source_image_hash esterni/annidati ora rifiutate e testate; 17 test mirati PASS."
+      },
+      {
+        "event": "escalated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "from_tier": "medium",
+        "reason": "Quality gate indipendente finale dopo il fix fail-closed della coerenza dell'anchor originale."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Confermare che i finding precedenti sono chiusi, il gate identity è fail-closed e il producer T36 resta compatibile."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "high",
+        "reason": "Review conclusiva PASS: identity fail-closed, metriche, provenance completa, audit timestamp e integrazione varianti/crop T36 verificati."
+      },
+      {
+        "event": "fallback",
+        "at": null,
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "from_tier": "review",
+        "reason": "Il quality gate runtime e' PASS; resta solo allineare la documentazione direttamente impattata e chiudere il planner."
+      },
+      {
+        "event": "selected",
+        "at": null,
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Documentare contratto/evaluator T38 consegnato, limiti delle fixture sintetiche e dipendenza da reference umana reale."
       }
     ]
   },
   "blockers": [],
   "session_notes": [
     "Revisione visiva T36 ricevuta: contrast-x1.8 preferita per 00026 e 00028; anteprime overview ritagliate alla zona alta a sinistra, difetto annotato per il prossimo aggiornamento degli artefatti.",
-    "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza."
+    "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza.",
+    "T38: 17 test mirati PASS, fixture JSON sintetica, git diff --check PASS, review indipendente PASS. OcrPageReference/evaluator mantengono provenance completa e anchor stabile alla pagina originale T36; accuracy eligibility richiede audit human_verified, reference verificata e identity match. Nessuna reference umana o trascrizione reale disponibile; nessuna accuratezza su scansioni reali dichiarata. Misure reali in attesa di reference verificata per 00028 e crop rappresentativi 00026; T39 resta subordinato a errori misurati."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap; T38 è il candidato, subordinato alla disponibilità di una reference umana verificata."
+    "description": "Ricalcolare il prossimo micro-incremento; la valutazione reale T38 richiede reference umana verificata e T39 resta condizionale a errori misurati."
   }
 }

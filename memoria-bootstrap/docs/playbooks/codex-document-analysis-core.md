@@ -156,3 +156,15 @@ finale sono PASS. Il passo candidato e' T38, subordinato a una reference umana
 verificata prima di qualsiasi metrica su scansioni reali. Il feedback visivo
 T36 (preferenza per `contrast-x1.8`; overview ritagliati) riguarda gli
 artefatti e non convalida trascrizioni OCR o accuratezza.
+
+Il sotto-incremento offline T38 `t38-human-reference-contract-offline-metrics`
+e' completato: `OcrPageReference` page-scoped e evaluator misurano CER/WER,
+coverage/invenzioni, ordine e tipi strutturali, e pairing label-valore. Ogni
+risultato conserva la provenance OCR completa e l'anchor stabile della pagina
+originale emesso da T36; crop e varianti restano distinguibili. L'eleggibilita'
+per misure reali richiede audit `human_verified`, reference verificata e
+identita' della pagina corrispondente. I 17 test e la review indipendente
+finale sono PASS con fixture sintetica; questo dimostra solo determinismo,
+non accuratezza OCR. La misurazione reale della pagina 00028 e dei crop 00026
+resta in attesa di reference umana verificata; T39 resta condizionale a errori
+misurati con tale reference.
