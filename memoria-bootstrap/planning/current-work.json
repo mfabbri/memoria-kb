@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "completed",
   "selected_at": "2026-09-21T06:57:20+02:00",
-  "updated_at": "2026-09-21T07:31:41+02:00",
+  "updated_at": "2026-09-21T08:21:38+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
@@ -681,10 +681,11 @@
   "session_notes": [
     "Revisione visiva T36 ricevuta: contrast-x1.8 preferita per 00026 e 00028; anteprime overview ritagliate alla zona alta a sinistra, difetto annotato per il prossimo aggiornamento degli artefatti.",
     "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza.",
-    "T38: 17 test mirati PASS, fixture JSON sintetica, git diff --check PASS, review indipendente PASS. OcrPageReference/evaluator mantengono provenance completa e anchor stabile alla pagina originale T36; accuracy eligibility richiede audit human_verified, reference verificata e identity match. Nessuna reference umana o trascrizione reale disponibile; nessuna accuratezza su scansioni reali dichiarata. Misure reali in attesa di reference verificata per 00028 e crop rappresentativi 00026; T39 resta subordinato a errori misurati."
+    "T38: 17 test mirati PASS, fixture JSON sintetica, git diff --check PASS, review indipendente PASS. OcrPageReference/evaluator mantengono provenance completa e anchor stabile alla pagina originale T36; accuracy eligibility richiede audit human_verified, reference verificata e identity match. Nessuna accuratezza su scansioni reali dichiarata.",
+    "Handoff 2026-09-21: l'utente ha fornito e confermato la trascrizione completa della pagina 00028 come reference umana; il testo resta nella conversazione/area dati e non è stato copiato nel repository. Alla prossima sessione riprendere dall'analisi dei crop rappresentativi della 00026, un crop alla volta."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Ricalcolare il prossimo micro-incremento; la valutazione reale T38 richiede reference umana verificata e T39 resta condizionale a errori misurati."
+    "description": "Riprendere la raccolta della reference T38 sui crop rappresentativi della 00026, uno alla volta; la trascrizione 00028 è stata ricevuta e confermata. Dopo la reference completa, valutare le metriche reali; T39 resta condizionale a errori misurati."
   }
 }

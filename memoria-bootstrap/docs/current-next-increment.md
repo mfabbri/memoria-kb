@@ -72,11 +72,12 @@ originale da crop e varianti. L'eleggibilità per misure reali richiede audit
 `human_verified`, reference verificata e identità pagina corrispondente.
 
 I 17 test mirati e la review indipendente conclusiva sono PASS; la fixture JSON
-è sintetica e valida solo il comportamento deterministico. Non è stata
-prodotta né usata una reference umana, non sono state misurate scansioni reali
-e non si dichiara accuratezza. Il prossimo passo T38 è acquisire una reference
-umana verificata per la pagina 00028 e crop rappresentativi della 00026; T39
-resta subordinato a errori misurati su tale reference.
+è sintetica e valida solo il comportamento deterministico. In seguito alla
+chiusura del micro-incremento, l'utente ha fornito e confermato la trascrizione
+umana della pagina 00028; il testo non viene copiato nel repository e non sono
+ancora state misurate scansioni reali. Alla prossima sessione riprendere dai
+crop rappresentativi della 00026, uno alla volta. T39 resta subordinato a
+errori misurati su reference verificata.
 
 ## Chiusura 2026-09-20 - T35 PP-OCRv5 structured evidence
 
