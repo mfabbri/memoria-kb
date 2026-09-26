@@ -2,98 +2,84 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-21T06:57:20+02:00",
-  "updated_at": "2026-09-21T08:21:38+02:00",
+  "selected_at": "2026-09-26T11:00:00+02:00",
+  "updated_at": "2026-09-26T17:00:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T38",
-      "reason": "Il sotto-incremento offline T38 e' completato; la valutazione sulle pagine guida resta subordinata a reference umana verificata."
+      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
+      "reason": "Migrare in modo verificabile asset OCR e output dalla root utente a una root persistente adiacente al progetto, fuori dal repository Git."
     }
   ],
   "increment": {
-    "id": "t38-human-reference-contract-offline-metrics",
-    "title": "T38 contratto reference umana e metriche offline OCR/struttura",
-    "objective": "Implementare un contratto verificabile per reference OCR e un evaluator offline di testo e struttura, che distingua fixture sintetiche da reference umane verificate e conservi l'identita' della pagina sorgente.",
+    "id": "t41-project-local-root-smoke",
+    "title": "T41 smoke test dalla root project-local",
+    "objective": "Configurare esplicitamente il run PP-OCRv5 con asset e output nella root project-local migrata, verificando che non dipenda da Temp o cache utente.",
     "scope": [
-      "Definire reference page-scoped con source image hash, stato di verifica, testo e annotazioni strutturali dichiarate.",
-      "Calcolare metriche testuali deterministiche (CER/WER, coverage e invenzioni) e metriche strutturali confrontabili con DocumentStructure.",
-      "Rendere i risultati non idonei a claim di accuratezza quando la reference e' sintetica, draft o non corrisponde all'identita' della pagina.",
-      "Aggiungere fixture sintetiche offline senza trascrizioni o dati storici reali."
+      "Usare esclusivamente D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-assets per i modelli.",
+      "Scrivere il nuovo smoke run esclusivamente in D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs.",
+      "Registrare nel manifest root asset, versione runtime, parametri, hash e latenza."
     ],
     "out_of_scope": [
-      "Elaborazione di documenti diversi dai due TIFF guida.",
+      "Elaborazione di documenti diversi dai 10 TIFF selezionati per il pilot.",
       "Correzione OCR, interpretazione generativa o approvazione di letture storiche.",
       "Batch massivo, soglie di qualità o dichiarazioni di accuratezza prive di reference verificata.",
       "Scritture sui TIFF originali o sulla fonte archivistica."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
-      "memoria-engine/tests/test_ocr_reference_metrics.py",
-      "memoria-engine/tests/test_ocr_transform_pilot.py",
-      "memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/decision-log.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Reference ed evaluator preservano identita' e provenance; metriche testuali/strutturali sono deterministiche sulle fixture sintetiche; reference sintetiche, draft o con hash discordante non risultano accuracy-eligible; i test mirati passano senza claim su scansioni reali."
+    "stop_condition": "Smoke test completato dalla root project-local oppure blocker riproducibile; nessun accesso operativo a Temp/cache utente e nessun TIFF modificato."
   },
   "verification": {
     "tests": [
-      "Test offline mirati per metriche testo, coverage/invenzioni, metriche strutturali, identity/provenance e gating delle reference.",
-      "Fixture sintetica; nessun run su immagini o trascrizioni reali.",
-      "git diff --check e python -m json.tool memoria-bootstrap/planning/current-work.json."
+      "python -m json.tool memoria-bootstrap/planning/current-work.json",
+      "git diff --check."
     ],
-    "documentation_touchpoints": [
-      "memoria-bootstrap/docs/current-next-increment.md",
+        "documentation_touchpoints": [
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-bootstrap/docs/decision-log.md",
+      "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "passed",
-    "notes": "T36: l'utente preferisce contrast-x1.8 per entrambe le pagine; le varianti 00028 sono abbastanza leggibili; gli overview visual-review mostrano solo la parte alta a sinistra e appaiono ritagliati. Feedback esclusivamente visivo: non valida trascrizioni OCR né accuratezza. T37: 6/6 test mirati PASS; python -m json.tool PASS; git diff --check PASS; review indipendente finale PASS. I profili sono verificati solo con fixture sintetiche: nessuna accuratezza OCR o strutturale su documenti reali è dichiarata.",
+        "result": "completed_with_guardrail",
+        "notes": "Smoke test PASS dalla root project-local: 51 regioni, 44231.912 ms CPU, cache_policy project_local_only, manifest/raw/structured evidence validati. Il campo opzionale rec_boxes non allineato è stato escluso fail-safe; nessuna accuracy claim.",
     "task_envelope": {
-      "mode": "feature-slice",
-      "repositories": ["memoria-engine", "memoria-bootstrap"],
+      "mode": "quality-slice",
+      "repositories": ["memoria-bootstrap"],
       "read_set": [
         "AGENTS.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T38",
-        "memoria-bootstrap/docs/ocr-structured-evidence-strategy.md#T38",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_benchmark.py",
-        "memoria-engine/tests/test_ocr_benchmark.py",
-        "memoria-engine/tests/test_document_structure.py"
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/decision-log.md",
+      "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/planning/current-work.json"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
-        "memoria-engine/tests/test_ocr_reference_metrics.py",
-        "memoria-engine/tests/test_ocr_transform_pilot.py",
-        "memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/decision-log.md",
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "$env:PYTHONPATH='code'; .\\.venv\\Scripts\\python.exe -m unittest tests.test_ocr_reference_metrics tests.test_ocr_transform_pilot tests.test_document_structure; python -m json.tool memoria-engine/tests/fixtures/ocr_reference/t38-synthetic.json; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
+      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
       "stop_conditions": [
-        "Usare solo fixture OCR sintetiche e non incorporare dati storici reali.",
-        "Preservare hash pagina e provenienza OCR/strutturale in ogni risultato confrontato.",
-        "Solo reference umane esplicitamente verificate e corrispondenti alla pagina sono eleggibili per misurazioni su scansioni reali.",
-        "Usare esclusivamente fixture sintetiche; nessun VLM, correzione OCR o claim di accuratezza storica."
+      "Nessuno spostamento o download di file in questo incremento.",
+      "Non dichiarare accuratezza e non modificare TIFF, profili, claim o fatti verificati.",
+      "Validare JSON e git diff --check prima della chiusura."
       ]
     }
   },
   "routing": {
     "policy_version": "2.1",
-    "tier": "low",
-    "task_class": "documentation",
-    "agent": "mmr_docs_editor",
-    "model": "gpt-5.6-luna",
+    "tier": "medium",
+    "task_class": "runtime",
+    "agent": "mmr_implementer",
+    "model": "gpt-5.6-terra",
     "reasoning_effort": "medium",
-    "rationale": "La review indipendente conclusiva T38 e' PASS; aggiornare roadmap, playbook e nota corrente registrando il deliverable offline completato e il gate reale ancora subordinato a reference umana verificata.",
+    "rationale": "Migrazione file operativa delimitata con verifica SHA-256, fuori dal repository e senza cancellazioni o modifiche ai dati sorgente.",
     "trace": [
       {
         "event": "selected",
@@ -673,19 +659,334 @@
         "agent": "mmr_docs_editor",
         "model": "gpt-5.6-luna",
         "reasoning_effort": "medium",
-        "reason": "Documentare contratto/evaluator T38 consegnato, limiti delle fixture sintetiche e dipendenza da reference umana reale."
+        "reason": "Selezionare il micro-incremento T38 page-scoped per un solo crop 00026; la valutazione reale resta subordinata a reference umana verificata."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-22T18:54:37+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Il passo corrente aggiorna solo planner e nota di sessione per delimitare la raccolta della reference; nessuna nuova implementazione runtime e' autorizzata."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-22T19:05:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "low",
+        "reason": "L'utente ha approvato T38a come incremento runtime; nessuna delega custom e' disponibile, quindi il parent esegue direttamente il micro-slice delimitato mantenendo write_set e quality gate."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-22T19:50:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Nessuna delega custom disponibile; il parent esegue direttamente il micro-slice T39 gia' delimitato, mantenendo input iniettato, preview-only e quality gate offline."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-22T20:05:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Nessuna delega custom disponibile; il parent esegue direttamente il micro-slice T40 CLI gia' delimitato, mantenendo preview-first, apply esplicito e quality gate offline."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-22T20:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Nessuna delega custom disponibile; il parent esegue direttamente il micro-slice T40 checkpoint gia' delimitato, senza ampliare pipeline o write set."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-22T21:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Il prossimo micro-slice T40 rende persistente il checkpoint structured con manifest preview/apply e mismatch fail-safe; gli strumenti di delega sono disponibili."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-25T20:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega dell'implementazione T40 nel write set dichiarato: manifest checkpoint versionato, preview/apply esclusivi, idempotenza e mismatch senza sovrascrittura, con fixture sintetiche."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-25T20:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Nessuna delega custom invocabile nella sessione; il parent esegue direttamente il micro-slice T40 gia' delimitato, mantenendo write set, fixture sintetiche e quality gate mirato."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-25T20:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Stop condition T40 soddisfatta con test offline mirati: manifest preview/apply esclusivo, rerun compatibile e mismatch senza sovrascrittura."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-25T20:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Formalizzare T41 calibrazione OCR su campione reale stratificato nella roadmap, nota corrente e planner."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-25T20:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornamento documentale delimitato: protocollo T41, reference page-scoped, metriche T38, holdout e guardrail archivistici."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-25T20:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "T41 formalizzato nella roadmap e nella nota corrente; JSON planner e git diff --check PASS. Nessun runtime o dato reale modificato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T10:00:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Preflight read-only del campione esterno T41 prima di avviare qualsiasi run OCR reale."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T10:00:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Verifica limitata a conteggio TIFF/sidecar e distinzione degli output derivati nel percorso esterno dichiarato."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T10:15:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Preflight PASS: 2 TIFF reali, 2 sidecar e output derivati; T41 non avviabile con il campione corrente, nessun dato modificato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T11:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Eseguire il pilot OCR T41 su 10 pagine reali stratificate selezionate nel percorso esterno corretto, con output raw/provenance e nessuna scrittura canonica."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T11:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega del run OCR limitato ai 10 TIFF selezionati; gli output restano in directory temporanea esterna e l'accuratezza non viene dichiarata senza reference page-scoped."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-26T11:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "La delega ha rilevato un blocker operativo prima dell'avvio (0/10, nessun output); il parent esegue direttamente il micro-slice Tesseract delimitato, mantenendo campione, write_set e guardrail invariati."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T11:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Preflight read-only del runtime PP-OCRv5 e dei pesi locali prima di autorizzare qualsiasi inferenza reale."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T11:45:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Verifica indipendente di versioni/import e presenza delle directory modello già usate dal benchmark, senza download o scritture."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T12:00:00+02:00",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "low",
+        "reason": "Import PaddlePaddle/PaddleOCR PASS; il controllo iniziale non aveva incluso la cartella persistente MeMoRiA. Nessun download o file modificato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T12:15:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Eseguire smoke test PP-OCRv5 su 00007 con pesi persistenti già presenti sotto MeMoRiA\\ocr-assets, senza download o scritture canoniche."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T12:15:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega dello smoke test su una sola pagina, con output persistente esterno al repository e provenance completa."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T13:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Smoke test PASS: 51 regioni, latenza 41925.245 ms, manifest/raw/structured evidence persistenti con hash; nessun TIFF o repository modificato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T13:35:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Formalizzare il requisito utente che installazioni, configurazioni, cache, pesi e output OCR siano locali e dichiarati del progetto."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T13:35:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornamento documentale limitato a roadmap, decision log, nota corrente e planner; nessuna migrazione runtime in questo incremento."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T14:15:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Migrare asset OCR e output in una root persistente adiacente al progetto, verificando hash e mantenendo gli originali."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T14:15:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega della copia verificabile di pesi, tessdata e output smoke T41 fuori dal repository, senza cancellazioni."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-26T14:45:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "La delega non ha avviato la copia e non ha creato la destinazione; il parent esegue direttamente la migrazione delimitata con hash e manifest, senza cancellazioni."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T15:40:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Root project-local creata; 52 file copiati e verificati con SHA-256, mismatch 0; manifest corretto e JSON valido; sorgenti conservate."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T15:50:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Rieseguire smoke test PP-OCRv5 usando esclusivamente la root project-local migrata e output project-local."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T15:50:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Run delimitato su 00007 con modelli espliciti nella root migrata; nessun Temp/cache utente e nessuna scrittura canonica."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T17:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Smoke project-local PASS: 51 regioni, 44231.912 ms; asset/cache/output solo nella root migrata; JSON validati. rec_boxes non allineato escluso fail-safe e registrato."
       }
     ]
   },
   "blockers": [],
   "session_notes": [
+    "Sessione 2026-09-22: PP-OCRv5 sul crop contrastato ha prodotto un candidato per la riga 5 molto divergente dalla reference umana; il confronto T38 sulla stringa isolata ha restituito CER 0.825, WER 1.0, coverage 0.0 e invention rate 1.0. Il candidato resta non approvato.",
+    "Sessione 2026-09-22 T39: 4/4 test offline PASS. Contratto preview-only con resolver iniettato, output limitato a testo o [illeggibile], candidato OCR e provenance conservati; nessuna chiamata VLM live o beneficio reale dichiarato.",
+    "Sessione 2026-09-22 T40 osservabilita': 3/3 test mirati PASS; summary per stato, duration_ms e throughput_items_per_second aggiunti senza scritture implicite.",
+    "Sessione 2026-09-22 T40: 3/3 test mirati PASS. documents structure e' preview-first, --apply e' esplicito/idempotente e il Markdown conserva provenance DocumentStructure; fixture sintetiche soltanto.",
+    "Sessione 2026-09-22: la reference della riga 5 di T314-1275-00026 era gia' stata valutata e confermata insieme all'utente; il testo resta fuori dal repository. Il confronto T38 esistente e' il punto di ripartenza.",
     "Revisione visiva T36 ricevuta: contrast-x1.8 preferita per 00026 e 00028; anteprime overview ritagliate alla zona alta a sinistra, difetto annotato per il prossimo aggiornamento degli artefatti.",
+    "Sessione 2026-09-22 T40 checkpoint: 4/4 test mirati PASS. Il report structured espone checkpoint_id SHA-256 e checkpoint_item_count; il digest usa path relativi ordinati e byte delle evidenze, senza persistenza automatica.",
+    "Nessun documento reale, profilo, claim o fatto verificato e' stato modificato.",
+    "Ricalcolo 2026-09-22: selezionato T40 manifest persistente del checkpoint structured; il nuovo routing non usa fallback e la delega verra' registrata all'avvio dell'implementazione.",
+    "Chiusura sessione 2026-09-22: la riga 5 del crop 00026 e' gia' stata analizzata e chiusa con reference umana e metriche T38; non e' un candidato da ripetere.",
+    "Preflight T41 2026-09-26: il percorso corretto contiene 996 TIFF; selezionate 10 pagine stratificate escludendo 00026 e 00028 gia' analizzate.",
+    "Pilot T41 2026-09-26: delega interrotta prima dell'avvio (0/10, nessun output); fallback diretto Tesseract deu completato 10/10 con TSV raw esterni. PP-OCRv5 non eseguito; accuracy sospesa senza reference page-scoped.",
     "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza.",
     "T38: 17 test mirati PASS, fixture JSON sintetica, git diff --check PASS, review indipendente PASS. OcrPageReference/evaluator mantengono provenance completa e anchor stabile alla pagina originale T36; accuracy eligibility richiede audit human_verified, reference verificata e identity match. Nessuna accuratezza su scansioni reali dichiarata.",
     "Handoff 2026-09-21: l'utente ha fornito e confermato la trascrizione completa della pagina 00028 come reference umana; il testo resta nella conversazione/area dati e non è stato copiato nel repository. Alla prossima sessione riprendere dall'analisi dei crop rappresentativi della 00026, un crop alla volta."
   ],
-  "next_action": {
-    "mode": "recalculate",
-    "description": "Riprendere la raccolta della reference T38 sui crop rappresentativi della 00026, uno alla volta; la trascrizione 00028 è stata ricevuta e confermata. Dopo la reference completa, valutare le metriche reali; T39 resta condizionale a errori misurati."
+    "next_action": {
+        "mode": "select",
+        "description": "Raccogliere reference page-scoped esterne per un sottoinsieme del campione T41 e confrontare PP-OCRv5 project-local con Tesseract senza claim automatici."
   }
 }

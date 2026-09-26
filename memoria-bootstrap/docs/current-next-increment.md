@@ -1,5 +1,245 @@
 # Current Next Increment
 
+## Chiusura smoke test dalla root project-local - 2026-09-26
+
+Il runner PP-OCRv5 è stato eseguito usando esclusivamente:
+
+- asset: `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-assets\`;
+- cache: `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-cache\`;
+- output: `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-project-local-smoke-20260926\`.
+
+Lo smoke test su `00007` è riuscito con 51 regioni e latenza `44231.912 ms`.
+Manifest, raw prediction e structured evidence sono JSON validi e dichiarano
+`cache_policy: project_local_only`. Durante la normalizzazione il campo
+opzionale `rec_boxes` è risultato non allineato a `rec_texts` ed è stato
+escluso fail-safe; l'evento è registrato nel manifest. Nessuna accuracy,
+CER/WER o promozione è stata calcolata.
+
+Il prossimo passo è raccogliere reference page-scoped esterne e confrontare
+PP-OCRv5 project-local con Tesseract.
+
+## Chiusura migrazione asset OCR project-local - 2026-09-26
+
+È stata creata la root persistente fuori dal repository:
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\`.
+
+Sono stati copiati `PP-OCRv5_mobile_det_infer`,
+`latin_PP-OCRv5_mobile_rec_infer`, `tessdata` e i tre artefatti dello smoke
+test T41. Il controllo ha verificato 52 file con SHA-256, senza mismatch. Il
+manifest di migrazione è
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\migration-manifest.json`.
+
+Le sorgenti sotto `C:\Users\info\AppData\Local\MeMoRiA\` sono state
+conservate e nessun TIFF o file del repository è stato modificato. Il prossimo
+passo è configurare il runner per usare esclusivamente la nuova root e
+rieseguire uno smoke test, prima del confronto con reference page-scoped.
+
+## Chiusura requisito root project-local OCR - 2026-09-26
+
+È stato formalizzato il vincolo che venv/runtime, versioni, pesi, cache,
+`tessdata`, output di run e manifest OCR siano locali al progetto, sotto una
+root persistente dichiarata e associata a Me.Mo.Ri.A. `Temp` e cache utente
+implicite non sono dipendenze operative ammesse.
+
+Gli asset grandi o operativi restano fuori dal repository Git; root, versioni,
+hash e provenance devono essere configurabili e verificabili. In questo
+micro-incremento non sono stati spostati o scaricati file e non sono stati
+modificati TIFF, dati storici canonici, profili o claim.
+
+Il prossimo incremento runtime separato dovrà migrare e verificare gli asset
+attuali da `C:\Users\info\AppData\Local\MeMoRiA\ocr-assets` e
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-runs` verso la root dichiarata,
+preservando versioni, hash e provenance. Dovrà inoltre eliminare ogni
+dipendenza operativa residua da `Temp` o cache utente implicite.
+
+## Chiusura smoke test PP-OCRv5 - 2026-09-26
+
+I pesi PP-OCRv5 erano già installati nella posizione persistente
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-assets\`; il controllo precedente
+aveva considerato soltanto la cache temporanea. Lo smoke test su
+`T314-1275-00007.tif` è riuscito con PaddlePaddle `3.3.0`, PaddleOCR `3.7.0`,
+CPU e `enable_mkldnn=false`.
+
+Il run ha prodotto 51 regioni in `41925.245 ms` e ha scritto manifest, raw
+prediction e structured evidence in
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-runs\t41-ppocrv5-smoke-20260926`.
+Gli hash di sorgente, modelli e output sono nel manifest. PaddleOCR ha
+ridimensionato internamente la pagina al limite effettivo `max_side_limit=4000`;
+non sono state calcolate accuracy, CER/WER né claim storici.
+
+Il prossimo passo è raccogliere reference page-scoped esterne per un
+sottoinsieme del campione T41 e confrontare PP-OCRv5 con Tesseract.
+
+## Chiusura preflight runtime PP-OCRv5 - 2026-09-26
+
+Il preflight iniziale aveva verificato solo la cache temporanea e aveva quindi
+segnalato erroneamente l'assenza dei pesi. Una ricerca successiva ha trovato
+le directory persistenti nella cartella Me.Mo.Ri.A; il runtime locale importa
+PaddlePaddle `3.3.0` e PaddleOCR `3.7.0`.
+
+`C:\Users\info\AppData\Local\Temp\memoria-ppocr-v5-20260919\models\PP-OCRv5_mobile_det_infer`
+
+`C:\Users\info\AppData\Local\Temp\memoria-ppocr-v5-20260919\models\latin_PP-OCRv5_mobile_rec_infer`
+
+Il runner PP-OCRv5 può quindi essere avviato usando i pesi persistenti. Non
+sono stati eseguiti download o installazioni; lo smoke test successivo ha
+confermato l'inferenza su `00007`. Restano da raccogliere reference
+page-scoped per il confronto con Tesseract.
+
+## Chiusura T41 pilot OCR su 10 pagine - 2026-09-26
+
+Dal percorso corretto `P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275`
+sono state selezionate 10 pagine stratificate: `00007`, `00024`, `00072`,
+`00150`, `00312`, `00415`, `00598`, `00750`, `00900`, `01000`. Le pagine
+`00026` e `00028` sono state escluse perché già analizzate.
+
+La delega custom si è interrotta prima dell'avvio, senza output; il fallback
+delimitato ha completato Tesseract `deu` su 10/10 TIFF e ha prodotto TSV raw
+solo nella directory temporanea esterna
+`C:\Users\info\AppData\Local\Temp\memoria-t41-ocr-calibration-20260926`.
+Non sono stati modificati TIFF o repository. PP-OCRv5 non è stato eseguito in
+questo pilot; non sono state calcolate accuracy, CER/WER o promozioni senza
+reference page-scoped.
+
+Il prossimo passo candidato è raccogliere reference page-scoped esterne per
+un sottoinsieme del campione e ripristinare/verificare il runtime PP-OCRv5
+prima di un confronto tra engine, crop o trasformazioni.
+
+## Preflight T41 - disponibilita' campione OCR - 2026-09-26
+
+Il percorso esterno dichiarato contiene due sole pagine TIFF reali (`00026` e
+`00028`), i due sidecar e output OCR/Markdown derivati. Non e' quindi
+disponibile il campione minimo di 8-10 pagine richiesto dalla calibrazione T41.
+
+Il preflight e' stato read-only: nessuna immagine e' stata modificata, nessun
+nuovo run OCR e' stato avviato e la riga 5 di `00026` non viene ripetuta. Per
+avviare T41 servono almeno altre 6-8 pagine reali, con identita', hash e
+reference page-scoped esterna al repository per il sottoinsieme di calibrazione.
+
+## Chiusura T41 - calibrazione OCR stratificata - 2026-09-25
+
+La roadmap ora delimita un protocollo in due fasi: 8-10 pagine iniziali e,
+solo dopo, 30-50 pagine esplorative stratificate per leggibilita', lingua e
+layout. Il confronto previsto copre Tesseract, PP-OCRv5, crop/tile e
+trasformazioni, con reference umane page-scoped mantenute fuori dal repository.
+CER/WER, coverage, omissioni, invenzioni, geometrie, ordine e latenza restano
+metriche di calibrazione; calibrazione e holdout vanno separati prima
+dell'estensione. Nessuna promozione automatica o claim di accuratezza e' stato
+introdotto e nessun testo reale e' stato copiato.
+
+## Chiusura T40 checkpoint structured persistente - 2026-09-25
+
+Il batch `documents structure` ora preflighta un manifest
+`StructuredMarkdownCheckpoint` versione `1.0`, con root, profilo,
+`checkpoint_id` e numero di evidenze. La preview espone il manifest che sarebbe
+creato senza scrivere file; `--apply` lo crea in modo esclusivo e un rerun con lo
+stesso batch lo riconosce come compatibile. Un manifest esistente con root,
+profilo, digest o conteggio diversi viene diagnosticato e blocca l'apply senza
+sovrascriverlo o produrre Markdown aggiuntivo.
+
+I 5 test offline di `tests.test_document_structure_cli` sono PASS. Le fixture
+sono esclusivamente sintetiche; sono rimasti invariati contratto OCR, Markdown
+derivato, TIFF, profili, claim e fatti verificati. Il manifest non introduce
+resume parziale o batch massivo.
+
+## Chiusura sessione 2026-09-22 - stato OCR corretto
+
+Confermato che la riga 5 del crop `00026` non e' lavoro pendente: reference
+umana, confronto T38 e metriche sono gia' stati completati. Il candidato OCR
+resta non approvato, ma l'analisi non va ripetuta.
+
+La sessione si chiude senza modifiche runtime. Il planner mantiene selezionato
+il prossimo micro-incremento T40 sul manifest persistente del checkpoint
+structured, con `next_action: resume`; la delega verra' avviata solo nella
+sessione di implementazione.
+
+## Selezione sessione 2026-09-22 - prossimo incremento T40
+
+Ricalcolato il prossimo micro-incremento dopo la chiusura del checkpoint
+in-memory: manifest persistente del checkpoint structured, con preflight,
+apply esplicito, creazione esclusiva, rerun idempotente e diagnosi dei mismatch
+senza sovrascrittura. Il manifest non abilita ancora resume parziale, retry OCR o
+batch massivi.
+
+Il routing intenzionale e' `medium / mmr_implementer / gpt-5.6-terra / medium`.
+Gli strumenti di delega sono disponibili; la precedente voce "Nessuna delega
+custom disponibile" resta nella traccia storica e non descrive questo candidato.
+
+# Chiusura sessione 2026-09-22 - checkpoint batch structured T40
+
+Il report di `documents structure` ora espone `checkpoint_id` SHA-256 e
+`checkpoint_item_count`. Il digest deriva dai path relativi ordinati e dai byte
+delle evidenze `*.evidence.json`; resta in-memory, non scrive un file checkpoint
+e non cambia preview/apply, idempotenza, error isolation o provenance.
+
+I 4 test mirati passano. Il test dedicato verifica che il checkpoint resti
+stabile tra preview/apply/rerun e cambi quando cambia un'evidenza. Sono state
+usate solo fixture sintetiche; nessun documento reale, profilo, claim o fatto
+verificato è stato modificato.
+
+## Selezione sessione 2026-09-22 - T39 resolver visuale preview-only
+
+Il risultato T38 sulla riga ambigua di `00026` soddisfa l'ingresso condizionale
+di T39: esiste un errore misurato, ma non ancora un beneficio dimostrato di un
+resolver visuale. Il micro-incremento corrente definisce solo il contratto
+preview-only e il test con resolver iniettato; non effettua chiamate live e non
+promuove o corregge automaticamente il candidato OCR.
+
+Il contratto T39 e' completato: il resolver riceve crop, candidato OCR e
+provenance page-scoped e puo' restituire solo testo o `[illeggibile]`. I 4 test
+mirati passano. L'integrazione con un VLM reale resta fuori scope e non e'
+giustificata finche' un confronto verificato non dimostra beneficio.
+
+## Chiusura T40 CLI strutturata - 2026-09-22
+
+Il comando `documents structure` consuma solo `OcrPageEvidence`, ricostruisce
+`DocumentStructure` e produce Markdown derivato. La modalita' predefinita e'
+preview read-only; `--apply` crea output mancanti in modo esclusivo e il run
+ripetuto li salta. I 3 test mirati passano su fixture sintetiche.
+
+Il report ora include conteggi per stato, `duration_ms` e
+`throughput_items_per_second`, mantenendo error isolation e provenance senza
+scritture implicite.
+
+## Selezione sessione 2026-09-22 - intake reference 00026
+
+T38 e T38a runtime sono completati. La reference umana della riga 5 di
+`T314-1275-00026` è già stata valutata e confermata insieme all'operatore,
+usando un crop prodotto dal pilot T36. Il manifest registra pagina originale,
+hash, variante e bbox; il testo umano non viene copiato nel repository.
+
+La reference resta separata da OCR e suggerimenti. Il confronto T38 già
+registrato sulla riga restituisce CER `0.825`, WER `1.0`, coverage `0.0` e
+invention rate `1.0`; il candidato resta non approvato. T39 rimane condizionale.
+
+## Selezione sessione 2026-09-22
+
+Il prossimo micro-incremento è la raccolta page-scoped della reference umana
+per un solo crop rappresentativo di `00026`, seguita dalla valutazione offline
+T38. Il testo umano non viene copiato nel repository: servono conferma,
+coordinate, hash e identità della pagina originale. T39 resta condizionale a
+errori misurati; T40 non viene anticipato.
+
+La reference umana della riga 5 del crop è stata confermata in conversazione;
+il testo non viene copiato nel repository. Il report T38 è già stato verificato;
+il prossimo passo è mantenere questa provenance nel passaggio successivo.
+
+T38a è ora formalizzato nella roadmap: ranking lessicale offline, raw OCR
+immutato, suggerimenti provenance-safe e decisione umana separata. I dizionari
+reali restano input esterni; le fixture del motore sono sintetiche.
+
+## Chiusura T38a 2026-09-22 - ranking lessicale offline
+
+Il contratto `LexiconEntry` e `rank_ocr_candidates` producono suggerimenti
+deterministici per token, con distanza edit, soglia esplicita, provenance della
+voce (`category`, `source_id`, `version`) e stato `unreviewed`. Il raw OCR non
+viene modificato e nessun candidato viene promosso automaticamente.
+
+I 3 test mirati passano; JSON planner e `git diff --check` sono PASS. Le fixture
+sono sintetiche: non sono state usate trascrizioni o dizionari storici reali e
+non si dichiara accuratezza OCR. Il prossimo passo resta la reference
+page-scoped di un crop `00026`; T39 resta condizionale a errori misurati.
+
 ## Strategia accettata 2026-09-20 - qualità OCR su larga scala
 
 Strategia approvata dall'utente: iniziare con T36 sui TIFF guida `00028` (pagina

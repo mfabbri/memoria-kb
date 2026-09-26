@@ -1779,6 +1779,35 @@ su scansioni reali.
 T39 resta condizionale: procedere solo dopo misure su reference verificata che
 identifichino errori per cui un resolver visuale possa dimostrare beneficio.
 
+### T38a - Ranking OCR assistito da dizionari
+
+Dipendenze: T38.
+
+Ingresso: T38 deve avere almeno una reference umana page-scoped e un candidato
+OCR misurabile; il ranking lessicale non sostituisce la reference e non modifica
+il raw OCR.
+
+Obiettivo: usare dizionari offline dichiarati per proporre candidati a token
+degradati, includendo tedesco storico/generale e sigle militari come fonti
+separate, senza correzione automatica.
+
+Criteri di uscita:
+
+- contratto lessicale con termine, categoria, source_id e versione;
+- suggerimenti deterministici basati su distanza edit e soglia esplicita;
+- raw OCR, suggerimenti e decisione umana restano campi distinti;
+- ogni suggerimento conserva provenance della voce lessicale e stato
+  unreviewed;
+- metriche T38 confrontano separatamente raw e candidato assistito;
+- fixture sintetiche offline; nessun dizionario reale o trascrizione storica
+  viene incorporato nel repository;
+- se il ranking non riduce gli errori senza aumentare invenzioni, si chiude
+  senza promozione del metodo.
+
+Stato: completato il 2026-09-22. Il ranking e' deterministico e review-only;
+raw OCR e decisione umana restano separati. I test usano solo fixture
+sintetiche e non dimostrano accuratezza su scansioni reali.
+
 ### T39 - Selective visual ambiguity resolver
 
 Dipendenze: T38.
@@ -1797,7 +1826,9 @@ Criteri di uscita:
 - confronto con reference T38 e mantenimento del candidato OCR originale;
 - se non emerge un vantaggio misurabile, T39 si chiude senza integrazione VLM.
 
-Stato: futuro e condizionale.
+Stato: contratto preview-only completato il 2026-09-22 con resolver iniettato e
+test offline. Nessuna integrazione VLM live o beneficio reale e' stato
+dichiarato; l'eventuale adozione resta condizionale a un confronto verificato.
 
 ### T40 - Integrazione CLI del flusso OCR validato
 
@@ -1822,11 +1853,71 @@ Criteri di uscita:
   tracciabile e revisione umana;
 - nessuna scrittura canonica di profili o fatti senza workflow autorizzato.
 
-Stato: futuro.
+Stato: micro-incrementi CLI preview-first e osservabilita' completati il
+2026-09-22 per `documents structure`; il batch completo resta futuro.
 
 Stop condition della traiettoria: non aggiungere un nuovo framework OCR/layout
 prima di T35-T37, salvo un difetto misurato che il percorso selezionato non puo'
 coprire.
+
+### T41 - Calibrazione OCR su campione reale stratificato
+
+Dipendenze: T38 e T40.
+
+Obiettivo: calibrare il confronto OCR su un campione reale piccolo e
+rappresentativo, mantenendo separati output grezzi, reference umane e qualsiasi
+decisione successiva.
+
+Protocollo minimo:
+
+- partire da un campione iniziale di 8-10 pagine e solo dopo estenderlo a un
+  campione esplorativo di 30-50 pagine;
+- stratificare le pagine per leggibilita', lingua e layout, annotando gli strati
+  prima del confronto;
+- usare reference umane page-scoped esterne al repository, con identita', hash
+  e coordinate sufficienti a verificare la corrispondenza, senza copiare testi
+  reali nel worktree;
+- confrontare Tesseract e PP-OCRv5 su pagina intera, crop e tile, includendo
+  trasformazioni dichiarate e mantenendo distinto il raw OCR;
+- misurare CER, WER, coverage, omissioni, invenzioni, geometrie, ordine di
+  lettura e latenza, con risultati disaggregati per strato e configurazione;
+- separare il sottoinsieme di calibrazione dall'holdout prima del campione
+  esplorativo e controllare anche output non segnalati dai gate di triage.
+
+Vincolo tecnico obbligatorio per ogni run OCR successivo:
+
+- venv/runtime, versioni, pesi, cache, `tessdata`, output di run e manifest
+  devono risiedere sotto una root persistente, dichiarata e associata a
+  Me.Mo.Ri.A; `Temp` e cache utente implicite non possono essere dipendenze
+  operative;
+- gli asset grandi o operativi restano fuori dal repository Git, ma la loro
+  root, versione, hash e provenance devono essere configurabili e verificabili
+  dal manifest del run;
+- la root deve distinguere asset condivisi, cache e output di run e non deve
+  incorporare dati storici canonici nel repository.
+
+Gate e limiti:
+
+- T41 calibra configurazioni e criteri di revisione, non produce una soglia
+  archivistica o una dichiarazione generale di accuratezza;
+- nessun engine, trasformazione o lettura viene promosso automaticamente e
+  nessuna reference umana viene trattata come claim pubblicabile senza il
+  workflow di revisione previsto;
+- il campione reale, le reference e gli artefatti di run restano esterni al
+  repository; TIFF, profili canonici, claim e fatti verificati non vengono
+  modificati.
+
+Stato: pianificata come micro-incremento documentale chiuso il 2026-09-25;
+l'esecuzione della calibrazione reale richiede un task successivo con input
+  esterni tracciati.
+
+La formalizzazione del vincolo project-local è chiusa il 2026-09-26. La
+migrazione runtime degli asset oggi presenti in
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-assets` e
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-runs` è il prossimo incremento
+separato: deve prima dichiarare la root persistente, poi migrare/verificare
+versioni, hash e provenance senza scaricare o spostare file in questo
+incremento documentale.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

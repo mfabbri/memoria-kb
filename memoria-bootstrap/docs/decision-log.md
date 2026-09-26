@@ -1,5 +1,25 @@
 # Decision Log
 
+## 2026-09-26 - Root project-local obbligatoria per OCR
+
+Decisione: tutte le installazioni e configurazioni OCR operative devono essere
+locali al progetto Me.Mo.Ri.A e risiedere sotto una root persistente dichiarata.
+Il vincolo include venv/runtime, versioni, pesi, cache, `tessdata`, output dei
+run e manifest; `Temp` e cache utente implicite non sono dipendenze operative
+ammesse.
+
+Gli asset grandi o contenenti dati operativi restano fuori dal repository Git.
+La root degli asset, le versioni, gli hash e la provenance devono però essere
+configurabili e verificabili, con manifest associati al run. Questa decisione
+non autorizza a incorporare dati storici canonici, claim o profili nel
+repository.
+
+La migrazione degli asset attualmente presenti in
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-assets` e
+`C:\Users\info\AppData\Local\MeMoRiA\ocr-runs` è rinviata a un incremento
+runtime separato. Il presente micro-incremento è documentale: non sposta,
+scarica o riscrive file, non modifica TIFF e non formula claim di accuratezza.
+
 ## 2026-09-15 - Flusso review post-MVP senza assunzione di run preesistente
 
 Decisione: la review CLI deve supportare sia la ripresa di una run esistente
