@@ -1292,6 +1292,14 @@ in micro-incrementi: non implica che tutte le capacità siano già disponibili.
    regione quando disponibili. CLI di ispezione/review separa proposta, evidenza
    e decisione umana; eventuali patch restano preview-only fino ad audit e
    autorizzazione esplicita. Nessuna modifica canonica automatica.
+8. Glossario versionato e revisione traduzioni: la CLI deve poter selezionare
+   una risorsa JSON-LD del glossario e la sua versione, ricalcolare le
+   traduzioni candidate quando il glossario cambia, mostrare il diff rispetto
+   alla versione precedente e conservare nel risultato la versione del
+   glossario, gli identificativi delle voci, le fonti e lo stato di revisione.
+   La rigenerazione deve essere preview-only, riproducibile e idempotente; non
+   deve sovrascrivere silenziosamente traduzioni già revisionate né promuovere
+   automaticamente uno scioglimento ambiguo.
 
 ### Criteri di accettazione trasversali
 
@@ -1310,6 +1318,11 @@ in micro-incrementi: non implica che tutte le capacità siano già disponibili.
   incertezze non scompaiono nel passaggio Markdown;
 - nessuna acquisizione massiva non richiesta, promozione automatica di fatti o
   scrittura di profili canonici.
+- una nuova versione del glossario può essere applicata a una pagina già
+  processata tramite CLI, producendo un nuovo artefatto di preview e un diff
+  provenance-aware senza modificare l'artefatto precedente;
+- ogni traduzione candidata riporta l'identificativo/versione della risorsa
+  glossario e ogni revisione può essere ripetuta senza duplicare occorrenze.
 
 La ricostruzione Markdown riguarda la struttura visibile della pagina e il suo
 ordine di lettura, non l'interpretazione semantica di mappe o simboli. Un testo
@@ -1910,6 +1923,29 @@ Gate e limiti:
 Stato: pianificata come micro-incremento documentale chiuso il 2026-09-25;
 l'esecuzione della calibrazione reale richiede un task successivo con input
   esterni tracciati.
+
+### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
+
+Dipendenze: T40, T41 e risorsa JSON-LD del glossario militare.
+
+Obiettivo: consentire di rivedere le traduzioni candidate di una pagina quando
+una nuova versione del glossario viene resa disponibile, mantenendo confrontabili
+le versioni precedenti e separando proposta, evidenza e decisione umana.
+
+Criteri di uscita:
+
+- la CLI scopre o accetta esplicitamente una risorsa JSON-LD e una versione del
+  glossario;
+- il ricalcolo produce un nuovo preview JSON-LD/Markdown senza sovrascrivere il
+  preview precedente;
+- il risultato conserva `glossary_resource`, versione/digest, `entry_id`, fonti,
+  `source_region_ids` e stato di revisione;
+- un comando di diff mostra aggiunte, rimozioni e cambiamenti di traduzione;
+- test offline verificano idempotenza, provenance e protezione delle traduzioni
+  già revisionate;
+- nessun claim, profilo o fatto storico viene promosso automaticamente.
+
+Stato: candidato aggiunto il 2026-09-28 su richiesta dell'utente.
 
 La formalizzazione del vincolo project-local è chiusa il 2026-09-26. La
 migrazione runtime degli asset oggi presenti in

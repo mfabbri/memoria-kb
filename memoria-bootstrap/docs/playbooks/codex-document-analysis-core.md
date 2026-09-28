@@ -50,6 +50,74 @@ Usare fixture offline, directory temporanee o DB SQLite temporaneo. Le run reali
 possono essere lette solo in modalita' controllata e read-only quando
 l'incremento lo richiede.
 
+## Procedura operativa riutilizzabile per OCR su immagini
+
+Questa è la procedura corrente per un pilot OCR controllato. Gli asset grandi
+restano fuori dal repository Git, ma la root, le versioni, gli hash e la
+provenance devono essere dichiarati in ogni run. Non usare `%TEMP%`, cache
+utente implicite o directory modello scoperte automaticamente come dipendenze
+operative.
+
+### Root project-local e asset
+
+Usare esclusivamente la root project-local
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\`, con questa separazione:
+
+```text
+D:\CaDiMalanca\me.mo.ri.a-kb-runtime\
+├── ocr-assets\
+├── ocr-cache\
+└── ocr-runs\
+```
+
+Impostare `PADDLE_HOME` e `PADDLEOCR_HOME` alla root project-local e passare
+sempre al runner directory modello esplicite (detector, recognizer e, se
+applicabile, `tessdata`). Registrare nel manifest la root, le versioni del
+runtime e dei modelli, i digest SHA-256 e la provenienza degli asset. La root
+non va aggiunta al repository: deve però essere ricostruibile o verificabile a
+partire da manifest e hash.
+
+### Discovery, campione e migrazione
+
+Il percorso delle immagini di riferimento è:
+`P:\Comune\Me.Mo.Ri.a\documenti_da_processare\foto\T314 R1275`.
+Prima di scegliere il campione:
+
+1. enumerare ricorsivamente i TIFF e calcolare il loro SHA-256;
+2. distinguere gli input TIFF dalle cartelle `test`, `ocr-output-test`, dagli
+   output Markdown/TSV/JSON e dai sidecar, che non sono input immagini;
+3. registrare percorso relativo, dimensioni, estensione, hash e motivo di
+   inclusione/esclusione nel manifest del campione;
+4. escludere `00026` e `00028`, già analizzati, e non ripetere la riga 5 di
+   `00026` già oggetto di analisi/reference.
+
+Per migrare asset o output, copiare senza cancellare le sorgenti. Confrontare
+SHA-256 sorgente/destinazione e produrre `migration-manifest.json` con root,
+file count, percorsi relativi, dimensioni e hash. Bloccare la procedura se il
+file count non coincide o se esiste anche un solo mismatch; registrare invece
+esplicitamente l'esito quando il confronto è completo.
+
+### Smoke PP-OCRv5 e normalizzazione fail-safe
+
+Ogni smoke test deve registrare almeno versione Paddle/PaddleOCR, modello e
+directory modello, parametri effettivi, `max_side_limit=4000`, latenza e
+numero di regioni. Se `rec_boxes` non è allineato a `rec_texts`, escludere il
+campo fail-safe, registrare l'evento nel manifest e mantenere le altre evidenze.
+Non inventare geometrie, non riallineare per indice e non trasformare un
+payload parziale in una geometria attendibile.
+
+### Accuracy e delega
+
+Gli output reali restano `unreviewed`. Non calcolare o dichiarare CER, WER,
+accuracy, coverage qualitativa o claim senza una reference umana verificata e
+page-scoped, con identità della pagina corrispondente. Confidence OCR,
+processabilità tecnica e numero di regioni non sono accuratezza.
+
+Se il runner custom non parte, registrare il fallback con causa, agente,
+parametri, input e directory di output; mantenere separati gli artefatti e non
+duplicare run indistinti. Un fallback non autorizza a modificare TIFF, claim,
+profili canonici o a promuovere output.
+
 ## Benchmark OCR su immagini
 
 ### Ambiente locale PP-OCRv5 su Windows
@@ -84,8 +152,9 @@ e usare il medesimo interprete `.venv`. Il runner benchmark esistente è
 script di installazione o un comando custom. Evitare installazioni nel Python
 globale o in altri ambienti del repository.
 
-Questi comandi preparano i pacchetti Python e non scaricano i pesi OCR. Nella
-sessione i modelli erano già scaricati ed estratti sotto
+Questi comandi preparano i pacchetti Python e non scaricano i pesi OCR. La
+procedura seguente è storia del benchmark del 2026-09-19 e non è riutilizzabile
+come setup operativo: nella sessione i modelli erano già scaricati ed estratti sotto
 `%TEMP%\memoria-ppocr-v5-20260919\models`; non è stata ricostruita qui una
 procedura affidabile di download, quindi non aggiungere comandi di download
 ipotetici. Il benchmark ha usato le directory locali appiattite
@@ -149,6 +218,44 @@ sequenza:
 
 Il quality gate OCR corrente misura processabilita' tecnica, non accuratezza.
 Non usare `accepted` come sinonimo di testo affidabile o revisionato.
+
+## Glossario militare versionato e traduzioni candidate
+
+Le abbreviazioni e i termini militari non vanno mantenuti in un Markdown
+separato come fonte applicativa. Il glossario operativo e' una risorsa JSON-LD
+`MilitaryGlossary` in `memoria-knowledge/glossary/military/`; ogni voce deve
+avere un `@id` stabile, la forma originale, eventuali alias/abbreviazioni,
+`translation_it`, fonti esterne e `review_status`. Le fonti documentano la
+lettura proposta, ma non trasformano automaticamente una menzione OCR in un
+fatto storico.
+
+Per ricalcolare le menzioni di una pagina usare il comando preview-first:
+
+```powershell
+memoria documents glossary-preview `
+  --structure <DocumentStructure.json> `
+  --glossary <MilitaryGlossary.jsonld> `
+  --output <CandidateMilitaryGlossaryMentionSet.jsonld>
+```
+
+Il comando deve ricevere una risorsa glossario esplicita e conserva nel
+risultato `glossary_resource`, `glossary_version`, `glossary_digest`, gli ID
+delle voci, `source_region_ids` e la provenance della pagina. Senza `--apply`
+non scrive; con `--apply` crea un nuovo preview. Un output identico viene
+saltato, mentre un output già esistente ma diverso deve essere rifiutato.
+
+Le menzioni prodotte sono sempre candidate, `unreviewed`,
+`preview_only`, senza abilitazione a `EvidenceClaim` o a risoluzione di
+unita'/presenza territoriale. La forma OCR originale resta invariata; lo
+scioglimento italiano va mostrato come annotazione derivata. Se una sigla e'
+spezzata dalla struttura tabellare, non ricostruirla silenziosamente come
+testo sorgente: registrare la provenienza delle regioni coinvolte e mantenere
+la ricostruzione manuale in una copia di lettura non canonica.
+
+Quando cambia il glossario, produrre un nuovo preview con nuova versione e
+digest. Il diff tra versioni, la migrazione delle revisioni umane e qualsiasi
+promozione canonica richiedono un incremento separato e non sono impliciti nel
+ricalcolo.
 
 T37 e' completato: i due profili emettono blocchi con provenance e Markdown
 derivato da fixture OCR sintetiche; i sei test mirati e la review indipendente

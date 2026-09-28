@@ -129,7 +129,13 @@ def render_document_structure_markdown(structure: DocumentStructure) -> str:
         elif block.kind == "table":
             lines.extend([f"| {_inline(block.text)} |", "| --- |", ""])
         elif block.kind == "unknown":
-            lines.extend([f"[illeggibile] — {_inline(block.text) if block.text else 'OCR text unavailable'}", ""])
+            if block.text and block.status == "unrecognized":
+                marker = "[struttura non riconosciuta]"
+            elif block.text:
+                marker = "[struttura incerta]"
+            else:
+                marker = "[illeggibile]"
+            lines.extend([f"{marker} — {_inline(block.text) if block.text else 'OCR text unavailable'}", ""])
         else:
             lines.extend([_inline(block.text), ""])
     return "\n".join(lines).rstrip() + "\n"
@@ -185,7 +191,17 @@ def _geometry(value: object, index: int) -> tuple[float | None, float | None, fl
         raise ValueError(f"Regione OCR {index} senza geometry valida.")
     bbox = value.get("bbox")
     if bbox is None:
-        return None, None, None
+        polygon = value.get("polygon")
+        if polygon is None:
+            return None, None, None
+        if (not isinstance(polygon, (list, tuple)) or len(polygon) < 3
+                or not all(isinstance(point, (list, tuple)) and len(point) == 2
+                           and all(isinstance(item, (int, float)) for item in point)
+                           for point in polygon)):
+            raise ValueError(f"Regione OCR {index} senza polygon [[x, y], ...] valida.")
+        xs = [float(point[0]) for point in polygon]
+        ys = [float(point[1]) for point in polygon]
+        return min(xs), min(ys), max(ys)
     if not isinstance(bbox, (list, tuple)) or len(bbox) != 4 or not all(isinstance(item, (int, float)) for item in bbox):
         raise ValueError(f"Regione OCR {index} senza bbox [left, top, right, bottom] valida.")
     left, top, right, bottom = (float(item) for item in bbox)

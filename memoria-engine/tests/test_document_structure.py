@@ -62,6 +62,17 @@ class DocumentStructureTest(unittest.TestCase):
         self.assertEqual((block.kind, block.status, block.structure_confidence), ("unknown", "uncertain", 0.0))
         self.assertEqual(block.text, "This is a report paragraph")
 
+    def test_polygon_only_geometry_preserves_spatial_order_when_bbox_is_dropped(self) -> None:
+        evidence = deepcopy(json.loads(FIXTURE.read_text(encoding="utf-8"))["cases"][0]["evidence"])
+        evidence["regions"] = [
+            {"region_id": "r-second", "text": "SECOND", "geometry": {"bbox": None,
+                "polygon": [[10, 50], [100, 50], [100, 70], [10, 70]]}},
+            {"region_id": "r-first", "text": "FIRST", "geometry": {"bbox": None,
+                "polygon": [[10, 10], [100, 10], [100, 30], [10, 30]]}},
+        ]
+        structure = reconstruct_document_structure(evidence=evidence, profile="numbered_report")
+        self.assertEqual([block.text for block in structure.blocks], ["FIRST", "SECOND"])
+
     def test_same_region_dot_leader_and_duplicate_ids(self) -> None:
         evidence = deepcopy(json.loads(FIXTURE.read_text(encoding="utf-8"))["cases"][0]["evidence"])
         evidence["regions"] = [{"region_id": "r-dot", "text": "Label .... 42", "confidence": 0.01,
@@ -80,7 +91,9 @@ class DocumentStructureTest(unittest.TestCase):
         structure = reconstruct_document_structure(evidence=evidence, profile="leader_list_report")
         block = structure.blocks[0]
         self.assertEqual((block.kind, block.status, block.source_region_ids), ("unknown", "unrecognized", ("r-alone",)))
-        self.assertIn("[illeggibile]", render_document_structure_markdown(structure))
+        markdown = render_document_structure_markdown(structure)
+        self.assertIn("[struttura non riconosciuta]", markdown)
+        self.assertIn("Unpaired label", markdown)
 
 
 if __name__ == "__main__":

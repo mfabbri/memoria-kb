@@ -2,23 +2,23 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-26T11:00:00+02:00",
-  "updated_at": "2026-09-26T17:00:00+02:00",
+  "selected_at": "2026-09-26T18:00:00+02:00",
+  "updated_at": "2026-09-28T20:30:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
-      "reason": "Migrare in modo verificabile asset OCR e output dalla root utente a una root persistente adiacente al progetto, fuori dal repository Git."
+      "section": "Post-MVP - Glossario versionato e revisione traduzioni / T42",
+      "reason": "Implementare il primo comando CLI preview-only per ricalcolare menzioni candidate con una risorsa JSON-LD del glossario esplicita."
     }
   ],
   "increment": {
-    "id": "t41-project-local-root-smoke",
-    "title": "T41 smoke test dalla root project-local",
-    "objective": "Configurare esplicitamente il run PP-OCRv5 con asset e output nella root project-local migrata, verificando che non dipenda da Temp o cache utente.",
+    "id": "t42-versioned-glossary-cli-preview",
+    "title": "T42 preview CLI con glossario versionato",
+    "objective": "Ricalcolare offline le menzioni candidate da un DocumentStructure usando una risorsa JSON-LD del glossario, con versione, digest e scrittura esplicita.",
     "scope": [
-      "Usare esclusivamente D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-assets per i modelli.",
-      "Scrivere il nuovo smoke run esclusivamente in D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs.",
-      "Registrare nel manifest root asset, versione runtime, parametri, hash e latenza."
+      "Documentare root project-local, variabili cache, manifest e verifica SHA-256.",
+      "Documentare discovery del percorso immagini corretto e stratificazione del campione.",
+      "Documentare max_side_limit=4000, rec_boxes non allineato e guardrail accuracy."
     ],
     "out_of_scope": [
       "Elaborazione di documenti diversi dai 10 TIFF selezionati per il pilot.",
@@ -27,12 +27,13 @@
       "Scritture sui TIFF originali o sulla fonte archivistica."
     ],
     "candidate_files": [
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/decision-log.md",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/glossary_revision.py",
+      "memoria-engine/tests/test_glossary_revision.py",
+      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Smoke test completato dalla root project-local oppure blocker riproducibile; nessun accesso operativo a Temp/cache utente e nessun TIFF modificato."
+    "stop_condition": "Esiste una reference page-scoped verificabile e il confronto offline è eseguito con provenance completa; altrimenti il blocker resta registrato senza metriche o scritture canoniche."
   },
   "verification": {
     "tests": [
@@ -40,31 +41,26 @@
       "git diff --check."
     ],
         "documentation_touchpoints": [
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/decision-log.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-        "result": "completed_with_guardrail",
-        "notes": "Smoke test PASS dalla root project-local: 51 regioni, 44231.912 ms CPU, cache_policy project_local_only, manifest/raw/structured evidence validati. Il campo opzionale rec_boxes non allineato è stato escluso fail-safe; nessuna accuracy claim.",
+        "result": "pass",
+        "notes": "Runner OCR comparison implementato in modalita' read-only e verificato su fixture T38 sintetica; nessun input reale, TIFF o output canonico modificato.",
     "task_envelope": {
-      "mode": "quality-slice",
-      "repositories": ["memoria-bootstrap"],
+      "mode": "feature-slice",
+      "repositories": ["memoria-bootstrap", "memoria-engine"],
       "read_set": [
         "AGENTS.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/decision-log.md",
       "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "write_set": [
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/decision-log.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/planning/current-work.json"
-      ],
-      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
+      "write_set": ["memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py", "memoria-engine/tests/test_ocr_comparison.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "python -m unittest memoria-engine.tests.test_ocr_comparison; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
       "stop_conditions": [
       "Nessuno spostamento o download di file in questo incremento.",
       "Non dichiarare accuratezza e non modificare TIFF, profili, claim o fatti verificati.",
@@ -75,11 +71,11 @@
   "routing": {
     "policy_version": "2.1",
     "tier": "medium",
-    "task_class": "runtime",
+    "task_class": "runtime_calibration",
     "agent": "mmr_implementer",
     "model": "gpt-5.6-terra",
     "reasoning_effort": "medium",
-    "rationale": "Migrazione file operativa delimitata con verifica SHA-256, fuori dal repository e senza cancellazioni o modifiche ai dati sorgente.",
+    "rationale": "Micro-feature runtime entro il contratto T38; il runner abilita il confronto futuro ma usa solo fixture sintetiche in questa sessione.",
     "trace": [
       {
         "event": "selected",
@@ -964,6 +960,89 @@
         "model": "gpt-5.6-terra",
         "reasoning_effort": "medium",
         "reason": "Smoke project-local PASS: 51 regioni, 44231.912 ms; asset/cache/output solo nella root migrata; JSON validati. rec_boxes non allineato escluso fail-safe e registrato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T17:15:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Consolidare nel playbook le procedure riutilizzabili emerse dalla sessione OCR project-local."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-09-26T17:15:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Aggiornamento limitato a codex-document-analysis-core.md e allineamento planner; nessun runtime o asset modificato."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T17:30:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "T41 chiuso: playbook operativo aggiornato, nota TEMP storica resa non riutilizzabile, JSON planner e git diff --check PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-26T18:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Selezionato il confronto T41 con reference page-scoped esterne; il preflight ha rilevato che le reference verificabili non sono ancora disponibili."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-26T18:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Nessun subagent custom invocabile; il parent esegue direttamente il micro-slice del runner offline T41 su fixture sintetiche, mantenendo write_set e guardrail."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-26T18:45:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Runner manifest-driven implementato; 2 test mirati PASS, input sorgente non modificati e reference sintetica mantenuta non eleggibile per accuracy."
+      },
+      {
+        "event": "selected",
+        "at": "2026-09-28T20:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Micro-feature CLI T42 entro contratti esistenti: preview versionato del glossario con provenance e apply esplicito."
+      },
+      {
+        "event": "fallback",
+        "at": "2026-09-28T20:20:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "from_tier": "medium",
+        "reason": "Subagent custom non invocabile; il parent esegue direttamente il micro-slice delimitato, mantenendo write_set, preview-only e test offline."
+      },
+      {
+        "event": "completed",
+        "at": "2026-09-28T20:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "CLI glossary-preview implementata; 14 test mirati PASS, JSON e git diff --check PASS. Diff tra versioni ancora fuori scope."
       }
     ]
   },
@@ -977,6 +1056,25 @@
     "Revisione visiva T36 ricevuta: contrast-x1.8 preferita per 00026 e 00028; anteprime overview ritagliate alla zona alta a sinistra, difetto annotato per il prossimo aggiornamento degli artefatti.",
     "Sessione 2026-09-22 T40 checkpoint: 4/4 test mirati PASS. Il report structured espone checkpoint_id SHA-256 e checkpoint_item_count; il digest usa path relativi ordinati e byte delle evidenze, senza persistenza automatica.",
     "Nessun documento reale, profilo, claim o fatto verificato e' stato modificato.",
+    "Run T41 2026-09-27 su T314-1275-00007: confronto grezzo PP-OCRv5/Tesseract deu eseguito senza scritture; 51 regioni e 358 token PP-OCRv5, 585 token Tesseract, overlap lessicale distinto 0.197248. Indicatore di disaccordo tra engine, non accuracy.",
+    "Reference utente T314-1275-00007 valutata in memoria come human_verified/draft: identita' pagina e hash coerenti per PP-OCRv5 e Tesseract. Metriche diagnostiche non eleggibili: PP-OCRv5 CER 0.203243/WER 0.416949/coverage 0.013559; Tesseract CER 0.895135/WER 1.722034/coverage 0.00339. Testo reale non salvato nel repository.",
+    "Review mirata T41 2026-09-27: PP-OCRv5 appare qualitativamente piu' vicino alla trascrizione utente nella prima sezione (titolo, date e apertura del paragrafo); Tesseract resta molto rumoroso. L'osservazione non e' una misura di accuracy e richiede conferma umana dei passaggi dubbi.",
+    "Reference T41 2026-09-27 confermata dall'utente come human_verified; identita' pagina/hash/original anchor coerenti. Confronto finale in memoria: PP-OCRv5 CER 0.167296/WER 0.238095, Tesseract CER 0.887210/WER 1.693878. La trascrizione resta fuori dal repository.",
+    "Chiusura sessione 2026-09-27: T41 00007 completato con reference verificata e confronto read-only. Candidato successivo 00024 non avviato; richiede una nuova reference umana page-scoped.",
+    "Run T41 2026-09-28 su 00150: PP-OCRv5 in memoria ha prodotto 102 regioni; rec_boxes escluso fail-safe per disallineamento. Tesseract deu psm6/oem1 acquisito in stdout. La pagina contiene acronimi militari da preservare e verificare, senza espansione automatica; reference umana non ancora disponibile.",
+    "Fix struttura T41 2026-09-28: quando rec_boxes manca ma rec_polys e' presente, il parser deriva bounding coordinates deterministiche dal poligono e preserva l'ordine spaziale. 17 test mirati PASS. Bozza Markdown 00150 scritta nella root runtime project-local; blocchi non riconosciuti restano unknown.",
+    "Correzione renderer T41 2026-09-28: lo status unrecognized descrive la struttura, non la leggibilita'. Il testo OCR viene conservato con marker [struttura non riconosciuta], mentre [illeggibile] resta per testo assente. 17 test mirati PASS; bozza Markdown 00150 rigenerata con 76 blocchi.",
+    "Traduzione candidata T41 2026-09-28: bozza esterna 00150 generata con 76 blocchi, testo OCR e source_region_ids affiancati alla traduzione italiana preliminare. Acronimi non espansi e passaggi dubbi marcati per revisione umana; nessun testo reale scritto nel repository.",
+    "Struttura originale 00150 2026-09-28: ricostruzione esterna aggiornata con intestazione, tabella a due colonne a-f, righe a colonne per g-h e tabella finale i). Nei derivati 3o5 e' stato corretto in 305; l'evidenza OCR grezza structured-evidence.json non e' stata modificata.",
+    "Glossario acronimi T41 2026-09-28: creato candidato esterno con 39 forme, livelli certo/probabile/da verificare e fonti di repertorio. Nessuna espansione e' stata promossa a dato canonico.",
+    "Risorsa JSON-LD glossario 2026-09-28: aggiunto de.ww2.wehrmacht-sourced.jsonld con 13 voci comuni, source_references URL e review_status unreviewed. Il loader esistente la include automaticamente; sigle contestuali 00150 escluse finche' non documentate.",
+    "Occorrenze glossario 00150 2026-09-28: generato CandidateMilitaryGlossaryMentionSet JSON-LD esterno con 42 match su 13 voci, source_region_ids e hash pagina. Tutti unreviewed; claim_extraction_allowed e territorial_presence_claim_allowed restano false.",
+    "Anteprima leggibile 00150 2026-09-28: applicati gli scioglimenti candidati alla copia Markdown strutturata tra parentesi quadre, con annotazioni non sovrapposte. La trascrizione originale e' preservata e la copia resta non verificata.",
+    "Estensione glossario 00150 2026-09-28: aggiunte forme composte/specialistiche e rigenerata l'anteprima. Risultato 62 occorrenze su 26 voci; Geb.Art./Sch. e' annotato manualmente solo nella copia perche' spezzato dalla struttura tabellare.",
+    "Richiesta utente 2026-09-28: aggiungere alla roadmap T42 per ricalcolare da CLI le traduzioni candidate quando cambia la risorsa JSON-LD del glossario, con versione/digest, diff provenance-aware, preview-only e protezione delle revisioni umane.",
+    "Implementazione T42 2026-09-28: aggiunto documents glossary-preview con risorsa e versione JSON-LD esplicite, digest SHA-256, source_region_ids e menzioni candidate preview-only. --apply scrive solo un nuovo output; l'output identico viene saltato e quello diverso rifiutato. 7 test mirati PASS; il diff tra versioni resta da implementare.",
+    "Review documentale 2026-09-28: il playbook codex-document-analysis-core.md ora descrive glossario JSON-LD versionato, comando preview-first, provenance e limite tra menzione candidata e fatto storico. Nessuna nuova fonte o promozione canonica aggiunta.",
+    "Preflight T41 2026-09-26 18:15: ricerca read-only nei percorsi runtime project-local e campione TIFF: nessun file reference/ground-truth/annotazione verificabile trovato. Il confronto resta sospeso senza modificare output OCR o dati canonici.",
     "Ricalcolo 2026-09-22: selezionato T40 manifest persistente del checkpoint structured; il nuovo routing non usa fallback e la delega verra' registrata all'avvio dell'implementazione.",
     "Chiusura sessione 2026-09-22: la riga 5 del crop 00026 e' gia' stata analizzata e chiusa con reference umana e metriche T38; non e' un candidato da ripetere.",
     "Preflight T41 2026-09-26: il percorso corretto contiene 996 TIFF; selezionate 10 pagine stratificate escludendo 00026 e 00028 gia' analizzate.",
@@ -986,7 +1084,7 @@
     "Handoff 2026-09-21: l'utente ha fornito e confermato la trascrizione completa della pagina 00028 come reference umana; il testo resta nella conversazione/area dati e non è stato copiato nel repository. Alla prossima sessione riprendere dall'analisi dei crop rappresentativi della 00026, un crop alla volta."
   ],
     "next_action": {
-        "mode": "select",
-        "description": "Raccogliere reference page-scoped esterne per un sottoinsieme del campione T41 e confrontare PP-OCRv5 project-local con Tesseract senza claim automatici."
+        "mode": "recalculate",
+        "description": "Completare T42 con diff provenance-aware tra versioni del glossario e protezione delle revisioni umane; nessuna promozione canonica automatica."
   }
 }

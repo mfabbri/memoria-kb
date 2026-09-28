@@ -1,5 +1,204 @@
 # Current Next Increment
 
+## T42 CLI glossario versionato - 2026-09-28
+
+Implementato il comando preview-first `documents glossary-preview`.
+Riceve esplicitamente un `DocumentStructure` e una risorsa JSON-LD
+`MilitaryGlossary`, calcola versione e digest SHA-256, conserva gli ID delle
+voci e delle regioni sorgente e produce un `CandidateMilitaryGlossaryMentionSet`.
+Senza `--apply` non scrive; con `--apply` crea un nuovo output e una seconda
+esecuzione identica viene riconosciuta come `skipped_existing`. Un output già
+esistente ma diverso viene rifiutato. Il diff tra versioni e la gestione delle
+revisioni umane restano il prossimo incremento T42.
+
+## Verifica documentale della sessione - 2026-09-28
+
+Il playbook `codex-document-analysis-core.md` ora formalizza il glossario
+militare come risorsa JSON-LD versionata, il comando CLI preview-first, la
+provenance obbligatoria e il confine tra menzione candidata e fatto storico.
+La ricostruzione manuale delle sigle spezzate resta limitata a copie di
+lettura; non e' stata aggiunta alcuna promozione automatica o nuova fonte.
+
+## Estensione glossario e anteprima 00150 - 2026-09-28
+
+La risorsa JSON-LD è stata estesa alle forme composte e specialistiche
+(`U'Arzt`, `U'Vet.`, `O'Vet.`, `St.Vet.`, `Geb.Art.Sch.`, `Fhr.Res.`,
+`Gen.Kdo.`, `Gen St d H`, `Gen Qu`, `Lehrg.`, `Bttr.-Fhr.`, `Abt.Arzt` e
+`Abt.Vet.`). Le occorrenze candidate sono ora 62 su 26 voci. L'anteprima
+Markdown è stata rigenerata; le sigle spezzate dalla disposizione tabellare sono
+annotate manualmente solo nella copia di lettura.
+
+## Anteprima leggibile con glossario 00150 - 2026-09-28
+
+Creata la copia esterna
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\layout-translation-glossary-preview.md`.
+Applica gli scioglimenti candidati tra parentesi quadre senza modificare la
+forma originale e senza sovrapporre annotazioni. La bozza strutturale originale
+resta disponibile separatamente.
+
+## Occorrenze glossario 00150 - 2026-09-28
+
+Generato l'artefatto JSON-LD esterno
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\acronym-mentions-00150.jsonld`.
+Collega 42 occorrenze a 13 voci del glossario con `source_region_ids`, hash
+della pagina e contesto OCR. Tutte le occorrenze restano `unreviewed` e non
+abilitano estrazione di claim o risoluzione di unità.
+
+## Risorsa JSON-LD glossario Wehrmacht - 2026-09-28
+
+Aggiunta `memoria-knowledge/glossary/military/de.ww2.wehrmacht-sourced.jsonld`.
+La risorsa contiene 13 voci comuni con `source_references` URL, stato
+`unreviewed` e separazione tra termini, abbreviazioni e traduzioni. Il loader
+militare esistente la legge automaticamente insieme a `de.basic.jsonld`.
+Le sigle dipendenti dal contesto della pagina 00150 non sono state sciolte in
+questa prima alimentazione.
+
+## Glossario acronimi 00150 - 2026-09-28
+
+È stato preparato il glossario esterno candidato
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\acronym-glossary-candidate.md`.
+Le espansioni sono separate in certo, probabile e da verificare; la trascrizione
+mantiene sempre la forma originale. Le fonti consultate includono il
+Bundesarchiv e repertori di abbreviazioni della Wehrmacht.
+
+## Ricostruzione struttura originale 00150 - 2026-09-28
+
+La bozza strutturale piatta è stata sostituita da
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\layout-translation-draft.md`.
+La pagina è stata ricostruita come: intestazione, tabella a due colonne per le
+categorie a–f, tabella delle assegnazioni g), tabella dei comandi h) e tabella
+finale i). Nei derivati la correzione utente `3o5` → `305` è stata applicata;
+`structured-evidence.json` resta intatto come evidenza OCR grezza.
+
+## Traduzione candidata 00150 - 2026-09-28
+
+È stata preparata nella root runtime la bozza esterna
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\translation-draft.md`.
+Contiene 76 blocchi, gli ID delle regioni e una traduzione italiana preliminare.
+Gli acronimi militari restano non espansi; le righe dubbie sono marcate per la
+verifica umana. Non è una traduzione approvata né un output canonico.
+
+## Correzione marker Markdown 00150 - 2026-09-28
+
+La bozza conserva ora il testo OCR anche quando il blocco ha status
+`unrecognized`: il marker diventa `[struttura non riconosciuta]`, non
+`[illeggibile]`. Il marker `[illeggibile]` resta riservato ai blocchi senza
+testo OCR. La bozza esterna è stata rigenerata con 76 blocchi; per esempio la
+regione `ocr-region-ea22db57e397714969a603bf` riporta `Geb.Art.Sch.Dachstein
+vom` come testo riconosciuto.
+
+## Struttura Markdown 00150 - 2026-09-28
+
+Il parser ora usa i poligoni OCR già presenti per derivare coordinate di
+ordinamento quando `rec_boxes` è scartato per disallineamento. Il test mirato
+aggiunto e la suite T38/T41 eseguono 17 test con esito PASS. La bozza esterna
+è in `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-structure-draft-20260928\structure-draft.md`;
+i blocchi non riconosciuti restano `unknown` e gli acronimi non vengono
+espansi automaticamente.
+
+## Run OCR T41 su 00150 - 2026-09-28
+
+La pagina `T314-1275-00150.tif` è stata processata in sola lettura. PP-OCRv5
+ha prodotto 102 regioni; `rec_boxes` è stato escluso fail-safe perché non
+allineato a `rec_texts`. Tesseract `deu` (`--psm 6`, `--oem 1`) ha prodotto
+una seconda lettura in stdout. La pagina contiene numerosi acronimi militari:
+la trascrizione candidata dovrà conservarli letteralmente e separare ogni
+espansione come ipotesi non verificata. Nessuna reference umana, traduzione,
+claim o output canonico è stato scritto.
+
+## Chiusura sessione 2026-09-27
+
+T41 sulla pagina `00007` è chiuso: reference umana verificata, identità/hash
+coerenti e confronto read-only completato. La pagina candidata successiva è
+`00024`, ma non è stata avviata; richiede una nuova reference page-scoped
+umana. Nessun TIFF, output persistente, profilo, claim o fatto verificato è
+stato modificato.
+
+## Chiusura confronto T41 con reference verificata - 2026-09-27
+
+La reference di `T314-1275-00007` è stata corretta e confermata dall'utente;
+la trascrizione resta esterna al repository. Identità pagina, hash e anchor
+originale coincidono per entrambi gli engine. Risultato finale in memoria:
+PP-OCRv5 CER `0.167296`, WER `0.238095`; Tesseract CER `0.887210`, WER
+`1.693878`. Il confronto è eleggibile secondo T38 e mostra un vantaggio netto
+di PP-OCRv5 su questa pagina; non costituisce una soglia generale né una
+promozione automatica per l'intero corpus.
+
+## Normalizzazione diacritici T41 - 2026-09-27
+
+Rimuovendo soltanto i diacritici dalla reference e dagli output, PP-OCRv5
+raggiunge CER `0.184524` e WER `0.311864`; Tesseract raggiunge CER `0.892316`
+e WER `1.705085`. La normalizzazione isola il limite della tastiera, ma la
+reference resta `draft`: i valori sono diagnostici e non costituiscono accuracy.
+
+## Review mirata T41 - 2026-09-27
+
+Il confronto visivo/testuale iniziale mostra PP-OCRv5 più vicino alla
+trascrizione fornita nella prima sezione (`Tätigkeitsbericht`, periodo e
+apertura del paragrafo); Tesseract è molto più rumoroso. Questa è una
+osservazione di triage, non una misura di accuracy. Il prossimo passo è
+confermare manualmente le parole divergenti e completare, se necessario, la
+trascrizione page-scoped.
+
+## Confronto diagnostico con reference utente draft - 2026-09-27
+
+La trascrizione fornita per `T314-1275-00007` è stata usata soltanto in
+memoria come reference umana `draft`, senza salvarne il testo nel repository.
+L'identità della pagina e l'hash coincidono con entrambe le evidenze. Metriche
+diagnostiche: PP-OCRv5 CER `0.203243`, WER `0.416949`, coverage `0.013559`;
+Tesseract CER `0.895135`, WER `1.722034`, coverage `0.00339`. Questi valori non
+sono accuracy: la reference non è ancora verificata e la trascrizione è
+parziale/normalizzata senza caratteri tedeschi.
+
+## Run confronto grezzo T41 - 2026-09-27
+
+Su `T314-1275-00007.tif` il confronto read-only ha appaiato l'evidenza
+PP-OCRv5 project-local già presente con una nuova lettura Tesseract `deu`
+(`--psm 6`, `--oem 1`). PP-OCRv5 ha prodotto 51 regioni e 358 token;
+Tesseract 585 token. L'overlap lessicale su token distinti è `0.197248`.
+Questo è un indicatore di disaccordo tra engine, non una misura di accuratezza:
+non essendoci reference umana page-scoped, CER/WER e accuracy restano sospesi.
+Nessun TIFF, output persistente, profilo, claim o fatto verificato è stato
+modificato.
+
+## Chiusura micro-slice codice T41 - 2026-09-26 18:45
+
+Implementato `ocr_comparison.py`: il runner legge un manifest esplicito,
+ricostruisce `DocumentStructure` dall'evidenza e delega le metriche al
+contratto T38. Il report è deterministico e read-only; input, raw OCR, TIFF e
+output canonici non vengono modificati. I 2 test mirati passano su fixture
+sintetiche. La reference reale resta necessaria prima di qualsiasi metrica di
+accuratezza o confronto operativo Tesseract/PP-OCRv5.
+
+## Preflight reference T41 - 2026-09-26 18:15
+
+La ricerca read-only nella root runtime project-local e nella cartella del
+campione TIFF non ha trovato file di reference umana, ground-truth o
+annotazione verificabile. Il confronto Tesseract/PP-OCRv5 resta sospeso:
+non vengono calcolate CER/WER, non si dichiara accuratezza e non si modificano
+output OCR, TIFF o dati canonici.
+
+## Selezione sessione 2026-09-26 - T41 reference page-scoped
+
+È stato selezionato il micro-incremento operativo T41 per confrontare
+Tesseract e PP-OCRv5 usando solo la root project-local e artefatti con
+provenance verificabile. Il preflight read-only conferma 996 TIFF disponibili,
+ma non trova reference umane page-scoped con identità della pagina, hash e
+coordinate sufficienti. CER/WER, accuracy e promozioni restano quindi sospesi;
+non sono stati modificati TIFF, output OCR, profili, claim o fatti verificati.
+
+Il prossimo passo è rendere disponibile una reference esterna verificabile per
+un sottoinsieme del campione, quindi ripetere il preflight prima di eseguire
+qualsiasi confronto.
+
+## Nota di riuso della documentazione OCR - 2026-09-26
+
+Le sezioni storiche sottostanti che citano `%TEMP%` o cache utente descrivono
+run già eseguiti e non sono istruzioni riutilizzabili. La procedura corrente è
+nel playbook `playbooks/codex-document-analysis-core.md` e richiede la root
+project-local `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\`, directory modello
+esplicite, manifest e hash verificati.
+
 ## Chiusura smoke test dalla root project-local - 2026-09-26
 
 Il runner PP-OCRv5 è stato eseguito usando esclusivamente:

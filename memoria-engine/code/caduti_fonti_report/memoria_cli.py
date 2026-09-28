@@ -34,6 +34,8 @@ from caduti_fonti_report.document_analysis.manual_registration_batch import (
 )
 from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates, run_document_ocr_batch
 from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
+from caduti_fonti_report.document_analysis.structured_markdown import export_structured_pages_markdown
+from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_preview
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
@@ -1823,6 +1825,64 @@ def _command_documents_markdown(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_structure(args: argparse.Namespace) -> int:
+    try:
+        report = export_structured_pages_markdown(
+            root_dir=Path(args.root), output_dir=Path(args.output_dir), profile=args.profile, apply=args.apply,
+        )
+    except FileNotFoundError as exc:
+        print(f"Errore documents structure: {exc}", file=sys.stderr)
+        return 1
+
+    documents = report["documents"]
+    counts = Counter(str(item.get("status", "")) for item in documents)
+    print("Me.Mo.Ria documents structure")
+    print(f"Root evidenze: {report['root_dir']}")
+    print(f"Output Markdown: {report['output_dir']}")
+    print(f"Profilo: {report['profile']}")
+    print(f"Modalita: {'apply esplicito' if args.apply else 'preview read-only'}")
+    print(f"Checkpoint batch: {report['checkpoint_id']} ({report['checkpoint_item_count']} evidenze)")
+    checkpoint_manifest = report["checkpoint_manifest"]
+    print(f"Manifest checkpoint: {checkpoint_manifest['status']} | {checkpoint_manifest['path']}")
+    if checkpoint_manifest["status"] == "mismatch_existing_manifest":
+        print(f"Mismatch manifest: {checkpoint_manifest.get('reason') or checkpoint_manifest.get('mismatches')}")
+    print(f"Evidenze considerate: {len(documents)}")
+    print(f"Da scrivere: {counts['would_write']}")
+    print(f"Scritte: {counts['written']}")
+    print(f"Gia' presenti: {counts['skipped_existing_output']}")
+    print(f"Non valide: {counts['skipped_invalid_json'] + counts['skipped_invalid_evidence']}")
+    print(f"Durata ms: {report['duration_ms']}")
+    print(f"Throughput item/s: {report['throughput_items_per_second']}")
+    if not args.apply:
+        print("Per scrivere i Markdown derivati, ripeti il comando con --apply.")
+    return 1 if args.apply and checkpoint_manifest["status"] == "mismatch_existing_manifest" else 0
+
+
+def _command_documents_glossary_preview(args: argparse.Namespace) -> int:
+    try:
+        report = build_glossary_preview(
+            structure_path=Path(args.structure),
+            glossary_path=Path(args.glossary),
+            output_path=Path(args.output),
+            apply=args.apply,
+        )
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+        print(f"Errore documents glossary-preview: {exc}", file=sys.stderr)
+        return 1
+
+    print("Me.Mo.Ria documents glossary-preview")
+    print(f"Struttura: {report['source_structure']}")
+    print(f"Glossario: {report['glossary_resource']}")
+    print(f"Versione: {report['glossary_version']}")
+    print(f"Digest: {report['glossary_digest']}")
+    print(f"Modalita': {'apply esplicito' if args.apply else 'preview read-only'}")
+    print(f"Menzioni candidate: {report['mention_count']}")
+    print(f"Stato output: {report['operation_status']} | {report['output_path']}")
+    if not args.apply:
+        print("Per scrivere il nuovo preview JSON-LD, ripeti il comando con --apply.")
+    return 0
+
+
 def _resolve_existing_data_root_for_command(args: argparse.Namespace) -> DataRootResolution | None:
     try:
         resolution = resolve_data_root(explicit_data_root=args.data_root)
@@ -2495,6 +2555,23 @@ def build_parser() -> argparse.ArgumentParser:
     documents_markdown.add_argument("--output-dir", required=True, help="Directory esplicita per Markdown per pagina.")
     documents_markdown.add_argument("--apply", action="store_true", help="Scrive solo output mancanti; senza questo flag il comando e' read-only.")
     documents_markdown.set_defaults(handler=_command_documents_markdown)
+    documents_structure = documents_subparsers.add_parser(
+        "structure", help="Esporta DocumentStructure in Markdown; scrive solo con --apply."
+    )
+    documents_structure.add_argument("--root", required=True, help="Directory delle OcrPageEvidence JSON.")
+    documents_structure.add_argument("--output-dir", required=True, help="Directory esplicita per Markdown derivato.")
+    documents_structure.add_argument("--profile", choices=["leader_list_report", "numbered_report"], required=True)
+    documents_structure.add_argument("--apply", action="store_true", help="Scrive output mancanti; senza flag e' read-only.")
+    documents_structure.set_defaults(handler=_command_documents_structure)
+    documents_glossary = documents_subparsers.add_parser(
+        "glossary-preview",
+        help="Ricalcola menzioni candidate con una versione esplicita del glossario; scrive solo con --apply.",
+    )
+    documents_glossary.add_argument("--structure", required=True, help="File DocumentStructure JSON da annotare.")
+    documents_glossary.add_argument("--glossary", required=True, help="Risorsa JSON-LD MilitaryGlossary esplicita.")
+    documents_glossary.add_argument("--output", required=True, help="Nuovo output JSON-LD del preview.")
+    documents_glossary.add_argument("--apply", action="store_true", help="Scrive il preview; senza flag il comando e' read-only.")
+    documents_glossary.set_defaults(handler=_command_documents_glossary_preview)
 
     register_sources_group(
         subparsers,
