@@ -35,7 +35,7 @@ from caduti_fonti_report.document_analysis.manual_registration_batch import (
 from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates, run_document_ocr_batch
 from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
 from caduti_fonti_report.document_analysis.structured_markdown import export_structured_pages_markdown
-from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_preview
+from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
@@ -1883,6 +1883,25 @@ def _command_documents_glossary_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_glossary_diff(args: argparse.Namespace) -> int:
+    try:
+        report = build_glossary_diff(
+            previous_path=Path(args.previous), current_path=Path(args.current),
+            output_path=Path(args.output) if args.output else None, apply=args.apply,
+        )
+    except (FileNotFoundError, ValueError, json.JSONDecodeError) as exc:
+        print(f"Errore documents glossary-diff: {exc}", file=sys.stderr)
+        return 1
+
+    print("Me.Mo.Ria documents glossary-diff")
+    print(f"Precedente: {report['previous_preview']}")
+    print(f"Corrente: {report['current_preview']}")
+    print(f"Versioni: {report['previous_glossary_version']} -> {report['current_glossary_version']}")
+    print(f"Conteggi: {json.dumps(report['counts'], ensure_ascii=False, sort_keys=True)}")
+    print(f"Stato output: {report['operation_status']} | {report.get('output_path', 'stdout')}")
+    return 0
+
+
 def _resolve_existing_data_root_for_command(args: argparse.Namespace) -> DataRootResolution | None:
     try:
         resolution = resolve_data_root(explicit_data_root=args.data_root)
@@ -2572,6 +2591,14 @@ def build_parser() -> argparse.ArgumentParser:
     documents_glossary.add_argument("--output", required=True, help="Nuovo output JSON-LD del preview.")
     documents_glossary.add_argument("--apply", action="store_true", help="Scrive il preview; senza flag il comando e' read-only.")
     documents_glossary.set_defaults(handler=_command_documents_glossary_preview)
+    documents_glossary_diff = documents_subparsers.add_parser(
+        "glossary-diff", help="Confronta due preview glossario senza sovrascrivere revisioni umane."
+    )
+    documents_glossary_diff.add_argument("--previous", required=True, help="Preview JSON-LD precedente.")
+    documents_glossary_diff.add_argument("--current", required=True, help="Preview JSON-LD corrente.")
+    documents_glossary_diff.add_argument("--output", help="Output JSON-LD opzionale per il diff.")
+    documents_glossary_diff.add_argument("--apply", action="store_true", help="Scrive l'output; senza flag e' read-only.")
+    documents_glossary_diff.set_defaults(handler=_command_documents_glossary_diff)
 
     register_sources_group(
         subparsers,

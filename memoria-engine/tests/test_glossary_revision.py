@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
-from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_preview  # noqa: E402
+from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview  # noqa: E402
 from caduti_fonti_report.memoria_cli import main as memoria_main  # noqa: E402
 
 
@@ -74,6 +74,39 @@ class GlossaryRevisionTests(unittest.TestCase):
             self.assertEqual(second["operation_status"], "skipped_existing")
             persisted = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(persisted["glossary_version"], "2026-09-28.1")
+
+    def test_diff_protects_reviewed_translation_and_is_idempotent(self) -> None:
+        with workspace_temp_dir() as tmp:
+            structure, glossary, output = _fixtures(tmp)
+            previous = tmp / "previous.jsonld"
+            current = tmp / "current.jsonld"
+            build_glossary_preview(structure_path=structure, glossary_path=glossary, output_path=previous, apply=True)
+            previous_payload = json.loads(previous.read_text(encoding="utf-8"))
+            previous_payload["mentions"][0]["translation_it"] = "traduzione revisionata"
+            previous_payload["mentions"][0]["review_status"] = "human_verified"
+            write_json(previous, previous_payload)
+            current_glossary = json.loads(glossary.read_text(encoding="utf-8"))
+            current_glossary["version"] = "2026-09-28.2"
+            current_glossary["entries"][0]["translation_it"] = "comando supremo"
+            write_json(glossary, current_glossary)
+            build_glossary_preview(structure_path=structure, glossary_path=glossary, output_path=current, apply=True)
+            diff_output = tmp / "diff.jsonld"
+            diff = build_glossary_diff(previous_path=previous, current_path=current, output_path=diff_output, apply=True)
+            self.assertEqual(diff["counts"]["protected_reviewed"], 1)
+            change = next(item for item in diff["changes"] if item["change"] == "protected_reviewed")
+            self.assertEqual(change["effective_translation_it"], "traduzione revisionata")
+            self.assertEqual(change["proposed_translation_it"], "comando supremo")
+            second = build_glossary_diff(previous_path=previous, current_path=current, output_path=diff_output, apply=True)
+            self.assertEqual(second["operation_status"], "skipped_existing")
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                self.assertEqual(
+                    memoria_main([
+                        "documents", "glossary-diff", "--previous", str(previous), "--current", str(current),
+                    ]),
+                    0,
+                )
+            self.assertIn('"protected_reviewed": 1', stdout.getvalue())
 
 
 def _fixtures(tmp: Path) -> tuple[Path, Path, Path]:

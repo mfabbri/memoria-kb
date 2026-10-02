@@ -64,6 +64,96 @@ def build_glossary_preview(
     return payload
 
 
+def build_glossary_diff(
+    *,
+    previous_path: Path,
+    current_path: Path,
+    output_path: Path | None = None,
+    apply: bool = False,
+) -> dict[str, Any]:
+    """Compare two candidate mention sets without mutating either preview."""
+    previous = _load_json(previous_path)
+    current = _load_json(current_path)
+    for label, payload in (("precedente", previous), ("corrente", current)):
+        if payload.get("@type") != "CandidateMilitaryGlossaryMentionSet":
+            raise ValueError(f"Preview {label} non supportato: {payload.get('@type', '')}")
+
+    previous_mentions = _mention_map(previous)
+    current_mentions = _mention_map(current)
+    changes: list[dict[str, Any]] = []
+    for mention_id in sorted(set(previous_mentions) | set(current_mentions)):
+        old = previous_mentions.get(mention_id)
+        new = current_mentions.get(mention_id)
+        if old is None:
+            changes.append({"change": "added", "mention": new})
+            continue
+        if new is None:
+            changes.append({"change": "removed", "mention": old})
+            continue
+        old_translation = str(old.get("translation_it", ""))
+        new_translation = str(new.get("translation_it", ""))
+        if old_translation == new_translation:
+            changes.append({"change": "unchanged", "mention": new})
+            continue
+        reviewed = str(old.get("review_status", "unreviewed")) != "unreviewed"
+        changes.append({
+            "change": "protected_reviewed" if reviewed else "changed",
+            "mention": new,
+            "previous_mention": old,
+            "proposed_translation_it": new_translation,
+            "effective_translation_it": old_translation if reviewed else new_translation,
+            "human_revision_protected": reviewed,
+        })
+
+    previous_digest = _file_digest(previous_path)
+    current_digest = _file_digest(current_path)
+    payload: dict[str, Any] = {
+        "@type": "CandidateMilitaryGlossaryMentionDiff",
+        "@id": f"candidate-glossary-diff:{previous_digest[:16]}:{current_digest[:16]}",
+        "previous_preview": str(previous_path),
+        "current_preview": str(current_path),
+        "previous_glossary_version": str(previous.get("glossary_version", "")),
+        "current_glossary_version": str(current.get("glossary_version", "")),
+        "previous_preview_digest": f"sha256:{previous_digest}",
+        "current_preview_digest": f"sha256:{current_digest}",
+        "preview_only": True,
+        "human_revisions_protected": True,
+        "counts": {name: sum(1 for item in changes if item["change"] == name)
+                   for name in ("added", "removed", "changed", "protected_reviewed", "unchanged")},
+        "changes": changes,
+        "operation_status": "preview",
+    }
+    if output_path is not None:
+        if apply:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            encoded = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            if output_path.exists():
+                if output_path.read_text(encoding="utf-8") == encoded:
+                    payload["operation_status"] = "skipped_existing"
+                else:
+                    raise ValueError(f"Output gia' esistente e diverso: {output_path}")
+            else:
+                output_path.write_text(encoded, encoding="utf-8")
+                payload["operation_status"] = "written"
+        payload["output_path"] = str(output_path)
+    return payload
+
+
+def _mention_map(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    mentions = payload.get("mentions", [])
+    if not isinstance(mentions, list):
+        raise ValueError("Campo mentions non valido")
+    for mention in mentions:
+        if isinstance(mention, dict) and mention.get("@id"):
+            result[str(mention["@id"])] = mention
+    return result
+
+
+def _file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(path)

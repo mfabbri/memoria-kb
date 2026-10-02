@@ -1920,9 +1920,12 @@ Gate e limiti:
   repository; TIFF, profili canonici, claim e fatti verificati non vengono
   modificati.
 
-Stato: pianificata come micro-incremento documentale chiuso il 2026-09-25;
-l'esecuzione della calibrazione reale richiede un task successivo con input
-  esterni tracciati.
+Stato: la formalizzazione documentale e' chiusa il 2026-09-25, ma T41 resta
+un'attivita' futura/bloccata per la calibrazione reale: manca una reference
+umana page-scoped verificabile per il campione da confrontare. Le esecuzioni
+parziali e gli smoke test non chiudono questo gate; servono input esterni
+tracciati prima di dichiarare metriche di accuratezza o una calibrazione
+generale.
 
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 
@@ -1945,15 +1948,24 @@ Criteri di uscita:
   già revisionate;
 - nessun claim, profilo o fatto storico viene promosso automaticamente.
 
-Stato: candidato aggiunto il 2026-09-28 su richiesta dell'utente.
+Stato: completata il 2026-09-28. La CLI accetta la risorsa JSON-LD e la
+versione del glossario, produce preview distinti e un diff provenance-aware,
+preserva versione/digest, `entry_id`, fonti, `source_region_ids` e stato di
+revisione, e protegge le traduzioni gia' revisionate. I test offline mirati
+sono PASS; nessun claim, profilo o fatto storico viene promosso
+automaticamente.
 
-La formalizzazione del vincolo project-local è chiusa il 2026-09-26. La
-migrazione runtime degli asset oggi presenti in
-`C:\Users\info\AppData\Local\MeMoRiA\ocr-assets` e
-`C:\Users\info\AppData\Local\MeMoRiA\ocr-runs` è il prossimo incremento
-separato: deve prima dichiarare la root persistente, poi migrare/verificare
-versioni, hash e provenance senza scaricare o spostare file in questo
-incremento documentale.
+La formalizzazione del vincolo project-local, la migrazione runtime degli
+asset OCR e lo smoke test sono chiusi il 2026-09-26. Gli asset operativi sono
+stati verificati nella root persistente esterna al repository; non resta da
+pre-selezionare un incremento documentale per questa attività.
+
+Il vincolo project-local, la migrazione degli asset OCR e lo smoke test sono
+stati completati e verificati il 2026-09-26 in una root persistente esterna al
+repository: 52 file copiati con SHA-256 e nessun mismatch, quindi smoke test
+project-local PASS con 51 regioni e JSON validi. `rec_boxes` non allineato a
+`rec_texts` e' stato escluso fail-safe e registrato nel manifest. T41 resta
+indipendentemente futura/bloccata in assenza della reference page-scoped.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

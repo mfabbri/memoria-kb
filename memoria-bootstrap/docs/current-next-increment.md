@@ -1,5 +1,80 @@
 # Current Next Increment
 
+## T41 reference umana e confronto 00150 - 2026-10-01
+
+La conferma dell'utente su testo e struttura è stata formalizzata come
+`OcrPageReference` esterna con `origin: human_verified`, `review_status:
+verified`, audit e identità completa della pagina. Il confronto PP-OCRv5 sulla
+stessa pagina è eleggibile secondo il contratto T38: CER `0.145366`, WER
+`0.126904`, coverage token `0.215736`, invention rate `0.7875`.
+
+Il risultato è limitato a `T314-1275-00150` e alla configurazione PP-OCRv5
+project-local; non è una dichiarazione di accuratezza generale. La struttura
+OCR presenta ancora divergenze rispetto ai 27 blocchi della ricostruzione umana
+(76 blocchi OCR) e non è disponibile un output Tesseract comparabile.
+
+## Revisione umana glossario 00150 - 2026-10-01
+
+L'utente ha confermato come `human_verified` gli scioglimenti degli acronimi e
+delle abbreviazioni presenti nella preview della pagina `T314-1275-00150`.
+Sono stati creati nuovi derivati esterni, senza sovrascrivere quelli candidati:
+`t41-00150-human-verified-20261001/acronym-mentions-00150-human-verified.jsonld`,
+`layout-translation-glossary-human-verified.md` e `human-review-audit.json`.
+Le 62 occorrenze conservano pagina, regioni, fonti e hash; restano false le
+autorizzazioni per estrazione di claim e presenza territoriale. Il glossario
+sorgente, l'OCR grezzo e i TIFF non sono stati modificati.
+
+## T41 calibrazione page-scoped 00150 - 2026-10-01
+
+Selezionata `T314-1275-00150.tif` perché combina testo, tabelle, colonne e
+acronimi militari. È stato creato il pacchetto esterno
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00150-calibration-20261001\`
+con manifest, report diagnostico e registro di 102 regioni. Lo SHA-256 della
+pagina è `f30fff601f1969426b66f77676c4878f3e5b09f230e5cb1a0a6c3443eb6fb7c7`.
+
+Le coordinate sono derivate deterministicamente dai `rec_polys` preservati;
+`rec_boxes` è stato escluso fail-safe perché non allineato a `rec_texts`.
+L'ordine registrato è solo quello dell'array sorgente e non implica ordine di
+lettura semantico. Il pacchetto è `unreviewed`/`diagnostic-only`: CER, WER e
+accuracy non sono stati calcolati perché manca una reference umana verificata.
+Nessun TIFF, file del repository, claim o fatto verificato è stato modificato.
+
+## Chiusura riallineamento documentale T41-T42 - 2026-10-01
+
+T42 e' completata secondo i criteri di uscita verificati: `documents
+glossary-preview` e `documents glossary-diff` producono preview/diff distinti,
+con versione e digest del glossario, provenance e protezione delle traduzioni
+gia' revisionate. I 3 test offline mirati sono PASS; nessun claim, profilo o
+fatto storico e' stato promosso.
+
+Sono inoltre completate la migrazione degli asset OCR nella root project-local
+esterna al repository (52 file verificati con SHA-256, mismatch 0) e il relativo
+smoke test (51 regioni, manifest/raw/structured evidence JSON validi). Il campo
+`rec_boxes` non allineato a `rec_texts` e' stato escluso fail-safe e registrato.
+
+T41 resta un'attivita' futura/bloccata per la calibrazione reale: manca una
+reference umana page-scoped verificabile per il campione. Non sono stati
+modificati TIFF, profili canonici, claim, fatti verificati o codice runtime.
+Il prossimo incremento va ricalcolato dalla roadmap, senza pre-selezionarlo in
+questa nota.
+
+## Chiusura T42 diff glossario versionato - 2026-09-28
+
+Completato il comando `memoria documents glossary-diff`, che confronta due
+preview `CandidateMilitaryGlossaryMentionSet` e produce un diff derivato con
+versioni, digest dei preview, identificativi delle menzioni e provenance già
+presente nelle evidenze. Le traduzioni con `review_status` diverso da
+`unreviewed` sono protette: la revisione precedente resta il valore effettivo e
+la nuova traduzione è esposta solo come proposta. L'output è preview-first,
+creazione esclusiva e idempotente con `--apply`; nessun claim o fatto storico è
+promosso. Test mirati: 3/3 PASS. Questo completa T42; non resta un diff da
+implementare.
+
+Il diff non riconcilia automaticamente menzioni con identificativi cambiati e
+non sostituisce la revisione umana; questi restano rischi/limiti espliciti.
+Il prossimo passo va ricalcolato dalla roadmap, senza pre-selezionare un nuovo
+incremento in questa nota.
+
 ## T42 CLI glossario versionato - 2026-09-28
 
 Implementato il comando preview-first `documents glossary-preview`.
@@ -9,7 +84,8 @@ voci e delle regioni sorgente e produce un `CandidateMilitaryGlossaryMentionSet`
 Senza `--apply` non scrive; con `--apply` crea un nuovo output e una seconda
 esecuzione identica viene riconosciuta come `skipped_existing`. Un output già
 esistente ma diverso viene rifiutato. Il diff tra versioni e la gestione delle
-revisioni umane restano il prossimo incremento T42.
+revisioni umane sono ora completati come parte di T42; nessuna promozione
+canonica automatica e' stata introdotta.
 
 ## Verifica documentale della sessione - 2026-09-28
 

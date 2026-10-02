@@ -2,38 +2,36 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-09-26T18:00:00+02:00",
-  "updated_at": "2026-09-28T20:30:00+02:00",
+  "selected_at": "2026-10-01T22:45:00+02:00",
+  "updated_at": "2026-10-01T22:45:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "Post-MVP - Glossario versionato e revisione traduzioni / T42",
-      "reason": "Implementare il primo comando CLI preview-only per ricalcolare menzioni candidate con una risorsa JSON-LD del glossario esplicita."
+      "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
+      "reason": "Usare la conferma umana ricevuta per formalizzare una OcrPageReference verificata e calcolare metriche diagnostiche page-scoped su 00150."
     }
   ],
   "increment": {
-    "id": "t42-versioned-glossary-cli-preview",
-    "title": "T42 preview CLI con glossario versionato",
-    "objective": "Ricalcolare offline le menzioni candidate da un DocumentStructure usando una risorsa JSON-LD del glossario, con versione, digest e scrittura esplicita.",
+    "id": "t41-00150-engine-reference-comparison",
+    "title": "T41 confronto engine/reference page-scoped su 00150",
+    "objective": "Confrontare Tesseract e PP-OCRv5 con la reference human_verified di 00150 e conservare metriche diagnostiche esterne con provenance completa.",
     "scope": [
-      "Documentare root project-local, variabili cache, manifest e verifica SHA-256.",
-      "Documentare discovery del percorso immagini corretto e stratificazione del campione.",
-      "Documentare max_side_limit=4000, rec_boxes non allineato e guardrail accuracy."
+      "Calcolare metriche page-scoped separate per Tesseract e PP-OCRv5 contro la reference verificata.",
+      "Conservare identità pagina, hash, configurazioni engine e report JSON nella root runtime esterna.",
+      "Mantenere il risultato diagnostico, senza promozione a claim o accuratezza generale."
     ],
     "out_of_scope": [
       "Elaborazione di documenti diversi dai 10 TIFF selezionati per il pilot.",
       "Correzione OCR, interpretazione generativa o approvazione di letture storiche.",
-      "Batch massivo, soglie di qualità o dichiarazioni di accuratezza prive di reference verificata.",
+      "Batch massivo, download/installazioni, modifica OCR, soglie di qualità o dichiarazioni di accuratezza generale.",
       "Scritture sui TIFF originali o sulla fonte archivistica."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/glossary_revision.py",
-      "memoria-engine/tests/test_glossary_revision.py",
-      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Esiste una reference page-scoped verificabile e il confronto offline è eseguito con provenance completa; altrimenti il blocker resta registrato senza metriche o scritture canoniche."
+    "stop_condition": "Report e manifest esterni sono validi, identità/hash coerenti e nessun claim/promozione automatica; non dichiarare accuratezza generale."
   },
   "verification": {
     "tests": [
@@ -43,24 +41,29 @@
         "documentation_touchpoints": [
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/planning/current-work.json"
+      "memoria-bootstrap/planning/current-work.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-human-verified-20261001/ocr-page-reference-00150.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-tesseract-page-20261001/manifest.json",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py"
     ],
-        "result": "pass",
-        "notes": "Runner OCR comparison implementato in modalita' read-only e verificato su fixture T38 sintetica; nessun input reale, TIFF o output canonico modificato.",
+    "result": "passed",
+    "notes": "Reference 00150 human_verified/verified e confronto PP-OCRv5 page-scoped completati; CER 0.145366, WER 0.126904, coverage 0.215736. Identità/hash/UTF-8 verificati; nessuna accuratezza generale dichiarata.",
     "task_envelope": {
-      "mode": "feature-slice",
+      "mode": "quality-slice",
       "repositories": ["memoria-bootstrap", "memoria-engine"],
       "read_set": [
         "AGENTS.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/decision-log.md",
-      "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
+        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "write_set": ["memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py", "memoria-engine/tests/test_ocr_comparison.py", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "python -m unittest memoria-engine.tests.test_ocr_comparison; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
+      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-engine-reference-comparison-20261001/*", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "python -m unittest memoria-engine.tests.test_ocr_reference_metrics memoria-engine.tests.test_ocr_comparison; python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check; validate external report JSON.",
       "stop_conditions": [
       "Nessuno spostamento o download di file in questo incremento.",
       "Non dichiarare accuratezza e non modificare TIFF, profili, claim o fatti verificati.",
@@ -75,7 +78,7 @@
     "agent": "mmr_implementer",
     "model": "gpt-5.6-terra",
     "reasoning_effort": "medium",
-    "rationale": "Micro-feature runtime entro il contratto T38; il runner abilita il confronto futuro ma usa solo fixture sintetiche in questa sessione.",
+    "rationale": "Micro-slice T41 entro contratti OCR esistenti: una sola pagina, geometria derivata fail-safe, output esterno e nessuna accuracy senza reference.",
     "trace": [
       {
         "event": "selected",
@@ -1042,7 +1045,124 @@
         "agent": "mmr_implementer",
         "model": "gpt-5.6-terra",
         "reasoning_effort": "medium",
-        "reason": "CLI glossary-preview implementata; 14 test mirati PASS, JSON e git diff --check PASS. Diff tra versioni ancora fuori scope."
+        "reason": "CLI glossary-preview e glossary-diff implementate; 3 test mirati PASS, JSON e git diff --check PASS. Revisioni umane protette e nessuna promozione canonica."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-01T00:00:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-5.6-luna",
+        "reasoning_effort": "medium",
+        "reason": "Roadmap, current-next e planner riallineati: T42, migrazione OCR project-local e smoke test completati; T41 resta futura/bloccata senza reference page-scoped."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-01T10:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Micro-slice T41 su T314-1275-00150: layout misto, una sola pagina, geometria OCR derivata e output diagnostic-only esterno."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-01T10:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Delega del pacchetto page-scoped read-only nella root runtime project-local, senza modifiche a TIFF o repository."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-01T10:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Pacchetto T41 00150 PASS: hash sorgente verificato, 102 regioni, rec_polys preservati, bbox derivati, rec_boxes escluso fail-safe e JSON validi; accuracy sospesa senza reference."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-01T12:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Conferma utente degli scioglimenti e del testo 00150: formalizzare OcrPageReference verified e confronto page-scoped."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-01T12:00:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Creazione esterna della reference auditata e confronto offline sugli artefatti già disponibili; nessun batch o download."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-01T22:10:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Reference UTF-8 corretta e verificata; identità completa, 10 test offline PASS, CER 0.145366/WER 0.126904/coverage 0.215736. Risultato solo page-scoped PP-OCRv5."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-01T22:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Esecuzione autorizzata di Tesseract sulla sola pagina 00150; output raw esterni, diagnostic-only, nessun batch."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-01T22:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Run Tesseract deu --oem 1 --psm 6 su T314-1275-00150.tif nella root runtime esterna, senza modifiche al repository o all'originale."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-01T22:30:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Tesseract exit code 0; manifest, testo raw e TSV creati; hash sorgente/output e JSON verificati; review_status unreviewed e accuracy non eseguita."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-01T22:45:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Confronto page-scoped autorizzato tra Tesseract, PP-OCRv5 e reference human_verified su 00150."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-01T22:45:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "Calcolo offline con contratti OCR esistenti, output esterno, provenance e guardrail diagnostici."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-01T22:45:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-5.6-terra",
+        "reasoning_effort": "medium",
+        "reason": "10 test OCR PASS; PP-OCRv5 CER 0.145366/WER 0.126904, Tesseract CER 0.324046/WER 0.385787; JSON/hash/identity verificati; metriche solo page-scoped diagnostiche."
       }
     ]
   },
@@ -1081,10 +1201,16 @@
     "Pilot T41 2026-09-26: delega interrotta prima dell'avvio (0/10, nessun output); fallback diretto Tesseract deu completato 10/10 con TSV raw esterni. PP-OCRv5 non eseguito; accuracy sospesa senza reference page-scoped.",
     "L utente non ha revisionato trascrizioni OCR e non ha approvato letture o claim; confidence non equivale ad accuratezza.",
     "T38: 17 test mirati PASS, fixture JSON sintetica, git diff --check PASS, review indipendente PASS. OcrPageReference/evaluator mantengono provenance completa e anchor stabile alla pagina originale T36; accuracy eligibility richiede audit human_verified, reference verificata e identity match. Nessuna accuratezza su scansioni reali dichiarata.",
-    "Handoff 2026-09-21: l'utente ha fornito e confermato la trascrizione completa della pagina 00028 come reference umana; il testo resta nella conversazione/area dati e non è stato copiato nel repository. Alla prossima sessione riprendere dall'analisi dei crop rappresentativi della 00026, un crop alla volta."
+    "Handoff 2026-09-21: l'utente ha fornito e confermato la trascrizione completa della pagina 00028 come reference umana; il testo resta nella conversazione/area dati e non è stato copiato nel repository. Alla prossima sessione riprendere dall'analisi dei crop rappresentativi della 00026, un crop alla volta.",
+    "Chiusura documentale 2026-10-01: T42 completata con glossary-preview/glossary-diff e 3 test mirati PASS; migrazione OCR project-local (52 file, SHA-256 mismatch 0) e smoke test project-local (51 regioni, JSON validi) completati. T41 resta futura/bloccata senza reference page-scoped; nessun nuovo incremento preselezionato.",
+    "T41 00150 2026-10-01: pacchetto esterno diagnostic-only creato con hash pagina f30fff601f1969426b66f77676c4878f3e5b09f230e5cb1a0a6c3443eb6fb7c7, 102 regioni e bbox derivati da rec_polys. rec_boxes escluso fail-safe; JSON e conteggio regioni verificati. CER/WER/accuracy non calcolati senza reference umana.",
+    "Revisione glossario 00150 2026-10-01: conferma utente human_verified per tutte le 62 occorrenze della preview. Creati derivati esterni con audit; claim_extraction_allowed e territorial_presence_claim_allowed restano false; glossario sorgente e OCR grezzo invariati.",
+    "T41 reference 00150 2026-10-01: reference OcrPageReference human_verified/verified formalizzata con audit e UTF-8 corretto. Identità/hash/transform coerenti; 10 test offline PASS. PP-OCRv5 page-scoped CER 0.145366, WER 0.126904, coverage 0.215736; nessuna accuratezza generale dichiarata.",
+    "T41 Tesseract 00150 2026-10-01: run singolo completato con Tesseract 5.5.3.20260724, deu, --oem 1 --psm 6; TIFF 3648x6224, SHA-256 coerente, testo/TSV e stderr esterni con hash verificati. Output unreviewed/diagnostic-only; nessuna accuracy o inferenza semantica.",
+    "T41 confronto 00150 2026-10-01: PP-OCRv5 CER 0.145366/WER 0.126904; Tesseract CER 0.324046/WER 0.385787. Reference verified e identity/hash coerenti; la reference è stata risolta nella directory fisica human-reference perché il path dichiarato human-verified era assente, discrepanza registrata nel run-summary. Metriche diagnostiche page-scoped, non generalizzabili."
   ],
     "next_action": {
         "mode": "recalculate",
-        "description": "Completare T42 con diff provenance-aware tra versioni del glossario e protezione delle revisioni umane; nessuna promozione canonica automatica."
+        "description": "Confrontare page-scoped Tesseract e PP-OCRv5 con la reference human_verified di 00150, mantenendo metriche diagnostiche e senza generalizzare il risultato."
   }
 }
