@@ -1,5 +1,12 @@
 # Current Next Increment
 
+Aggiornamento del 2026-10-02: il confronto Tesseract/PP-OCRv5 su `00150` e'
+stato completato il 2026-10-01. Le metriche page-scoped sono PP-OCRv5 CER
+`0.145366`, WER `0.126904`; Tesseract CER `0.324046`, WER `0.385787`.
+Questo corregge la nota sottostante che indicava Tesseract come non disponibile.
+Il campione iniziale T41 resta incompleto: serve una reference verificabile per
+ciascuna delle altre pagine selezionate.
+
 ## T41 reference umana e confronto 00150 - 2026-10-01
 
 La conferma dell'utente su testo e struttura è stata formalizzata come
@@ -52,11 +59,11 @@ esterna al repository (52 file verificati con SHA-256, mismatch 0) e il relativo
 smoke test (51 regioni, manifest/raw/structured evidence JSON validi). Il campo
 `rec_boxes` non allineato a `rec_texts` e' stato escluso fail-safe e registrato.
 
-T41 resta un'attivita' futura/bloccata per la calibrazione reale: manca una
-reference umana page-scoped verificabile per il campione. Non sono stati
-modificati TIFF, profili canonici, claim, fatti verificati o codice runtime.
-Il prossimo incremento va ricalcolato dalla roadmap, senza pre-selezionarlo in
-questa nota.
+T41 resta bloccata per completare la calibrazione del campione stratificato:
+al momento e' verificata una sola reference page-scoped, per `00150`. Non sono
+stati modificati TIFF, profili canonici, claim o fatti verificati. Il prossimo
+passo e' acquisire reference verificabili per le altre pagine selezionate;
+quindi riprendere i confronti page-scoped.
 
 ## Chiusura T42 diff glossario versionato - 2026-09-28
 

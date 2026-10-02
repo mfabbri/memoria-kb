@@ -1920,12 +1920,12 @@ Gate e limiti:
   repository; TIFF, profili canonici, claim e fatti verificati non vengono
   modificati.
 
-Stato: la formalizzazione documentale e' chiusa il 2026-09-25, ma T41 resta
-un'attivita' futura/bloccata per la calibrazione reale: manca una reference
-umana page-scoped verificabile per il campione da confrontare. Le esecuzioni
-parziali e gli smoke test non chiudono questo gate; servono input esterni
-tracciati prima di dichiarare metriche di accuratezza o una calibrazione
-generale.
+Stato: la formalizzazione documentale e' chiusa il 2026-09-25. Il 2026-10-01
+e' stata verificata una reference page-scoped per `T314-1275-00150` e sono
+stati confrontati PP-OCRv5 e Tesseract. Questo chiude il confronto su una pagina,
+ma non il campione stratificato iniziale di 8-10 pagine. T41 resta quindi
+bloccata in attesa di reference umane verificabili per le altre pagine
+selezionate; le metriche ottenute non dichiarano accuratezza generale.
 
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 
