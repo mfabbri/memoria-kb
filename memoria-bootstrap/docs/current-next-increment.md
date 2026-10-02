@@ -1,5 +1,21 @@
 # Current Next Increment
 
+## T41 primo OCR e struttura 00024 - 2026-10-02
+
+Il TIFF `T314-1275-00024.tif` e' stato identificato (5680 x 6096, 34,625,988
+byte, SHA-256 `59b11bc76cd0cff02a705703e45151e5298003f615f767f2387f9aae36b06623`).
+Su autorizzazione dell'utente e' stato usato `memoria-engine/.venv` con Paddle
+3.3.0/PaddleOCR 3.7.0, pesi PP-OCRv5 locali e Tesseract 5.5.3.20260724.
+Il pacchetto non revisionato e' in
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00024-ocr-structure-20261002\`:
+76 regioni PP-OCRv5, 73 blocchi nella bozza strutturale `numbered_report` e una
+trascrizione Tesseract `deu` di 611 caratteri. La preview conserva gli ID delle
+regioni sorgente. PaddleOCR ha ridimensionato la pagina al limite massimo di
+4000 px; il risultato e' solo una bozza da correggere, senza metriche di
+accuratezza. Hash e dimensioni della TIFF sopra riportati sono stati verificati
+e l'originale non e' stato modificato. Punto di revisione: `review.md` e
+`structure-preview.md` nella cartella runtime indicata.
+
 Aggiornamento del 2026-10-02: il confronto Tesseract/PP-OCRv5 su `00150` e'
 stato completato il 2026-10-01. Le metriche page-scoped sono PP-OCRv5 CER
 `0.145366`, WER `0.126904`; Tesseract CER `0.324046`, WER `0.385787`.

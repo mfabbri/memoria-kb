@@ -1,37 +1,40 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "blocked",
-  "selected_at": "2026-10-02T22:15:00+02:00",
-  "updated_at": "2026-10-02T22:15:00+02:00",
+  "status": "completed",
+  "selected_at": "2026-10-02T22:41:00+02:00",
+  "updated_at": "2026-10-02T23:12:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
-      "reason": "Estendere il confronto page-scoped, gia completato su 00150, al campione stratificato iniziale da 8-10 pagine; le altre reference umane verificate non sono ancora disponibili."
+      "reason": "Eseguire il primo tentativo OCR e di ricostruzione struttura sulla pagina selezionata T314-1275-00024, mantenendo gli output esterni e unreviewed in attesa di correzione umana."
     }
   ],
   "increment": {
-    "id": "t41-stratified-sample-expansion",
-    "title": "T41 estensione del confronto al campione stratificato",
-    "objective": "Completare il confronto diagnostico Tesseract/PP-OCRv5 sulle 8-10 pagine iniziali del campione T41, con reference umane page-scoped verificabili e provenance esterna.",
+    "id": "t41-00024-ocr-structure-preview-20261002",
+    "title": "T41 primo OCR e struttura su 00024",
+    "objective": "Produrre candidati OCR PP-OCRv5/Tesseract e una ricostruzione deterministica della struttura per T314-1275-00024, con provenance completa e output esterni non revisionati.",
     "scope": [
-      "Rendere disponibili e verificare reference page-scoped per le altre pagine selezionate, mantenendo testo e TIFF fuori dal repository.",
-      "Conservare identità pagina, hash, configurazioni engine e report JSON nella root runtime esterna.",
-      "Mantenere il risultato diagnostico, senza promozione a claim o accuratezza generale."
+      "Processare solo il TIFF selezionato con asset PP-OCRv5 project-local espliciti e Tesseract deu come seconda lettura se disponibile.",
+      "Conservare raw OCR, structured evidence e DocumentStructure/preview Markdown con source_region_ids e trasformazioni registrate.",
+      "Conservare identita pagina, hash, versioni/configurazioni engine, hash asset, latenza e manifest nella root runtime esterna."
     ],
     "out_of_scope": [
-      "Elaborazione di documenti diversi dai 10 TIFF selezionati per il pilot.",
-      "Correzione OCR, interpretazione generativa o approvazione di letture storiche.",
-      "Batch massivo, download/installazioni, modifica OCR, soglie di qualità o dichiarazioni di accuratezza generale.",
-      "Scritture sui TIFF originali o sulla fonte archivistica."
+      "Elaborazione di altre pagine, crop/tile o batch.",
+      "Modifiche a TIFF originali, codice runtime o asset/modelli OCR.",
+      "Correzione automatica, traduzione generativa, metriche accuracy/CER/WER o claim.",
+      "Promozione di output a testo verificato, profilo canonico o fatto storico."
     ],
     "candidate_files": [
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/*",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Il confronto iniziale copre 8-10 pagine con reference, identità e hash verificati e report esterni validi; altrimenti resta bloccato in attesa delle reference. Nessuna promozione o accuratezza generale."
+    "stop_condition": "Una sola pagina ha manifest, hash sorgente coerente, raw OCR, evidence/structure JSON validi e preview Markdown con provenance; ogni output resta unreviewed e nessuna accuracy viene calcolata."
   },
   "verification": {
     "tests": [
@@ -40,37 +43,40 @@
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "not_run",
-    "notes": "Incremento selezionato ma bloccato: 00150 è l'unica pagina con reference verificata disponibile; servono reference page-scoped per le restanti pagine del campione T41. I confronti saranno ripresi dopo tale input.",
+      "result": "passed",
+      "notes": "Su autorizzazione utente e' stato usato memoria-engine/.venv (Paddle 3.3.0/PaddleOCR 3.7.0) con pesi PP-OCRv5 locali e Tesseract 5.5.3.20260724. Pacchetto esterno unreviewed: D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002; hash TIFF coerente, 76 regioni PP-OCRv5, 73 blocchi strutturali con source_region_ids, Tesseract deu 611 caratteri. JSON e provenance verificati; PP-OCRv5 ha ridimensionato a max-side 4000. Nessuna metrica accuracy e originale invariato.",
     "task_envelope": {
-      "mode": "discovery-lite",
-      "repositories": ["memoria-bootstrap"],
+      "mode": "quality-slice",
+      "repositories": ["memoria-bootstrap", "memoria-engine"],
       "read_set": [
         "AGENTS.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md#Procedura-OCR",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
         "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "write_set": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; git diff --check.",
+      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/*", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; python memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check; dopo lo sblocco verificare manifest/raw/evidence/structure JSON, hash sorgente e provenance preview.",
       "stop_conditions": [
-      "Fermarsi finche non sono disponibili reference page-scoped per le restanti pagine selezionate.",
-      "Non dichiarare accuratezza e non modificare TIFF, profili, claim o fatti verificati.",
-      "Validare JSON e git diff --check prima di chiudere il blocco."
+      "Non modificare TIFF originali, codice o asset; non scaricare o installare nulla.",
+      "Lasciare output unreviewed; non calcolare metriche senza reference verificata per 00024.",
+      "Fermarsi dopo la pagina 00024 o se manca il runtime project-local conforme richiesto da T41."
       ]
     }
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "low",
-    "task_class": "documentation",
-    "agent": "mmr_docs_editor",
-    "model": "gpt-6-luna",
-    "reasoning_effort": "low",
-    "rationale": "Selezione e registrazione documentale del prossimo micro-incremento; la calibrazione runtime resta sospesa in attesa delle reference esterne.",
+    "tier": "medium",
+    "task_class": "runtime_calibration",
+    "agent": "mmr_implementer",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "rationale": "Run tecnico circoscritto a una pagina selezionata, con pipeline e contratti OCR esistenti, output esterno e quality gate su provenance; nessuna promozione canonica.",
     "trace": [
       {
         "event": "selected",
@@ -1157,20 +1163,47 @@
         "reason": "10 test OCR PASS; PP-OCRv5 CER 0.145366/WER 0.126904, Tesseract CER 0.324046/WER 0.385787; JSON/hash/identity verificati; metriche solo page-scoped diagnostiche."
       },
       {
-        "event": "selected",
-        "at": "2026-10-02T22:15:00+02:00",
+        "event": "completed",
+        "at": "2026-10-02T22:23:00+02:00",
         "tier": "low",
         "agent": "mmr_docs_editor",
         "model": "gpt-6-luna",
         "reasoning_effort": "low",
-        "reason": "Aggiornare nota/roadmap e planner dopo la chiusura T41 su 00150; il campione stratificato resta bloccato da reference mancanti."
+        "reason": "Roadmap master allineata; quality gate documentale superato."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-02T22:41:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Eseguire il tentativo OCR/struttura sulla singola pagina T41 00024 con asset già presenti e output runtime esterno."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-02T22:41:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Delega del run PP-OCRv5/Tesseract e ricostruzione deterministica su 00024; parent mantiene planner e note, worker scrive solo nella directory runtime assegnata."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-02T22:46:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run completato su singola pagina con autorizzazione all'ambiente esistente; hash, JSON, regioni, blocchi e provenance verificati; output esterni unreviewed."
       }
     ]
   },
-  "blockers": [
-    "Mancano reference umane page-scoped verificabili per le altre pagine del campione T41 iniziale; al momento il confronto completo copre solo 00150."
-  ],
+  "blockers": [],
   "session_notes": [
+    "T41 00024 2026-10-02: su autorizzazione utente usato memoria-engine/.venv. Creato pacchetto esterno unreviewed con 76 regioni PP-OCRv5, 73 blocchi struttura, Tesseract deu (611 caratteri), manifest e preview con provenance. Hash sorgente verificato; Paddle downscale max-side 4000 annotato; nessuna accuracy dichiarata e TIFF originale invariato.",
+    "Sessione 2026-10-02: roadmap master riallineata a T41 come focus post-MVP, bloccato in attesa di reference umane page-scoped per le altre pagine del campione; la reference verificata e il confronto su 00150 restano diagnostici.",
     "Sessione 2026-09-22: PP-OCRv5 sul crop contrastato ha prodotto un candidato per la riga 5 molto divergente dalla reference umana; il confronto T38 sulla stringa isolata ha restituito CER 0.825, WER 1.0, coverage 0.0 e invention rate 1.0. Il candidato resta non approvato.",
     "Sessione 2026-09-22 T39: 4/4 test offline PASS. Contratto preview-only con resolver iniettato, output limitato a testo o [illeggibile], candidato OCR e provenance conservati; nessuna chiamata VLM live o beneficio reale dichiarato.",
     "Sessione 2026-09-22 T40 osservabilita': 3/3 test mirati PASS; summary per stato, duration_ms e throughput_items_per_second aggiunti senza scritture implicite.",
@@ -1214,6 +1247,6 @@
   ],
     "next_action": {
         "mode": "review",
-        "description": "Fornire e verificare reference human_verified page-scoped per le altre pagine T41 selezionate; quindi riprendere il confronto del campione iniziale di 8-10 pagine."
+        "description": "L'utente corregge i candidati in D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/review.md e structure-preview.md; non promuovere il contenuto senza revisione esplicita."
   }
 }
