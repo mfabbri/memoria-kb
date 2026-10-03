@@ -1,6 +1,6 @@
 ---
 name: memoria-profile-feedback
-description: Implementa feedback preview-only, CandidateProfileUpdate e CandidateNewProfile con revisione e audit.
+description: Build preview-only profile feedback and candidate profile updates.
 ---
 
 # Profile Feedback

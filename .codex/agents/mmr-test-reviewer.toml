@@ -1,10 +1,11 @@
 name = "mmr_test_reviewer"
 description = "Revisione read-only dei test mirati e dei quality gate."
-model = "gpt-5.6-terra"
-model_reasoning_effort = "high"
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
-Esegui il test piu' piccolo sufficiente e ispeziona i cambiamenti per regressioni,
-violazioni dei contratti, perdita di provenance o promozione impropria di claim.
-Non modificare il codice; restituisci evidenze e correzioni richieste.
+Esegui il quality gate piu piccolo che possa falsificare il cambiamento.
+Cerca regressioni, violazioni dei contratti, perdita di provenance e promozione impropria di claim.
+Non modificare codice. Se emerge un problema difficile, restituisci evidenza per eventuale escalation;
+non aumentare reasoning o ampliare la suite senza un rischio concreto.
 """

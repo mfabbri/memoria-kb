@@ -2,70 +2,69 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-02T22:41:00+02:00",
-  "updated_at": "2026-10-02T23:12:00+02:00",
+  "selected_at": "2026-10-03T16:34:00+02:00",
+  "updated_at": "2026-10-03T16:42:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
-      "reason": "Eseguire il primo tentativo OCR e di ricostruzione struttura sulla pagina selezionata T314-1275-00024, mantenendo gli output esterni e unreviewed in attesa di correzione umana."
+      "reason": "Estendere T41 alla pagina di calibrazione 00415, selezionata nel campione stratificato come rapporto denso con sezioni e righe tabellari."
     }
   ],
   "increment": {
-    "id": "t41-00024-ocr-structure-preview-20261002",
-    "title": "T41 primo OCR e struttura su 00024",
-    "objective": "Produrre candidati OCR PP-OCRv5/Tesseract e una ricostruzione deterministica della struttura per T314-1275-00024, con provenance completa e output esterni non revisionati.",
+    "id": "t41-00415-ocr-structure-20261003",
+    "title": "T41 run OCR strutturato 00415",
+    "objective": "Produrre un run persistente diagnostico PP-OCRv5/Tesseract e una preview strutturale per la sola pagina 00415, con manifest e provenance verificabili.",
     "scope": [
-      "Processare solo il TIFF selezionato con asset PP-OCRv5 project-local espliciti e Tesseract deu come seconda lettura se disponibile.",
-      "Conservare raw OCR, structured evidence e DocumentStructure/preview Markdown con source_region_ids e trasformazioni registrate.",
-      "Conservare identita pagina, hash, versioni/configurazioni engine, hash asset, latenza e manifest nella root runtime esterna."
+      "Eseguire PP-OCRv5, Tesseract deu e costruzione della preview strutturale sulla sola pagina T314-1275-00415.",
+      "Scrivere output e manifest nella root runtime persistente esterna, includendo hash sorgente, asset, configurazioni e provenance.",
+      "Registrare identità pagina, hash, versioni/configurazioni engine, hash asset, latenza e manifest nella root runtime esterna."
     ],
     "out_of_scope": [
-      "Elaborazione di altre pagine, crop/tile o batch.",
-      "Modifiche a TIFF originali, codice runtime o asset/modelli OCR.",
-      "Correzione automatica, traduzione generativa, metriche accuracy/CER/WER o claim.",
-      "Promozione di output a testo verificato, profilo canonico o fatto storico."
+      "Processare pagine diverse da 00415, crop/tile o batch; processare holdout 00072 o 00900.",
+      "Modificare TIFF originali, codice runtime o asset/modelli OCR; fare download o installazioni.",
+      "Revisionare/correggere il contenuto, tradurre, calcolare accuracy/CER/WER o promuovere output a testo verificato, claim o fatto storico."
     ],
     "candidate_files": [
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/*",
+      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00415.tif",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/PP-OCRv5_mobile_det_infer",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/latin_PP-OCRv5_mobile_rec_infer",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/tessdata",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/*",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Una sola pagina ha manifest, hash sorgente coerente, raw OCR, evidence/structure JSON validi e preview Markdown con provenance; ogni output resta unreviewed e nessuna accuracy viene calcolata."
+    "stop_condition": "Run 00415 creato nella root runtime persistente con TIFF/raw/output hash verificati, JSON validi, provenance risolta e preview lasciata unreviewed; nessun'altra pagina o claim modificato."
   },
   "verification": {
     "tests": [
-      "python -m json.tool memoria-bootstrap/planning/current-work.json",
-      "git diff --check."
+      "Verificare manifest e SHA-256 del TIFF/modelli/output, JSON raw/evidence/structure validi e provenance della preview; usare memoria-engine/.venv/Scripts/python.exe per validate-codex-model-routing.py; git diff --check."
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
       "result": "passed",
-      "notes": "Su autorizzazione utente e' stato usato memoria-engine/.venv (Paddle 3.3.0/PaddleOCR 3.7.0) con pesi PP-OCRv5 locali e Tesseract 5.5.3.20260724. Pacchetto esterno unreviewed: D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002; hash TIFF coerente, 76 regioni PP-OCRv5, 73 blocchi strutturali con source_region_ids, Tesseract deu 611 caratteri. JSON e provenance verificati; PP-OCRv5 ha ridimensionato a max-side 4000. Nessuna metrica accuracy e originale invariato.",
+    "notes": "Run T41 00415 completato e verificato indipendentemente: 59 regioni PP-OCRv5, 56 blocchi numbered_report; quattro JSON validi; hash di nove output e sette asset coerenti; provenance completa e tutti i source_region_ids risolti. TIFF invariato, SHA-256 BF53D3656B845655AA1C4E370E554894B10B86DA5C4F8C85DBCE3101E2E965E8. Manifest SHA-256 c0d2fefa6e7b2dd3fa73ad9a9693a6ea9ca9ede44430976360736323c0774dd4. Verificati invariati tutti gli artefatti del run 00312. Preview lasciata unreviewed/diagnostic-only; nessuna metrica o claim.",
     "task_envelope": {
-      "mode": "quality-slice",
+      "mode": "feature-slice",
       "repositories": ["memoria-bootstrap", "memoria-engine"],
       "read_set": [
         "AGENTS.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md#Procedura-OCR",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md#Discovery-campione-e-migrazione",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_benchmark.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
         "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_comparison.py",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/*", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "python -m json.tool memoria-bootstrap/planning/current-work.json; python memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check; dopo lo sblocco verificare manifest/raw/evidence/structure JSON, hash sorgente e provenance preview.",
+      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/*", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+      "test_command": "Verificare manifest/hash/provenance e JSON degli output; memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check.",
       "stop_conditions": [
-      "Non modificare TIFF originali, codice o asset; non scaricare o installare nulla.",
-      "Lasciare output unreviewed; non calcolare metriche senza reference verificata per 00024.",
-      "Fermarsi dopo la pagina 00024 o se manca il runtime project-local conforme richiesto da T41."
+      "Non modificare il TIFF originale, codice o asset; non scaricare o installare nulla.",
+      "Elaborare esclusivamente 00415 e scrivere nella sua nuova cartella runtime; preservare la run 00312 e le sue correzioni derivate.",
+      "Non revisionare o correggere OCR e preview; non aggiungere traduzioni, interpretazioni o metriche."
       ]
     }
   },
@@ -76,8 +75,89 @@
     "agent": "mmr_implementer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Run tecnico circoscritto a una pagina selezionata, con pipeline e contratti OCR esistenti, output esterno e quality gate su provenance; nessuna promozione canonica.",
+    "rationale": "Run OCR tecnico circoscritto a una pagina testuale già selezionata, usando pipeline e asset project-local esistenti; output esterni e unreviewed con gate di provenance.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-03T16:34:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Selezionato il successivo run persistente T41 sulla pagina di calibrazione 00415, layout denso con sezioni e righe tabellari."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T16:42:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run persistente 00415 completato; hash, JSON, provenance e source_region_ids verificati, output diagnostici non revisionati."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T16:35:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Esecuzione circoscritta del run PP-OCRv5/Tesseract/structure 00415 nella root runtime persistente con output diagnostici."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T14:54:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Creare derivati umanamente revisionati per 00312, applicando solo le correzioni dell'utente e conservando audit e raw."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T14:56:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Applicare le correzioni puntuali dell'utente in derivati esterni con audit; preservare tutti i raw e la preview automatica."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T16:35:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Derivati parzialmente revisionati e auditati per 00312; controllati hash sorgente/raw/output e correzioni utente."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T13:39:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run OCR tecnico circoscritto alla sola pagina di calibrazione 00312, con output esterni persistenti e revisione umana richiesta."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T14:36:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Esecuzione isolata PP-OCRv5/Tesseract e struttura per 00312 nella sola cartella run project-local esterna."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T14:41:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run 00312 e verifica indipendente di hash, JSON e source_region_ids completati; preview lasciata unreviewed per l'utente."
+      },
       {
         "event": "selected",
         "at": "2026-09-20T18:05:49+02:00",
@@ -1197,12 +1277,54 @@
         "model": "gpt-6.1-sol",
         "reasoning_effort": "medium",
         "reason": "Run completato su singola pagina con autorizzazione all'ambiente esistente; hash, JSON, regioni, blocchi e provenance verificati; output esterni unreviewed."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T10:37:00+02:00",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Registrare nel planner l'incremento di review T41 00024 e il blocco in attesa dell'input umano."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T11:57:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Processare una sola pagina testuale del campione T41 con PP-OCRv5/Tesseract e provenance project-local; cartina 00024 esclusa."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T12:01:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Delega del run completo PP-OCRv5/Tesseract e struttura per la sola pagina 00598, con output runtime esterno unreviewed."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T12:27:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run 00598 completato e structure-preview.md revisionata dall'utente il 2026-10-03; 54 regioni, 52 blocchi, provenance verificata. Raw/evidence diagnostici; metriche non calcolate."
       }
     ]
   },
   "blockers": [],
   "session_notes": [
+    "T41 00415 completata il 2026-10-03: run diagnostico con 59 regioni PP-OCRv5 e 56 blocchi, output/asset/source hash verificati, provenance e source_region_ids risolti; TIFF e 00312 invariati. Preview resta unreviewed, nessuna metrica calcolata.",
+    "T41 review 00312 completata 2026-10-03: creati i derivati umanamente revisionati e auditati, hash TIFF/TSV/raw/evidence/struttura/preview/manifest/output verificati. Review limitata ai punti indicati dall'utente; il resto della pagina resta non revisionato. L'hash audit di review.md identifica la versione d'ingresso prima dell'append della nota di review.",
+    "T41 review 00312 2026-10-03: l'utente ha fornito correzioni puntuali al testo Tesseract e alla preview strutturale. Applicarle solo in copie derivate con source_region_ids/audit; non modificare i raw o la preview automatica.",
+    "Handoff T41 2026-10-03: preview 00598 confermata corretta dall'utente dopo revisione umana completa; non riproporla. 00024 e' una cartina e resta fuori dal campione OCR testuale. Prossimo passo candidato: ricostruire il campione iniziale complessivo di 8-10 pagine stratificate, inventariando run/reference gia' disponibili (inclusi 00007, 00150 e 00598) per evitare rielaborazioni; mantenere holdout separato prima dell'estensione esplorativa a 30-50 pagine. Revisione umana dell'output OCR prodotto e' sufficiente, non serve trascrizione indipendente completa; i casi incerti restano da revisionare.",
     "T41 00024 2026-10-02: su autorizzazione utente usato memoria-engine/.venv. Creato pacchetto esterno unreviewed con 76 regioni PP-OCRv5, 73 blocchi struttura, Tesseract deu (611 caratteri), manifest e preview con provenance. Hash sorgente verificato; Paddle downscale max-side 4000 annotato; nessuna accuracy dichiarata e TIFF originale invariato.",
+    "T41 00598 2026-10-03: dopo indicazione utente esclusa la cartina 00024, processata la pagina testuale 00598. L'utente ha revisionato l'intera structure-preview.md e confermato che è corretta; preview umanamente revisionata, raw OCR/evidence diagnostici invariati, nessuna metrica calcolata. Non riproporre 00598 come pagina da revisionare.",
+    "Classificazione T41 2026-10-03: tutte le nove scansioni appaiono in tedesco. Calibrazione: 00007, 00150, 00312, 00415, 00598, 00750, 01000. Holdout riservato: 00072 e 00900, entrambi tabellari e preliminarmente poco leggibili. Il holdout non e' mai-visto per Tesseract: tutte le pagine della selezione originaria furono processate in Temp il 2026-09-26; dichiarare questa esposizione e non usarlo per tarature successive. Etichette qualitative basate sulla tavola di contatto; nessun OCR eseguito.",
     "Sessione 2026-10-02: roadmap master riallineata a T41 come focus post-MVP, bloccato in attesa di reference umane page-scoped per le altre pagine del campione; la reference verificata e il confronto su 00150 restano diagnostici.",
     "Sessione 2026-09-22: PP-OCRv5 sul crop contrastato ha prodotto un candidato per la riga 5 molto divergente dalla reference umana; il confronto T38 sulla stringa isolata ha restituito CER 0.825, WER 1.0, coverage 0.0 e invention rate 1.0. Il candidato resta non approvato.",
     "Sessione 2026-09-22 T39: 4/4 test offline PASS. Contratto preview-only con resolver iniettato, output limitato a testo o [illeggibile], candidato OCR e provenance conservati; nessuna chiamata VLM live o beneficio reale dichiarato.",
@@ -1243,10 +1365,11 @@
     "Revisione glossario 00150 2026-10-01: conferma utente human_verified per tutte le 62 occorrenze della preview. Creati derivati esterni con audit; claim_extraction_allowed e territorial_presence_claim_allowed restano false; glossario sorgente e OCR grezzo invariati.",
     "T41 reference 00150 2026-10-01: reference OcrPageReference human_verified/verified formalizzata con audit e UTF-8 corretto. Identità/hash/transform coerenti; 10 test offline PASS. PP-OCRv5 page-scoped CER 0.145366, WER 0.126904, coverage 0.215736; nessuna accuratezza generale dichiarata.",
     "T41 Tesseract 00150 2026-10-01: run singolo completato con Tesseract 5.5.3.20260724, deu, --oem 1 --psm 6; TIFF 3648x6224, SHA-256 coerente, testo/TSV e stderr esterni con hash verificati. Output unreviewed/diagnostic-only; nessuna accuracy o inferenza semantica.",
-    "T41 confronto 00150 2026-10-01: PP-OCRv5 CER 0.145366/WER 0.126904; Tesseract CER 0.324046/WER 0.385787. Reference verified e identity/hash coerenti; la reference è stata risolta nella directory fisica human-reference perché il path dichiarato human-verified era assente, discrepanza registrata nel run-summary. Metriche diagnostiche page-scoped, non generalizzabili."
+    "T41 confronto 00150 2026-10-01: PP-OCRv5 CER 0.145366/WER 0.126904; Tesseract CER 0.324046/WER 0.385787. Reference verified e identity/hash coerenti; la reference è stata risolta nella directory fisica human-reference perché il path dichiarato human-verified era assente, discrepanza registrata nel run-summary. Metriche diagnostiche page-scoped, non generalizzabili.",
+    "Run T41 00312 2026-10-03: TIFF invariato e hash coerente; 82 regioni PP-OCRv5, 61 blocchi numbered_report, raw Tesseract deu disponibili. Nove output e sette asset con hash verificati, quattro JSON validi, source_region_ids risolti/copertura completa. Manifest 9f7ee6fecba7b6b0e2408548eb731538a8fa9b6e3d4831a7c3e8251e9c16586c. Output diagnostic-only/unreviewed; nessuna accuracy. La cronologia e le associazioni data-evento restano da revisionare."
   ],
     "next_action": {
-        "mode": "review",
-        "description": "L'utente corregge i candidati in D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00024-ocr-structure-20261002/review.md e structure-preview.md; non promuovere il contenuto senza revisione esplicita."
+      "mode": "review",
+        "description": "Revisionare review.md e structure-preview.md del run 00415 confrontandoli con il TIFF; registrare solo le correzioni esplicite in derivati auditati."
   }
 }

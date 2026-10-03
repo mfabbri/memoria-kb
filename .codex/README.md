@@ -1,53 +1,69 @@
 # Codex model routing per Me.Mo.Ri.A
 
-## Runtime model policy
+## Policy attiva: v3.0
 
-The parent thread is a low-cost router:
+Routing consigliato dal progetto:
 
-- parent/controller: `gpt-5.6-luna` / `medium`;
-- discovery: mmr_scanner -> Luna / `low`;
-- docs review: mmr_docs_reviewer -> Luna / `medium`;
-- docs/planner/agent-config edits: mmr_docs_editor -> Luna / `medium`;
-- implementation: mmr_implementer -> Terra / `medium`;
-- quality review: mmr_test_reviewer -> Terra / `high`;
-- architecture/migration: mmr_architect -> GPT-6 Astra / `low`.
+- parent/controller: `gpt-6-luna` / `low`;
+- discovery: `mmr_scanner` -> GPT-6 Luna / `low`;
+- docs review: `mmr_docs_reviewer` -> GPT-6 Luna / `low`;
+- docs/planner/config: `mmr_docs_editor` -> GPT-6 Luna / `low`;
+- implementation: `mmr_implementer` -> GPT-6.1 Sol / `medium`;
+- quality review: `mmr_test_reviewer` -> GPT-6.1 Sol / `medium`;
+- architecture/migration: `mmr_architect` -> GPT-6 Astra / `low`.
 
-Project-local `[profiles.*]` are not used. Codex ignores `profiles` in a
-project-scoped `.codex/config.toml`.
+La scelta segue la famiglia GPT-6 corrente: Luna per lavoro mirato ed economico,
+GPT-6.1 Sol per lavoro tecnico complesso con buon rapporto capacita/costo, Astra
+solo per problemi ambigui o ad alto rischio. Un reasoning piu alto non e un
+quality gate automatico: si aumenta solo dopo un limite osservabile del risultato.
 
-Astra is intentionally limited to architecture/migration work. The project does
-not fan out subagents by default: one delegated agent is preferred, and parallel
-work is reserved for genuinely independent workstreams. Keep inter-agent
-messages compact and reference paths/symbols instead of duplicating file bodies.
+## Requisiti client e disponibilita
 
-## Two levels of traceability
+Per questa configurazione e consigliato Codex CLI `0.159.2` o successivo.
+GPT-6.1 Sol e soggetto a disponibilita per account/workspace. Prima di una
+sessione importante usare `/model` per verificare che `gpt-6.1-sol` sia
+selezionabile. Non sostituire silenziosamente un modello non disponibile:
+registrare il fallback nel planner e usare un modello disponibile esplicitamente.
 
-1. `memoria-bootstrap/planning/current-work.json` records the intended route.
-2. `.codex/hooks.json` records the actual runtime model for the parent and
-   subagents in:
+Project-local `[profiles.*]` non sono usati. I profili Codex sono file separati
+sotto `CODEX_HOME`; il routing di questo repository usa custom agent.
+
+## Context e token discipline
+
+- un solo subagent e il default;
+- parallelismo solo per workstream indipendenti;
+- passare task envelope, path e simboli, non copie di file;
+- skill solo on-demand: il metadata serve alla discovery, il corpo va caricato
+  solo quando il workflow e pertinente;
+- `AGENTS.md` contiene solo regole sempre valide; i dettagli vivono in skill o
+  contratti caricati su necessita;
+- test mirati prima della suite ampia; non ripetere test verdi senza nuova
+  modifica, failure o rischio residuo.
+
+## Tracciabilita
+
+1. `memoria-bootstrap/planning/current-work.json` registra la route intenzionale.
+2. `.codex/hooks.json` registra il modello effettivo in
    `memoria-bootstrap/planning/.runtime/model-routing.ndjson`.
 
-The runtime log is generated locally and ignored by Git.
+Il runtime log resta locale e ignorato da Git.
 
 ## Hook trust
 
-Project-local hooks must be reviewed/trusted by Codex after they change.
-Use `/hooks` in Codex and trust the project hook definition.
+Dopo modifiche agli hook, revisarli/autorizzarli con `/hooks`.
 
-## Delegation diagnostic
-
-The project configuration makes specialized agents available; it does not
-automatically create a subagent or select one from `current-work.json`. The
-parent/controller must explicitly delegate the routed task. For an active
-`high` route, absence of `SubagentStart` in the runtime audit means that the
-mmr_architect was not invoked; the parent must stop rather than perform the
-architecture review itself. This is an orchestrator/session capability, not a
-TOML setting that can be repaired inside the repository.
-
-## Validation
+## Validazione
 
 ```powershell
-python .\memoria-bootstrap\planning\validate-codex-model-routing.py
+python .\memoria-bootstrap\planningalidate-codex-model-routing.py
 python -m json.tool .\memoria-bootstrap\planning\current-work.json
 git diff --check
 ```
+
+## Riferimenti OpenAI (verificati 2026-10-02)
+
+- https://learn.chatgpt.com/docs/models
+- https://learn.chatgpt.com/docs/agent-configuration/subagents
+- https://learn.chatgpt.com/docs/build-skills
+- https://developers.openai.com/api/docs/guides/model-selection
+- https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra

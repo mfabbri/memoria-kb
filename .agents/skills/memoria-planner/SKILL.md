@@ -1,6 +1,6 @@
 ---
 name: memoria-planner
-description: Maintain the persistent current-work state without replacing roadmap authority.
+description: Maintain current-work.json when opening, updating or closing persistent work.
 ---
 
 # Me.Mo.Ri.A persistent planner

@@ -1,86 +1,38 @@
 # Developer Playbook
 
-This playbook is the entry point for agent-assisted development in the
-Me.Mo.Ri.A multi-repository workspace.
+Entry point di sviluppo assistito per la workspace multi-repo Me.Mo.Ri.A.
 
 ## Repository map
 
-- `memoria-bootstrap`: operating model, roadmap, playbooks, decisions and
-  contracts;
-- `memoria-engine`: Python package, CLI, pipelines, store, reports and tests;
-- `memoria-workspace`: descriptor repository; real data remains external;
-- `memoria-knowledge`: historical knowledge, terminology and models;
-- `memoria-rules`: deterministic rules, validation and LLM contracts;
-- `memoria-sources`: source registry, strategies and source-specific logic.
+- `memoria-bootstrap`: roadmap, decisioni, procedure e agent workflow;
+- `memoria-engine`: Python package, CLI, pipeline, store, report e test;
+- `memoria-workspace`: descriptor del workspace; dati reali esterni;
+- `memoria-knowledge`: conoscenza storica, terminologia e modelli;
+- `memoria-rules`: regole deterministiche, validazione e contratti LLM;
+- `memoria-sources`: registry, strategie e logiche source-specific.
 
-External data root:
-
-```text
-P:\Comune\Me.Mo.Ri.a
-```
+Workspace operativo reale: `P:\Comune\Me.Mo.Ri.a`.
 
 ## Start of session
 
-Read, in order:
+Non usare una lista fissa di documenti da leggere.
 
-1. `memoria-bootstrap/AGENTS.md`;
-2. `docs/roadmap/00-roadmap-master.md`;
-3. `docs/roadmap/01-mvp-roadmap.md`;
-4. `docs/roadmap/02-technical-roadmap.md`;
-5. `docs/funding-demo-golden-path.md`;
-6. `docs/current-next-increment.md`;
-7. `docs/decision-log.md`;
-8. one relevant vertical playbook.
+1. Codex applica `AGENTS.md`.
+2. Leggi `memoria-bootstrap/planning/current-work.json` per sapere se esiste un
+   lavoro persistente da riprendere.
+3. Apri roadmap, decision log, golden-path contract o playbook solo quando lo
+   scope corrente ne dipende.
+4. Prima del write definisci objective, repository, write set, test minimo e
+   stop condition.
 
-Do not implement code until the current increment and acceptance criteria are
-clear.
+Per selezionare un nuovo incremento usa `$memoria-roadmap-selector`, che deve
+cercare sezioni pertinenti invece di caricare roadmap complete.
 
-## Current programme priority
+## Regola di implementazione
 
-The post-migration baseline is closed. The priority lane is T29-T33:
-
-```text
-T29 contract golden path
-T30 canonical multi-source run
-T31 closed historian feedback loop
-T32 demo hardening
-T33 funding package
-```
-
-Until T33 is closed:
-
-- do not select cloud T26-T28 as the ordinary next step;
-- do not select opportunistic Q2 work unless it removes a documented demo
-  blocker;
-- do not add sources unless the selected case cannot prove multi-source merge
-  with material already available;
-- do not broaden the pilot beyond the minimum case.
-
-## Core implementation rule
-
-One session completes one small, verifiable increment.
-
-A valid increment has:
-
-- one roadmap ID;
-- explicit entry and exit criteria;
-- a minimal file set;
-- a focused test or read-only verification;
-- a documentation touchpoint;
-- a stop condition.
-
-## Funding-demo invariants
-
-Changes in T29-T33 must preserve:
-
-- one canonical demo run;
-- provenance for every historical claim;
-- explicit multi-source reconciliation;
-- visible conflicts and uncertainty;
-- human review before verified facts;
-- profile patches as preview/dry-run only;
-- at least one feedback action executed to an auditable outcome;
-- no automatic publication.
+Una sessione di modifica completa un solo micro-incremento verificabile. Un
+incremento valido ha un confine esplicito, pochi file, un test/controllo mirato,
+un touchpoint documentale solo se necessario e una stop condition.
 
 ## Repository selection
 
@@ -95,60 +47,33 @@ Changes in T29-T33 must preserve:
 
 ## Standard workflow
 
-1. **Analyze**
-   - confirm the current increment;
-   - identify the repository and minimal files;
-   - identify how the change advances the golden run.
+1. **Analyze**: conferma scope e repository; apri solo contratti pertinenti.
+2. **Implement**: modifica il minimo e riusa contratti/pipeline esistenti.
+3. **Test**: test offline mirato prima; regressione ampia solo se il rischio lo richiede.
+4. **Document**: aggiorna planner/guide solo se il comportamento o il workflow cambia.
+5. **Review**: verifica provenance, assenza di dati reali in Git e nessuna promozione automatica.
 
-2. **Design**
-   - define acceptance criteria;
-   - record an architectural/methodological decision only when needed;
-   - specify tests and data-root safety.
+## Routing Codex
 
-3. **Implement**
-   - change the minimum;
-   - prefer existing pipeline and store contracts;
-   - do not create a parallel MVP pipeline.
+La policy attiva vive in `docs/model-routing-policy.md`:
 
-4. **Test**
-   - run focused offline tests first;
-   - run wider regression tests when public behaviour changes;
-   - use dry-run before any controlled write.
+```text
+focused/docs       GPT-6 Luna / low
+implementation     GPT-6.1 Sol / medium
+quality review     GPT-6.1 Sol / medium
+architecture       GPT-6 Astra / low
+```
 
-5. **Document**
-   - update `current-next-increment.md`;
-   - update golden-path artifact map or walkthrough when impacted;
-   - update playbooks only when workflow or source-of-truth changes.
-
-6. **Review**
-   - confirm no real data entered Git;
-   - confirm no preview was promoted to publishable;
-   - confirm run, document, claim and decision IDs remain traceable.
-
-## CLI direction
-
-The installable Python CLI `memoria` is the future canonical cross-platform
-surface. PowerShell remains an accepted compatibility surface for MVP write
-workflows already validated on Windows. Do not delay the funding demo merely to
-complete CLI migration.
-
-## Continuous refactor lane
-
-Use `docs/playbooks/09-continuous-refactor.md` only for small,
-behaviour-preserving work. During T29-T33, a Q2 increment requires a direct link
-to a demo blocker and focused regression tests.
+Non aumentare reasoning preventivamente. Se un task diventa ambiguo o
+architetturale, fai escalation di tier invece di trasformare ogni review in una
+sessione high-reasoning.
 
 ## Safety constraints
 
-- Do not copy real data into Git repositories.
-- Operational writes are authorized only inside `P:\Comune\Me.Mo.Ri.a` and its
-  subdirectories, and only when required by the current documented increment.
-- Do not write outside `P:\Comune\Me.Mo.Ri.a` for real-data operations.
-- Do not delete, overwrite massively, modify canonical profiles, apply profile
-  patches, or promote canonical verified facts without a dedicated increment,
-  backup and audit trail.
-- Use fixture data for tests.
-- Do not scrape aggressively.
-- Do not save credentials or session secrets.
-- Do not merge profile patches automatically.
-- Do not infer that `no_results` disproves a historical fact.
+- Non copiare dati reali nei repository Git.
+- Scritture sui dati reali solo nell'incremento esplicitamente autorizzato, con
+  backup/audit quando il contratto lo richiede.
+- Non salvare credenziali o segreti.
+- Non fare scraping aggressivo, merge automatici o pubblicazione automatica.
+- `no_results` non dimostra l'inesistenza di un fatto storico.
+- Refactor ampi richiedono una decisione dedicata.

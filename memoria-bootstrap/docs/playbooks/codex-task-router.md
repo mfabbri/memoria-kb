@@ -1,70 +1,48 @@
 # Codex Task Router
 
-## Routing canonico
+## Routing canonico v3.0
 
 | Tier | Richiesta | Agent | Modello / effort |
 |---|---|---|---|
-| `low` | trovare file/funzioni | `mmr_scanner` | Luna / low |
-| `low` | verificare docs/contratti | `mmr_docs_reviewer` | Luna / medium |
-| `low` | modificare solo docs/planner/config agent | `mmr_docs_editor` | Luna / medium |
-| `medium` | fix/micro-feature runtime | `mmr_implementer` | Terra / medium |
-| `review` | audit, regressione, edge case | `mmr_test_reviewer` | Terra / high |
-| `high` | architettura, migrazione, conflitti di contratto | `mmr_architect` | Astra / low |
+| `low` | trovare file/funzioni | `mmr_scanner` | GPT-6 Luna / low |
+| `low` | verificare docs/contratti | `mmr_docs_reviewer` | GPT-6 Luna / low |
+| `low` | modificare solo docs/planner/config agent | `mmr_docs_editor` | GPT-6 Luna / low |
+| `medium` | fix/micro-feature runtime | `mmr_implementer` | GPT-6.1 Sol / medium |
+| `review` | audit, regressione, edge case | `mmr_test_reviewer` | GPT-6.1 Sol / medium |
+| `high` | architettura, migrazione, conflitti di contratto | `mmr_architect` | GPT-6 Astra / low |
 
-Il parent Luna/medium classifica, delega e sintetizza. Non deve assorbire
-direttamente task medium/review/high. Astra e' riservato al tier high e parte da
-reasoning `low`; un effort maggiore non va usato per compensare accessi o
-requisiti mancanti.
+Il parent GPT-6 Luna/low classifica, delega e sintetizza. Astra e riservato ai
+problemi realmente high. Non alzare reasoning per accessi o contesto mancanti;
+se il problema cambia natura, cambia tier in modo esplicito.
 
-Token discipline: una delega per default. Parallelizzare solo workstream
-indipendenti; passare task envelope, path e simboli anziche' contenuti duplicati.
+## Procedura minima
 
-## Procedura
+1. Delimita objective, read/write set, test e stop condition.
+2. Esegui `$memoria-model-router` una sola volta per il task sostanziale.
+3. Registra il routing nel planner prima della delega/write.
+4. Delega al custom agent; non fare fan-out salvo workstream indipendenti.
+5. Verifica diff e test mirati.
+6. Registra escalation/fallback prima di cambiare modello/tier.
+7. Aggiorna planner e solo i touchpoint documentali realmente impattati.
 
-1. Crea il task envelope con `$memoria-session`.
-2. Esegui `$memoria-model-router`.
-3. Registra il routing intenzionale nel planner.
-4. Delega al custom agent.
-5. Attendi la restituzione del delegato; una delega pendente non è un risultato
-   e non autorizza la risposta finale.
-6. Controlla il diff effettivo nel worktree condiviso e verifica che resti nel
-   `write_set`; non assumere che una patch sia stata applicata o integrata.
-7. Esegui il quality gate pertinente, inclusi i test mirati e i controlli
-   documentali richiesti.
-8. Registra escalation/fallback prima di cambiare tier.
-9. Aggiorna planner e documentation touchpoint con risultato, file modificati,
-   test, rischi residui e prossimo passo; solo allora chiudi la sessione.
+## Availability gate
+
+`/model` mostra i modelli effettivamente disponibili. GPT-6.1 Sol puo essere in
+rollout: se manca, il task non deve fingere di averlo usato. Registra il fallback
+prima dell'esecuzione e conserva l'audit runtime separato.
 
 ## Execution gate per task runtime
 
-Uno stato `selected` o `in_progress` con tier `medium` e write set runtime e'
-un impegno di esecuzione nella sessione corrente, non un risultato di planning.
-Subito dopo il routing il parent deve avviare la delega oppure, se il subagent
-non e' callable, registrare il fallback consentito ed eseguire direttamente lo
-slice delimitato.
-
-Prima della risposta finale deve esistere una delle sole tre evidenze seguenti:
+Un task `medium` selezionato e un impegno di esecuzione nella sessione corrente.
+Prima della risposta finale deve esistere almeno una di queste evidenze:
 
 - diff runtime entro il write set e quality gate eseguito;
-- blocco reale, riproducibile e registrato nel planner;
-- invalidazione del candidato da roadmap o decision log, anch'essa registrata.
+- blocco reale e riproducibile registrato nel planner;
+- invalidazione del candidato da roadmap/decision log registrata.
 
-Aggiornare solo planner, note o playbook non soddisfa questo gate. Non usare
-`next_action: resume` per rinviare un task runtime eseguibile senza un blocco
-reale: in quel caso la sessione resta aperta fino a esecuzione o blocco.
+Solo aggiornare planner o note non completa un task runtime.
 
-## Regola di chiusura
+## Chiusura
 
-Il parent non può dichiarare un incremento completato, né presentare una
-sessione come conclusa, se non ha verificato almeno:
-
-- stato finale dell'agente o blocco documentato;
-- `git diff`/`git status` e corrispondenza con il write set;
-- quality gate passato o fallito esplicitamente;
-- planner aggiornato con l'esito reale.
-
-Se il risultato è solo documentale, va dichiarato come tale. Se il task
-richiede codice ma il diff runtime è vuoto, la sessione resta `in_progress` o
-`blocked`: non va chiusa come avanzamento dell'implementazione.
-
-Gli hook Codex registrano separatamente il model slug effettivo.
+Verificare stato agente/blocco, `git diff`/`git status`, quality gate e planner.
+Gli hook registrano separatamente il model slug effettivamente eseguito.

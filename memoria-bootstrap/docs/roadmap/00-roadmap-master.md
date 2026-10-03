@@ -151,13 +151,16 @@ immagine
 Tesseract resta fallback/comparatore. VLM solo su crop ambigui e soltanto dopo
 metriche con reference umana. PP-StructureV3 e Docling restano fuori dal
 critical path. Il documento autorevole e'
-`memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`; la sequenza tecnica e' T35-T40.
+`memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`; la sequenza tecnica e' T35-T42.
 
 ## Stato corrente
 
-Focus successivo: **T35 - PP-OCRv5 structured evidence contract e adapter**.
-T34b non e' piu' un blocker; la fase esplorativa OCR/layout e' stata tradotta in
-una sequenza implementativa T35-T40.
+Focus successivo: **T41 - Calibrazione OCR su campione reale stratificato**.
+T35-T40 e T42 sono completate; T41 ha reference verificata e confronto engine
+page-scoped per `T314-1275-00150`, ma resta bloccata finche' non sono disponibili
+reference verificabili per le altre pagine del campione iniziale da 8-10.
+La calibrazione resta diagnostica e non dichiara accuratezza generale. T34b non
+e' piu' un blocker e l'apertura post-MVP procede secondo la selezione roadmap.
 
 Completato:
 

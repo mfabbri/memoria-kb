@@ -32,9 +32,11 @@ repository. Il planner deve essere marcato `superseded` e ricalcolato.
 - non riscrivere il file con una copia template durante gli aggiornamenti del
   pacchetto Codex.
 
-La struttura è validabile con `current-work.schema.json`. Se `jsonschema` è
-installato:
+La struttura è validabile con `current-work.schema.json`. Nel workspace
+Me.Mo.Ri.A Windows, `jsonschema` è installato nel virtualenv
+`memoria-engine/.venv` (versione `4.26.0`, verificata il 2026-10-03). Per
+eseguire la validazione completa del planner e del routing, usare da root:
 
-```bash
-python -m jsonschema -i planning/current-work.json planning/current-work.schema.json
+```powershell
+& .\memoria-engine\.venv\Scripts\python.exe .\memoria-bootstrap\planning\validate-codex-model-routing.py
 ```

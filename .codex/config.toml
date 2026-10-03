@@ -1,19 +1,24 @@
 # Me.Mo.Ri.A Codex model routing.
-# Project-local [profiles.*] are intentionally absent: Codex ignores them here.
-# The parent is a low-cost router; specialized agents perform substantive work.
+# GPT-6 family policy v3.0 (2026-10-02).
+# Keep the parent inexpensive; delegate substantive work to explicit specialists.
 
-model = "gpt-5.6-luna"
-model_reasoning_effort = "medium"
-plan_mode_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "low"
+plan_mode_reasoning_effort = "low"
 
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 
+# Keep the skill catalog small. Skill bodies are loaded only when selected.
+[skills]
+max_context_tokens = 2000
+
 [agents]
 enabled = true
 max_concurrent_threads_per_session = 3
-default_subagent_model = "gpt-5.6-terra"
-default_subagent_reasoning_effort = "medium"
+# Safe default for ad-hoc subagents. Named project agents override it explicitly.
+default_subagent_model = "gpt-6-luna"
+default_subagent_reasoning_effort = "low"
 interrupt_message = true
 
 [agents.mmr_scanner]

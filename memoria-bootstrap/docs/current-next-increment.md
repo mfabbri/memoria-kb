@@ -1,5 +1,164 @@
 # Current Next Increment
 
+## Run T41 diagnostico 00415 - 2026-10-03
+
+Completato il run della sola pagina `T314-1275-00415.tif` nella cartella
+runtime persistente
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00415-ocr-structure-20261003\`.
+Il TIFF sorgente (22.705.764 byte, SHA-256
+`bf53d3656b845655aa1c4e370e554894b10b86da5c4f8c85dbce3101e2e965e8`) e' stato
+processato invariato. PP-OCRv5 ha prodotto 59 regioni; il profilo
+`numbered_report` ha generato 56 blocchi. Tesseract `deu` ha prodotto TXT e TSV.
+Il manifest ha SHA-256
+`c0d2fefa6e7b2dd3fa73ad9a9693a6ea9ca9ede44430976360736323c0774dd4`.
+Verificati quattro JSON, hash di nove output e sette asset, provenance e
+risoluzione completa dei `source_region_ids`. TIFF, codice, asset e run 00312
+sono rimasti invariati. Output `unreviewed`/`diagnostic-only`: la struttura
+densa e le righe tabellari richiedono revisione umana; nessuna metrica o claim.
+
+Per la revisione aprire `review.md` e `structure-preview.md` nella cartella run
+indicata e confrontare la preview con il TIFF. Il holdout `00072`/`00900` resta
+riservato.
+
+## Revisione parziale T41 00312 - 2026-10-03
+
+Le correzioni puntuali fornite dall'utente sono state applicate in copie
+derivate nella cartella run persistente
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00312-ocr-structure-20261003\`:
+`human-reviewed-tesseract.txt`, `human-reviewed-structure-preview.md` e
+`human-review-audit.json`. La review copre esclusivamente gli elementi indicati;
+il resto della pagina rimane non revisionato. Raw, evidence, struttura e
+preview automatica sono invariati. Hash del TIFF, TSV raw e derivati verificati;
+l'audit conserva l'hash di `review.md` allo stato d'ingresso, prima della nota
+aggiunta per registrare questa revisione. Non sono state calcolate metriche né
+promossi claim. Eventuali ulteriori correzioni dell'utente richiedono un nuovo
+passaggio auditato; altrimenti selezionare il prossimo micro-incremento T41
+secondo la roadmap.
+
+## Stato T41 aggiornato - revisione 00312
+
+Il campione iniziale e' stato consolidato e il run della pagina `00312` e'
+completato. La revisione utente ha confermato correzioni puntuali, registrate
+nei derivati e nell'audit descritti sopra; la pagina resta solo parzialmente
+revisionata. Il holdout `00072`/`00900` resta riservato e non va usato per
+ulteriori tarature; entrambe le pagine erano gia' state processate da Tesseract
+nel pilot precedente.
+
+## Handoff storico T41 - campione iniziale OCR
+
+La pagina `T314-1275-00598` e' stata processata e l'intera preview
+`structure-preview.md` e' stata confermata corretta dall'utente il 2026-10-03.
+Non riproporla per una nuova revisione. `T314-1275-00024` e' una cartina:
+escluderla dal campione OCR testuale e trattarla con un percorso cartografico
+distinto.
+
+Prossimo passo candidato: selezionare un campione iniziale complessivo di 8-10
+pagine testuali rappresentative per leggibilita', lingua e layout, annotando
+gli strati prima del confronto. Inventariare i run e le revisioni gia'
+disponibili (incluse `00007`, `00150` e `00598`) per evitare rielaborazioni e
+stabilire quali possano contribuire al campione; verificare gli input mancanti. Per
+ogni pagina conservare raw PP-OCRv5/Tesseract e preview strutturata con
+provenance; raccogliere la revisione umana dell'output OCR prodotto, senza
+richiedere una trascrizione indipendente completa. Tenere separato un holdout
+prima di estendere il campione esplorativo a 30-50 pagine. Una sola pagina
+revisionata non calibra soglie autonome: misurare errori, omissioni, invenzioni,
+coverage e struttura per strato; i casi incerti devono restare da revisionare.
+
+### Inventario campione T41 - 2026-10-03
+
+Il pilot documentato il 2026-09-26 aveva selezionato dieci pagine:
+`00007`, `00024`, `00072`, `00150`, `00312`, `00415`, `00598`, `00750`,
+`00900`, `01000`. Esclusa `00024` perché cartina, restano nove candidate
+testuali nel range previsto. I TIFF delle altre nove sono presenti nella
+directory sorgente dichiarata.
+
+Output riusabili verificati nella root runtime: `00007` ha raw prediction ed
+evidence PP-OCRv5 nei bundle smoke project-local e una reference/confronto
+page-scoped già revisionati; il Tesseract del pilot 2026-09-26 risulta invece
+registrato solo sotto Temp e non viene dato per persistente. `00150` ha
+calibrazione, structure/evidence, raw PP-OCRv5, Tesseract e reference verificata
+con confronto page-scoped. `00598` ha raw PP-OCRv5/Tesseract, evidence,
+struttura e preview confermata dall'utente. Per `00072`, `00312`, `00415`,
+`00750`, `00900` e `01000` sono stati verificati i TIFF, ma non un pacchetto
+PP-OCRv5 persistente nella root dei run.
+
+La selezione originaria era descritta come stratificata, ma non conservava
+l'assegnazione pagina per pagina a leggibilità, lingua e layout. Le etichette
+esplicite sono ora registrate qui sotto; l'holdout è separato e non va usato
+per ulteriori tarature. Non riprocessare `00007`, `00150` o `00598` senza una
+lacuna specifica di provenance o output.
+
+Classificazione visiva preliminare del contatto pagina. La lingua appare
+tedesca in tutte le nove scansioni; leggibilita' e layout sono etichette
+descrittive da rivedere durante la correzione umana, non misure OCR.
+
+| Pagina | Lingua | Leggibilita' preliminare | Layout osservato |
+|---|---|---|---|
+| `00007` | tedesco | alta | prosa dattiloscritta, paragrafi continui |
+| `00072` | tedesco | bassa | registro a griglia con annotazioni manoscritte |
+| `00150` | tedesco | media | elenco amministrativo denso, piu' colonne |
+| `00312` | tedesco | alta | elenco cronologico dattiloscritto, una colonna |
+| `00415` | tedesco | medio-bassa | rapporto denso con sezioni e righe tabellari |
+| `00598` | tedesco | media | testo dattiloscritto a paragrafi numerati |
+| `00750` | tedesco | bassa | modulo/registro nella parte bassa, ampia area vuota |
+| `00900` | tedesco | bassa | tabella ruotata, testo minuto |
+| `01000` | tedesco | media | elenco a due colonne con timbri e note manoscritte |
+
+Suddivisione operativa: calibrazione `00007`, `00150`, `00312`, `00415`,
+`00598`, `00750`, `01000`; holdout riservato `00072`, `00900`, scelti per
+layout tabellare difficile e leggibilita' bassa. Tutte le dieci pagine del pilot
+originario, inclusa la cartina esclusa, erano state processate con Tesseract
+`deu` il 2026-09-26 in una directory Temp. Di conseguenza questo holdout non e'
+mai-visto per Tesseract; va tenuto fuori da ulteriori tarature e usato solo
+come controllo riservato, dichiarando la precedente esposizione.
+
+Nessun nuovo OCR e' stato eseguito per questa classificazione.
+
+## T41 OCR e struttura 00312 - 2026-10-03
+
+Run completato sulla sola pagina `T314-1275-00312.tif` con input invariato,
+SHA-256 `dc07ad4b397945a03909e2af8278ea110e0d5c6cc8ae021dcb519ac6f75f84f2`,
+dimensioni 3632x6208, 22.548.068 byte. Output nella root runtime persistente:
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00312-ocr-structure-20261003\`.
+
+PP-OCRv5 ha prodotto 82 regioni in circa 41.986 ms; Tesseract 5.5.3.20260724,
+lingua `deu`, OEM 1/PSM 6, ha prodotto TXT e TSV in circa 2.136 ms. La preview
+usa il profilo disponibile `numbered_report` e contiene 61 blocchi. Il profilo
+non interpreta la cronologia né associa date ed eventi; questi aspetti sono
+esplicitamente lasciati alla revisione umana.
+
+La pagina è stata passata intera e senza preprocessing applicativo, crop o
+tile. PaddleOCR ha ridimensionato internamente la detection a
+`max_side_limit=4000`; input, parametri, versioni, sette hash asset, latenze,
+hash output e provenance sono nel `manifest.json`. SHA-256 del manifest:
+`9f7ee6fecba7b6b0e2408548eb731538a8fa9b6e3d4831a7c3e8251e9c16586c`.
+La verifica indipendente ha confermato i nove hash output, i quattro JSON e la
+risoluzione/copertura di tutti gli 82 `source_region_ids`.
+
+Tutti gli output sono `unreviewed`/`diagnostic-only`; non sono state calcolate
+accuracy, CER o WER e non è stata prodotta una traduzione. Per la revisione
+aprire `review.md` e confrontare `structure-preview.md` con il TIFF originale.
+
+## T41 OCR e struttura testuale 00598 - 2026-10-03
+
+Su indicazione dell'utente, `T314-1275-00024` è esclusa dal flusso OCR
+testuale perché è una cartina e richiede un trattamento distinto. Tra le pagine
+del campione T41 non ancora processate, `T314-1275-00598` è stata selezionata
+dopo una verifica visiva: è una scansione dattiloscritta con paragrafi numerati.
+Il run PP-OCRv5/Tesseract sulla sola pagina `00598` è completato. Ha prodotto
+54 regioni PP-OCRv5, 52 blocchi `numbered_report` e output Tesseract testo/TSV
+nella cartella esterna
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00598-ocr-structure-20261003\`.
+Lo SHA-256 della TIFF è
+`2bbf335032236ebad42afae52c832ba2da301566a467fb765848619df0b0fd28`; hash di
+originale, asset e output, JSON e provenance `source_region_ids` verificati.
+Il 2026-10-03 l'utente ha revisionato l'intera `structure-preview.md` e ne ha
+confermato la correttezza, incluse le correzioni di allineamento del modulo e
+la rimozione dei due marcatori/segni spurii. La preview è quindi revisionata
+umanamente; raw OCR ed evidence restano output diagnostici originali e invariati.
+Nessuna metrica di accuratezza è stata calcolata. `00024` resta esclusa dal
+flusso OCR testuale perché è una cartina e richiede un trattamento distinto.
+
 ## T41 primo OCR e struttura 00024 - 2026-10-02
 
 Il TIFF `T314-1275-00024.tif` e' stato identificato (5680 x 6096, 34,625,988

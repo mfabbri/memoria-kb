@@ -1,13 +1,13 @@
 # 01 Start Session
 
-Leggere:
+Carica solo il contesto necessario al task.
 
-1. `memoria-bootstrap/AGENTS.md`;
-2. le tre roadmap in `docs/roadmap/`;
-3. `docs/funding-demo-golden-path.md`;
-4. `docs/current-next-increment.md`;
-5. `docs/decision-log.md`;
-6. un solo playbook verticale pertinente.
+1. `AGENTS.md` e `memoria-bootstrap/planning/current-work.json`.
+2. Se esiste lavoro persistente aperto, apri solo i riferimenti citati dal planner.
+3. Se serve scegliere un nuovo incremento, usa `$memoria-roadmap-selector`, che
+   cerca e apre solo le sezioni pertinenti delle roadmap.
+4. Usa un solo playbook/skill verticale quando il task lo richiede.
 
-Non modificare file prima di avere identificato incremento, repository,
-acceptance criteria, test e impatto sulla golden run.
+Prima di modificare file devono essere chiari objective, write set, test minimo e
+stop condition. Non leggere preventivamente tutte le roadmap, il decision log o
+la golden run per modifiche che non li coinvolgono.

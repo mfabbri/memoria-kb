@@ -1,6 +1,6 @@
 ---
 name: memoria-quality-gate
-description: Verifica test, contratti, provenance, audit e documentazione dopo un micro-incremento.
+description: Run the targeted quality gate after a Me.Mo.Ri.A micro-increment.
 ---
 
 # Quality Gate

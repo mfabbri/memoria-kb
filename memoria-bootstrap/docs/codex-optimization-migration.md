@@ -1,45 +1,56 @@
 # Migrazione ai workflow Codex ottimizzati
 
-## Stato v2
+Data aggiornamento: 2026-10-02
 
-Il routing project-local usa custom agent, non `[profiles.*]`.
+## Stato v3
 
-La sessione principale e' Luna/medium e ha ruolo di router/controller.
-Il lavoro viene delegato in base al task:
+Il routing project-local usa custom agent e policy `3.0`:
 
 ```text
-discovery/docs          -> Luna
-implementation          -> Terra
-quality review          -> Terra/high
-architecture/migration  -> Astra/low
+controller/discovery/docs -> GPT-6 Luna / low
+implementation            -> GPT-6.1 Sol / medium
+quality review             -> GPT-6.1 Sol / medium
+architecture/migration     -> GPT-6 Astra / low
 ```
 
-## Tracciabilita'
+La configurazione non usa `[profiles.*]` project-local. I profili Codex moderni
+sono file separati sotto `CODEX_HOME`; il repository usa invece custom agent
+versionati per rendere il routing riproducibile.
 
-Il planner versiona la route scelta.
-Gli hook registrano il modello effettivo su SessionStart/SubagentStart/SubagentStop
-in un log NDJSON locale ignorato da Git.
+## Perche cambia
 
-Questo evita di confondere "modello richiesto" con "modello realmente avviato".
+- GPT-6 Luna sostituisce GPT-5.6 Luna per lavoro focalizzato e ad alto volume.
+- GPT-6.1 Sol sostituisce Terra nei task tecnici sostanziali e nella review.
+- Astra resta limitato al tier high.
+- Reasoning parte basso/medio; non viene alzato preventivamente.
 
-## Aggiornamento Astra e token 2026-09-20
+## Context optimization
 
-Il tier high usa ora GPT-6 Astra con reasoning `low`, al posto di Sol/high.
-Luna e Terra restano invariati per discovery, documentazione e implementazione
-ordinaria. La scelta segue la raccomandazione di partire con reasoning piu' basso
-e aumentare capacita' solo quando il task lo richiede.
+La migrazione riduce anche scaffolding non necessario:
 
-Per contenere i token, non fare fan-out automatico: un solo subagent e' il
-default. Passare path, simboli e task envelope invece di copiare file nei
-messaggi inter-agent; ampliare test o riletture solo dopo nuove modifiche, failure
-o rischi concreti.
+- `AGENTS.md` contiene solo invarianti e rimandi contestuali;
+- le skill sono invocate on-demand, non tutte a inizio sessione;
+- le descrizioni skill sono corte e specifiche;
+- un solo subagent e il default;
+- file e roadmap non vengono duplicati nei prompt inter-agent;
+- test mirati prima di suite estese.
+
+## Compatibilita
+
+I planner storici v2.0/v2.1 restano validi. Solo i nuovi routing attivi devono
+usare v3.0. Non riscrivere la cronologia del planner per cambiare nomi modello.
+
+GPT-6.1 Sol e soggetto a disponibilita dell'account/workspace. Se `/model` non
+lo mostra, non mascherare l'errore: registra il fallback e scegli esplicitamente
+un modello disponibile secondo le indicazioni correnti di Codex.
 
 ## Validazione
 
 ```powershell
-python .\memoria-bootstrap\planning\validate-codex-model-routing.py
+python .\memoria-bootstrap\planningalidate-codex-model-routing.py
 python -m json.tool .\memoria-bootstrap\planning\current-work.json
 git diff --check
 ```
 
-Dopo la prima riapertura di Codex, revisionare e autorizzare gli hook con `/hooks`.
+Dopo modifiche agli hook, usare `/hooks`. Per controllare disponibilita modello,
+usare `/model` e `/status`.

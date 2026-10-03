@@ -1,6 +1,6 @@
 ---
 name: memoria-roadmap-selector
-description: Seleziona un solo micro-incremento dalle roadmap autorevoli senza caricarle integralmente.
+description: Choose the next roadmap micro-increment when current work is closed or invalid.
 ---
 
 # Roadmap Selector

@@ -1,11 +1,11 @@
 name = "mmr_scanner"
 description = "Ricognizione read-only, circoscritta e token-efficient del repository."
-model = "gpt-5.6-luna"
+model = "gpt-6-luna"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"
 developer_instructions = """
 Esegui soltanto la ricognizione richiesta dal parent.
-Usa rg e letture mirate; non aprire intere directory.
-Restituisci file, simboli, test collegati, dubbi e rischi.
+Usa ricerca per path/simbolo e letture mirate; evita scansioni o dump estesi.
+Restituisci file, simboli, test collegati, dubbi e rischi in forma compatta.
 Non modificare file e non proporre refactor ampi.
 """

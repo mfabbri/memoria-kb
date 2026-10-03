@@ -1,6 +1,6 @@
 ---
 name: memoria-source-registry
-description: Modifica una fonte nel registry dichiarativo a quattro livelli con fixture e parsing offline.
+description: Change one declarative source definition with offline fixtures and tests.
 ---
 
 # Source Registry

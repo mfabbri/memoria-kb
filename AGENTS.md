@@ -1,78 +1,40 @@
 # AGENTS.md — Me.Mo.Ri.A
 
-Questo file è l'entrypoint operativo per Codex e per gli altri coding agent.
-Le regole più specifiche possono essere aggiunte con `AGENTS.md` locali nelle
-sottocartelle, senza duplicare qui i dettagli del dominio.
+Entry point operativo per Codex. Mantieni qui solo regole valide per quasi ogni
+task; dettagli e workflow verticali vivono nelle skill e nei contratti dedicati.
 
 ## Bootstrap minimo
 
-All'inizio di una sessione:
-
-1. leggi questo file;
-2. leggi `memoria-bootstrap/planning/current-work.json`;
-3. usa le skill `$memoria-session`, `$memoria-planner` e `$memoria-model-router`;
-4. riprendi l’incremento solo se è ancora aperto e coerente con roadmap e decision log;
-5. altrimenti usa `$memoria-roadmap-selector` e aggiorna il planner;
-6. carica una sola skill verticale, solo quando il task la richiede.
+1. Leggi questo file.
+2. Leggi `memoria-bootstrap/planning/current-work.json` solo per capire se esiste
+   lavoro persistente da riprendere.
+3. Carica documenti e skill in modo contestuale, non preventivo.
+4. Per un write task o una delega usa `$memoria-session`; usa
+   `$memoria-model-router` una sola volta dopo che scope e rischio sono chiari.
+5. Usa `$memoria-planner` solo quando devi aprire, aggiornare o chiudere lavoro
+   persistente. Carica al massimo una skill verticale pertinente.
 
 Non leggere automaticamente tutte le roadmap, tutti i playbook o le run reali.
 
-Su Windows:
+## Routing Codex
 
-1. usa `apply_patch` per le modifiche manuali solo quando la sandbox processuale di Codex e' operativa;
-2. se compare un errore infrastrutturale come `windows sandbox`, `spawn setup refresh`, `setup refresh had errors` o `helper_unknown_error`, non ritentare lo stesso `apply_patch` e non entrare in un ciclo di escalation: segnala il blocco infrastrutturale e interrompi i tool che richiedono quella sandbox;
-3. se i normali processi partono ma fallisce solo `apply_patch`, e la modifica resta confinata ai repository Git, e' ammesso un solo fallback deterministico tramite Python o `git apply`, seguito da `git diff --check`, diff mirato e test pertinenti;
-4. non usare `Set-Content`, `Out-File` o riserializzazione JSON come fallback;
-5. sui JSON modificati esegui `json.tool`; controlla il BOM solo se il parser lo segnala;
-6. non confondere la sandbox processuale di Codex con le modalita' applicative Me.Mo.Ri.A denominate `--sandbox`, che restano preview-only e seguono i propri contratti.
+Policy canonica: `memoria-bootstrap/docs/model-routing-policy.md`.
 
+```text
+focused/read-only/docs -> GPT-6 Luna / low
+implementation        -> GPT-6.1 Sol / medium
+quality review         -> GPT-6.1 Sol / medium
+architecture/migration -> GPT-6 Astra / low
+```
 
-## Routing modelli Codex
+Il parent usa `gpt-6-luna` / `low` come controller. Delega lavoro sostanziale al
+custom agent appropriato. Non aumentare reasoning per compensare file, permessi
+o requisiti mancanti. Se un modello non e disponibile, registra il fallback
+prima dell'esecuzione; non sostituirlo silenziosamente.
 
-La sessione principale usa `gpt-5.6-luna` con reasoning `medium` come
-router/controller a basso costo. Il parent deve classificare e delegare il
-lavoro sostanziale al custom agent appropriato. Se la delega non e' disponibile,
-puo' eseguire direttamente un micro-slice `medium` gia' delimitato dal planner,
-con fallback esplicito, write_set invariato e quality gate finale. Non esegue
-direttamente task `review` o `high`.
-
-Prima di delegare o modificare file, `$memoria-model-router` classifica il task
-in base alla forma e al rischio del lavoro, non alla dimensione del repository:
-
-- `low`: discovery read-only -> `mmr_scanner` / Luna `low`;
-- `low`: verifica documentale -> `mmr_docs_reviewer` / Luna `medium`;
-- `low`: modifica solo docs/planner/config agent -> `mmr_docs_editor` / Luna `medium`;
-- `medium`: codice o micro-feature entro contratti esistenti -> `mmr_implementer` / Terra `medium`;
-- `review`: regressioni, edge case, provenance o quality gate -> `mmr_test_reviewer` / Terra `high`;
-- `high`: architettura, migrazioni o trade-off multi-repository -> `mmr_architect` / Astra `low`.
-
-Ogni selezione intenzionale va registrata in
-`memoria-bootstrap/planning/current-work.json` nel blocco `routing`.
-Escalation e fallback devono essere registrati prima della nuova delega o del
-fallback diretto del parent. Il fallback diretto e' ammesso solo per codice o
-config runtime entro contratti esistenti; review, migrazioni, architettura e
-conflitti di contratto richiedono ancora l'agente dedicato.
-
-La traccia runtime effettiva e' separata dal planner: gli hook Codex registrano
-il model slug realmente usato per sessione e subagent in
-`memoria-bootstrap/planning/.runtime/model-routing.ndjson`. Il file runtime e'
-locale e ignorato da Git; il planner conserva invece la decisione auditabile.
-
-Disciplina token/context:
-
-- usa un solo subagent alla volta come default; il parallelismo richiede task
-  realmente indipendenti e un beneficio concreto di qualita' o latenza;
-- non duplicare nei messaggi inter-agent il contenuto di file gia' accessibili:
-  passa path, simboli, task envelope e risultati sintetici;
-- non rileggere file invariati dopo una delega salvo conflitto, diff inatteso o
-  quality gate che lo richieda;
-- esegui il test piu' piccolo che dimostra il cambiamento; amplia o ripeti i test
-  solo dopo nuove modifiche, failure o rischi residui;
-- non aumentare model tier o reasoning per compensare file, permessi, fonti o
-  requisiti mancanti.
-
-Non usare profili project-local `[profiles.*]`: Codex li ignora nella
-`.codex/config.toml` del progetto.
+Token/context: un solo subagent per default, messaggi inter-agent compatti,
+path/simboli al posto di file copiati, letture e test mirati prima di scansioni o
+suite ampie.
 
 ## Principio archivistico
 
@@ -81,47 +43,50 @@ fonti -> documenti -> evidenze -> riconciliazione -> schede
        -> revisione umana -> pubblicazione
 ```
 
-Nessun fatto storico diventa pubblicabile senza fonte tracciabile e decisione
-umana. Una pagina risultati produce candidati, non fatti. Solo un documento o
-record identificabile può sostenere un `EvidenceClaim`.
+Una pagina risultati produce candidati, non fatti. Solo un documento o record
+identificabile puo sostenere un `EvidenceClaim`; la pubblicazione richiede
+provenance e decisione umana.
 
-## Confini dei repository
+## Confini repository
 
-- `memoria-engine`: codice, modelli, CLI, test e migrazioni.
-- `memoria-workspace`: configurazione operativa e manifest; niente logica.
+- `memoria-engine`: codice, CLI, test e migrazioni.
+- `memoria-workspace`: configurazione/manifest, niente logica di dominio.
 - `memoria-knowledge`: conoscenza documentata e contratti semantici.
-- `memoria-rules`: regole deterministiche derivate da conoscenza approvata.
-- `memoria-sources`: registry e definizioni dichiarative delle fonti.
+- `memoria-rules`: regole deterministiche e contratti LLM.
+- `memoria-sources`: registry e definizioni delle fonti.
 - `memoria-bootstrap`: roadmap, decisioni, procedure e configurazione agent.
 
-Il codice non deve incorporare dati storici reali. I dati reali restano nel
-workspace esterno configurato dall'utente.
+I dati storici reali restano nel workspace esterno configurato dall'utente, non
+nel codice o nelle fixture Git.
 
 ## Regole operative
 
-- Un solo micro-incremento per sessione.
-- Scope, file candidati, test e stop condition devono essere dichiarati prima
-  della modifica.
-- Preferire fixture offline e test mirati.
-- Non ampliare il numero di fonti salvo richiesta esplicita.
-- Non fare scraping aggressivo né salvare credenziali, cookie o token.
+- Un solo micro-incremento verificabile per sessione di modifica.
+- Prima del write: scope, write_set, test minimo e stop condition chiari.
+- Preferire fixture offline e parsing deterministico.
+- Non fare scraping aggressivo; non salvare credenziali, cookie o token.
 - Non approvare claim, risolvere conflitti storici o pubblicare schede.
-- Le patch ai profili sono `preview-only` fino a revisione e audit.
-- Mantenere compatibili CLI e wrapper pubblici; evitare nuove catene manuali di
-  parametri quando la CLI può offrire discovery o workflow guidato.
+- Le patch ai profili restano preview-only fino a review e audit.
+- Non fare refactor ampi senza decisione esplicita.
 - Aggiornare solo la documentazione direttamente impattata.
-- Il planner conserva stato operativo, ma roadmap e decision log restano autoritativi.
-- Aggiornare `memoria-bootstrap/planning/current-work.json` all’apertura e alla chiusura della sessione.
 
-## Ordine preferito
+## Windows sandbox
 
-```text
-knowledge -> rules -> tests -> engine -> workspace sample -> report
-```
+Per validare `current-work.json` e il routing su Windows, usa sempre
+`memoria-engine/.venv/Scripts/python.exe` per eseguire
+`memoria-bootstrap/planning/validate-codex-model-routing.py`. `jsonschema` 4.26.0
+e' installato in quel virtualenv; il Python globale puo' non averlo e non deve
+essere usato per concludere che il pacchetto manchi. Dettagli in
+`memoria-bootstrap/planning/README.md`.
 
-## Chiusura obbligatoria
+Usa `apply_patch` quando la sandbox Codex e operativa. Se fallisce solo
+`apply_patch` per un errore infrastrutturale, e ammesso un solo fallback
+riproducibile via Python o `git apply`, limitato al repository, seguito da diff
+e test pertinenti. Non usare riserializzazioni distruttive come fallback.
 
-Riporta:
+## Chiusura
+
+Riporta in forma concisa:
 
 ```text
 micro-incremento:
