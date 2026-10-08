@@ -1,82 +1,161 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-10-03T16:34:00+02:00",
-  "updated_at": "2026-10-03T16:42:00+02:00",
+  "status": "in_progress",
+  "selected_at": "2026-10-06T22:03:00+02:00",
+  "updated_at": "2026-10-08T00:00:00+02:00",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "Post-MVP - Intake immagini, OCR strutturato e collegamento ai profili / T41",
-      "reason": "Estendere T41 alla pagina di calibrazione 00415, selezionata nel campione stratificato come rapporto denso con sezioni e righe tabellari."
+      "reason": "Avviare la revisione umana passo passo dell'output diagnostico 01000 già prodotto, senza sostituirla con una review automatica o estendere le conclusioni all'intera pagina."
     }
   ],
   "increment": {
-    "id": "t41-00415-ocr-structure-20261003",
-    "title": "T41 run OCR strutturato 00415",
-    "objective": "Produrre un run persistente diagnostico PP-OCRv5/Tesseract e una preview strutturale per la sola pagina 00415, con manifest e provenance verificabili.",
+    "id": "t41-01000-human-review-stepwise-20261006",
+    "title": "T41 revisione passo passo 01000",
+    "objective": "Condurre con l'utente una revisione passo passo della preview 01000 confrontandola con il TIFF e registrando soltanto correzioni esplicite in derivati auditati.",
     "scope": [
-      "Eseguire PP-OCRv5, Tesseract deu e costruzione della preview strutturale sulla sola pagina T314-1275-00415.",
-      "Scrivere output e manifest nella root runtime persistente esterna, includendo hash sorgente, asset, configurazioni e provenance.",
-      "Registrare identità pagina, hash, versioni/configurazioni engine, hash asset, latenza e manifest nella root runtime esterna."
+      "Riprendere dalla prima porzione della structure-preview.md del run 01000 e confrontarla con la pagina TIFF originale.",
+      "Procedere una porzione alla volta, distinguendo letture certe, dubbi e problemi di struttura; attendere le decisioni esplicite dell'utente.",
+      "Registrare correzioni solo in una nuova preview derivata con source_region_ids e audit, preservando raw ed output automatici."
     ],
     "out_of_scope": [
-      "Processare pagine diverse da 00415, crop/tile o batch; processare holdout 00072 o 00900.",
-      "Modificare TIFF originali, codice runtime o asset/modelli OCR; fare download o installazioni.",
-      "Revisionare/correggere il contenuto, tradurre, calcolare accuracy/CER/WER o promuovere output a testo verificato, claim o fatto storico."
+      "Modificare TIFF, raw OCR, evidence, struttura automatica, preview automatica o output run già creati.",
+      "Revisionare porzioni non ancora esaminate senza l'utente o dichiarare l'intera pagina revisionata prima della sua conferma.",
+      "Calcolare metriche senza reference eleggibile, promuovere claim/fatti o pubblicare schede."
     ],
     "candidate_files": [
-      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00415.tif",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/PP-OCRv5_mobile_det_infer",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/latin_PP-OCRv5_mobile_rec_infer",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-assets/tessdata",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/*",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/structure-preview.md",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/ppocr-evidence.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/manifest.json",
+      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-01000.tif",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Run 00415 creato nella root runtime persistente con TIFF/raw/output hash verificati, JSON validi, provenance risolta e preview lasciata unreviewed; nessun'altra pagina o claim modificato."
+    "stop_condition": "L'utente dichiara terminata la revisione delle porzioni concordate; ogni modifica resta in un derivato auditato, i raw/output automatici sono invariati e non si promuovono claim. Se la revisione si interrompe prima, conservare l'ultimo checkpoint e riprendere dalla porzione successiva."
   },
   "verification": {
     "tests": [
-      "Verificare manifest e SHA-256 del TIFF/modelli/output, JSON raw/evidence/structure validi e provenance della preview; usare memoria-engine/.venv/Scripts/python.exe per validate-codex-model-routing.py; git diff --check."
+      "Prima di proseguire, verificare hash/provenance del TIFF e della preview; dopo eventuali correzioni verificare audit e source_region_ids. Nessun nuovo OCR o metrica; memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check."
     ],
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-      "result": "passed",
-    "notes": "Run T41 00415 completato e verificato indipendentemente: 59 regioni PP-OCRv5, 56 blocchi numbered_report; quattro JSON validi; hash di nove output e sette asset coerenti; provenance completa e tutti i source_region_ids risolti. TIFF invariato, SHA-256 BF53D3656B845655AA1C4E370E554894B10B86DA5C4F8C85DBCE3101E2E965E8. Manifest SHA-256 c0d2fefa6e7b2dd3fa73ad9a9693a6ea9ca9ede44430976360736323c0774dd4. Verificati invariati tutti gli artefatti del run 00312. Preview lasciata unreviewed/diagnostic-only; nessuna metrica o claim.",
+      "result": "not_run",
+    "notes": "Run 01000 precedente verificato: TIFF SHA-256 df8110f3b444a1ebed9bcff7c59d2b686f00c983987252067614e4c1d04552e3 invariato; 7 asset e 8 output hashati; 189 regioni, 187 blocchi e copertura source_region_ids completa; manifest SHA-256 af0eafeb95b8d535c5bc17c80a724517aa28e3f1291b3b5e9ddcf38a2a225693. L'utente ha chiesto di rinviare l'analisi alla prossima sessione e procedere passo passo. La preview resta unreviewed; nessuna modifica umana avviata.",
     "task_envelope": {
-      "mode": "feature-slice",
+      "mode": "quality-slice",
       "repositories": ["memoria-bootstrap", "memoria-engine"],
       "read_set": [
         "AGENTS.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md#Discovery-campione-e-migrazione",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_benchmark.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/document_structure.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_transform_pilot.py",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/planning/current-work.json"
+        "memoria-bootstrap/docs/current-next-increment.md#Run-T41-diagnostico-01000",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/structure-preview.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/ppocr-evidence.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/manifest.json",
+        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-01000.tif"
       ],
-      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/*", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
-      "test_command": "Verificare manifest/hash/provenance e JSON degli output; memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check.",
+      "write_set": ["D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/human-reviewed-structure-preview-v1.md", "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/human-review-audit-v1.json", "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-01000-ocr-structure-20261006/review.md", "memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/planning/current-work.json"],
+        "test_command": "Review per porzioni con audit/source_region_ids; dopo correzioni verificare hash e legami parent/output. memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check.",
       "stop_conditions": [
-      "Non modificare il TIFF originale, codice o asset; non scaricare o installare nulla.",
-      "Elaborare esclusivamente 00415 e scrivere nella sua nuova cartella runtime; preservare la run 00312 e le sue correzioni derivate.",
-      "Non revisionare o correggere OCR e preview; non aggiungere traduzioni, interpretazioni o metriche."
+        "Procedere una porzione alla volta solo insieme all'utente; conservare un checkpoint delle porzioni completate e dubbie.",
+        "Correggere soltanto su istruzione esplicita, in un nuovo derivato auditato; non modificare TIFF/raw/evidence/struttura/preview automatica.",
+        "Non dichiarare l'intera pagina revisionata, non calcolare metriche senza reference eleggibile e mantenere claim_extraction false."
       ]
     }
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "runtime_calibration",
-    "agent": "mmr_implementer",
+    "tier": "review",
+    "task_class": "quality",
+    "agent": "mmr_test_reviewer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Run OCR tecnico circoscritto a una pagina testuale già selezionata, usando pipeline e asset project-local esistenti; output esterni e unreviewed con gate di provenance.",
+    "rationale": "Revisione page-scoped collaborativa guidata dall'utente; preservare provenance e distinguere le decisioni umane dall'output OCR automatico.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-03T21:01:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Controllo indipendente del delta v2-v3, provenance e preservazione dei derivati/raw."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T21:01:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Verificare H08-H09 e l'integrita' del pacchetto auditato v3 in sola lettura."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T21:03:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Review indipendente PASS: delta richiesto soltanto, 58 source_region_ids presenti, hash parent e artefatti preservati."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T20:43:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Seconda revisione derivata 00415 con tre ulteriori correzioni utente, preservando v1 e gli originali."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T20:43:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Applicare solo d/ verwundet, unione di Zugf. e correzione della data nella voce 4./Jug.Rgt.25 in v2 auditata."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T20:52:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "v2 H04-H07 e audit delta verificati; v1 e output automatici/raw invariati; review resta parziale."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-03T18:56:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Derivare e auditare le tre correzioni OCR esplicite fornite dall'utente per 00415."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-03T18:56:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Applicazione circoscritta in una copia derivata della preview, con audit e raw invariati."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-03T19:01:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Tre correzioni confermate applicate in un derivato auditato; verificati hash e preservazione degli originali."
+      },
       {
         "event": "selected",
         "at": "2026-10-03T16:34:00+02:00",
@@ -1313,11 +1392,60 @@
         "model": "gpt-6.1-sol",
         "reasoning_effort": "medium",
         "reason": "Run 00598 completato e structure-preview.md revisionata dall'utente il 2026-10-03; 54 regioni, 52 blocchi, provenance verificata. Raw/evidence diagnostici; metriche non calcolate."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-06T21:46:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Selezionato il run diagnostico della successiva pagina di calibrazione mancante, 01000, con output nella root persistente e holdout escluso."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-06T21:35:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run 00750 completato: 74 regioni, 72 blocchi, hash e provenance verificati, output diagnostici unreviewed."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-06T21:46:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Selezionato il run diagnostico della successiva pagina di calibrazione mancante, 01000, con output nella root persistente e holdout escluso."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-06T21:50:00+02:00",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Run 01000 completato: 189 regioni, 187 blocchi, hash e provenance verificati, output diagnostici unreviewed."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-06T22:03:00+02:00",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Review 01000 rinviata dall'utente alla prossima sessione, da condurre passo passo e senza correzioni non richieste."
       }
     ]
   },
   "blockers": [],
   "session_notes": [
+      "T41 00415 revisione terminata 2026-10-03: l'utente ha confermato v3 corretta. Audit finale human_reviewed e catena H01-H09 registrati; TIFF/raw e derivati precedenti invariati. Nessun claim estratto.",
+      "T41 00415 secondo passaggio 2026-10-03: applicate in v2 le quattro differenze esplicite H04-H07 (d/ verwundet con rimozione del blocco a/ separato, unione Zugf. alla voce Korkiseh, 8.10.1944, Lt.d.R. Pfeffenbergeri). Audit/hash verificati, v1 e raw invariati; review parziale, claim_extraction false.",
+      "Review T41 00415 primo passaggio completata parzialmente il 2026-10-03: applicate in derivato auditato le tre correzioni esplicite di v1. Raw/evidence/struttura/preview automatica/TIFF invariati. Restano da revisionare gli altri problemi di testo e struttura identificati nella prima lettura.",
+    "Review 00415 aperta il 2026-10-03 su correzioni esplicite utente: eliminare lo zero isolato dopo la data, correggere K r e 1 in K r e l e comporre c/ vermisst: . / . dalle relative regioni OCR. Non applicare correzioni ulteriori, incluso d/ verwundet, senza indicazione utente.",
     "T41 00415 completata il 2026-10-03: run diagnostico con 59 regioni PP-OCRv5 e 56 blocchi, output/asset/source hash verificati, provenance e source_region_ids risolti; TIFF e 00312 invariati. Preview resta unreviewed, nessuna metrica calcolata.",
     "T41 review 00312 completata 2026-10-03: creati i derivati umanamente revisionati e auditati, hash TIFF/TSV/raw/evidence/struttura/preview/manifest/output verificati. Review limitata ai punti indicati dall'utente; il resto della pagina resta non revisionato. L'hash audit di review.md identifica la versione d'ingresso prima dell'append della nota di review.",
     "T41 review 00312 2026-10-03: l'utente ha fornito correzioni puntuali al testo Tesseract e alla preview strutturale. Applicarle solo in copie derivate con source_region_ids/audit; non modificare i raw o la preview automatica.",
@@ -1366,10 +1494,15 @@
     "T41 reference 00150 2026-10-01: reference OcrPageReference human_verified/verified formalizzata con audit e UTF-8 corretto. Identità/hash/transform coerenti; 10 test offline PASS. PP-OCRv5 page-scoped CER 0.145366, WER 0.126904, coverage 0.215736; nessuna accuratezza generale dichiarata.",
     "T41 Tesseract 00150 2026-10-01: run singolo completato con Tesseract 5.5.3.20260724, deu, --oem 1 --psm 6; TIFF 3648x6224, SHA-256 coerente, testo/TSV e stderr esterni con hash verificati. Output unreviewed/diagnostic-only; nessuna accuracy o inferenza semantica.",
     "T41 confronto 00150 2026-10-01: PP-OCRv5 CER 0.145366/WER 0.126904; Tesseract CER 0.324046/WER 0.385787. Reference verified e identity/hash coerenti; la reference è stata risolta nella directory fisica human-reference perché il path dichiarato human-verified era assente, discrepanza registrata nel run-summary. Metriche diagnostiche page-scoped, non generalizzabili.",
-    "Run T41 00312 2026-10-03: TIFF invariato e hash coerente; 82 regioni PP-OCRv5, 61 blocchi numbered_report, raw Tesseract deu disponibili. Nove output e sette asset con hash verificati, quattro JSON validi, source_region_ids risolti/copertura completa. Manifest 9f7ee6fecba7b6b0e2408548eb731538a8fa9b6e3d4831a7c3e8251e9c16586c. Output diagnostic-only/unreviewed; nessuna accuracy. La cronologia e le associazioni data-evento restano da revisionare."
+    "Run T41 00312 2026-10-03: TIFF invariato e hash coerente; 82 regioni PP-OCRv5, 61 blocchi numbered_report, raw Tesseract deu disponibili. Nove output e sette asset con hash verificati, quattro JSON validi, source_region_ids risolti/copertura completa. Manifest 9f7ee6fecba7b6b0e2408548eb731538a8fa9b6e3d4831a7c3e8251e9c16586c. Output diagnostic-only/unreviewed; nessuna accuracy. La cronologia e le associazioni data-evento restano da revisionare.",
+    "Selezione 2026-10-06: inventario riconciliato sulle pagine 00007, 00150, 00312, 00415 e 00598; le prime due hanno reference formali e metriche, 00312 ha review parziale, 00415 e 00598 review concluse. Non richiedere una nuova reference come prerequisito generale; riselezionare il prossimo micro-incremento sulla base di questi stati.",
+    "Run T41 00750 2026-10-06: TIFF SHA-256 260f7c3a190885f6ab063c73a426aa9ed422b6752df1e91cdd0ad3adb76a66bc invariato; PP-OCRv5 74 regioni, struttura numbered_report 72 blocchi, Tesseract deu OEM1/PSM6; 7 asset e 8 output verificati. SHA-256 manifest 67336a35493394a1072b77ef18b0aad182b0a4fcb9a81ff0692fd80112af74ba. Resize interno PaddleOCR max_side_limit=4000 annotato; nessuna accuracy o claim.",
+    "Run T41 01000 2026-10-06: TIFF SHA-256 df8110f3b444a1ebed9bcff7c59d2b686f00c983987252067614e4c1d04552e3 invariato; PP-OCRv5 189 regioni, struttura numbered_report 187 blocchi, Tesseract deu OEM1/PSM6; 7 asset e 8 output verificati. SHA-256 manifest af0eafeb95b8d535c5bc17c80a724517aa28e3f1291b3b5e9ddcf38a2a225693. Resize interno PaddleOCR max_side_limit=4000 annotato; nessuna accuracy o claim.",
+    "Handoff T41 01000 2026-10-06: l'utente giudica la pagina complicata e chiede di analizzarla passo passo nella prossima sessione. Riprendere dalla prima porzione di structure-preview.md, confrontandola con il TIFF; la pagina e la preview restano unreviewed finché la review non è conclusa e confermata.",
+    "Checkpoint revisione T41 01000 2026-10-08: utente conferma contatore 000995 e intestazione 305. Infanterie-Division. Primo gruppo: Abt.Ia/1 confermato, lettura adiacente Wr.848/44geb corretta in geh, An2 indicato a posto, voce datata letta Gsf; LIGeb.A.K., Nachr. Führer, data Eing. 23. AUG. 1944, nota 1305744 geh, Decknamenliste e intestazione 305.Infanterie-Division, gültig ab 1.9.44, 0000 Uhr confermati; nota nel timbro 16.00 R. Riprendere dal prossimo gruppo di circa dieci elementi. Revisione parziale; nessun derivato auditato creato; preview automatica resta unreviewed."
   ],
     "next_action": {
-      "mode": "review",
-        "description": "Revisionare review.md e structure-preview.md del run 00415 confrontandoli con il TIFF; registrare solo le correzioni esplicite in derivati auditati."
+    "mode": "resume",
+    "description": "Alla prossima sessione riprendere dalla prima porzione della structure-preview.md di 01000, confrontandola passo passo con il TIFF e attendendo indicazioni esplicite prima di annotare correzioni."
   }
 }

@@ -1,5 +1,102 @@
 # Current Next Increment
 
+## Riconciliazione inventario T41 - 2026-10-06
+
+Le pagine con esiti umani documentati sono più di una e hanno granularità
+diverse: `00312` ha una revisione parziale auditata; `00415` ha la revisione
+conclusa dall'utente con conferma della v3; `00598` ha la preview strutturale
+revisionata integralmente e confermata. Separatamente, `00007` e `00150`
+dispongono di reference page-scoped verificate e confronti metrici formali.
+Quindi revisione umana, reference formalizzata e confronto metrico sono stati
+distinti nel planner; non serve richiedere una nuova reference come prerequisito
+generale. Il prossimo incremento va riselezionato dalla roadmap usando questo
+inventario, evitando review già chiuse e senza generalizzare le metriche.
+
+## Run T41 diagnostico 00750 - 2026-10-06
+
+Completato il run della sola pagina `T314-1275-00750.tif` nella root runtime
+persistente `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00750-ocr-structure-20261006\`.
+Il TIFF originale (3472x6096, grayscale) è invariato; SHA-256
+`260f7c3a190885f6ab063c73a426aa9ed422b6752df1e91cdd0ad3adb76a66bc`.
+PP-OCRv5 3.7.0 / Paddle 3.3.0, CPU, ha prodotto 74 regioni in 25.832 ms;
+Tesseract 5.5.3.20260724, `deu`, OEM 1/PSM 6, ha completato in 1.492 ms.
+La preview `numbered_report` contiene 72 blocchi. PaddleOCR ha ridimensionato
+internamente l'input al limite di 4000 px; nessun preprocessing applicativo.
+
+Gli otto output (raw, evidence, struttura, preview e artefatti Tesseract) e i
+sette asset sono verificati tramite SHA-256; JSON, copertura di tutti i
+`source_region_ids` e determinismo della struttura sono PASS. SHA-256 manifest:
+`67336a35493394a1072b77ef18b0aad182b0a4fcb9a81ff0692fd80112af74ba`.
+Output `unreviewed`/`diagnostic-only`; nessuna metrica, claim o fatto promosso.
+La pagina `01000` resta candidata per proseguire la copertura di calibrazione;
+`00072` e `00900` restano holdout.
+
+## Run T41 diagnostico 01000 - 2026-10-06
+
+Completato il run della sola pagina `T314-1275-01000.tif` nella root runtime
+persistente `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-01000-ocr-structure-20261006\`.
+Il TIFF originale (3616x6176, grayscale) è invariato; SHA-256
+`df8110f3b444a1ebed9bcff7c59d2b686f00c983987252067614e4c1d04552e3`.
+PP-OCRv5 3.7.0 / Paddle 3.3.0, CPU, ha prodotto 189 regioni in 50.963 ms;
+Tesseract 5.5.3.20260724, `deu`, OEM 1/PSM 6, ha completato in 1.987 ms.
+La preview `numbered_report` contiene 187 blocchi. PaddleOCR ha ridimensionato
+internamente l'input al limite di 4000 px; nessun preprocessing applicativo.
+
+Gli otto output e i sette asset sono verificati tramite SHA-256; JSON, copertura
+di tutti i `source_region_ids` e determinismo della struttura sono PASS.
+SHA-256 manifest: `af0eafeb95b8d535c5bc17c80a724517aa28e3f1291b3b5e9ddcf38a2a225693`.
+Output `unreviewed`/`diagnostic-only`; nessuna metrica, claim o fatto promosso.
+Checkpoint revisione parziale: l'utente conferma contatore `000995` e intestazione
+`305. Infanterie-Division`. Nel primo gruppo conferma `Abt.Ia/1`, corregge la
+lettura adiacente `Wr.848/44geb` in `geh`, indica `An2` "a posto" e legge `Gsf`
+nella voce datata; conferma `LIGeb.A.K.`, `Nachr. Führer`, la data `Eing.
+23. AUG. 1944`, la nota `1305744 geh`, il titolo `Decknamenliste` e
+l'intestazione `305.Infanterie-Division, gültig ab 1.9.44, 0000 Uhr`; la nota
+manoscritta nel timbro è `16.00 R`. Riprendere dal prossimo gruppo di circa dieci
+elementi insieme all'utente. Nessuna correzione è stata ancora scritta in un
+derivato auditato; mantenere la preview automatica `unreviewed` fino alla
+conclusione e conferma della review. `00072` e `00900` restano holdout.
+
+## Revisione umana parziale T41 00415 - 2026-10-03
+
+Applicate le tre correzioni esplicite dell'utente in derivati auditati nella
+cartella run persistente 00415:
+`human-reviewed-structure-preview.md` e `human-review-audit.json`; la nota e'
+registrata anche in `review.md`. Correzioni: rimozione dello zero isolato,
+`K r e 1` → `K r e l`, composizione della riga `c/ vermisst: . / .` con i
+relativi `source_region_ids`. SHA-256 preview derivata
+`4e868f8f464a538e0ed1d6800f6679a8dc2ef957bf8447ea72df085ff806ed20`; SHA-256
+audit `59ede9c323bdc66ca72c9a04560dd220717318c971effb0df8f1dd7a039013e3`.
+Raw OCR, evidence, struttura e preview automatica restano invariati; la review
+copre solo i tre punti indicati e il resto della pagina resta non revisionato.
+Il marcatore di claim extraction rimane disabilitato.
+
+### Secondo passaggio di revisione parziale - 2026-10-03
+
+Applicate in `human-reviewed-structure-preview-v2.md` altre quattro modifiche
+esplicite, con audit delta in `human-review-audit-v2.json`: composizione della
+label `d/ verwundet` e rimozione del blocco `a/` separato; unione di `Zugf.`
+alla voce Korkiseh; correzione `B. 10.1944` in `8.10.1944`; correzione
+`Lt.deR.` in `Lt.d.R.` nella voce Pfeffenbergeri. SHA-256 preview v2
+`ab15aa52a61d3d93cbddc52b2a4f9bbe322eb9ee5826ed65125c23189c09d984`.
+Audit v2 registra gli hash d'ingresso, il collegamento alla v1 e la
+preservazione degli output automatici. La v1, i raw, evidence, struttura,
+preview automatica e TIFF non sono stati modificati. La review resta parziale;
+il testo residuo non e' verificato e `claim_extraction` resta `false`.
+
+### Terzo passaggio di revisione parziale - 2026-10-03
+
+Applicate in `human-reviewed-structure-preview-v3.md` altre due correzioni
+esplicite, con audit delta in `human-review-audit-v3.json`: la data
+`12.10.1944,` e' stata composta con `Veretauchung des l.Beines durch`,
+rimuovendo i blocchi spurii `[illeggibile]` e `## O`; `2/ erkrenkt:` e'
+diventato `f/ erkrenkt:`. SHA-256 preview v3
+`93f154727a902e9f93c9f250302e099bd770b5642277a54e790cf436336f5bfa`.
+La v1, v2 e gli output OCR originali restano invariati. L'utente ha poi
+confermato la v3 e dichiarato terminata la revisione della pagina; stato
+registrato come `human_reviewed` in `human-review-finalization.json`.
+`claim_extraction` resta `false`.
+
 ## Run T41 diagnostico 00415 - 2026-10-03
 
 Completato il run della sola pagina `T314-1275-00415.tif` nella cartella
