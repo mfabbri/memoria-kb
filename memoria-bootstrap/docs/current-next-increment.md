@@ -1,5 +1,474 @@
 # Current Next Increment
 
+## T41 selezione review umana 00750 - 2026-10-12
+
+Il ricalcolo della roadmap seleziona la review guidata della pagina `00750`:
+la candidata visiva esistente è esplicitamente `unverified_model_assisted` e il
+gold verificato resta sotto il campione iniziale di 8-10 pagine. Il TIFF è
+disponibile e il suo SHA-256 coincide con quello fissato nel sidecar
+(`260f7c3a190885f6ab063c73a426aa9ed422b6752df1e91cdd0ad3adb76a66bc`).
+
+La review procederà per gruppi piccoli, iniziando dalle etichette della prima
+tabella. Nessuna lettura del modello o plausibilità lessicale sarà trattata
+come conferma umana; nessuna reference o metrica sarà creata prima della
+conferma esplicita dell'intera pagina. TIFF, OCR e coda restano invariati.
+
+Controllando l'intero TIFF e crop ingranditi, ho trascritto 22 coppie numeriche
+delle due tabelle e il testo delle quattro note. La cifra precedentemente
+segnalata come `5/6` in `tl.[5/6]18` è leggibile come `6`; restano zero dubbi
+visivi irrisolti. Il sidecar esterno
+`t41-00750-ocr-structure-20261006/visual-review-candidate-00750-20261012.md`,
+SHA-256 `8b8010b49a46d1d97294c935eeac4a29aa1ce8bf6ae9ac919b55bd7e4dc7fb29`,
+resta `unverified_model_assisted`: nessuna reference o metrica è stata
+promossa. La prossima pagina candidata è `01000`, riprendendo dal checkpoint
+già aperto e chiedendo intervento solo sui punti non risolvibili dal TIFF.
+
+## T41 prova diagnostica di normalizzazione - 2026-10-11
+
+Ho confrontato le tre pagine gold già fissate (`00150`, `00415`, `00598`)
+applicando in memoria la stessa normalizzazione a reference, PP-OCRv5 e
+trascrizione visiva, poi ricalcolando l'allineamento deterministico. Gli
+originali e la coda non sono stati modificati.
+
+| Variante | Token reference | Segnalazioni | Errori PP-OCRv5 | Intercettati | Superflui | Mancati | Precisione | Recall |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Base | 1.038 | 166 | 53 | 46 | 120 | 7 | 27,7% | 86,8% |
+| Unione lettere isolate (L) | 989 | 159 | 54 | 47 | 112 | 7 | 29,6% | 87,0% |
+| De-trattinazione a capo (H) | 1.037 | 168 | 53 | 46 | 122 | 7 | 27,4% | 86,8% |
+| Caso `Verän=\nderungsmeldung` (D) | 1.037 | 164 | 53 | 46 | 118 | 7 | 28,0% | 86,8% |
+| L + D | 988 | 157 | 54 | 47 | 110 | 7 | 29,9% | 87,0% |
+
+L unisce almeno tre lettere alfabetiche singole separate da spazi o tab; non
+attraversa righe o punteggiatura. Su `00415` porta il riferimento da 381 a 332
+token, per esempio `K r e l` → `Krel`; nomi parzialmente corrotti possono
+diventare parole spurie (`e h o` → `eho`). Gli errori PP-OCRv5 misurati passano
+da 9 a 10 per effetto della segmentazione, non di una modifica dell'OCR. H
+unisce frammenti separati da trattino e fine riga, ma peggiora il risultato:
+interpreta `Berlin-` a capo `Wilmersdorf` come una sola parola, mentre la
+trascrizione visiva mantiene il trattino.
+
+D corregge solo nel confronto il caso già osservato a pagina `00598` e non
+introduce una regola generale sulla punteggiatura. La combinazione L+D è la
+migliore in questo campione: 9 segnalazioni in meno rispetto alla base (5,4%)
+e 10 segnalazioni superflue in meno; mantiene invariati i 7 errori comuni non
+segnalati. Il guadagno è limitato, dipende da una trasformazione specifica al
+campione e cambia l'unità di conteggio. Non giustifica ancora una soglia o una
+riduzione automatica della coda. Le reference restano il riferimento approvato,
+non una nuova adjudicazione dei glifi.
+
+Tabella completa per pagina e variante, definizioni, esempi e provenance sono
+nel runtime diagnostico `t41-blind-visual-benchmark-20261011/normalization-diagnostic.json`,
+SHA-256 `f6f44e4a31e5360c016b5c276a12fd9f5f43309e46dd9dc1bdb51455f498e7c5`.
+
+## T41 disaccordo OCR-visivo e carico di review - 2026-10-11
+
+Allineate le trascrizioni del benchmark cieco e PP-OCRv5 alle stesse tre
+reference gold. L'unità segnalata è una posizione di token della reference o un
+gap con inserimenti; un'unità entra nella coda candidata quando i due output
+allineati differiscono.
+
+| Pagina | Unità segnalate | Errori PP-OCRv5 | Errori intercettati | Segnalazioni non necessarie* | Precisione review |
+|---|---:|---:|---:|---:|---:|
+| `00150` | 44 | 41 | 35 (85,4%) | 9 (20,5%) | 79,5% |
+| `00415` | 101 | 9 | 9 (100%) | 92 (91,1%) | 8,9% |
+| `00598` | 21 | 3 | 2 (66,7%) | 19 (90,5%) | 9,5% |
+| Totale | 166 | 53 | 46 (86,8%) | 120 (72,3%) | 27,7% |
+
+*“Non necessaria” significa che PP-OCRv5 coincide con la reference in quella
+posizione; non è una nuova verifica visiva del carattere.
+
+La coda contiene 142 posizioni token su 1.038 (13,7%) e 24 gap. Intercetta 46
+dei 53 errori PP-OCRv5, ma 120 dei 166 controlli indicati riguardano posizioni
+già conformi alla reference e 7 errori comuni restano invisibili perché i due
+sistemi concordano. Quindi il disaccordo può prioritizzare alcuni controlli,
+ma sul campione produce più unità da rivedere degli errori PP-OCRv5 rilevati
+(166 contro 53) e non dimostra una riduzione sicura della coda.
+
+Il confronto non si può sottrarre ai 252 alert lessicali citati in precedenza:
+quelli hanno unità e pagine diverse. Inoltre le reference `00415` e `00598`
+conservano stringhe approvate ma dubbie, tra cui `00041n`, `gur`, `ilhelm`,
+`Grd`, `0100593`, `Bigheriger` e parole spezzate. “Corretto” qui significa
+conforme alla reference fissata, non verificato di nuovo sui glifi.
+
+Analisi riproducibile nel runtime esterno
+`t41-blind-visual-benchmark-20261011/disagreement-analysis.json`, SHA-256
+`fa392c0a686a5f2311a984d7bf62c722442621e402b6d09b935cfda608f8067e`. Nessun
+token è stato promosso o rimosso dalla coda; gold invariato a tre pagine e
+nessuna soglia automatica definita.
+
+## T41 benchmark cieco di trascrizione visiva - 2026-10-11
+
+Completata una trascrizione visiva indipendente delle sole scansioni `00150`,
+`00415` e `00598`. Il revisore non ha ricevuto OCR, preview o reference; ha
+restituito tutte e tre le trascrizioni prima che il confronto venisse eseguito.
+I digest delle scansioni e delle tre reference umane verificate sono registrati
+nel benchmark esterno
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-blind-visual-benchmark-20261011\benchmark.json`,
+SHA-256 `f46e0695b141f676f267cc9b3563ecfc300e911a58a7658ce0d8b88f1e0de1f3`.
+
+Confronto deterministico page-scoped tra la trascrizione visiva e PP-OCRv5:
+
+| Pagina | CER visivo | WER visivo | CER PP-OCRv5 | WER PP-OCRv5 |
+|---|---:|---:|---:|---:|
+| `00150` | 9,57% | 6,35% | 14,54% | 12,69% |
+| `00415` | 9,24% | 29,92% | 0,82% | 2,36% |
+| `00598` | 4,97% | 7,60% | 0,47% | 1,14% |
+
+La lettura visiva migliora PP-OCRv5 solo su `00150`; sulle altre due pagine
+PP-OCRv5 è nettamente più preciso. Su `00415` la trascrizione visiva ha 83
+token omessi e 113 aggiunti; su `00150` ne omette 11 e ne aggiunge 16, mentre
+su `00598` ne omette 19 e ne aggiunge 13. È un segnale concreto che la lettura
+del modello può aiutare una review mirata, ma non è affidabile come trascrizione
+automatica uniforme. Tre pagine non calibrano una soglia.
+
+Le metriche testuali non valutano regioni, colonne o impaginazione. Il campione
+gold resta di tre pagine; nessuna reference o decisione umana è stata modificata
+e `00750` resta esclusa. Le trascrizioni, le incertezze e le metriche ricalcolate
+sono conservati nell'artefatto runtime citato sopra.
+
+## T41 avvio ampliamento campione: pagina 00750 - 2026-10-11
+
+Selezionata `T314-1275-00750` come prossimo contributo al sottoinsieme di
+calibrazione: è non revisionata, mentre `00072` e `00900` restano holdout.
+Sono già disponibili TIFF e OCR persistenti; il run non è stato ripetuto e gli
+originali non sono stati modificati.
+
+La scansione mostra un foglio dattiloscritto con due gruppi di valori e note a
+destra. La preview OCR automatica frammenta la lettura: 72 gruppi di regioni,
+16 senza testo riconosciuto. Tesseract esistente è molto rumoroso e non viene
+usato per correggere PP-OCRv5. Hunspell/glossario ha 27 termini unici accettati
+su 54, ma questi conteggi non sono trascrizioni verificate.
+
+Creato nel runtime esterno il sidecar
+`t41-00750-ocr-structure-20261006/review-preview-00750-20261011.md`, SHA-256
+`9c9559a1ec544edf1b62cda4bcc859bca1768c3fa1d65b0a05ff967dc833031e`. È una
+proposta derivata iniziale con dubbi espliciti su `114.Jg.Div.`,
+`Korplager/Korpelager` e due abbreviazioni tra parentesi. Il successivo
+controllo visuale automatizzato è descritto sotto. La preview rimane unverified:
+non sono state create reference né metriche e il campione metrico resta di tre
+pagine; nessuna soglia è definita.
+
+### Esito del controllo visuale automatizzato
+
+È stata eseguita una seconda lettura senza intervento dell'utente: scansione a
+pagina intera, crop mirati, output PP-OCRv5 esistente e nuove letture Tesseract
+`deu` PSM 6/11 sul crop. PSM 6 recupera parte della struttura e dei valori;
+PSM 11 frammenta ulteriormente il testo. Nessuno dei due output Tesseract è
+stato trattato come riferimento.
+
+La lettura visuale sostiene `Korpelager`, `114.Jg.Div.` e
+`Gesteinsbohr-Kp.38`; il dato finale dopo `tl.` nella prima nota resta ambiguo
+tra `518` e `618`. PP-OCRv5 concorda su `Korpelager` ma diverge sulle due sigle
+di reparto. Le etichette di confidenza nel sidecar sono qualitative, non
+probabilità calibrate.
+
+Il risultato persistito è
+`visual-review-candidate-00750-20261011.json`, SHA-256
+`b16b858f4d0af1b991bdcedd3041e1d9c27027c198195673c186241818c2872b`. È una
+trascrizione candidata assistita dal modello, marcata non verificata e non
+idonea a metriche di accuratezza. Il gold umano resta di tre pagine; la pagina
+00750 non è stata aggiunta all'inventario né alla coda di calibrazione. Questo
+controllo riduce i dubbi da sottoporre a review, ma non dimostra da solo che una
+validazione automatica sia affidabile su tutte le pagine.
+
+## T41 layout confermato e preview derivata 00598 - 2026-10-11
+
+L'utente ha confermato il testo della preview sorgente con SHA-256
+`3678bda24220c9ed99f2460374989c72dd70bff2de24361f29db3bb63c6ed190`. In
+risposta alla proposta visiva, ha poi confermato l'opzione A. Sono quindi
+confermate le relazioni: tre etichette separate sopra le opzioni; elenco
+verticale `erbeutet`, `beschlagnahmt`, `angekauft` raccolto dalla graffa a destra;
+`am ...` alla quota della prima opzione e `durch Feldpost Nr. ...` alla quota
+della terza. La tabella originale, con intestazioni editoriali e griglia
+regolare, resta invariata perché non riproduce la scansione.
+
+La conferma riguarda solo queste relazioni spaziali. Non assegna le etichette a
+singole opzioni, celle o colonne e non richiede all'utente di verificare gli ID
+OCR. Creata una preview derivata che conserva il testo confermato e cambia solo
+la resa di questo modulo. L'utente ha confermato anche il digest esatto della
+preview derivata `0ca86b581c9a08ad65b4de41a2afd08e1f05ce27d60b55576aff7b743a5deeea`;
+la review dell'artefatto è quindi completa.
+
+Gli otto match OCR e la copertura candidata 54/54 restano un mapping tecnico al
+blocco intero, non un mapping a celle/colonne. I sidecar
+`table-block-mapping-00598-draft-20261011.json` e
+`human-confirmation-packet-00598-20261011.json` restano
+`pending_user_confirmation`; da soli non creano reference o metriche. La
+conferma visiva è registrata separatamente in
+`human-reviewed-structure-audit-00598-draft-20261011.json`. La nuova preview è
+`human-reviewed-structure-preview-00598-draft-20261011.md`, SHA-256
+`0ca86b581c9a08ad65b4de41a2afd08e1f05ce27d60b55576aff7b743a5deeea`; l'audit
+`exact-preview-confirmation-00598-20261011.json` lega il secondo assenso a quel
+digest.
+
+La reference `ocr-page-reference-00598-20261011.json` supera
+`load_page_reference`; il report `ocr-page-reference-evaluation-00598-20261011.json`
+è riproducibile dall'adapter `normalized-ppocr-evidence-00598-20261011.json`.
+PP-OCRv5 su questa pagina: CER 0.004681, WER 0.011407; reference 263 token,
+output 264, 262 match, 1 omissione, 2 aggiunte; copertura 0.996198 e
+invention rate 0.007576. Tutti e cinque i controlli d'identità passano.
+
+Il report non pubblica un punteggio di reading-order o struttura: il contratto
+attuale rappresenta solo tipo/testo dei blocchi, non la graffa e gli
+allineamenti confermati senza inventare celle o colonne. I vecchi mapping draft
+restano sidecar separati e non entrano nel calcolo. Reference SHA-256
+`5df7b6f3e1d0075393379db04b6aa542f349d0ddb838d1db8158c912aa19f8d4`; report
+`9701e75f1f40f4d36c4dea8310ed57fb1630866fde24d09cb0c2a0c90b08a3c8`; adapter
+evidence `502203a8476cc5715c789cd11e7fcda36db601745815276da55be332bf500550`.
+Il campione con reference testuale verificata è ora di tre pagine (`00150`,
+`00415`, `00598`): resta insufficiente per stabilire una soglia o scalare
+l'accettazione automatica. Prossimo passo candidato: ampliare il campione
+stratificato verso 8-10 pagine.
+
+## T41 preview umane allineate e confronto 00415 - 2026-10-11
+
+Creati cinque artefatti derivati nel runtime esterno: allineamenti delle preview
+`00415` e `00598`, reference verificata e adapter evidence normalizzato per
+`00415`, e relativo report metriche. Hash sorgente controllati; la reference
+supera `load_page_reference`; il report ricalcolato dall'adapter persistito ha
+tutti i controlli d'identita' positivi. Le preview, gli OCR originali e i TIFF
+sono rimasti invariati.
+
+Per `00415`, tutti i 49 blocchi visibili sono legati a 58 delle 59 regioni raw.
+La regione esclusa e' il carattere isolato soppresso nella preview approvata.
+Il confronto PP-OCRv5 produce CER 0.008187, WER 0.023622, copertura token
+0.981627 (381 token reference, 382 output: 374 match, 7 omissioni, 8 aggiunte).
+Il richiamo dell'ordine blocchi e' 0.836735 e la struttura non e' un exact match.
+Sono metriche di questa pagina e configurazione; non definiscono accuratezza
+generale o una soglia.
+
+Per `00598`, il mapping draft collega al blocco del modulo le altre otto regioni
+con match testuali univoci (copertura candidata 54/54) ma non assegna proprietà
+a celle o colonne. La preview derivata e la reference sono ora verificate
+separatamente, con metriche testuali page-scoped; la struttura relazionale resta
+non valutabile dal contratto corrente. Con tre pagine il campione non stima
+ancora una soglia; va ampliato in modo stratificato verso 8-10 pagine.
+
+## T41 deduplicazione auditata della coda 00312 - 2026-10-11
+
+Derivata una nuova coda in
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\manual-review-block-queue-deduplicated-20261011.csv`
+dal `manual-review-block-queue.csv` originale, senza modificarlo. Il confronto
+con `t41-00312-ocr-structure-20261003/human-review-audit.json` ha escluso quattro
+alert esplicitamente corretti o respinti e legati agli stessi `source_region_ids`:
+`x3` (H02), `o.1944` (H03), `BII.A` (H05) e `I.O.A` (H09).
+
+La coda passa da 252 a 248 blocchi: calibrazione 143→139, holdout invariato a
+109; `00312` passa da 38 a 34. Gli alert `Abt.III`/`DVL` (H04) e `Diiziplin`
+(H08) restano, perché il token è ancora presente nel testo approvato e il
+checkpoint documenta una modifica strutturale, non la sua correzione lessicale.
+I checkpoint `01000` restano in coda perché non esiste un audit persistito con
+legame alle regioni e la lettura deve ancora essere verificata sul TIFF.
+
+Il sidecar esterno
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\manual-review-block-queue-dedup-audit-00312-20261011.json`
+conserva hash degli input/output, change ID, regola e conteggi. Sono quattro
+unità di coda in meno (2,8% dei 143 blocchi di calibrazione), non quattro errori
+OCR accertati né una riduzione generalizzabile: la coda operativa resta ampia e
+non supporta una soglia. Prossimo passo: formalizzare e allineare le preview
+accettate `00415` e `00598` per ampliare il gold riproducibile.
+
+## T41 riconciliazione metrica reference 00150 - 2026-10-11
+
+Corretto il backtracking di `_token_counts`: omissioni e aggiunte vengono
+conteggiate solo quando la transizione appartiene a un cammino ottimo. Il
+nuovo report esterno `t41-00150-human-reference-20261001/ocr-comparison-report-reconciled.json`
+e' legato all'inventario gold con hash e provenance. Su 00150: 394 token di
+reference, 400 di output, 363 match, 31 omissioni, 37 aggiunte, distanza di
+edit 50 (18 sostituzioni), WER 0.126904 e copertura 0.921320. Le identita'
+dei conteggi tornano; input e report originale sono rimasti invariati.
+
+Una sola pagina con metriche riconciliate non basta per calibrare il rischio o
+fissare una soglia di auto-accettazione. La coda di 480 righe non e' stata
+ricalcolata e resta solo un artefatto diagnostico. L'allineamento successivo ha
+formalizzato `00415`; `00598` resta fuori dalle metriche finche' la conferma non
+e' legata a un digest verificabile. Il passo corrente e' ampliare il gold
+stratificato prima di valutare il rischio.
+
+## T41 audit di copertura del gold set - 2026-10-11
+
+Completato l'inventario delle evidenze umane per le nove pagine candidate nel
+report esterno `gold-set-readiness.md` e nel JSON `gold-page-inventory.json`.
+Al momento dell'audit, il prospetto precedente descriveva erroneamente `00150`
+come priva di reference page-scoped e le sue metriche attendevano ancora la
+riconciliazione. La reference esiste; il fix descritto nella sezione precedente
+ha poi riconciliato i conteggi (394 token di reference, 400 di output, 363
+match, copertura 0.921320 e WER 0.126904). Una sola pagina non basta per
+calibrare il rischio o fissare una soglia.
+
+`00415` ha una conferma esplicita dell'intera preview v3; gli audit registrano
+le correzioni specifiche, mentre il documento finale attesta la conferma
+complessiva. `00598` ha una conferma dell'intera preview nel diario di review,
+ma non una reference testuale separata o un audit con hash della versione
+approvata. Sono label di accettazione a livello pagina, con provenance diversa;
+non vanno confuse con etichette di errore per ogni regione. `00007` non ha una
+reference completa persistita, benché esistano note di verifica e un precedente
+confronto non recuperabile come artefatto gold. `00312` e `01000` restano
+parziali; `00750` non revisionata; `00072` e `00900` holdout.
+
+L'incremento successivo ha formalizzato `00415` come reference page-scoped e ne
+ha verificato il confronto. `00598` conserva la conferma umana, ma senza legame
+del digest non e' ancora una reference metrica; `00007` resta fuori dal gold
+riproducibile finche' non si recupera la reference completa. Due pagine con
+metriche non bastano per stimare il rischio di falso passaggio o fissare una
+soglia.
+
+## T41 prospetto pagina/blocco e prova LLM - 2026-10-11
+
+Completato il riepilogo dei nove OCR esistenti nel report esterno
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\page-block-triage-analysis.md`;
+la coda blocchi associata e'
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\manual-review-block-queue.csv`.
+
+La coda precedente contiene 480 righe pagina-token. Raggruppando i candidati
+lessicali, 372 blocchi sono segnalati su 1019; i match lessicali non confermano
+la lettura. Tre pagine hanno evidenza page-level persistita: `00150` ha una
+reference page-scoped; al momento di questo prospetto le metriche non erano
+ancora state riconciliate. `00415` e `00598` avevano preview confermate,
+candidate dopo allineamento. `00007` era conteggiata come coperta da note
+pregresse ma non ha reference completa persistita, quindi non e' gold
+riproducibile. Sulle tre pagine aperte/parziali della coda restano 143 blocchi
+da 164 righe token; i due holdout restano separati con 109 blocchi. La coda
+non e' stata ricalcolata in questo audit.
+
+Una prova multimodale su pochi blocchi di `01000` e `00750` mostra che il modello
+puo' dare priorita' a correzioni OCR plausibili e ridimensionare alert su
+abbreviazioni note. Il campione e' illustrativo, riusa casi gia' visti
+dall'utente e non stima precisione/recall. Le confidence PP-OCRv5 restano valori
+grezzi del motore, non probabilita' calibrate; per `00007` non sono presenti nel
+sidecar selezionato.
+
+Prossimo incremento candidato: costruire un insieme gold stratificato da
+reference e review umane complete, quindi valutare un rischio pagina usando
+confidence OCR, quota di regioni deboli, accordo tra motori selettivo, segnali
+di layout, lessico e triage multimodale sui soli blocchi dubbi. La soglia va
+scelta dopo avere misurato il tasso di pagine errate che passerebbero senza
+review, con audit casuale delle pagine auto-accettate. Non riprendere la coda
+da 480 token come piano operativo.
+
+## T41 precontrollo lessicale del campione - 2026-10-11
+
+Completato il triage diagnostico sulle nove pagine testuali selezionate:
+`00007`, `00072`, `00150`, `00312`, `00415`, `00598`, `00750`, `00900` e
+`01000`. Il run e tutti i sidecar sono nella root runtime esterna:
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\`.
+
+I run persistenti sono stati riutilizzati per sei pagine; per `00007` è stata
+derivata una sequenza piatta di regioni dall'evidence già persistente, senza
+modificare l'OCR. `00072` e `00900` sono stati elaborati con PP-OCRv5 locale e
+modelli espliciti: latenza rispettivamente 86.952 ms e 52.646 ms. I manifest
+registrano identità/hash dei TIFF, parametri, modelli, digest e output. I TIFF
+sono rimasti invariati.
+
+Per ogni pagina sono stati creati `OcrLanguageLexicon`, review lessicale e
+riepilogo. Il controllo include `de.basic` e `de.ww2.wehrmacht-sourced`, entrambi
+ancora `unreviewed`; abbreviazioni e forme non trovate non sono conferme o
+correzioni automatiche. `00072` e `00900` restano holdout e fuori da ogni
+calibrazione. Tutti i risultati sono `unreviewed`, con estrazione claim
+disabilitata.
+
+La coda [manual-review-queue.csv](<D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-selected-sample-hunspell-triage-20261011\manual-review-queue.csv>)
+contiene 480 righe pagina-token uniche per confronto col TIFF, con conteggio
+occorrenze e `source_region_ids`. Le review JSON-LD di ciascuna pagina
+conservano raw token, blocchi, regioni, risorse e provenance. Questa coda
+riduce il confronto da fare, ma non dimostra che i token abbinati siano letti
+correttamente: anche quelli riconosciuti vanno confrontati visivamente quando
+la review della pagina lo richiede.
+
+Questo precontrollo e' stato seguito dal prospetto pagina/blocco sopra; la coda
+pagina-token non e' il piano operativo corrente. La review umana di `01000`
+resta parziale e potra' riprendere dopo la definizione del gate di rischio.
+
+## T43 completato - triage lessicale OCR
+
+È disponibile `documents lexicon-review`, preview diagnostica di una
+`DocumentStructure` JSON. Confronta token con una risorsa linguistica dichiarata
+e, se fornito, le sigle con il glossario militare; conserva testo OCR,
+`source_region_ids`, provenance e digest delle risorse. Le mancate
+corrispondenze e i suggerimenti fuzzy restano candidati incerti. Nessuna
+correzione automatica; il sidecar viene scritto solo con `--apply` e non
+sovrascrive un output diverso.
+
+Esempio:
+
+```powershell
+$env:PYTHONPATH = 'memoria-engine\code'
+.\memoria-engine\.venv\Scripts\python.exe -m caduti_fonti_report.memoria_cli documents lexicon-review `
+  --structure "P:\path\DocumentStructure.json" `
+  --lexicon "P:\path\OcrLanguageLexicon.json" `
+  --glossary "P:\path\MilitaryGlossary.jsonld" `
+  --output "P:\path\lexicon-review.jsonld"
+```
+
+Il lessico linguistico usa `@type: OcrLanguageLexicon`, `schema_version: 1.0`,
+`@id`, `language`, `version` e `entries` con `term` e `category: word`. Senza
+glossario, `abbreviation_check` è `not_run`. Il repository non include ancora
+dizionari generali: la copertura dipende dalle risorse esplicite e non viene
+dichiarata completa. Le lingue OCR prioritarie del catalogo sono
+italiano (`ita`, anche `ita_old` in Tesseract), inglese (`eng`), russo (`rus`)
+e tedesco (`deu`). T44 aggiunge un catalogo/adattatore per coppie Hunspell
+locali, senza includere dizionari generali; provenance, licenza, versione e
+digest sono registrati per risorsa. Glossari storici e sigle restano separati.
+La revisione T41 01000 resta parziale e riprenderà separatamente.
+
+## Catalogo lessicale OCR T44
+
+La roadmap registra come lingue prioritarie italiano (`ita`, con variante
+Tesseract `ita_old`), inglese (`eng`), russo (`rus`) e tedesco (`deu`). Il
+catalogo/adapter T44 carica coppie Hunspell locali e crea un
+`OcrLanguageLexicon` campionato compatibile con `documents lexicon-review`.
+I glossari storici/sigle restano separati; nessuna parola non trovata viene
+considerata errore certo e nessun testo OCR viene corretto automaticamente.
+
+### Ricognizione iniziale delle risorse - 2026-10-11
+
+I candidati upstream sono stati verificati lingua per lingua; i file restano
+esterni e non vengono vendorizzati. Le revisioni indicate sotto sono quelle
+riportate dai rispettivi file upstream, non un pin immutabile del repository:
+
+| Lingua/codice OCR | Candidato Hunspell | Revisione dichiarata | Licenza/provenienza osservata |
+|---|---|---|---|
+| Italiano `ita` | [`it_IT.aff`](https://github.com/LibreOffice/dictionaries/blob/master/it_IT/it_IT.aff) | 5.1.0, 13-10-2020 | Il file dichiara GNU GPL-3.0; parte dell'estensione Italian Writing Aids. |
+| Inglese `eng` | [`en_US` README](https://raw.githubusercontent.com/LibreOffice/dictionaries/master/en/README_en_US.txt) | 2020-12-07; derivato da SCOWL | Permessi e copyright multipli per wordlist/affix e fonti; non ridurre a una singola licenza senza preservare e verificare gli avvisi inclusi. |
+| Russo `rus` | [`ru_RU` README](https://raw.githubusercontent.com/LibreOffice/dictionaries/master/ru_RU/README_ru_RU.txt) | fonti 1997-2008; modifica affix annotata 24-08-2012 | Condizioni BSD-like specifiche: conservare avvisi, marcare modifiche e non usare il nome dell'autore per endorsement. |
+| Tedesco `deu` | [`de_DE_frami.aff`](https://github.com/LibreOffice/dictionaries/blob/master/de/de_DE_frami.aff) | 20161207+frami20170109 | Il file dichiara GPLv2/GPLv3; variante `frami` contemporanea, distinta dalla grafia storica `de_DE-1901`. |
+
+La variante Tesseract `ita_old` può puntare alla stessa risorsa italiana solo
+come alias esplicito di catalogo; non rappresenta un dizionario storico
+separato. Prima di distribuire o incorporare file reali serviranno revisione
+immutabile dell'upstream, hash dei file `.dic` e `.aff` e conservazione dei
+rispettivi avvisi/licenze. La CLI T44 accetta quindi percorsi locali e calcola
+digest propri; questa ricognizione non dichiara una selezione di distribuzione
+né completezza linguistica.
+
+Il file catalogo `OcrHunspellCatalog` richiede per ogni risorsa `@id`,
+`language`, `variant`, `upstream`, `revision`, `license` e i percorsi locali
+`dic`/`aff`; `dic_digest` e `aff_digest` opzionali fissano hash attesi. La CLI
+controlla solo le forme passate in un array JSON e aggiunge al
+`OcrLanguageLexicon` quelle accettate dall'adapter. `not_found_terms` resta una
+lista di candidati incerti. Esempio d'uso:
+
+```powershell
+$env:PYTHONPATH = 'memoria-engine\code'
+.\memoria-engine\.venv\Scripts\python.exe -m caduti_fonti_report.memoria_cli documents hunspell-lexicon `
+  --catalog "P:\path\OcrHunspellCatalog.json" --language deu --variant de-DE-frami `
+  --terms "P:\path\ocr-forms.json" --output "P:\path\OcrLanguageLexicon.json"
+```
+
+Usare `--apply` solo per creare il nuovo sidecar. Il catalogo operativo è stato
+configurato fuori dal repository in
+`P:\Comune\Me.Mo.Ri.a\risorse_lessicali\hunspell\libreoffice-26.8.0.3\OcrHunspellCatalog.json`.
+Usa il tag LibreOffice 26.8.0.3, commit
+`f635f236d61598d9ea701150bab1829b2d57ed29`; contiene quattro dizionari e
+l'alias esplicito `ita_old`, con SHA-256 di `.dic`/`.aff`, metadata licenza e
+avvisi conservati nella stessa directory. Nessun dizionario reale è nel
+repository. Il backend opzionale `spylls 0.1.7` è installato nel virtualenv:
+16 test mirati PASS senza skip e CLI preview reale PASS per tutte e cinque le
+voci usando forme campione sintetiche, non trascrizioni storiche. I test
+producono `ResourceWarning` per reader non chiusi da spylls al teardown; il
+CLI one-shot termina correttamente, ma un eventuale uso persistente va
+rivalutato.
+
 ## Riconciliazione inventario T41 - 2026-10-06
 
 Le pagine con esiti umani documentati sono più di una e hanno granularità

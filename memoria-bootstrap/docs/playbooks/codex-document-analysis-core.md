@@ -219,6 +219,43 @@ sequenza:
 Il quality gate OCR corrente misura processabilita' tecnica, non accuratezza.
 Non usare `accepted` come sinonimo di testo affidabile o revisionato.
 
+### Verifica visuale assistita e richieste di review
+
+Prima di chiedere all'utente una correzione visuale, eseguire i controlli
+riproducibili gia' disponibili: confrontare crop dell'immagine, regioni e testo
+OCR persistente; se utile, usare una seconda lettura indipendente sul solo crop.
+Non rilanciare OCR quando un output valido e' gia' disponibile. Registrare
+separatamente i casi risolti automaticamente e quelli ancora ambigui; chiedere
+intervento umano solo su questi ultimi, mostrando il crop e l'evidenza che
+impedisce una conclusione.
+
+Per ridurre il carico manuale, leggere prima la pagina e i crop alla risoluzione
+utile, confrontando tutti gli output persistenti. Conteggiare i soli dubbi che
+restano irrisolti dopo questo passaggio; non chiedere conferma di gruppi gia'
+leggibili o di differenze OCR risolvibili sull'immagine. Se il conteggio e'
+zero, salvare una trascrizione candidata `unverified_model_assisted` con
+provenance e proseguire alla pagina successiva. Se restano molti dubbi, fermare
+la batch review e rivalutare crop, segmentazione o strumenti prima di scaricare
+decine di decisioni sull'utente. Questa scorciatoia produce candidati, non una
+reference `human_verified`; quest'ultima richiede la conferma umana prevista dal
+contratto prima di metriche o promozioni.
+
+Separare esplicitamente le decisioni richieste: confermare il testo non
+conferma la struttura del Markdown, e confermare la struttura non conferma
+l'associazione tra blocchi e regioni dell'immagine. Evitare richieste generiche
+come "confermi il mapping?". Per ogni dubbio indicare pagina, blocco/regioni,
+letture candidate e la scelta precisa richiesta; se nessuna scelta e'
+sostenibile, lasciare il campo irrisolto.
+
+Il disaccordo fra OCR, lettura visuale e reference puo' ordinare una review,
+non stabilire quale lettura e' vera ne' rimuovere elementi dalla coda. Le prove
+di normalizzazione vanno eseguite solo in confronto ombra, simmetricamente su
+reference e output, conservando gli originali. Se la trasformazione cambia la
+segmentazione, dichiarare il nuovo denominatore e non confrontare gli indici
+come se fossero invariati. Un risultato su poche pagine non definisce una
+soglia o una regola di accettazione; i risultati diagnostici T41 sono registrati
+in `../current-next-increment.md`.
+
 ## Glossario militare versionato e traduzioni candidate
 
 Le abbreviazioni e i termini militari non vanno mantenuti in un Markdown

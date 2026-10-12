@@ -1920,12 +1920,23 @@ Gate e limiti:
   repository; TIFF, profili canonici, claim e fatti verificati non vengono
   modificati.
 
-Stato: la formalizzazione documentale e' chiusa il 2026-09-25. Il 2026-10-01
-e' stata verificata una reference page-scoped per `T314-1275-00150` e sono
-stati confrontati PP-OCRv5 e Tesseract. Questo chiude il confronto su una pagina,
-ma non il campione stratificato iniziale di 8-10 pagine. T41 resta quindi
-bloccata in attesa di reference umane verificabili per le altre pagine
-selezionate; le metriche ottenute non dichiarano accuratezza generale.
+Stato: la formalizzazione documentale e' chiusa il 2026-09-25. Sono disponibili
+reference page-scoped con confronto verificato per `T314-1275-00150` e
+`T314-1275-00415`; per 00415 il digest finale lega la preview v3 alla conferma
+del 2026-10-03. L'allineamento copre 49/49 blocchi e 58/59 regioni; il singolo
+carattere isolato omesso e' soppresso nella preview approvata. Il confronto
+PP-OCRv5 00415 misura CER 0.008187, WER 0.023622, copertura token 0.981627 e
+richiamo dell'ordine 0.836735, con struttura non esatta. Sono metriche di una
+pagina/configurazione, non accuratezza generale.
+
+`T314-1275-00598` ha ora un mapping draft per il blocco tabellare 3: otto ID
+regione trovano ciascuno una sola corrispondenza testuale in quel blocco e
+rispettano l'ordine geometrico. L'allineamento candidato copre 54/54 regioni
+senza assegnazioni a celle o colonne. Preview e diario sono fissati a SHA-256 in
+un pacchetto di conferma, ancora `pending_user_confirmation`: il precedente
+diario riporta solo la data e non lega l'approvazione al digest. 00598 resta
+quindi esclusa dalle metriche; il gold verificato comprende due pagine, meno
+delle 8-10 iniziali. T41 prosegue senza fissare una soglia.
 
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 
@@ -1964,8 +1975,94 @@ Il vincolo project-local, la migrazione degli asset OCR e lo smoke test sono
 stati completati e verificati il 2026-09-26 in una root persistente esterna al
 repository: 52 file copiati con SHA-256 e nessun mismatch, quindi smoke test
 project-local PASS con 51 regioni e JSON validi. `rec_boxes` non allineato a
-`rec_texts` e' stato escluso fail-safe e registrato nel manifest. T41 resta
-indipendentemente futura/bloccata in assenza della reference page-scoped.
+`rec_texts` e' stato escluso fail-safe e registrato nel manifest. T41 dispone
+ora di reference page-scoped con confronti metrici verificati per `00150` e
+`00415`; il mapping 00598 copre tutte le regioni a livello di blocco tabellare,
+ma attende conferma esplicita legata al digest prima di diventare reference
+metrica. Due pagine non bastano per calibrare il rischio.
+
+### T43 - Triage lessicale e delle sigle per la revisione OCR
+
+Dipendenze: T40, T42 e `ocr_lexicon_candidates`.
+
+Obiettivo: prima della revisione umana, evidenziare parole OCR non trovate in un
+lessico dichiarato per la lingua della pagina e sigle militari non riconosciute
+dal glossario versionato, offrendo candidati simili senza correggere il testo.
+
+Criteri di uscita:
+
+- una CLI preview-first accetta una `DocumentStructure`, un lessico linguistico
+  versionato e il glossario militare versionato;
+- il report distingue corrispondenze esatte, token senza corrispondenza e
+  suggerimenti fuzzy, separando parole e abbreviazioni/sigle;
+- il report conserva testo OCR, `source_region_ids`, hash/provenance della
+  struttura e digest/versioni delle risorse lessicali;
+- parole storiche, nomi propri, composti tedeschi e abbreviazioni non presenti
+  nelle risorse restano candidati da controllare, mai errori certi;
+- `--apply` scrive solo un nuovo report; preview e suggerimenti non modificano
+  OCR grezzo, `DocumentStructure`, preview automatica o revisioni umane;
+- test offline coprono corrispondenze, suggerimenti, sigle ignote, provenance,
+  determinismo e protezione degli input.
+
+La prima implementazione usa risorse esplicite fornite dal workspace/runtime;
+non presume installato un dizionario generale e non scarica fonti live. La CLI
+preview-first e' stata completata il 2026-10-11 con risorse esplicite,
+digest/versione, provenance per blocco/token e test offline. Senza glossario il
+report dichiara `abbreviation_check: not_run`. Le lingue prioritarie per le
+risorse lessicali seguono quelle gia' configurate nei percorsi OCR: italiano
+(`ita`, con variante Tesseract `ita_old`), inglese (`eng`), russo (`rus`) e
+tedesco (`deu`). Tesseract elenca anche `osd`, che rileva orientamento/script e
+non e' un dizionario linguistico; il routing PP-OCRv5 di benchmark mappa le
+quattro lingue a Latin, English ed East Slavic. Questa disponibilita' non
+asserisce accuratezza OCR equivalente per lingua.
+
+### T44 - Catalogo lessicale OCR multi-lingua
+
+Dipendenze: T43 e configurazioni lingua OCR gia' supportate.
+
+Obiettivo: alimentare `documents lexicon-review` con dizionari versionati per
+italiano, inglese, russo e tedesco, riusando un formato compatibile con
+Hunspell dove disponibile e mantenendo glossari storici/sigle separati.
+
+Criteri di uscita:
+
+- un catalogo associa codice lingua OCR e variante ai file lessicali dichiarati;
+- ogni risorsa registra upstream, versione/revisione, licenza, digest e variante
+  ortografica, senza presumere una licenza comune a tutti i dizionari;
+- il caricamento supporta `.dic`/`.aff` tramite adapter Hunspell o dipendenza
+  esplicita, con errori chiari per risorse mancanti/incompatibili;
+- test offline coprono parole e forme flesse in `ita`, `eng`, `rus`, `deu`,
+  inclusi composti e grafie non riconosciute come candidati incerti;
+- sigle militari, nomi propri, forme storiche e token non trovati restano
+  controlli umani; nessuna correzione OCR automatica;
+- l'estensione a nuove lingue avviene aggiungendo risorse al catalogo senza
+  cambiare la logica di dominio.
+
+Scelta iniziale: valutare i dizionari Hunspell pubblicati dal progetto
+LibreOffice lingua per lingua, registrando le licenze upstream effettive prima
+di includere o distribuire i file. L'adozione del formato comune non implica
+completezza lessicale o accuratezza uniforme sui documenti storici.
+
+Ricognizione T44 del 2026-10-11: identificati candidati `it_IT` (Italian
+Writing Aids, GPL-3.0, versione 5.1.0/2020-10-13), `en_US` (SCOWL 2020-12-07,
+con avvisi di copyright/permessi multipli), `ru_RU` (termini BSD-like specifici,
+con obbligo di marcare modifiche e clausola di non endorsement) e
+`de_DE_frami` (GPLv2/GPLv3, versione 20161207+frami20170109). `ita_old` è
+un alias di catalogo esplicito, non una variante storica distinta. Il catalogo
+runtime accetterà solo file locali e ne calcolerà i digest; la ricognizione dei
+rami upstream non costituisce pin immutabile né autorizza a distribuire i
+dizionari. Conservare gli avvisi specifici e verificare una revisione/hash
+immutabili prima di qualsiasi bundling.
+
+Chiusura T44 del 2026-10-11: configurato in sola area esterna
+`P:\Comune\Me.Mo.Ri.a\risorse_lessicali\hunspell\libreoffice-26.8.0.3\OcrHunspellCatalog.json`
+con tag LibreOffice 26.8.0.3/commit
+`f635f236d61598d9ea701150bab1829b2d57ed29`, metadata licenza e SHA-256 per ogni
+coppia; `ita_old` resta alias esplicito di `it_IT`. Installato `spylls 0.1.7`;
+16 test mirati PASS senza skip e smoke CLI preview con risorse reali PASS per
+ita, ita_old, eng, rus e deu. I termini di smoke test sono sintetici; non si
+dichiara completezza lessicale né accuratezza OCR. I dizionari e i relativi
+avvisi non sono inclusi nel repository o nel pacchetto del motore.
 
 ## Traccia parallela Q - Qualita' e refactor continuo
 

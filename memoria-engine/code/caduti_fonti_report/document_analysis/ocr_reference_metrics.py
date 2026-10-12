@@ -289,10 +289,12 @@ def _token_counts(reference: list[str], output: list[str]) -> tuple[int, int, in
             matches, row, column = matches + 1, row - 1, column - 1
         elif row and column and matrix[row][column] == matrix[row - 1][column - 1] + 1:
             omissions, additions, row, column = omissions + 1, additions + 1, row - 1, column - 1
-        elif row:
+        elif row and matrix[row][column] == matrix[row - 1][column] + 1:
             omissions, row = omissions + 1, row - 1
-        else:
+        elif column and matrix[row][column] == matrix[row][column - 1] + 1:
             additions, column = additions + 1, column - 1
+        else:
+            raise RuntimeError("No optimal token alignment transition")
     return matches, omissions, additions
 
 

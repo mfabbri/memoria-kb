@@ -23,6 +23,9 @@ dev = [
 ocr = [
     "Pillow",
 ]
+hunspell = [
+    "spylls>=0.1.7,<0.2",
+]
 excel = [
     "xlrd",
 ]

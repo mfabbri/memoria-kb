@@ -36,6 +36,8 @@ from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates,
 from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
 from caduti_fonti_report.document_analysis.structured_markdown import export_structured_pages_markdown
 from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview
+from caduti_fonti_report.document_analysis.ocr_lexicon_candidates import build_document_lexicon_review
+from caduti_fonti_report.document_analysis.ocr_hunspell_catalog import export_hunspell_lexicon
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
@@ -1858,6 +1860,37 @@ def _command_documents_structure(args: argparse.Namespace) -> int:
     return 1 if args.apply and checkpoint_manifest["status"] == "mismatch_existing_manifest" else 0
 
 
+def _command_documents_hunspell_lexicon(args: argparse.Namespace) -> int:
+    try:
+        terms = json.loads(Path(args.terms).read_text(encoding="utf-8"))
+        if not isinstance(terms, list):
+            raise ValueError("--terms richiede una lista JSON di forme da controllare.")
+        report = export_hunspell_lexicon(
+            catalog_path=Path(args.catalog), language=args.language, variant=args.variant,
+            terms=terms, output_path=Path(args.output), apply=args.apply,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents hunspell-lexicon: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_lexicon_review(args: argparse.Namespace) -> int:
+    try:
+        report = build_document_lexicon_review(
+            structure_path=Path(args.structure), lexicon_path=Path(args.lexicon),
+            glossary_path=Path(args.glossary) if args.glossary else None,
+            output_path=Path(args.output), apply=args.apply,
+            max_distance=args.max_distance, max_suggestions=args.max_suggestions,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents lexicon-review: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_glossary_preview(args: argparse.Namespace) -> int:
     try:
         report = build_glossary_preview(
@@ -2582,6 +2615,27 @@ def build_parser() -> argparse.ArgumentParser:
     documents_structure.add_argument("--profile", choices=["leader_list_report", "numbered_report"], required=True)
     documents_structure.add_argument("--apply", action="store_true", help="Scrive output mancanti; senza flag e' read-only.")
     documents_structure.set_defaults(handler=_command_documents_structure)
+    documents_hunspell = documents_subparsers.add_parser(
+        "hunspell-lexicon", help="Esporta forme riconosciute da Hunspell locale per lexicon-review; preview-only."
+    )
+    documents_hunspell.add_argument("--catalog", required=True, help="OcrHunspellCatalog JSON con metadata delle risorse locali.")
+    documents_hunspell.add_argument("--language", required=True, choices=["ita", "ita_old", "eng", "rus", "deu"])
+    documents_hunspell.add_argument("--variant", help="Variante esplicita del catalogo (obbligatoria se ambigua).")
+    documents_hunspell.add_argument("--terms", required=True, help="Lista JSON di forme da sottoporre al backend.")
+    documents_hunspell.add_argument("--output", required=True, help="Nuovo OcrLanguageLexicon JSON campionato.")
+    documents_hunspell.add_argument("--apply", action="store_true", help="Scrive solo il nuovo lessico diagnostico.")
+    documents_hunspell.set_defaults(handler=_command_documents_hunspell_lexicon)
+    documents_lexicon = documents_subparsers.add_parser(
+        "lexicon-review", help="Diagnostica parole e sigle da risorse esplicite; copertura limitata, revisione umana richiesta."
+    )
+    documents_lexicon.add_argument("--structure", required=True, help="DocumentStructure JSON da controllare.")
+    documents_lexicon.add_argument("--lexicon", required=True, help="OcrLanguageLexicon JSON esplicito e versionato.")
+    documents_lexicon.add_argument("--glossary", help="MilitaryGlossary JSON-LD opzionale per le sigle.")
+    documents_lexicon.add_argument("--output", required=True, help="Nuovo sidecar JSON-LD diagnostico.")
+    documents_lexicon.add_argument("--max-distance", type=int, default=2)
+    documents_lexicon.add_argument("--max-suggestions", type=int, default=5)
+    documents_lexicon.add_argument("--apply", action="store_true", help="Scrive solo il sidecar; senza flag stampa la preview.")
+    documents_lexicon.set_defaults(handler=_command_documents_lexicon_review)
     documents_glossary = documents_subparsers.add_parser(
         "glossary-preview",
         help="Ricalcola menzioni candidate con una versione esplicita del glossario; scrive solo con --apply.",
