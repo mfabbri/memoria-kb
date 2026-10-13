@@ -221,6 +221,25 @@ Non usare `accepted` come sinonimo di testo affidabile o revisionato.
 
 ### Verifica visuale assistita e richieste di review
 
+Il controllo linguistico è un passaggio obbligatorio **prima** di coinvolgere
+l'utente. Sulla trascrizione candidata (e non soltanto sul raw OCR) eseguire o
+riusare il triage T43/T44 per la lingua corretta: dizionario Hunspell locale
+con versione/hash espliciti e glossario militare esplicito per parole composte
+e abbreviazioni. Consultare gli esiti `exact_match`, `not_found` e tutti i
+`fuzzy_suggestions`; per i termini non trovati verificare se sono nomi propri,
+forme storiche/composte o sigle non incluse nel glossario. Se il triage
+persistente è riferito alla stessa pagina ma alla trascrizione raw, controllare
+che copra anche le forme corrette/aggiunte nella candidata e interrogare
+Hunspell per le forme nuove. Registrare risorsa, versione, hash, copertura,
+risultati e classificazione dei non trovati prima della richiesta umana.
+
+Un match lessicale è un indizio, non una prova della lettura; l'assenza dal
+dizionario o dal glossario non è un errore certo e un suggerimento fuzzy non è
+una correzione automatica. Usare i database per individuare parole o acronimi
+da ricontrollare e per risolvere forme sostenute da fonti lessicali esplicite;
+conservare le forme storiche e non espandere sigle senza supporto. La richiesta
+all'utente può partire solo dopo questo passaggio e il confronto visuale.
+
 Prima di chiedere all'utente una correzione visuale, eseguire i controlli
 riproducibili gia' disponibili: confrontare crop dell'immagine, regioni e testo
 OCR persistente; se utile, usare una seconda lettura indipendente sul solo crop.
@@ -255,6 +274,70 @@ segmentazione, dichiarare il nuovo denominatore e non confrontare gli indici
 come se fossero invariati. Un risultato su poche pagine non definisce una
 soglia o una regola di accettazione; i risultati diagnostici T41 sono registrati
 in `../current-next-increment.md`.
+
+### Sequenza end-to-end e controllo del Markdown
+
+Per ogni pagina, seguire questo ordine prima di chiedere lavoro all'utente:
+
+1. Verificare identita' e SHA-256 del TIFF e degli output gia' persistiti. Non
+   rilanciare OCR se gli output validi esistono; l'immagine originale resta la
+   fonte primaria.
+2. Costruire o riusare una mappa strutturata di regioni con `source_region_id`,
+   bounding box, tipo (titolo, paragrafo, tabella, nota) e ordine di lettura.
+   Verificare copertura e raggruppare regioni spezzate che appartengono alla
+   stessa riga/voce, cosi' il numero di regioni non diventa il numero di review.
+3. Allineare PP-OCR, Tesseract e gli altri output disponibili per blocco. Se
+   utile, eseguire una lettura visiva indipendente solo tramite il percorso
+   Ollama WSL documentato (`ollama-wsl` o endpoint locale esplicito), dopo aver
+   verificato runtime, modello, digest e compatibilita'. Salvare tale lettura
+   separatamente: non deve sovrascrivere OCR, struttura o candidata.
+4. Comporre il Markdown dalla mappa strutturata, preservando ordine, righe,
+   intestazioni, celle e forme stampate. Non dedurre contenuto mancante dalla
+   plausibilita' linguistica e non normalizzare silenziosamente numeri o sigle.
+5. Eseguire Hunspell e glossario esplicito sulla candidata esatta. Si puo'
+   riusare un triage raw solo dopo aver verificato che copra le forme della
+   candidata; interrogare le forme nuove. Classificare i non trovati e i fuzzy
+   per termine e posizione: sono alert, non conteggi di dubbi o azioni manuali.
+6. Eseguire controlli deterministici: copertura una-volta-sola delle regioni,
+   ordine geometrico coerente, conteggio righe/colonne/celle, associazione
+   Markdown-cella e assenza di blocchi persi o duplicati. Renderizzare il
+   Markdown quando serve e confrontare ogni area con pagina/crop corrispondente.
+7. Risolvere automaticamente soltanto i disaccordi sostenuti dall'immagine,
+   da piu' evidenze indipendenti o da risorse lessicali esplicite. Il VLM puo'
+   segnalare regioni e letture alternative; non decide da solo e deve poter
+   dichiarare incertezza. Raggruppare gli eventuali dubbi residui per decisione
+   umana, non per regione OCR, e chiedere in un solo passaggio una conferma
+   page-level del candidato esatto.
+
+Il percorso WSL e' distinto dall'eventuale installazione Ollama Windows:
+non inferire che WSL sia assente o inutilizzabile da un errore di enumerazione
+WSL nel sandbox. Per provider, invocazione `wsl -e curl` ed esempio d'uso,
+seguire `memoria-engine/docs/stato-implementazione-meta-motore.md`. Per le
+metriche dei modelli visuali consultare la valutazione T41 nella roadmap e il
+checkpoint dei risultati; non sostituire il runtime documentato con l'istanza
+Windows solo perche' questa e' visibile dal terminale corrente.
+La prova sintetica T41 di `llava-llama3` registrata in
+`../roadmap/02-technical-roadmap.md` ha misurato una configurazione specifica
+con molte aggiunte; non e' una conclusione sui VLM in generale. La documentazione
+registra anche che `llama3.2-vision` era incompatibile con Ollama 0.33.2. Qwen3-VL
+e GLM-OCR sono alternative candidate, non risultati convalidati per questo
+corpus. Prima di usare qualsiasi modello per triage reale, controllarne
+disponibilita'/compatibilita' nel WSL e valutarlo con lo stesso benchmark contro
+reference gold, per lingua e tipo di pagina. Nessun risultato vendor o fixture
+sintetica autorizza auto-accettazione.
+
+Gli alert lessicali, i disaccordi OCR e le regioni non sono equivalenti alle
+incertezze reali. Il report deve indicare: forme uniche controllate, alert
+classificati, dubbi residui distinti e numero di decisioni richieste. Non
+presentare un totale di azioni manuali finche' gli alert non sono stati
+deduplicati e classificati.
+
+Auto-accettazione e' una decisione separata. Non definire una soglia da una
+singola pagina o da fixture sintetiche. Calibrare e verificare soglie per
+lingua e tipo di documento su reference gold, misurando omissioni, aggiunte,
+errori testuali e fedelta' strutturale; mantenere holdout separati. Finche' il
+gate non e' validato, la pipeline produce candidati non verificati e non
+reference `human_verified`.
 
 ## Glossario militare versionato e traduzioni candidate
 
@@ -312,3 +395,28 @@ finale sono PASS con fixture sintetica; questo dimostra solo determinismo,
 non accuratezza OCR. La misurazione reale della pagina 00028 e dei crop 00026
 resta in attesa di reference umana verificata; T39 resta condizionale a errori
 misurati con tale reference.
+
+### Lezione operativa T41: gate e confronto non equivalgono ad accuratezza
+
+Nel run fresco della pagina `00598`, Tesseract ha superato il proprio gate di
+confidence ma ha ottenuto WER `0.288973` rispetto alla reference confermata.
+Una pagina `00750` si e' invece fermata prima della registrazione per confidence
+insufficiente; `00150` non era compatibile col frame richiesto dal comparatore.
+Questi esiti mostrano che il gate attuale misura la processabilita' del run,
+non la correttezza della trascrizione, e che le incompatibilita' vanno lasciate
+bloccate invece di forzare un confronto. I dettagli e gli hash sono in
+`../current-next-increment.md` e nella decisione
+`../ocr-low-manual-review-architecture.md`.
+
+Prima di presentare dubbi a una persona, completare il confronto pagina/crop,
+allineare le letture per blocco e verificare la candidata esatta con il lessico
+locale e i glossari disponibili. Le correzioni sostenute dall'immagine o da
+fonti esplicite vanno applicate alla candidata; le domande devono contenere solo
+decisioni ancora irrisolte e vanno raggruppate per voce, non per regione OCR.
+La confidence, l'accordo fra motori, il numero di regioni e gli alert lessicali
+non sono conteggi di errori o azioni umane. Prima di processare decine di pagine
+serve il runner batch pilotato da manifest, con rapporto e stato fail-closed per
+pagina; l'adapter Tesseract corrente e' ancora una funzione Python, non un
+runner batch. Nessun risultato del pilot abilita auto-pass: la soglia va
+calibrata e verificata su gold e holdout separati, includendo errori strutturali
+e copertura visiva indipendente.

@@ -4,6 +4,12 @@ Data: 2026-09-20
 
 Stato: direzione architetturale selezionata per il post-MVP.
 
+La decisione per ridurre la review manuale e il primo gate implementato sono
+registrati in [ocr-low-manual-review-architecture.md](ocr-low-manual-review-architecture.md).
+Il gate confronta la candidata strutturata con Markdown, evidence e review
+lessicale legata al digest; aggrega alert per blocco, non conta ogni alert come
+azione manuale e non emette `machine_pass` prima della calibrazione.
+
 ## Scopo
 
 Portare scansioni storiche da immagine a Markdown revisionabile senza confondere

@@ -1920,23 +1920,22 @@ Gate e limiti:
   repository; TIFF, profili canonici, claim e fatti verificati non vengono
   modificati.
 
-Stato: la formalizzazione documentale e' chiusa il 2026-09-25. Sono disponibili
-reference page-scoped con confronto verificato per `T314-1275-00150` e
-`T314-1275-00415`; per 00415 il digest finale lega la preview v3 alla conferma
-del 2026-10-03. L'allineamento copre 49/49 blocchi e 58/59 regioni; il singolo
-carattere isolato omesso e' soppresso nella preview approvata. Il confronto
-PP-OCRv5 00415 misura CER 0.008187, WER 0.023622, copertura token 0.981627 e
-richiamo dell'ordine 0.836735, con struttura non esatta. Sono metriche di una
-pagina/configurazione, non accuratezza generale.
+Stato: formalizzazione documentale chiusa il 2026-09-25. Il campione comprende
+reference page-scoped verificate per `T314-1275-00150`, `00415`, `00598` e
+`00750`; il testo reale e gli artefatti restano esterni al repository. Per
+`00415`, il digest lega la preview v3 alla conferma del 2026-10-03: allineamento
+49/49 blocchi e 58/59 regioni, con un carattere isolato soppresso nella preview
+approvata; PP-OCRv5 misura CER 0.008187, WER 0.023622, copertura token 0.981627 e
+richiamo dell'ordine 0.836735. Per `00598`, reference, audit ed evaluation sono
+verificati; il contratto non esprime le relazioni di graffa/cella confermate.
 
-`T314-1275-00598` ha ora un mapping draft per il blocco tabellare 3: otto ID
-regione trovano ciascuno una sola corrispondenza testuale in quel blocco e
-rispettano l'ordine geometrico. L'allineamento candidato copre 54/54 regioni
-senza assegnazioni a celle o colonne. Preview e diario sono fissati a SHA-256 in
-un pacchetto di conferma, ancora `pending_user_confirmation`: il precedente
-diario riporta solo la data e non lega l'approvazione al digest. 00598 resta
-quindi esclusa dalle metriche; il gold verificato comprende due pagine, meno
-delle 8-10 iniziali. T41 prosegue senza fissare una soglia.
+Per `00750`, la conferma page-scoped del 2026-10-13 è legata al candidato
+SHA-256 `8b8010b49a46d1d97294c935eeac4a29aa1ce8bf6ae9ac919b55bd7e4dc7fb29` e
+alla source TIFF fissata. PP-OCRv5 raw misura CER 0.586381, WER 0.621891 e
+copertura token 0.527363; l'attuale struttura `numbered_report` non rappresenta
+la griglia e resta diagnostica. Sono risultati page/configuration-scoped: quattro
+pagine non bastano per le 8-10 iniziali né per definire una soglia. Holdout e
+decisioni archivistiche restano separati.
 
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 

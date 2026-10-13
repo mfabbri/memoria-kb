@@ -7,6 +7,7 @@ import subprocess
 import sys
 import unittest
 import uuid
+from unittest.mock import patch
 from contextlib import contextmanager
 from pathlib import Path
 from PIL import Image
@@ -15,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.document_quality import assess_document_quality  # noqa: E402
 from caduti_fonti_report.document_analysis.manual_registration import register_manual_document  # noqa: E402
+from caduti_fonti_report.document_analysis.image_preprocessing import preprocess_dark_foreground_for_ocr  # noqa: E402
 from caduti_fonti_report.document_analysis.ocr_tesseract import run_document_ocr  # noqa: E402
 
 
@@ -660,6 +662,146 @@ class DocumentOcrTesseractTests(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "OCR Tesseract fallito"):
                 run_document_ocr(file_path=image_path, command_runner=lambda command: completed(stderr="bad image", returncode=1))
+
+
+class TesseractRunProvenanceTests(unittest.TestCase):
+    def _run_fixture(self, *, frames: int = 1, retry: bool = False,
+                     page_rows: str | None = None, word_page: int = 1,
+                     mutate: bool = False, probe_unavailable: bool = False) -> dict:
+        with workspace_temp_dir() as tmp_dir:
+            raw_dir = tmp_dir / "raw"
+            raw_dir.mkdir()
+            image_path = raw_dir / "scan.tiff"
+            images = [Image.new("L", (40 + index, 50 + index), 255) for index in range(frames)]
+            images[0].save(image_path, save_all=True, append_images=images[1:])
+            source_hash = hashlib.sha256(image_path.read_bytes()).hexdigest()
+            register_manual_document(file_path=image_path, source_id="manual_uploads",
+                                     title="Scansione", archival_reference="R-1")
+            selected_hashes = []
+
+            def fake_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+                is_preprocessed = Path(command[1]).suffix == ".png"
+                if mutate:
+                    with image_path.open("ab") as source_file:
+                        source_file.write(b"changed")
+                if retry and not is_preprocessed:
+                    return completed(stdout="")
+                selected_hashes.append(hashlib.sha256(Path(command[1]).read_bytes()).hexdigest())
+                if command[-1] != "tsv":
+                    return completed(stdout="Testo valido")
+                rows = page_rows if page_rows is not None else "".join(
+                    f"1\t{index + 1}\t0\t0\t0\t0\t0\t0\t{40 + index}\t{50 + index}\t-1\t\n"
+                    for index in range(frames)
+                )
+                return completed(stdout=(
+                    "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+                    + rows
+                    + f"5\t{word_page}\t1\t1\t1\t1\t0\t0\t10\t10\t90\tTesto\n"
+                    + f"5\t{word_page}\t1\t1\t1\t2\t12\t0\t10\t10\t90\tvalido\n"
+                ))
+
+            probe_target = "caduti_fonti_report.document_analysis.ocr_tesseract._probe_image"
+            if probe_unavailable:
+                with patch(probe_target, return_value={"status": "pillow_unavailable", "frame_count": None, "frames": []}):
+                    result = run_document_ocr(file_path=image_path, root_dir=raw_dir,
+                                              output_dir=tmp_dir / "processed", command_runner=fake_runner)
+            else:
+                if mutate:
+                    with self.assertRaisesRegex(ValueError, "modificata durante OCR"):
+                        run_document_ocr(file_path=image_path, root_dir=raw_dir,
+                                         output_dir=tmp_dir / "processed", command_runner=fake_runner)
+                    self.assertFalse(list((tmp_dir / "processed").rglob("*.text.json")))
+                    return {}
+                result = run_document_ocr(file_path=image_path, root_dir=raw_dir,
+                                          output_dir=tmp_dir / "processed", command_runner=fake_runner)
+            payload = json.loads(Path(result["text_path"]).read_text(encoding="utf-8"))
+            provenance = payload["ocr_run_provenance"]
+            self.assertEqual(provenance, result["ocr_run_provenance"])
+            self.assertEqual(provenance["source_image"]["sha256_before"], source_hash)
+            self.assertEqual(provenance["source_image"]["sha256_after"], source_hash)
+            self.assertEqual(provenance["selected_input"]["sha256"], selected_hashes[-1])
+            self.assertNotIn(str(tmp_dir), json.dumps(provenance))
+            self.assertEqual(sum(a["status"] == "selected" for a in provenance["attempts"]), 1)
+            return provenance
+
+    def test_original_input_attests_source_pixels_and_tsv_frame(self) -> None:
+        provenance = self._run_fixture()
+        self.assertEqual(provenance["@type"], "TesseractRunProvenance")
+        self.assertEqual(provenance["schema_version"], "1.0")
+        self.assertEqual(provenance["selected_input"]["kind"], "original")
+        self.assertEqual(provenance["tsv_pages"], [{"page_number": 1, "width": 40, "height": 50}])
+        self.assertTrue(provenance["adapter_ready"])
+        self.assertTrue(provenance["coordinates_identical_to_source_pixels"])
+
+    def test_selected_preprocessed_retry_attests_temporary_bytes_and_transform(self) -> None:
+        provenance = self._run_fixture(retry=True)
+        self.assertTrue(provenance["adapter_ready"])
+        self.assertEqual(provenance["selected_input"]["kind"], "temporary_preprocessed")
+        self.assertEqual(provenance["selected_input"]["transform"], "photometric_only")
+        self.assertEqual(provenance["selected_input"]["preprocessing"]["method"], "dark_foreground_binary")
+        self.assertIn("absolute_dark_threshold", provenance["selected_input"]["preprocessing"]["parameters"])
+        self.assertNotEqual(provenance["source_image"]["sha256_before"], provenance["selected_input"]["sha256"])
+
+    def test_multipage_tiff_keeps_each_frame_and_is_not_adapter_ready(self) -> None:
+        provenance = self._run_fixture(frames=2)
+        self.assertEqual(provenance["source_image"]["probe"]["frame_count"], 2)
+        self.assertEqual(provenance["tsv_pages"][1], {"page_number": 2, "width": 41, "height": 51})
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertFalse(provenance["coordinates_identical_to_source_pixels"])
+
+    def test_source_mutation_prevents_registration(self) -> None:
+        self._run_fixture(mutate=True)
+
+    def test_optional_probe_unavailable_preserves_registration_without_readiness(self) -> None:
+        provenance = self._run_fixture(probe_unavailable=True)
+        self.assertEqual(provenance["status"], "incomplete")
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertIn("image_probe_incomplete", provenance["reasons"])
+
+    def test_tsv_dimensions_and_word_page_inconsistency_disable_readiness(self) -> None:
+        provenance = self._run_fixture(page_rows="1\t1\t0\t0\t0\t0\t0\t0\t400\t500\t-1\t\n", word_page=2)
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertIn("tsv_dimensions_inconsistent", provenance["reasons"])
+        self.assertIn("tsv_word_page_mapping_inconsistent", provenance["reasons"])
+
+    def test_tsv_page_number_must_map_to_image_frame(self) -> None:
+        provenance = self._run_fixture(page_rows="1\t2\t0\t0\t0\t0\t0\t0\t40\t50\t-1\t\n")
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertIn("tsv_page_mapping_incomplete", provenance["reasons"])
+
+    def test_missing_tsv_frame_does_not_use_first_page_dimensions_for_whole_tiff(self) -> None:
+        provenance = self._run_fixture(frames=2, page_rows="1\t1\t0\t0\t0\t0\t0\t0\t40\t50\t-1\t\n")
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertIn("tsv_page_mapping_incomplete", provenance["reasons"])
+        self.assertIn("tsv_dimensions_inconsistent", provenance["reasons"])
+
+    def test_unknown_preprocessing_method_does_not_attest_geometry_identity(self) -> None:
+        def unknown_preprocessor(**kwargs):
+            report = preprocess_dark_foreground_for_ocr(**kwargs)
+            report["preprocessing_method"] = "unattested_transform"
+            return report
+
+        with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                   side_effect=unknown_preprocessor):
+            provenance = self._run_fixture(retry=True)
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertFalse(provenance["coordinates_identical_to_source_pixels"])
+        self.assertIn("unknown_input_transform", provenance["reasons"])
+
+    def test_selected_preprocessing_dimensions_must_match_source(self) -> None:
+        def resizing_preprocessor(**kwargs):
+            report = preprocess_dark_foreground_for_ocr(**kwargs)
+            with Image.open(kwargs["output_file"]) as prepared:
+                resized = prepared.resize((20, 25))
+            resized.save(kwargs["output_file"])
+            return report
+
+        with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                   side_effect=resizing_preprocessor):
+            provenance = self._run_fixture(retry=True)
+        self.assertFalse(provenance["adapter_ready"])
+        self.assertFalse(provenance["coordinates_identical_to_source_pixels"])
+        self.assertIn("source_selected_dimensions_mismatch", provenance["reasons"])
 
 
 if __name__ == "__main__":

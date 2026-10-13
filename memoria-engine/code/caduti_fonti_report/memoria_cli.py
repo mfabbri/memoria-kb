@@ -37,6 +37,7 @@ from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_
 from caduti_fonti_report.document_analysis.structured_markdown import export_structured_pages_markdown
 from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview
 from caduti_fonti_report.document_analysis.ocr_lexicon_candidates import build_document_lexicon_review
+from caduti_fonti_report.document_analysis.ocr_candidate_assessment import build_ocr_candidate_assessment
 from caduti_fonti_report.document_analysis.ocr_hunspell_catalog import export_hunspell_lexicon
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
@@ -1891,6 +1892,20 @@ def _command_documents_lexicon_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_candidate_assessment(args: argparse.Namespace) -> int:
+    try:
+        report = build_ocr_candidate_assessment(
+            structure_path=Path(args.structure), markdown_path=Path(args.markdown),
+            evidence_path=Path(args.evidence), lexicon_review_path=Path(args.lexicon_review),
+            output_path=Path(args.output), apply=args.apply,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents candidate-assessment: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["processability_status"] == "blocked" else 0
+
+
 def _command_documents_glossary_preview(args: argparse.Namespace) -> int:
     try:
         report = build_glossary_preview(
@@ -2636,6 +2651,17 @@ def build_parser() -> argparse.ArgumentParser:
     documents_lexicon.add_argument("--max-suggestions", type=int, default=5)
     documents_lexicon.add_argument("--apply", action="store_true", help="Scrive solo il sidecar; senza flag stampa la preview.")
     documents_lexicon.set_defaults(handler=_command_documents_lexicon_review)
+    documents_assessment = documents_subparsers.add_parser(
+        "candidate-assessment",
+        help="Controlla coerenza e raggruppa diagnostica OCR; nessun auto-pass senza calibrazione.",
+    )
+    documents_assessment.add_argument("--structure", required=True, help="DocumentStructure JSON candidato.")
+    documents_assessment.add_argument("--markdown", required=True, help="Markdown derivato deterministico della struttura.")
+    documents_assessment.add_argument("--evidence", required=True, help="OcrPageEvidence JSON originale.")
+    documents_assessment.add_argument("--lexicon-review", required=True, help="Review lessicale legata alla candidata.")
+    documents_assessment.add_argument("--output", required=True, help="Nuovo sidecar OcrCandidateAssessment.")
+    documents_assessment.add_argument("--apply", action="store_true", help="Scrive il sidecar; senza flag stampa la preview.")
+    documents_assessment.set_defaults(handler=_command_documents_candidate_assessment)
     documents_glossary = documents_subparsers.add_parser(
         "glossary-preview",
         help="Ricalcola menzioni candidate con una versione esplicita del glossario; scrive solo con --apply.",

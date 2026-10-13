@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -42,6 +43,8 @@ def run_document_ocr(
     if not image_path.exists() or not image_path.is_file():
         raise FileNotFoundError(f"Documento immagine non trovato: {image_path}")
     source_document_id = _source_document_id_from_sidecar(file_path=image_path, sidecar_path=sidecar_path)
+    source_sha256_before = _image_sha256(image_path)
+    source_probe = _probe_image(image_path)
 
     with tempfile.TemporaryDirectory(prefix="caduti-ocr-preprocess-") as tmp_dir:
         initial_image_path = image_path
@@ -111,6 +114,18 @@ def run_document_ocr(
                 command_runner=command_runner,
             )
             ocr_metadata.update(region_payload)
+        source_sha256_after = _image_sha256(image_path)
+        if source_sha256_after != source_sha256_before:
+            raise ValueError("Immagine sorgente modificata durante OCR; registrazione annullata.")
+        if _image_sha256(ocr_image_path) != ocr_text_result["input_sha256"]:
+            raise ValueError("Immagine input modificata durante OCR; registrazione annullata.")
+        ocr_metadata["ocr_run_provenance"] = _run_provenance(
+            source_document_id=source_document_id,
+            source_sha256_before=source_sha256_before, source_sha256_after=source_sha256_after,
+            source_probe=source_probe, selected=ocr_text_result,
+            language=language, tesseract_path=tesseract_path,
+            requested_psm=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
+        )
     result = register_document_transcription(
         file_path=image_path,
         sidecar_path=sidecar_path,
@@ -133,7 +148,95 @@ def run_document_ocr(
     if enable_region_ocr:
         result["ocr_region_status"] = ocr_metadata["ocr_region_status"]
     result["tesseract_path"] = tesseract_path
+    result["ocr_run_provenance"] = ocr_metadata["ocr_run_provenance"]
     return result
+
+
+def _image_sha256(image_path: Path) -> str:
+    with image_path.open("rb") as image_file:
+        return hashlib.file_digest(image_file, "sha256").hexdigest()
+
+
+def _probe_image(image_path: Path) -> dict[str, Any]:
+    try:
+        from PIL import Image
+    except ImportError:
+        return {"status": "pillow_unavailable", "frame_count": None, "frames": []}
+    try:
+        with Image.open(image_path) as image:
+            frames = []
+            for index in range(getattr(image, "n_frames", 1)):
+                image.seek(index)
+                width, height = image.size
+                frames.append({"frame_index": index, "width": width, "height": height})
+            return {"status": "probed", "frame_count": len(frames), "frames": frames}
+    except (OSError, ValueError):
+        return {"status": "probe_failed", "frame_count": None, "frames": []}
+
+
+def _run_provenance(
+    *, source_document_id: str, source_sha256_before: str, source_sha256_after: str,
+    source_probe: dict[str, Any], selected: dict[str, Any], language: str,
+    tesseract_path: str, requested_psm: str, engine_mode: str, dpi: str,
+) -> dict[str, Any]:
+    input_probe = selected["input_probe"]
+    pages = selected["quality"].get("ocr_tsv_pages", [])
+    word_pages = selected["quality"].get("ocr_tsv_word_page_numbers", [])
+    preprocessing = selected["preprocessing_report"]
+    transform = "original_pixels" if selected["input_kind"] == "original" else (
+        "photometric_only" if preprocessing and preprocessing.get("preprocessing_method") == "dark_foreground_binary"
+        else "unknown"
+    )
+    reasons: list[str] = []
+    if source_probe["status"] != "probed" or input_probe["status"] != "probed":
+        reasons.append("image_probe_incomplete")
+    if source_probe["frame_count"] != 1 or input_probe["frame_count"] != 1:
+        reasons.append("single_frame_required")
+    if transform == "unknown":
+        reasons.append("unknown_input_transform")
+    source_frames, input_frames = source_probe["frames"], input_probe["frames"]
+    dimensions_match = bool(source_frames and input_frames and source_frames == input_frames)
+    if not dimensions_match:
+        reasons.append("source_selected_dimensions_mismatch")
+    expected_pages = list(range(1, (input_probe["frame_count"] or 0) + 1))
+    if not pages or [page["page_number"] for page in pages] != expected_pages:
+        reasons.append("tsv_page_mapping_incomplete")
+    if any(number not in expected_pages for number in word_pages):
+        reasons.append("tsv_word_page_mapping_inconsistent")
+    if len(pages) != len(input_frames) or any(
+        page["width"] <= 0 or page["height"] <= 0
+        or (page["width"], page["height"]) != (frame["width"], frame["height"])
+        for page, frame in zip(pages, input_frames)
+    ):
+        reasons.append("tsv_dimensions_inconsistent")
+    geometry_identity = (
+        source_probe["frame_count"] == input_probe["frame_count"] == 1
+        and dimensions_match and transform != "unknown"
+    )
+    return {
+        "@type": "TesseractRunProvenance", "schema_version": "1.0",
+        "engine": "tesseract", "source_document_id": source_document_id,
+        "source_image": {"sha256_before": source_sha256_before, "sha256_after": source_sha256_after,
+                         "unchanged": True, "probe": source_probe},
+        "selected_input": {"kind": selected["input_kind"], "sha256": selected["input_sha256"],
+                           "probe": input_probe, "transform": transform,
+                           "preprocessing": None if preprocessing is None else {
+                               "method": preprocessing.get("preprocessing_method"),
+                               "parameters": preprocessing.get("parameters", {}),
+                           }},
+        "configuration": {"executable": tesseract_path, "language": language,
+                          "requested_page_segmentation_mode": requested_psm,
+                          "effective_page_segmentation_mode": selected["page_segmentation_mode"],
+                          "engine_mode": engine_mode, "dpi": dpi},
+        "attempts": [{key: attempt[key] for key in (
+            "candidate_id", "input", "page_segmentation_mode", "status", "quality_score",
+            "word_count", "line_count", "input_sha256",
+        ) if key in attempt} for attempt in selected["attempts"]], "tsv_pages": pages,
+        "tsv_word_page_numbers": word_pages,
+        "coordinates_identical_to_source_pixels": geometry_identity and not reasons,
+        "status": "complete" if not reasons else "incomplete",
+        "adapter_ready": not reasons, "reasons": reasons,
+    }
 
 
 def _run_tesseract_with_quality_retries(
@@ -203,6 +306,8 @@ def _run_tesseract_with_quality_retries(
         "image_path": selected["image_path"], "page_segmentation_mode": selected["page_segmentation_mode"],
         "attempts": attempts, "preprocessing_report": preprocessing_report if selected["input_kind"] != "original" else None,
         "preprocessing_status": preprocessing_status if selected["input_kind"] != "original" else "not_requested",
+        "input_kind": selected["input_kind"], "input_sha256": selected["input_sha256"],
+        "input_probe": selected["input_probe"],
     }
 
 
@@ -217,6 +322,8 @@ def _evaluate_ocr_candidate(
     engine_mode: str, dpi: str, source_document_id: str, command_runner: CommandRunner | None,
 ) -> dict[str, Any]:
     candidate_id = f"{input_kind}:{page_segmentation_mode or 'default'}"
+    input_sha256 = _image_sha256(image_path)
+    input_probe = _probe_image(image_path)
     try:
         text = _run_tesseract(image_path=image_path, language=language, tesseract_path=tesseract_path,
                               page_segmentation_mode=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
@@ -225,18 +332,23 @@ def _evaluate_ocr_candidate(
         return {"candidate_id": candidate_id, "input_kind": input_kind, "image_path": image_path,
                 "page_segmentation_mode": page_segmentation_mode, "text": "", "quality": _quality_payload(word_confidences=[], reasons=["ocr_empty"]),
                 "quality_score": 0.0, "usable": False,
-                "attempt": {"candidate_id": candidate_id, "input": input_kind, "page_segmentation_mode": page_segmentation_mode, "status": "empty", "reason": str(exc), "quality_score": 0.0}}
+                "attempt": {"candidate_id": candidate_id, "input": input_kind, "page_segmentation_mode": page_segmentation_mode, "status": "empty", "reason": str(exc), "quality_score": 0.0,
+                            "input_sha256": input_sha256}}
     quality = _read_tesseract_quality(image_path=image_path, language=language, tesseract_path=tesseract_path,
                                       page_segmentation_mode=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
                                       source_document_id=source_document_id, command_runner=command_runner)
     score, usable, reasons = _quality_gate_score(text=text, quality=quality)
+    if _image_sha256(image_path) != input_sha256:
+        raise ValueError("Immagine input modificata durante OCR; registrazione annullata.")
     status = "usable" if usable else "quality_rejected"
     return {"candidate_id": candidate_id, "input_kind": input_kind, "image_path": image_path,
             "page_segmentation_mode": page_segmentation_mode, "text": text, "quality": quality,
             "quality_score": score, "usable": usable,
+            "input_sha256": input_sha256, "input_probe": input_probe,
             "attempt": {"candidate_id": candidate_id, "input": input_kind, "page_segmentation_mode": page_segmentation_mode,
                         "status": status, "reason": ",".join(reasons), "quality_score": score,
-                        "word_count": quality["ocr_word_count"], "line_count": quality["ocr_line_count"]}}
+                        "word_count": quality["ocr_word_count"], "line_count": quality["ocr_line_count"],
+                        "input_sha256": input_sha256}}
 
 
 def _quality_gate_score(*, text: str, quality: dict[str, Any]) -> tuple[float, bool, list[str]]:
@@ -432,7 +544,7 @@ def _run_region_ocr(
 def _parse_tesseract_tsv(tsv_text: str) -> dict[str, Any]:
     lines = [line for line in tsv_text.splitlines() if line.strip()]
     if not lines:
-        return {"page": {}, "words": [], "lines": []}
+        return {"page": {}, "pages": [], "words": [], "lines": []}
     headers = lines[0].split("\t")
     records: list[dict[str, Any]] = []
     for line in lines[1:]:
@@ -443,7 +555,14 @@ def _parse_tesseract_tsv(tsv_text: str) -> dict[str, Any]:
         records.append(record)
     page = _parse_page_record(records)
     words = _parse_word_records(records)
-    return {"page": page, "words": words, "lines": _group_words_by_line(words)}
+    pages = [{"page_number": _int_or_zero(record.get("page_num", "")),
+              "width": _int_or_zero(record.get("width", "")),
+              "height": _int_or_zero(record.get("height", ""))}
+             for record in records if record.get("level") == "1"]
+    word_page_numbers = sorted({_int_or_zero(record.get("page_num", ""))
+                                for record in records if record.get("level") == "5"})
+    return {"page": page, "pages": pages, "word_page_numbers": word_page_numbers,
+            "words": words, "lines": _group_words_by_line(words)}
 
 
 def _parse_page_record(records: list[dict[str, Any]]) -> dict[str, int]:
@@ -545,8 +664,11 @@ def _layout_payload(*, records: dict[str, Any], source_document_id: str) -> dict
     page_height = int(page.get("height", 0) or 0)
     page_width = int(page.get("width", 0) or 0)
     lines = records.get("lines") or []
+    tsv_provenance = {"ocr_tsv_pages": records.get("pages", []),
+                      "ocr_tsv_word_page_numbers": records.get("word_page_numbers", [])}
     if not page_height or not lines:
         return {
+            **tsv_provenance,
             "ocr_layout_status": "layout_unavailable",
             "ocr_page_width": page_width or None,
             "ocr_page_height": page_height or None,
@@ -573,6 +695,7 @@ def _layout_payload(*, records: dict[str, Any], source_document_id: str) -> dict
         if _has_reference_signal(line["text"]):
             references.append(_candidate_from_line(line=line, reasons=reasons + ["reference_pattern"]))
     return {
+        **tsv_provenance,
         "ocr_layout_status": "layout_detected",
         "ocr_page_width": page_width,
         "ocr_page_height": page_height,

@@ -1,5 +1,203 @@
 # Current Next Increment
 
+## T41 provenance, adapter Tesseract e confronto 00598 - 2026-10-13
+
+Le nuove registrazioni `ProcessedDocumentText` includono `ocr_run_provenance`
+versione 1.0: hash sorgente prima/dopo il run, hash e tipo dell'input
+effettivamente selezionato, probe di dimensioni/frame, pagine TSV e dimensioni,
+configurazione e preprocessing. Se i byte sorgente o l'input selezionato cambiano
+durante l'OCR, la registrazione viene annullata. I frame multipli, i probe
+mancanti, le dimensioni/pagine incoerenti o una trasformazione sconosciuta
+mantengono `adapter_ready=false`; non sono stati adattati output storici.
+
+Test mirati con runner finti: 27/27 passati. L'adapter
+`ocr_tesseract_evidence_adapter.py` e' stato aggiunto per nuove registrazioni
+`adapter_ready=true`: verifica gli hash prima/dopo e dell'input originale, il
+frame singolo, la lingua, la geometria TSV e l'ancora dell'evidence PP-OCRv5.
+Rifiuta output storici, preprocessing fotometrico, pagine/crop non compatibili e
+provenienza incompleta. I suoi test mirati: 7/7 passati; comparatore: 14/14.
+Run fresco `T314-1275-00598`, source SHA-256
+`2bbf335032236ebad42afae52c832ba2da301566a467fb765848619df0b0fd28`, completato
+nella root runtime persistente
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00598-tesseract-adapter-20261013`.
+Tutti i controlli d'identita' con la
+reference human-verified passano. PP-OCRv5 ha 54 regioni e Tesseract 46 righe;
+il comparatore trova 3 accordi uno-a-uno, 5 disaccordi, 6 componenti ambigue,
+46 regioni PP-OCRv5 e 38 Tesseract senza overlap diretto. Il numero alto di
+non-abbinati riflette anche la diversa segmentazione e non equivale a omissioni
+visive.
+
+Esempi: PP-OCRv5/reference `Bigheriger Besitzer:` contro Tesseract
+`Bisheriger Besitzer:`; PP-OCRv5/reference `Name, Dienstgrad` contro Tesseract
+`ame, Dienstgrad`. In questo campione la lettura linguisticamente plausibile di
+Tesseract e' comunque diversa dalla reference confermata.
+
+Il runtime registra Tesseract `5.5.3.20260724`, OEM 1/PSM 6 e SHA-256 del
+traineddata `deu.traineddata`
+`19d219bbb6672c869d20a9636c6816a81eb9a71796cb93ebe0cb1530e2cdb22d`; il
+manifest ambiente e' `tesseract-runtime-environment.json` nella stessa root.
+
+Metriche testuali rispetto alla reference: Tesseract CER `0.134582`, WER
+`0.288973`, copertura token `0.870722` (34 omissioni, 75 aggiunte); PP-OCRv5
+sulla stessa pagina: CER `0.004681`, WER `0.011407`, copertura `0.996198`.
+Questo run ha superato il gate confidence Tesseract ma resta molto meno vicino
+alla reference: il gate esistente non e' una soglia di correttezza. Il risultato
+e' diagnostico e non abilita `machine_pass`; le metriche strutturali e la
+copertura visuale indipendente non sono state valutate. Il tentativo `00750` si
+e' fermato prima della registrazione per confidence insufficiente; `00150` non
+ha un frame compatibile con il comparatore. I JSON di run, evidence e confronto
+sono conservati nella root runtime indicata.
+
+L'adapter e' per ora una funzione Python pura, non ancora un comando batch. Per
+processare decine di pagine serve prima un runner pilotato da manifest che
+produca rapporti per pagina e mantenga i casi non compatibili in stato bloccato;
+restano poi necessari il controllo visuale indipendente e la calibrazione.
+
+## T41 confronto geometrico delle letture OCR - 2026-10-13
+
+Implementato `compare_ocr_page_evidence` per confrontare due evidence della
+stessa pagina originale. Il comparatore richiede identita' coerente di pagina,
+hash, source page/crop, lingua e trasformazione; engine o modello devono
+distinguere le letture. Allinea bounding box/poligoni con overlap positivo,
+senza soglia: associazioni uno-a-uno sono confrontate testualmente, mentre
+split/merge e componenti ambigue restano in coda; le regioni non abbinate sono
+conservate con i rispettivi ID.
+
+L'output e' diagnostico, non corregge e non cambia routing. Accordo tra modelli
+diversi non prova indipendenza o correttezza. Il comparatore non vede l'immagine
+e non intercetta omissioni condivise. L'adapter Tesseract verso
+`OcrPageEvidence` accetta solo run nuovi con provenienza completa sul frame
+originale e una evidence PP-OCRv5 full-page/raw; conserva ID TSV, confidence e
+provenienza del run. Output storici e input preprocessati restano esclusi.
+Test mirati: adapter 7/7 e comparatore 14/14 passati. Il confronto reale
+00598 e' completato e descritto sopra; il prossimo lavoro e' la verifica visuale
+indipendente della copertura, necessaria per le omissioni comuni.
+
+## T41 copertura delle regioni OCR nella candidata - 2026-10-14
+
+Incremento completato: `documents candidate-assessment` confronta le regioni
+in `OcrPageEvidence` con l'unione dei `source_region_ids` della
+`DocumentStructure`. Il report mostra totale, rappresentate, mancanti e
+rapporto di copertura; regioni OCR perse nella candidata bloccano il routing.
+Zero regioni produce copertura `null`. Il controllo non dimostra che l'OCR copra
+l'intera pagina originale: omissioni condivise dai motori richiedono una
+successiva verifica visuale indipendente.
+
+Test mirato: 17/17 in `test_ocr_candidate_assessment.py` passano. Nessuna soglia
+di auto-pass, modifica ai raw/gold/holdout o richiesta umana fa parte di questo
+incremento. Il confronto regionale successivo e' registrato nella sezione
+precedente; resta separata la verifica visuale di copertura, necessaria per le
+omissioni condivise dai motori.
+
+## Decisione architetturale OCR a review minima - 2026-10-13
+
+La decisione e' registrata in
+[`ocr-low-manual-review-architecture.md`](ocr-low-manual-review-architecture.md).
+Il primo gate disponibile e' `documents candidate-assessment`: controlla
+coerenza e hash tra `DocumentStructure`, Markdown generato, `OcrPageEvidence` e
+review lessicale; raggruppa gli alert per blocco. `not_found` resta una
+segnalazione, non una richiesta di intervento. Senza calibrazione il routing e'
+`not_calibrated`, `manual_action_count` e' `null` e `machine_pass` e' sempre
+falso. Il gate accetta solo Markdown prodotto dal renderer strutturato; non e'
+retroattivamente applicabile alla bozza libera di `00312` senza convertirla in
+una candidata strutturata verificabile.
+
+Per usarlo: `memoria documents candidate-assessment --structure <DocumentStructure.json>
+--markdown <derived.md> --evidence <OcrPageEvidence.json> --lexicon-review
+<OcrDocumentLexiconReview.json> --output <assessment.json>`; la preview e'
+read-only e la scrittura richiede `--apply`. Test e limiti sono descritti nella
+decisione architetturale.
+
+## T41 nuova pagina 00312 - 2026-10-13
+
+Selezionata `T314-1275-00312` per preparare una trascrizione candidata
+completa con confronto visuale del TIFF, della preview PP-OCRv5 e del testo
+Tesseract persistenti. Il TIFF SHA-256 è
+`dc07ad4b397945a03909e2af8278ea110e0d5c6cc8ae021dcb519ac6f75f84f2`; la
+pagina contiene testo dattiloscritto, con contatore e firma esclusi dalla
+trascrizione. La revisione visiva di pagina e crop ingranditi è completata. Il
+candidato completo ha SHA-256
+`ce96b704ba949f65a3f2da3370c7f5d3df1f79bbe80baf90095fad5a3013efde`;
+è persistito nella root runtime come
+`t41-00312-ocr-structure-20261003/visual-review-candidate-00312-20261013.md`;
+lo SHA-256 del file persistito coincide. La richiesta di conferma è stata
+sospesa dopo aver chiarito che i crop delle 82 regioni non erano stati
+controllati singolarmente. Un crop a risoluzione nativa mostra `A 1o`, mentre
+la bozza normalizzava in `A 10`: rivedere le forme ambigue e fissare una
+versione corretta prima di richiedere conferma. Il file resta non verificato;
+nessuna metrica o soglia è inferita. Il confronto non convalida struttura e
+associazioni cronologiche.
+
+Prima della prossima richiesta umana è stato completato il controllo lessicale
+della candidata, che in precedenza avevo omesso di consultare. Hunspell
+`de_DE-frami-modern` (catalogo LibreOffice 26.8.0.3; dizionario
+`de_DE_frami` 20161207+frami20170109; backend spylls 0.1.7) ha controllato 121
+forme uniche: 81 accettate e 40 non trovate. Il sidecar della candidata
+`ocr-language-lexicon-candidate-00312-20261013.json`, SHA-256
+`93c52d6df6c3eb345dbd13556259ab20377d5532abf88328beff71b0b3d4a9b3`, registra
+l'esito; la lista dei termini ha SHA-256
+`e40c38de43fb0af66edac965a0b96f03ce5b65a5f3ea5a8324b1e2ea7c1a64aa`.
+Il riesame con il glossario militare esplicito ha dato 147 match esatti, 55
+termini non trovati, 13 con suggerimenti fuzzy e 127 token non lessicali
+(punteggiatura, numeri e simili). Il glossario disponibile copre `Div.` e
+`Btl.`, ma non `DVL`, `Uffz.`, `IIb`, `Id-Monatsmeldung`, `LI.Geb.A.K.` o
+`Jnf.Div.`. Il solo suggerimento lessicale pertinente individuato è
+`Diiziplin` → `Disziplin`; la candidata già usa `Disziplin`. I suggerimenti
+per `DVL` e `IIb` sono deboli e quelli su `Korpsstabes` non giustificano una
+correzione della forma flessa. I non trovati compatibili con nomi propri,
+composti storici e sigle restano candidati, non errori automatici. I risultati
+non risolvono la discrepanza visiva `A 1o`/`A 10`.
+
+La procedura obbligatoria è stata aggiornata in
+`playbooks/codex-document-analysis-core.md` e `agent-session-prompt.md`: prima
+di coinvolgere l'utente, verificare la trascrizione candidata con dizionario
+locale versionato e glossario esplicito, classificare i non trovati e
+registrare hash/esiti; riusare T43/T44 solo dopo aver controllato la copertura
+delle forme della candidata. La richiesta di conferma per `00312` resta
+sospesa finché la candidata non viene riallineata alla lettura della pagina e
+il controllo lessicale completato non è registrato sul candidato esatto.
+
+Precisazione sulla provenance dei conteggi di `00312`: 147 `exact_match`, 55
+`not_found`, 13 fuzzy e 127 `non_word` provengono dal riesame dei blocchi della
+struttura OCR grezza, interrogato con il lexicon sidecar candidato. Non sono
+conteggi di forme o ambiguita' estratte dal Markdown candidato. L'unico
+conteggio sulla candidata esatta e' Hunspell: 121 forme, 81 accettate e 40 non
+trovate; queste 40 vanno ancora classificate prima di stimare il carico manuale.
+
+## Processo OCR per ripresa tra sessioni - 2026-10-13
+
+Per non ricominciare da zero, la sequenza operativa e' ora nel playbook
+`playbooks/codex-document-analysis-core.md#sequenza-end-to-end-e-controllo-del-markdown`
+e nel `agent-session-prompt.md`. In breve: verificare TIFF/hash; riusare gli
+OCR persistenti; mantenere una mappa di regioni con ID, coordinate, tipo e
+ordine; comporre il Markdown da tale mappa; eseguire Hunspell/glossario sulla
+candidata esatta; verificare automaticamente copertura, ordine e griglia delle
+tabelle; inviare all'utente una sola richiesta con le decisioni realmente
+irrisolte.
+
+Il modello visuale e' facoltativo e va invocato solo tramite il percorso Ollama
+WSL gia' documentato, verificando runtime e compatibilita' del modello. La prova
+T41 misura soltanto la configurazione `llava-llama3` testata su fixture
+sintetiche (accuracy 0.196891, invention 0.803109); non e' una conclusione sui
+VLM in generale. Una richiesta read-only all'API Ollama WSL il 2026-10-13 ha
+restituito versione 0.33.2 e installati `llava-llama3` e `llama3.2-vision` come
+modelli con capability `vision`, digest rispettivamente
+`44c161b1f46523301da9c0cc505afa4a4a0cc62f580581d98a430bb21acd46de` e
+`38107a0cd11910a31c300fcfd1e9a107b2928e56ebabd14598702170b004773e`; il test
+storico registra incompatibilita' del secondo con quella versione. Qwen3-VL,
+GLM-OCR e Gemma 3 non erano installati e non sono stati testati in questo
+runtime; Qwen3-VL aveva inoltre restituito output vuoti nel test precedente con
+altra configurazione. Sono candidati per una valutazione controllata, non
+alternative gia' convalidate. L'installazione Windows non identifica ne'
+sostituisce il runtime WSL del progetto.
+
+Le segnalazioni lexicali non sono dubbi: per `00312` i 40 Hunspell `not_found`
+non sono ancora stati tutti deduplicati/classificati, quindi non e' corretto
+dichiarare che l'unica verifica manuale sia `A 1o`/`A 10`. La richiesta pagina
+resta sospesa e il candidato resta non verificato. Nessuna soglia di auto-
+accettazione e' fissata: si calibra su reference gold per lingua e tipo di
+documento, con holdout separati.
+
 ## T41 selezione review umana 00750 - 2026-10-12
 
 Il ricalcolo della roadmap seleziona la review guidata della pagina `00750`:
@@ -22,6 +220,75 @@ SHA-256 `8b8010b49a46d1d97294c935eeac4a29aa1ce8bf6ae9ac919b55bd7e4dc7fb29`,
 resta `unverified_model_assisted`: nessuna reference o metrica è stata
 promossa. La prossima pagina candidata è `01000`, riprendendo dal checkpoint
 già aperto e chiedendo intervento solo sui punti non risolvibili dal TIFF.
+
+## T41 review parziale pagina 01000 - 2026-10-13
+
+Ripresa la review dal checkpoint utente del 2026-10-11. Il TIFF mantiene lo
+SHA-256 fissato (`df8110f3b444a1ebed9bcff7c59d2b686f00c983987252067614e4c1d04552e3`).
+Un crop a piena risoluzione sostiene le letture proposte dall'utente
+`vernichten`, `Es`, `Decknamen` e `sein`; l'utente ha confermato anche
+`Führungs-Abt.` per la sigla OCR `Nhrungg-Abt.`. Il triage T43 non trova
+quest'ultima nel lessico e non dà suggerimenti: la lettura deriva dalla
+conferma visiva dell'utente, non dal triage.
+
+Il sidecar esterno
+`t41-01000-ocr-structure-20261006/visual-review-candidate-01000-20261013.md`,
+SHA-256 `9147c640d0f5eeb94c83263918d3ef4740604500b607d46c52d4541bf1afc9bd`,
+lega cinque letture ai rispettivi `source_region_ids` e alle provenance di
+TIFF, OCR e triage. È una review parziale: la pagina resta incompleta, non è
+una reference gold e non alimenta metriche. TIFF, OCR grezzo, struttura, coda
+e inventario gold sono rimasti invariati. Prima di qualsiasi richiesta manuale,
+completare il confronto assistito previsto in
+`playbooks/codex-document-analysis-core.md#verifica-visuale-assistita-e-richieste-di-review`:
+controllare insieme pagina/crop, regioni, PP-OCRv5, Tesseract e triage lessicale;
+registrare le letture leggibili come candidate non verificate e presentare in
+un'unica richiesta soltanto i dubbi che l'immagine non risolve. Il conteggio
+delle regioni non rappresenta il carico di azioni manuali. Se restano molti
+dubbi, migliorare crop o segmentazione prima di passare la review all'utente.
+
+Il confronto sistematico ha ora copertura esatta dei 189 `source_region_ids`.
+Il sidecar esterno
+`t41-01000-ocr-structure-20261006/visual-review-candidate-01000-systematic-20261013.md`,
+SHA-256 `ca378b554a54799847e3c958d3c33ad0069e01a0a6af40168227329814621c04`,
+registra candidati visuali non verificati, conserva i cinque testi già confermati
+dall'utente e distingue i tredici mapping del checkpoint precedente. L'utente ha
+confermato `Klick-schuete` per il nome di copertura dell'item 34, mappato sulle
+regioni `ocr-region-47cea57309967aea27c6cf3a` e
+`ocr-region-4f4fd6f2087a4563801f4c93`; non restano dubbi contenutistici da
+questa passata. La firma è annotata come autografa e non trascritta. TIFF, OCR,
+struttura e coda non sono stati modificati. Il candidato non è una reference
+gold e non alimenta metriche o soglie automatiche.
+
+## T41 reference page-scoped 00750 - 2026-10-13
+
+L'utente ha confermato con un'unica decisione la trascrizione completa della
+pagina `T314-1275-00750`, candidata visuale SHA-256
+`8b8010b49a46d1d97294c935eeac4a29aa1ce8bf6ae9ac919b55bd7e4dc7fb29`. La
+conferma esclude il contatore dello scanner e la firma autografa. Audit esterno
+`user-confirmation-audit-00750-20261013.json`, SHA-256
+`6ce9b05abad163b638239a35bc9cd37b071c975d65df7787757a56fcfc054d74`, legato
+alla source TIFF `260f7c3a190885f6ab063c73a426aa9ed422b6752df1e91cdd0ad3adb76a66bc`.
+
+La reference `ocr-page-reference-00750-20261013.json`, SHA-256
+`3908c688342a9203392c562bb10a63914fe1cee4a134d98d0467dd6f8ff56d2c`, è
+validata come `human_verified/verified` e tutti i controlli d'identità con
+l'evidence PP-OCRv5 passano. Adapter pass-through
+`ppocr-evidence-adapter-00750-20261013.json` SHA-256
+`d9433f4df98ec9bf12691fddec7155c1f9dac63a258a8a2a0f5bc8583d379283`; report
+`ocr-page-reference-evaluation-00750-20261013.json` SHA-256
+`99279b65059415a59e0d5237babfc070cd9b8f89e5cb4bd8ac362edfb692cb5c`.
+Sul confronto raw, PP-OCRv5 misura CER 0,586381, WER 0,621891,
+copertura token 0,527363, 95 omissioni e 100 aggiunte su 201 token di reference.
+La struttura `numbered_report` non rappresenta la griglia della tabella; le
+metriche strutturali sono diagnostiche e non eleggibili come accuratezza.
+Questo dato mostra una pagina debole per l'OCR, non una soglia di accettazione.
+
+Audit, reference, adapter pass-through dell'evidence e report sono conservati
+nella directory runtime `t41-00750-ocr-structure-20261006`. L'adapter aggiunge
+solo l'ancora `original_page` ricostruita dal manifest/TIFF verificato; il raw
+OCR e il TIFF sono invariati. Il campione verificato sale a quattro pagine, ma
+resta sotto le 8-10 previste da T41. Gli holdout `00072` e `00900` restano
+esclusi; nessuna soglia automatica è stata derivata.
 
 ## T41 prova diagnostica di normalizzazione - 2026-10-11
 
