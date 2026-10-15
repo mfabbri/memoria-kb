@@ -2,91 +2,241 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-13T20:00:00Z",
-  "updated_at": "2026-10-13T20:20:05Z",
+  "selected_at": "2026-10-15T20:00:13Z",
+  "updated_at": "2026-10-15T20:17:37Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "Prima di adattare le letture Tesseract al comparatore, le nuove esecuzioni devono attestare identità immagine, input selezionato e frame TSV; gli artefatti storici senza attestazione restano esclusi."
+      "reason": "La selezione 00007 e' completata; verificare la copertura visuale e la candidata nel nuovo strato dichiarato, senza promuovere reference o usare gli holdout."
     }
   ],
   "increment": {
-    "id": "t41-tesseract-evidence-adapter-20261013",
-    "title": "T41 adapter Tesseract verso evidence e confronto campione",
-    "objective": "Convertire un run Tesseract nuovo e geometricamente attestato in OcrPageEvidence, confrontarlo con PP-OCRv5 e reference confermata su un campione compatibile.",
+    "id": "t41-visual-review-00007-20261015",
+    "title": "Review visuale completa T41 00007",
+    "objective": "Confrontare tutte le regioni PP-OCRv5 persistite con il TIFF 00007, produrre una candidata testuale corretta solo dove i pixel lo sostengono, classificare gli alert lessicali sulla candidata esatta e isolare le sole ambiguita' visive da sottoporre in un unico passaggio all'utente.",
     "scope": [
-      "Convert only new Tesseract runs with complete, adapter_ready provenance into OcrPageEvidence; verify source hash and exact original coordinate frame against PP-OCRv5 evidence.",
-      "Add focused offline tests for valid identity/geometry and fail-closed handling of incomplete provenance, hash mismatch, multipage inputs and unsupported transforms.",
-      "Run fresh Tesseract on gold page 00598 under the persistent runtime root and calculate a diagnostic comparison with its raw PP-OCRv5 evidence and confirmed reference."
+      "Verify TIFF, PP-OCRv5 raw/evidence, region-structure and lexical-triage hashes and page identity; do not rerun OCR because valid PP-OCRv5 output exists.",
+      "Compare the full TIFF and readable crops against all PP-OCRv5 regions; use geometry to establish order and one-to-one region coverage.",
+      "Build an unverified candidate preserving printed forms and layout; correct only visually supported errors and record localized residual ambiguities.",
+      "Check the exact candidate with the page-specific Hunspell/glossary resources, reusing triage only where coverage matches and checking changed forms explicitly.",
+      "Persist the candidate and review report in a new external runtime directory, then update the T41 session note and planner; keep the page outside metric calibration until user confirms the whole-page reference."
     ],
     "out_of_scope": [
-      "Enable machine_pass/auto-acceptance, correct OCR text, or claim original-image visual coverage.",
-      "Enable calibrated machine_pass, alter raw OCR/evidence or promote human reference data.",
-      "Install/download/upgrade OCR engines, Ollama, models, dictionaries, or external assets.",
-      "Change TIFF, historical runs, raw OCR, PP-OCRv5 evidence, reference gold, holdout membership, historical claims, or publication state.",
-      "Treat a machine auto-pass as human-verified reference or archival fact."
+      "Promote 00007 to a verified reference before the user's page-level confirmation or infer accuracy from lexical alerts.",
+      "Change the source TIFF, raw OCR, PP-OCRv5 evidence, historical references, holdout membership, or numeric threshold.",
+      "Extract or publish historical claims."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_evidence_adapter.py",
-      "memoria-engine/tests/test_ocr_tesseract_evidence_adapter.py",
-      "memoria-bootstrap/docs/ocr-low-manual-review-architecture.md",
+      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00007.tif",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/run-manifest.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/structured-evidence.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/raw-prediction.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-selected-sample-hunspell-triage-20261011/00007/document-structure.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-selected-sample-hunspell-triage-20261011/00007/triage-summary.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "The adapter emits OcrPageEvidence only for a fresh run whose source hash and original coordinate frame match primary evidence; offline tests reject incompatible cases. A fresh 00598 comparison is calculated and reported without changing source/raw/gold or enabling machine routing."
+    "stop_condition": "All 51 persisted PP-OCRv5 regions have been checked against the image and mapped exactly once or excluded with reason; corrected candidate, lexicon result and provenance report are persisted; only specific image-level ambiguities remain queued for the user's single page-level confirmation; no gold metrics or machine_pass are emitted."
   },
   "verification": {
     "tests": [
-      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_tesseract_evidence_adapter.py",
-      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_evidence_comparison.py",
-      "memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py",
-      "git diff --check"
+      "PASS: TIFF/page identity, OCR manifest/evidence, source structure, lexicon and glossary provenance checked.",
+      "PASS: 51/51 source regions accounted for (43 retained/mapped plus 8 justified exclusions); independent review found no missing or duplicate body lines.",
+      "PASS: exact-candidate Hunspell/glossary CLI completed; report records 244 exact, 38 not-found, 7 fuzzy and 34 non-word occurrences, with one visual decision remaining before user confirmation.",
+      "PASS: after user confirmation, OcrPageReference validated as human_verified/verified; PP-OCRv5 evaluation is accuracy-eligible and all 5 identity checks pass (CER 0.026440, WER 0.090909). Structural metrics excluded as the prose profile is inapplicable.",
+      "PASS: memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py.",
+      "PASS: git diff --check; no tests or OCR rerun."
     ],
     "documentation_touchpoints": [
-      "memoria-bootstrap/docs/ocr-low-manual-review-architecture.md",
       "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "passed",
-    "notes": "La trascrizione 00312 è una bozza assistita e non è una reference. Hunspell sulla candidata esatta ha verificato 121 forme (81 accettate, 40 non trovate), output SHA-256 93C52DDF6C3EB345DBD13556259AB20377D5532ABF88328BEFF71B0B3D4A9B3; la lista termini ha SHA-256 E40C38DE43FB0AF66EDAC965A0B96F03CE5B65A5F3EA5A8324B1E2EA7C1A64AA. Il riesame glossario 147 exact_match, 55 not_found, 13 fuzzy e 127 non_word riguarda i blocchi OCR grezzi e non è un conteggio della candidata. Il suggerimento pertinente è Diiziplin -> Disziplin; non automatizzare correzioni per DVL, IIb o Korpsstabes. Restano da classificare le 40 forme candidate non trovate; la discrepanza visuale A 1o/A 10 è un dubbio noto, non il conteggio totale dei dubbi. La richiesta page-level resta sospesa. La procedura aggiornata impone controlli strutturali e lessicali prima del contatto, uso del percorso Ollama WSL documentato con output VLM separato, e nessuna auto-accettazione prima della calibrazione su gold/holdout. Il candidato SHA-256 CE96B704BA949F65A3F2DA3370C7F5D3DF1F79BBE80BAF90095FAD5A3013EFDE è unverified; TIFF SHA-256 dc07ad4b397945a03909e2af8278ea110e0d5c6cc8ae021dcb519ac6f75f84f2. Nessuna metrica o soglia è inferita.",
+      "result": "passed",
+    "notes": "Review visuale completa: 51/51 regioni controllate, 43 mappate nel testo e 8 escluse con ragione; copertura/ordine confermati anche da review indipendente. L'utente ha poi confermato la candidata inclusa la lettura vorzustoßen; reference e audit human_verified/verified persistiti. Confronto PP-OCRv5 eleggibile, 5/5 identity checks: CER 0.026440, WER 0.090909, coverage 0.958944, invention rate 0.086592. Metriche strutturali escluse perché leader_list_report non rappresenta prosa continua. Nessuna soglia automatica derivata; campione ora 5 pagine.",
     "task_envelope": {
-      "mode": "feature-slice",
+      "mode": "quality-slice",
       "repositories": [
         "memoria-bootstrap",
-        "memoria-engine"
+        "memoria-engine",
+        "runtime esterno T41"
       ],
       "read_set": [
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T41",
-        "memoria-bootstrap/docs/ocr-low-manual-review-architecture.md",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_evidence_comparison.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_reference_metrics.py",
-        "memoria-engine/tests/test_document_ocr_tesseract.py"
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/run-manifest.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/structured-evidence.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-project-local-smoke-20260926/raw-prediction.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-selected-sample-hunspell-triage-20261011/00007/OcrLanguageLexicon.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-selected-sample-hunspell-triage-20261011/00007/lexicon-review-with-glossary-v2.jsonld",
+        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00007.tif"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_evidence_adapter.py",
-        "memoria-engine/tests/test_ocr_tesseract_evidence_adapter.py",
-        "memoria-bootstrap/docs/ocr-low-manual-review-architecture.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/",
         "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_tesseract_evidence_adapter.py; memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_evidence_comparison.py; memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py; git diff --check",
-      "stop_conditions": [
-        "Adapter tests prove source/hash/frame identity and fail-closed rejection of incomplete or incompatible inputs.",
-        "Fresh Tesseract run and comparison remain diagnostic; historical output/source/gold/holdout remain unchanged and machine_pass stays disabled."
+      "test_command": "Source/report hash and 51-region coverage verification; exact-candidate lexicon-review CLI; routing validator; git diff --check. No tests or OCR rerun.",
+    "stop_conditions": [
+        "All 51 persisted PP-OCRv5 regions have been checked against the image and mapped exactly once or excluded with reason; corrected candidate, lexicon result and provenance report are persisted; only specific image-level ambiguities remain queued for the user's single page-level confirmation; no gold metrics or machine_pass are emitted."
       ]
     }
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "implementation",
-    "agent": "mmr_implementer",
+    "tier": "review",
+    "task_class": "quality",
+    "agent": "mmr_test_reviewer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Implement the adapter now that fresh Tesseract runs attest source/frame identity; use a confirmed calibration page to produce a diagnostic result without enabling automatic routing.",
+    "rationale": "Full-page OCR review with source-bound visual coverage, candidate text corrections and provenance audit; independent quality review is appropriate. Existing PP-OCRv5 output is reusable, so no engine rerun.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-15T20:00:13Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Perform complete visual review of 00007 against the original TIFF and persisted PP-OCRv5 region evidence, then audit candidate coverage and residual ambiguities."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-15T19:48:14Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Selected 00007 from the predeclared German/high-readability/continuous-prose stratum, verified its TIFF digest against the source, and documented the absent reusable gold reference; no OCR or metrics run."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-15T19:48:14Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Choose and document one T41 page filling a predeclared readability/layout stratum, using current inventory and keeping holdouts excluded."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-15T19:43:54Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Current comparator generated a new provenance-complete report; all 9 input/code hashes, JSON, page identity checks and metric deltas verified with OCR inputs unchanged."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-15T19:40:42Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Recalculate Tesseract 00150 against the verified page reference with the current evaluator; persisted evidence only, no OCR rerun or source/reference mutation."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-15T19:36:54Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Four page-scoped references and OCR evaluations audited; reconciled inventory and no-go rationale recorded without touching raw OCR, references, or holdout."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-15T19:35:33Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Focused T41 reference and metric audit with documentation/planner update; no code changes or new OCR run."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-14T17:40:07Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Independent audit PASS: UTF-8 codepoints, lexical digest, 54/54 unique region mapping and visual coverage conclusions verified."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-14T17:36:00Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Read-only final audit of candidate encoding, exact lexical source digest, region coverage and sidecar consistency."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-14T17:35:00Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Independent quality review of the 00598 visual coverage candidate."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-14T16:29:46Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Pilot report/evidence and input/TIFF hashes independently verified; one success, zero errors, 46 regions and all diagnostic-only flags preserved."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-14T16:25:00Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Read-only independent review of pilot report, identity, provenance digests, original anchor and machine/visual routing flags."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-14T16:24:36Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Independently verify the controlled 00598 batch-run artifacts against their input provenance and diagnostic-only contract."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-14T16:20:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Manifest batch runner and CLI completed; 11 offline tests, CLI help, planner validation and diff check passed. Outputs remain diagnostic-only and write exclusively to new destinations."
+      },
+      {
+        "event": "delegated",
+        "at": "2026-10-14T11:05:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implement the batch adapter and focused tests in engine files; parent owns planner, CLI integration review and documentation."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-14T11:00:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implement the manifest-driven diagnostic batch runner with per-page fail-closed outcomes and focused offline tests."
+      },
       {
         "event": "selected",
         "at": "2026-10-13T20:00:00Z",
@@ -1971,6 +2121,33 @@
         "model": "gpt-6.1-sol",
         "reasoning_effort": "medium",
         "reason": "CLI e ranker lessicale integrati; 11 test offline, provenance/determinismo e comportamento preview-only verificati."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-14T19:36:23Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Consolidate repeatable OCR review and calibration safeguards from the completed 00598 session into the playbook."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-14T19:44:54Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Playbook and OCR session checkpoint now record repeatable alert classification, artifact consistency checks, and threshold no-go criteria from T41 00598."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-15T18:28:35Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Independently audit 00312 candidate, visual discrepancies, and whether the prior full-page review claim is supported by its evidence."
       }
     ]
   },
@@ -2046,10 +2223,15 @@
     "T41 precontrollo lessicale 2026-10-11: nove pagine processate/riconciliate; run PP-OCRv5 persistenti per gli holdout 00072/00900, struttura sequenziale derivata da evidence per 00007; 9 OcrLanguageLexicon e 9 lexicon-review con glossari espliciti. Coda manual-review-queue.csv con 480 righe pagina-token e source_region_ids. Tutto resta unreviewed; holdout esclusi dalla calibrazione; nessun raw OCR modificato o correzione automatica.",
     "T41 apertura campione 00750 2026-10-11: candidata calibrazione selezionata; sidecar review-preview SHA-256 9c9559a1ec544edf1b62cda4bcc859bca1768c3fa1d65b0a05ff967dc833031e creato e lasciato unverified. TIFF/OCR invariati; 72 gruppi OCR, 16 senza testo; nessuna reference o metrica prodotta. Holdout 00072/00900 esclusi.",
     "T41 controllo visuale automatizzato 00750 2026-10-11: crop mirati, PP-OCRv5 esistente e Tesseract deu PSM6/11 sul crop confrontati; Korpelager e Gesteinsbohr-Kp.38 sostenuti visivamente, 114.Jg.Div. probabile ma in conflitto con PP-OCRv5, cifra nella nota tl.[5/6]18 non risolta. Sidecar visual-review-candidate SHA-256 b16b858f4d0af1b991bdcedd3041e1d9c27027c198195673c186241818c2872b, non human gold; metriche non calcolate.",
-    "Chiusura sessione 2026-10-13: consolidata nel playbook la lezione del pilot T41: il gate confidence ha accettato 00598 con WER 0.288973, mentre 00750 si e' fermata prima della registrazione e 00150 non era confrontabile per frame; processabilita', accordo OCR e alert lessicali non sono accuratezza o azioni manuali. Prima di chiedere review: confronto immagine/crop per blocco, controllo della candidata esatta con risorse lessicali/glossari, correzione autonoma dei casi sostenuti e richiesta unica dei soli dubbi residui. L'adapter e' ancora una funzione, quindi il prossimo incremento resta il runner batch da manifest con esito fail-closed per pagina; auto-pass resta disabilitato fino a calibrazione separata su gold/holdout con copertura visiva e strutturale."
+    "Chiusura sessione 2026-10-13: consolidata nel playbook la lezione del pilot T41: il gate confidence ha accettato 00598 con WER 0.288973, mentre 00750 si e' fermata prima della registrazione e 00150 non era confrontabile per frame; processabilita', accordo OCR e alert lessicali non sono accuratezza o azioni manuali. Prima di chiedere review: confronto immagine/crop per blocco, controllo della candidata esatta con risorse lessicali/glossari, correzione autonoma dei casi sostenuti e richiesta unica dei soli dubbi residui. L'adapter e' ancora una funzione, quindi il prossimo incremento resta il runner batch da manifest con esito fail-closed per pagina; auto-pass resta disabilitato fino a calibrazione separata su gold/holdout con copertura visiva e strutturale.",
+    "T41 runner batch 2026-10-14: comando tesseract-evidence-batch per manifest v1 con path relativi, digest input, stato per pagina, preflight collisioni e scrittura esclusiva. 11 test mirati, help CLI, routing validation e git diff --check PASS; nessuna OCR o dato reale consultato.",
+    "T41 pilot batch 00598 2026-10-14: preview compatibile, poi apply autorizzato nella root runtime esterna. Report 1 success/0 errori; evidence 46 regioni; manifest SHA-256 092b0b7b2cd21f6bd31f4fd7d3d0e0a2efd697e25d9aed735698ce750e9d7085; input ProcessedDocumentText, PP-OCRv5 e TIFF hash invariati. Revisione indipendente PASS; diagnostic_only true, machine_pass_allowed e visual_coverage_verified false. Nessuna OCR eseguita.",
+    "T41 verifica visuale 00598 2026-10-14: confronto TIFF/crop concluso; 54/54 regioni PP-OCRv5 mappate una volta, nessun testo stampato visibile scoperto. Candidata non verificata, lexicon esatto rigenerato, correzioni e alert documentati nel sidecar; machine_pass disabilitato. Artefatti persistiti nella cartella runtime del pilot.",
+    "T41 review visuale 00007 2026-10-15 completata: 51/51 regioni controllate, 5 correzioni visive e 3 regioni ricomposte in 'der Gegner'; footer - 2 - conservato. Runtime t41-00007-visual-review-20261015 contiene trascrizione candidata, struttura, sidecar e report. Rimane una sola ambiguita' grafica in vorzu[s/e]toßen; conteggi lessicali non equivalgono ad azioni manuali. Nessuna metrica gold o soglia automatica; serve conferma page-level prima di usare la candidata come reference.",
+    "T41 00007 conferma utente 2026-10-15: l'utente ha accettato l'intera candidata e `vorzustoßen`; il Duden conferma la forma come infinito con zu di `vorstoßen`. Creati audit, OcrPageReference human_verified/verified, adapter con original_page ed evaluation. PP-OCRv5 CER 0.026440/WER 0.090909, coverage 0.958944, invention 0.086592; 5/5 identity checks PASS. Cinque pagine gold disponibili, nessuna soglia definita; prossima selezione deve ampliare il campione stratificato."
   ],
   "next_action": {
-    "mode": "recalculate",
-    "description": "Select the next T41 increment for a manifest-driven batch runner around the adapter; then add independent visual coverage and stratified calibration. Keep diagnostic-only routing until the gold/holdout design supports a risk threshold."
+      "mode": "recalculate",
+    "description": "Recalculate the next T41 step to add verified pages from underrepresented strata toward the 8-10 page calibration sample; 00072/00900 remain excluded and no cutoff is inferred from five pages."
   }
 }

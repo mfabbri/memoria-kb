@@ -89,6 +89,76 @@ incremento. Il confronto regionale successivo e' registrato nella sezione
 precedente; resta separata la verifica visuale di copertura, necessaria per le
 omissioni condivise dai motori.
 
+## T41 runner batch Tesseract evidence da manifest - 2026-10-14
+
+Implementato il comando `documents tesseract-evidence-batch` per un manifest
+JSON `TesseractEvidenceBatchManifest` versione 1.0. Ogni caso lega un
+`ProcessedDocumentText`, l'evidence PP-OCRv5 e l'ancora della pagina originale;
+i percorsi sono risolti dalla directory del manifest. L'adapter viene invocato
+per caso e il rapporto conserva stato ed errore individuale, digest degli input
+e riferimenti ai soli output nuovi.
+
+La preview non scrive file. `--apply` richiede directory output e rapporto
+espliciti; collisioni con file esistenti o input vengono rifiutate prima di
+iniziare, e le scritture sono esclusive. L'evidence prodotta resta
+`diagnostic_only`, con `machine_pass_allowed=false` e
+`visual_coverage_verified=false`. Nessuna OCR, reference o immagine sorgente e'
+stata modificata.
+
+Pilot controllato 00598 completato il 2026-10-14 nella root runtime esterna
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-00598-tesseract-batch-pilot-20261014`.
+Un caso ha avuto esito success, zero errori, 46 regioni adattate e anchor originale
+coerente. SHA-256 del manifest:
+`092b0b7b2cd21f6bd31f4fd7d3d0e0a2efd697e25d9aed735698ce750e9d7085`; evidence:
+`42f13c778486ca075dbb58f8c4a6b10520d52b7cdc28e9a1159e930d23836898`; report:
+`4f1c62c1e234e83545b2c59221a3c9ddeaf6d7f3f484407d9e6a5b7859583665`.
+Gli hash SHA-256 del ProcessedDocumentText
+(`88c69c13e5218a13463b736b50c0cf40b880d299fe2142d47b18fb17385660ec`),
+evidence PP-OCRv5 normalizzata
+(`502203a8476cc5715c789cd11e7fcda36db601745815276da55be332bf500550`) e TIFF
+(`2bbf335032236ebad42afae52c832ba2da301566a467fb765848619df0b0fd28`) sono
+rimasti invariati. La revisione indipendente non ha rilevato discrepanze.
+
+Report ed evidence del pilot batch mantengono `diagnostic_only=true`,
+`machine_pass_allowed=false` e `visual_coverage_verified=false`.
+
+### T41 verifica visuale indipendente 00598 - 2026-10-14
+
+La pagina TIFF originale e i crop delle aree stampate sono stati confrontati
+con tutti gli output OCR persistenti, senza eseguire una nuova OCR. Le 54
+regioni PP-OCRv5 coprono tutto il testo stampato visibile; tutte sono mappate
+una sola volta nella candidata (52 blocchi, 54 riferimenti). Tesseract copre la
+maggior parte delle righe, manca il contatore superiore e produce quattro
+rilevamenti sulla ferramenta dello scanner.
+
+La candidata corregge, dove sostenuto dai crop, `0100593` in `000593`,
+`Bigheriger` in `Bisheriger`, `1o/Nr.` in `10/Nr.`, `erscrgung` in
+`Versorgung`, `meiden` in `melden`, `1o.9.44` in `10.9.44` e `big` in `bis`.
+Il successivo confronto ravvicinato ha aggiunto tre correzioni sostenute
+dall'immagine: `HvBl.` in `HVBl.`, `Kf.-techn.D-Vorschriften` in
+`Kf.-techn. D-Vorschriften` e `Mot/Gruppe` in `Mot./Gruppe`.
+I due segni marginali `T./` restano annotazioni fuori dal flusso del testo; la
+regione parziale `T` è unita a `Teilnehmer`; l'OCR isolato `8` e il trattino
+spurio sono esclusi in base all'immagine e alla precedente conferma dell'utente.
+
+Il controllo lessicale è stato rigenerato sulla struttura esatta della
+candidata UTF-8. Risultati: 169 match esatti, 42 token non trovati, 20 con
+suggerimenti fuzzy e 31 token non lessicali; le forme non trovate sono alert
+diagnostici, nessun suggerimento è stato applicato automaticamente. Gli
+artefatti, inclusi report e provenienza, sono nella cartella runtime del pilot
+batch `t41-00598-tesseract-batch-pilot-20261014` con prefisso
+`t41-00598-visual-review-`.
+La classificazione finale ha raggruppato i token lessicali in 35 forme uniche
+e 42 occorrenze associate alle regioni sorgente: zero dubbi residui e zero
+decisioni manuali richieste. I conteggi grezzi Hunspell non indicano azioni da
+chiedere all'utente.
+
+La candidata resta `unverified_model_assisted`; nessun claim è approvato e
+`machine_pass_allowed=false`. La copertura visuale verificata riguarda solo
+questa pagina e non costituisce calibrazione gold/holdout. Il prossimo passo
+candidato è selezionare un'altra pagina T41 per replicare il controllo prima
+della calibrazione.
+
 ## Decisione architetturale OCR a review minima - 2026-10-13
 
 La decisione e' registrata in
@@ -5207,3 +5277,275 @@ non risultano nuovi artefatti GPU. Nessun output e' attribuito a quel run.
 Prossimo passo candidato: rivedere il risultato e restringere il task strutturale
 per righe/colonne usando le coordinate OCR come evidenza, poi confrontare la
 proposta con l'immagine senza richiedere una trascrizione umana preventiva.
+
+## Chiusura review OCR 00598 e audit soglia T41 - 2026-10-14
+
+Ripetuta la sequenza completa senza rilanciare OCR: identita' TIFF/hash e output
+persistenti verificati; pagina intera e crop confrontati con mappa regioni, PP-OCR,
+Tesseract e candidata Markdown; copertura PP-OCR 54/54 e nessun testo stampato
+visibile non rappresentato. Il confronto lessicale sulla candidata esatta usa
+Hunspell tedesco e glossario versionato: 35 forme uniche in 42 occorrenze sono
+state classificate per forma e regione. Sono alert diagnostici (abbreviazioni,
+identificatori, forme storiche/tecniche e spezzature di riga), non 35 decisioni
+manuali. La verifica immagine ha sostenuto tre correzioni nella candidata:
+`HvBl.` -> `HVBl.`, `Kf.-techn.D-Vorschriften` ->
+`Kf.-techn. D-Vorschriften` e `Mot/Gruppe` -> `Mot./Gruppe`. Dubbi residui e
+decisioni da chiedere: zero.
+La candidata resta `unverified_model_assisted`; questa review non crea una nuova
+reference umana.
+
+Audit T41: esistono quattro reference verificate (00150, 00415, 00598, 00750).
+Non si fissa una soglia: il manifest attuale non stratifica per leggibilita',
+lingua e layout; il gold inventory e' obsoleto; le metriche PP-OCR 00150 vanno
+prese dal report reconciled (coverage 0.921320, non 0.215736); il confronto
+Tesseract 00150 va ricalcolato prima di usarlo quantitativamente; 00750 non e'
+strutturalmente eleggibile. Le candidate 00007, 00312 e 01000 non sono reference
+complete; 00024 e' fuori manifest senza split, quindi non si conteggiano come
+gold. I due holdout 00072/00900 restano esclusi dal tuning. Prossimo passo: audit
+e completamento delle reference di calibrazione mancanti, stratificazione esplicita,
+metriche riconciliate e holdout protetto prima di proporre una soglia. Il comando
+unico `memoria documents ocr-review` e' stato aggiunto alla roadmap soltanto;
+nessuna implementazione CLI in questo incremento.
+
+## Review visuale T41 00312 - 2026-10-15
+
+Completata la comparazione della candidata con il TIFF intero, i crop mirati,
+PP-OCRv5, Tesseract `deu` e l'audit umano parziale. Nessun OCR e' stato rilanciato.
+La candidata corregge `10.Armee` in `1o.Armee`, rispettando la lettura letterale
+gia' confermata dall'utente nell'item H01. `Jmola` e' mantenuto con la J visibile.
+Il preview umano derivato non viene trattato come riferimento completo.
+
+Restano **2 decisioni visive raggruppate** per l'utente: (1) la data della riga
+Korps-Auffangstelle Jmola, `15.10.1944` in PP-OCRv5 contro `16.10.1944` in
+Tesseract e nella candidata; il `14.10.1944` del precedente derivato non e'
+supportato da una decisione nell'audit; (2) la parola sovrastampata nel titolo
+sulla disciplina (`Diiziplin` in PP-OCRv5, `Däsziplin` in Tesseract,
+`Disziplin` nella candidata). Regione/data:
+`ocr-region-1a50734caace18e3b4f3791f`, bbox `[412,3627,805,3697]`; regione/parola:
+`ocr-region-d507654851d4cd65ced0e9f6`, bbox `[891,2708,3170,2803]`.
+
+Il lessico Hunspell `de_DE-frami-modern` e' stato rigenerato sulle 121 forme
+della candidata aggiornata: 40 forme restano `not_found`. Sono alert diagnostici,
+non 40 richieste di revisione; non sono conteggiati come dubbi visivi. Candidata,
+sidecar lessicale e report page-level sono salvati nel runtime esterno in
+`t41-00312-ocr-structure-20261003/` con data `20261015`. Il report conserva gli
+hash degli input e degli output e classifica i due dubbi sopra.
+
+Esito: `00312` resta `unverified_model_assisted`, non e' promossa a reference e
+non entra nel calcolo di soglia. Le date non confermate non vanno attribuite alle
+righe e la relocation a Vedrana resta senza data. T41 continua a non avere
+campione sufficiente per fissare una soglia automatica; prossimo passo immediato:
+risolvere i due dubbi e confermare la copertura testuale completa della candidata.
+
+### Correzione dell'esito 00312 dopo allineamento del crop - 2026-10-15
+
+La prima lettura del crop aveva usato il ritaglio della riga Bologna per
+attribuire la data alla riga Jmola. Verificata la fascia orizzontale completa
+`[350,3430,3100,3950]`: `14.10.1944` e' sulla stessa riga di `Stabsbefehl Nr.
+16`; `16.10.1944` e' sulla stessa riga di `Wochenmeldung der Korps-Auffangstelle
+Jmola`. La candidata resta quindi `16.10.1944`. PP-OCRv5 aveva riconosciuto la
+data Jmola come `15.10.1944` e la struttura derivata aveva accoppiato `14.10`
+alla riga Jmola; il testo Tesseract e l'allineamento visivo confermano `16.10`.
+
+Il triage esatto della candidata e' ora collegato a ogni forma Hunspell non
+trovata: 40 forme uniche, 68 occorrenze, zero forme senza locator; i locatori
+sono `source_region_ids` quando il raggruppamento coincide e coordinate TSV
+Tesseract quando il raggruppamento PP-OCR disallinea le righe. Le date numeriche,
+sigle, abbreviazioni, nomi propri, composti di dominio e punteggiatura sono
+classificati come alert lessicali attesi, non come dubbi manuali.
+
+Esito aggiornato: delle due ambiguita' riportate inizialmente resta un solo dubbio
+visivo, la parola sovrastampata nel titolo dell'8.10 (`Disziplin` candidata;
+letture OCR discordanti). La pagina resta non verificata e non e' ancora usata
+per la calibrazione. Per promuovere la candidata a reference serve la decisione
+sulla parola e la conferma page-level del resto della trascrizione.
+
+### Decisione utente e chiusura review 00312 - 2026-10-15
+
+L'utente accetta `Disziplin` con ragionevole sicurezza per corrispondenza con la
+parola tedesca, pur riconoscendo che la sovrastampa non consente certezza visiva
+completa. La lettura va registrata come accettata con riserva e il residuo come
+una parola incerta, zero decisioni manuali ancora richieste. Una singola parola
+residua non impedisce di classificare la review della pagina come conclusa, se
+copertura, correzioni, provenance e struttura sono state controllate e il residuo
+resta esplicito e localizzato. La pagina 00312 e' quindi `review_complete_with_residual_uncertainty`;
+non e' una trascrizione priva di incertezza ne' una reference gold verificata.
+
+Questa chiusura page-level e' distinta dalla soglia di validazione automatica OCR.
+La soglia non deve pretendere zero caratteri incerti per classificare una review
+umana conclusa; la validazione automatica resta pero' `no-go` finche' non e'
+calibrata con reference idonee, strati dichiarati e holdout separato. Il campione
+attuale non consente ancora di stimare quella soglia.
+
+## Audit reference e metriche T41 - 2026-10-15
+
+Riconciliati i record page-scoped delle quattro pagine conteggiate come
+`human_verified`: `00150`, `00415`, `00598` e `00750`. In tutte le valutazioni
+PP-OCRv5 page ID e SHA-256 della pagina coincidono fra reference ed evidence; le
+metriche testuali risultano eleggibili. Questo non rende automaticamente
+eleggibile la valutazione strutturale, che dipende dal contratto di layout.
+
+| Pagina | CER | WER | Copertura token reference | Tasso invenzioni | Esito struttura |
+|---|---:|---:|---:|---:|---|
+| `00150` | 0.145366 | 0.126904 | 0.921320 | 0.092500 | Metriche del report reconciled; non usare la copia precedente |
+| `00415` | 0.008187 | 0.023622 | 0.981627 | 0.020942 | Metriche disponibili; exact match falso, recall ordine 0.836735 |
+| `00598` | 0.004681 | 0.011407 | 0.996198 | 0.007576 | Non valutabile: il contratto non esprime graffe/relazioni posizionali confermate |
+| `00750` | 0.586381 | 0.621891 | 0.527363 | 0.485437 | Non eleggibile: griglia tabellare non modellata; 72 blocchi contro 8 reference |
+
+Per `00150`, il `ocr-comparison-report-reconciled.json` è la versione corrente:
+il vecchio `ocr-comparison-report.json` riporta coverage 0.215736 e conteggi di
+omissioni/aggiunte discordanti, pur mantenendo CER/WER uguali. Il confronto
+Tesseract 00150 resta escluso dalla calibrazione finché non viene ricalcolato e
+riconciliato. Le metriche strutturali di pagine con layout/contratti diversi non
+vanno aggregate in un unico punteggio.
+
+L'audit conferma quindi quattro reference testuali, ma non un campione sufficiente
+per il passaggio automatico: i WER osservati vanno dall'1.14% al 62.19%; solo due
+pagine sono sotto il 3%, e copertura, invenzioni e struttura non hanno un esito
+uniforme. Questa distribuzione non autorizza a scegliere una soglia ex post. Le
+metriche CER/WER sono esiti su reference note, non segnali disponibili per una
+pagina nuova; una policy automatica deve prima associare segnali runtime (inclusa
+copertura visiva e struttura) agli errori osservati su un campione stratificato,
+poi misurare i falsi passaggi su holdout separato. Restano esclusi dal tuning gli
+holdout `00072` e `00900`; `00312` conclusa con riserva non è una reference gold.
+Esito soglia: `no-go`, nessun `machine_pass` abilitato.
+
+Prossimo incremento candidato: preparare la matrice di calibrazione per lingua,
+leggibilità e layout, ricalcolare il confronto Tesseract 00150 con provenance
+verificata e associare i segnali di confidence/coverage ai risultati gold; non
+toccare gli holdout e non impostare ancora il cutoff di produzione.
+
+### Ricalcolo Tesseract su 00150 - 2026-10-15
+
+Ricalcolato il comparison manifest esistente con l'evaluator corrente, senza
+rilanciare Tesseract o PP-OCRv5 e senza sovrascrivere i report precedenti. Il
+manifest lega la reference `t41-00150-human-verified-20261001`, con origine
+`human_verified`/`verified`, al TIFF SHA-256
+`f30fff601f1969426b66f77676c4878f3e5b09f230e5cb1a0a6c3443eb6fb7c7`; tutte le
+identity checks di entrambi i casi passano. Il run-summary storico documenta che
+il path dichiarato allora per la reference mancava e che fu risolto al record
+identico nella directory `human-reference`; il confronto e' stato ricostruito
+ora usando il manifest e il file effettivamente persistiti.
+
+Il report nuovo e' `t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json`
+nella root runtime esterna, SHA-256
+`30e3a6a909decd17dd8bc1f3415af22048f379882ed0e8354265a35710e9b7e1`.
+Sono registrati e verificati 9 hash di input/codice (manifest, reference, due
+evidence, report e run-summary precedenti, `ocr_comparison.py`,
+`ocr_reference_metrics.py`, `document_structure.py`). Il report contiene due
+casi con reference ed evidence eleggibili e page/hash coerenti.
+
+Il ricalcolo PP-OCRv5 conferma il report reconciled: CER `0.145366`, WER
+`0.126904`, coverage `0.921320`, invention rate `0.092500`. Per Tesseract OEM 1 /
+PSM 6 conferma CER `0.324046` e WER `0.385787`, ma aggiorna i conteggi di
+allineamento: 261 token esatti, 133 omissioni, 94 aggiunte, coverage `0.662437`
+e invention rate `0.264789`. Il report precedente aveva lo stesso CER/WER, ma
+124 match, 270 omissioni, 231 aggiunte, coverage `0.314721` e invention rate
+`0.650704`. Il report storico non registra il digest dell'evaluator, quindi non
+attribuisco la differenza a input o OCR: i conteggi del vecchio report non sono
+riproducibili con il codice attuale. Per CER/WER i risultati restano invariati,
+mentre coverage e invention rate vanno presi dal nuovo report riproducibile. La
+struttura Tesseract resta non exact-match (51 blocchi contro 27 reference).
+
+Il ricalcolo rende il confronto Tesseract 00150 tracciabile e utilizzabile come
+esito diagnostico page-scoped; non calibra un cutoff runtime da solo e non cambia
+il `no-go` della soglia automatica. Holdout e reference restano invariati.
+Prossimo passo: selezionare una nuova pagina che copra uno strato mancante, dopo
+aver dichiarato leggibilita' e layout prima di vedere le sue metriche.
+
+### Selezione pagina T41 per nuovo riferimento - 2026-10-15
+
+Selezionata `T314-1275-00007` come prossima pagina per creare una reference
+page-level persistente. Lo strato e' stato fissato prima di consultare metriche:
+tedesco, leggibilita' preliminare alta, prosa dattiloscritta continua. Questo
+completa il campione rispetto a `00312` (elenco cronologico a una colonna) e alle
+reference attuali `00150`, `00415`, `00598`, `00750`, senza usare i risultati OCR
+per scegliere la difficolta'.
+
+L'inventario runtime T41 del 2026-10-11 assegna a `00007` SHA-256 TIFF
+`223342a21043258387338f63bdccc2f0ce91d1d825dc132d0c319fb0bacf3243` e la
+classifica come `historical_reference_not_persisted`: le note storiche citano
+una review, ma non e' stata trovata una trascrizione completa riutilizzabile.
+Esistono struttura/evidence PP-OCRv5 e triage lessicale persistenti; non risultano
+una reference gold completa ne' metriche eleggibili. Percio' la pagina e' una
+nuova reference da verificare, non una nuova scansione e non un gold gia'
+disponibile.
+
+Prossimo micro-incremento: controllare identita' e copertura dell'evidence
+persistita di `00007`, confrontarla visivamente con TIFF intero e crop, applicare
+solo correzioni sostenute dall'immagine e preparare una singola richiesta per gli
+eventuali dubbi residui. Mantenere la reference in stato non verificato finche'
+la review page-level non e' confermata. `00072` e `00900` restano holdout esclusi;
+nessuna soglia o `machine_pass` e' autorizzata da questa selezione.
+
+### Review visuale completa T41 00007 - 2026-10-15
+
+Il TIFF `T314-1275-00007` (SHA-256
+`223342a21043258387338f63bdccc2f0ce91d1d825dc132d0c319fb0bacf3243`) e' stato
+confrontato per intero e tramite crop con tutti i 51 region ID PP-OCRv5. La
+copertura del corpo e l'ordine di lettura sono completi; nessuna riga e' stata
+omessa o duplicata. Il contatore scansione e i frammenti marginali/non testuali
+sono stati esclusi con motivazione; il footer stampato `- 2 -` e' conservato.
+Una review indipendente ha confermato copertura ed esiti visuali.
+
+Correzioni visivamente supportate nella candidata: `kan` -> `kam`; ricomposizione
+dei tre frammenti `der` + `G` + `fegner` in `der Gegner`; `in adriatischen` ->
+`im adriatischen`; `an eigenen` -> `am eigenen`; `Stra3e` -> `Straße`. Le forme
+storiche e i nomi stampati (`norden`, `Strassen`, `Aufklärungsvorstössen`,
+`I.Kings`) non sono stati modernizzati. Resta un solo dubbio grafico: il carattere
+prima di `toßen` in `vorzu[s/e]toßen`; la lettura lessicalmente e contestualmente
+più plausibile e' `vorzustoßen`, ma il glifo non e' abbastanza netto per
+registrarlo come certezza visiva.
+
+La review lessicale e' stata rilanciata sulla candidata ricomposta, con il lessico
+tedesco locale e glossario T41 versione `2026-10-11`: 244 token exact, 38 non
+trovati, 7 con suggerimenti fuzzy e 34 non-word (numeri di occorrenze, non azioni
+manuali). Le segnalazioni residue sono state ricondotte a sigle militari, nomi
+propri/toponimi, ortografia storica, forme non coperte dal lessico e frammenti
+tipografici; nessuna aggiunge una review umana oltre al glifo dubbio gia'
+indicato. La candidata e' quindi completa con una sola incertezza localizzata;
+non e' una reference `human_verified` finche' non viene confermata come trascrizione
+di pagina. Struttura candidata, trascrizione, sidecar lessicale e report sono
+persistiti in `D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/`.
+SHA-256: struttura `d33ba029ad491b76cc2d6d3fbf9ea1a207ccbf261b19777e8a4b061f8ab671ab`,
+trascrizione `9a7848742b503ac9aa326c9ba47efb9d0d9c4ecf2d925087935700d1be03a58e`,
+sidecar lessicale `6257c7a9a612d9a671ba3c19e4dd8e063e206bedfb7e7451f3352f262c7ef3ff`.
+I raw OCR e il TIFF non sono stati modificati. Non sono state calcolate CER/WER e
+non si propone ancora una soglia automatica sulla base di una sola pagina.
+
+### Conferma umana e confronto PP-OCRv5 T41 00007 - 2026-10-15
+
+L'utente ha confermato la trascrizione candidata completa, compresa la lettura
+`vorzustoßen`. La forma e' tedesca: Duden registra `vorstoßen` come verbo forte
+con il significato di avanzare/spingersi in avanti e riporta `vorzustoßen` nella
+coniugazione ([Duden: coniugazione di vorstoßen](https://www.duden.de/konjugation/vorstoszen)).
+La conferma e' legata al digest della candidata e al TIFF originale; la pagina
+puo' essere registrata come reference `human_verified/verified`.
+
+Il carico umano residuo prima della conferma era una sola decisione localizzata,
+il glifo `s/e` in `vorzu[s/e]toßen`; dopo la conferma della candidata completa
+non restano decisioni manuali aperte. I conteggi Hunspell/glossario (244 exact,
+38 not-found, 7 fuzzy e 34 occorrenze non-word) restano diagnostici e non sono
+conteggi di azioni o correzioni automatiche.
+
+Valutazione diagnostica PP-OCRv5 sul testo confermato: CER `0.026440`, WER
+`0.090909`, coverage token `0.958944`, invention rate `0.086592`; 341 token di
+reference, 358 di output, 14 omissioni e 31 aggiunte. Tutti i cinque controlli
+d'identita' pagina/TIFF/evidence passano e il confronto e' eleggibile come
+misura page-scoped. Non interpretare i numeri strutturali del profilo
+`leader_list_report`: e' un profilo non adatto alla prosa continua e il dato
+strutturale non entra nella calibrazione.
+
+Artefatti runtime: audit utente SHA-256
+`fbd488d38abf210bd99270010b30aa6320187a1cd9402093814a6dc6ec25ca1c`;
+reference `e5dd7db7c9504d3aa4ca23b8104905b9325ae461e81acb7b69f1d56ddc578193`;
+adapter evidence `538dc6e3edcff7b86befb4d65358f16ee442738493b40ace99016e18d6f8f013`;
+evaluation `80164b3a1723776c9863fc14348a95a17c060d7c9d8215d97c9a39c2923d0b6c`.
+
+Questa e' la quinta pagina T41 con reference confermata tra `00150`, `00415`,
+`00598`, `00750` e `00007`; resta un campione ridotto rispetto alle 8-10 pagine
+stratificate previste. Il singolo WER non definisce una soglia di accettazione;
+il prossimo passo e' aggiungere pagine di altri strati e valutare anche gli
+errori visivi/strutturali prima di proporre un cutoff. Reference, adapter
+diagnostico ed evaluation restano nella directory runtime esterna
+`t41-00007-visual-review-20261015`; OCR grezzo e TIFF sono invariati.

@@ -152,8 +152,9 @@ File principali: `memoria-engine/code/caduti_fonti_report/document_analysis/ocr_
 
 ## Passi successivi candidati
 
-1. Esporre l'adapter in un comando batch pilotato da manifest: un output e un
-   rapporto per pagina, con rifiuti fail-closed e nessuna scrittura sui gold.
+1. Pilot controllato del runner completato su `T314-1275-00598`: un caso
+   diagnostico, zero errori, 46 regioni e input invariati; nessuna scrittura sui
+   gold.
 2. Aggiungere un controllo visuale indipendente di copertura delle aree stampate
    e delle omissioni comuni, mantenendo gli output separati dalle letture OCR.
 3. Confrontare modelli VLM candidati sullo stesso manifest stratificato e sul

@@ -33,6 +33,7 @@ from caduti_fonti_report.document_analysis.manual_registration_batch import (
     register_manual_documents_batch,
 )
 from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates, run_document_ocr_batch
+from caduti_fonti_report.document_analysis.ocr_tesseract_batch import run_tesseract_evidence_batch
 from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
 from caduti_fonti_report.document_analysis.structured_markdown import export_structured_pages_markdown
 from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview
@@ -1861,6 +1862,20 @@ def _command_documents_structure(args: argparse.Namespace) -> int:
     return 1 if args.apply and checkpoint_manifest["status"] == "mismatch_existing_manifest" else 0
 
 
+def _command_documents_tesseract_evidence_batch(args: argparse.Namespace) -> int:
+    try:
+        report = run_tesseract_evidence_batch(
+            manifest_path=Path(args.manifest),
+            output_dir=Path(args.output_dir) if args.output_dir else None,
+            report_path=Path(args.report) if args.report else None, apply=args.apply,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents tesseract-evidence-batch: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["summary"]["error"] else 0
+
+
 def _command_documents_hunspell_lexicon(args: argparse.Namespace) -> int:
     try:
         terms = json.loads(Path(args.terms).read_text(encoding="utf-8"))
@@ -2630,6 +2645,14 @@ def build_parser() -> argparse.ArgumentParser:
     documents_structure.add_argument("--profile", choices=["leader_list_report", "numbered_report"], required=True)
     documents_structure.add_argument("--apply", action="store_true", help="Scrive output mancanti; senza flag e' read-only.")
     documents_structure.set_defaults(handler=_command_documents_structure)
+    documents_tesseract = documents_subparsers.add_parser(
+        "tesseract-evidence-batch", help="Adatta pagine Tesseract da manifest JSON v1; output solo diagnostici."
+    )
+    documents_tesseract.add_argument("--manifest", required=True, help="TesseractEvidenceBatchManifest JSON v1.0.")
+    documents_tesseract.add_argument("--output-dir", help="Directory esplicita dei nuovi OcrPageEvidence.")
+    documents_tesseract.add_argument("--report", help="Nuovo rapporto JSON con esito per pagina.")
+    documents_tesseract.add_argument("--apply", action="store_true", help="Scrive nuovi output e rapporto; richiede entrambe le destinazioni.")
+    documents_tesseract.set_defaults(handler=_command_documents_tesseract_evidence_batch)
     documents_hunspell = documents_subparsers.add_parser(
         "hunspell-lexicon", help="Esporta forme riconosciute da Hunspell locale per lexicon-review; preview-only."
     )

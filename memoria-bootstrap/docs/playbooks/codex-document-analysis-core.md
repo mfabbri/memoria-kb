@@ -306,8 +306,93 @@ Per ogni pagina, seguire questo ordine prima di chiedere lavoro all'utente:
    da piu' evidenze indipendenti o da risorse lessicali esplicite. Il VLM puo'
    segnalare regioni e letture alternative; non decide da solo e deve poter
    dichiarare incertezza. Raggruppare gli eventuali dubbi residui per decisione
-   umana, non per regione OCR, e chiedere in un solo passaggio una conferma
-   page-level del candidato esatto.
+   umana, non per regione OCR. Chiedere in un solo passaggio le sole decisioni
+   che cambiano materialmente la lettura; una singola parola degradata ma
+   plausibile non blocca la chiusura se la candidata e' accettata con incertezza
+   esplicita e tutte le altre verifiche sono concluse.
+
+#### Classificazione degli alert e coerenza degli artefatti
+
+Per ogni alert lessicale registrare la forma esatta, lo stato Hunspell/glossario,
+gli eventuali fuzzy suggestion e tutte le occorrenze con `block_id` e
+`source_region_ids` (o coordinate equivalenti). Classificare ogni forma/occorrenza
+come forma stampata o storica, sigla/identificatore, nome proprio/termine di
+dominio, frammento di riga o parola spezzata, errore OCR confermato oppure dubbio
+irrisolto. Per le parole spezzate verificare il testo stampato ai due lati della
+fine riga; non unire frammenti solo per plausibilita' linguistica.
+
+Nel riepilogo riportare separatamente: forme uniche, occorrenze, alert classificati,
+correzioni sostenute e applicate, dubbi residui distinti e decisioni effettivamente
+richieste all'utente. `not_found`, numero di suggerimenti fuzzy, token o regioni
+non sono conteggi di decisioni manuali. Confrontare ogni dubbio con l'immagine/
+crop ed eventuali fonti lessicali esplicite. Se i pixel restano ambigui ma una
+candidata e' sostenuta dalla lingua e dal contesto, registrare la lettura come
+accettata con riserva, senza presentarla come certezza visiva. La pagina puo'
+essere classificata `review_complete_with_residual_uncertainty` quando copertura,
+correzioni, provenance e struttura sono state controllate e i residui sono
+localizzati e conteggiati; non serve un tasso di incertezza pari a zero. Lasciare
+`needs_review` se resta una decisione materiale, una riga non confrontata o un
+problema di identita'/copertura.
+
+Dopo ogni correzione, verificare che la stringa sia presente nella candidata esatta
+e che non resti la forma precedente dove l'immagine la smentisce. Ricalcolare il
+digest della candidata, rieseguire il controllo lessicale sulla versione aggiornata
+e allineare report, elenco correzioni e stato di review. Una correzione descritta
+nel report ma non applicata alla candidata e' una discrepanza; non riportarla come
+completata. La candidata senza dubbi residui resta comunque
+`unverified_model_assisted` finche' non interviene la conferma umana richiesta per
+una reference. La chiusura della review page-level non equivale a una reference
+gold completa: quest'ultima richiede il livello di conferma previsto dal relativo
+contratto. Una pagina chiusa con riserva resta fuori dalla calibrazione metrica se
+la reference necessaria non e' verificata.
+
+#### Gate per una soglia di validazione automatica
+
+Prima di calcolare metriche o soglie, ricostruire l'inventario delle reference dai
+record page-scoped correnti, verificando stato di review, origine umana, identita'
+e hash della pagina. Non assumere che un inventario aggregato sia aggiornato:
+confrontarlo con i record e gli audit piu' recenti. Usare report di confronto
+riconciliati e controllare denominatori, regioni abbinate, trasformazioni e
+`accuracy_eligible`; metriche discordanti o obsolete vanno ricalcolate, non mediate
+o scelte in base al valore piu' favorevole.
+
+Definire prima gli strati rilevanti (almeno lingua, leggibilita' e layout), fissare
+la divisione calibrazione/holdout e mantenere il holdout fuori da tuning e scelta
+della soglia. Valutare errori testuali, omissioni, aggiunte, copertura e fedelta'
+strutturale nei soli strati eleggibili. Un campione iniziale di 8-10 pagine avvia
+il pilot ma non autorizza da solo l'auto-accettazione: servono criteri congelati,
+misura dei falsi passaggi e holdout separato. Se mancano reference verificate,
+stratificazione, metriche riconciliate o holdout integro, dichiarare `no-go` e
+continuare a produrre candidati non verificati; non inventare una soglia.
+
+Caso T41 00598 (2026-10-14): 35 forme lessicali uniche, 42 occorrenze, tre
+correzioni visivamente confermate e zero decisioni manuali residue. La candidata
+e' rimasta non verificata e il risultato non ha autorizzato una soglia: esistevano
+solo quattro reference verificate, mancava la stratificazione richiesta e alcuni
+report dovevano essere riconciliati. Usare il caso come esempio di conteggio, non
+come benchmark o regola di accettazione.
+
+Caso T41 00007 (2026-10-15): tutte le 51 regioni persistite sono state confrontate
+con TIFF e crop; 43 sono state mappate e 8 escluse con motivazione. Dopo aver
+ricomposto le parole spezzate, il controllo lessicale della candidata ha prodotto
+244 exact, 38 not-found, 7 fuzzy e 34 occorrenze non-word. Questi conteggi
+descrivono categorie diagnostiche e non si traducono in altrettante decisioni
+manuali. Prima della conferma restava una sola decisione umana: il glifo in
+`vorzu[s/e]toßen`. L'utente ha confermato la
+candidata completa e `vorzustoßen`; Duden documenta la forma come infinito con
+`zu` di `vorstoßen`. Dopo la conferma non restavano decisioni manuali aperte e la
+pagina è stata registrata come reference `human_verified/verified`. Questo mostra
+che una incertezza grafica localizzata non impedisce di completare la review della
+pagina, ma la candidata non diventa reference gold senza la conferma umana.
+
+Il confronto PP-OCRv5 ha prodotto CER `0.026440` e WER `0.090909`, con 5/5
+controlli di identità superati. Sono metriche diagnostiche di una pagina in prosa;
+le metriche strutturali del profilo `leader_list_report` sono state escluse perché
+il profilo non è adatto. La reference porta il campione T41 a cinque pagine, ancora
+insufficienti per fissare una soglia: completare il campione stratificato e
+preservare `00072`/`00900` come holdout. Il comando unico `memoria documents
+ocr-review` resta un incremento futuro già in roadmap; non è un comando CLI
+disponibile né è stato implementato in questa sessione.
 
 Il percorso WSL e' distinto dall'eventuale installazione Ollama Windows:
 non inferire che WSL sia assente o inutilizzabile da un errore di enumerazione
@@ -413,6 +498,10 @@ allineare le letture per blocco e verificare la candidata esatta con il lessico
 locale e i glossari disponibili. Le correzioni sostenute dall'immagine o da
 fonti esplicite vanno applicate alla candidata; le domande devono contenere solo
 decisioni ancora irrisolte e vanno raggruppate per voce, non per regione OCR.
+Prima del controllo lessicale, ricomporre i token separati dalla segmentazione
+per righe (inclusi i trattini tipografici a fine riga) nella candidata di lettura;
+classificare poi gli alert sul testo esatto ricomposto. Il totale degli alert del
+lessico resta diagnostico e non diventa un numero di decisioni manuali.
 La confidence, l'accordo fra motori, il numero di regioni e gli alert lessicali
 non sono conteggi di errori o azioni umane. Prima di processare decine di pagine
 serve il runner batch pilotato da manifest, con rapporto e stato fail-closed per

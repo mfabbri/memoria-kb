@@ -1937,6 +1937,24 @@ la griglia e resta diagnostica. Sono risultati page/configuration-scoped: quattr
 pagine non bastano per le 8-10 iniziali né per definire una soglia. Holdout e
 decisioni archivistiche restano separati.
 
+Incremento futuro richiesto: aggiungere un comando CLI unico, candidato
+`memoria documents ocr-review`, che orchestra il flusso page-level già
+documentato senza rilanciare OCR quando gli output persistenti sono validi.
+Il comando dovrà legare input e output per hash/provenance, costruire o caricare
+la mappa strutturata, confrontare gli output OCR per blocco, generare la
+candidata esatta, eseguire Hunspell/glossario sulla candidata, deduplicare e
+classificare gli alert lessicali per forma e posizione, controllare copertura,
+ordine e struttura e produrre un report con dubbi residui e numero effettivo di
+decisioni manuali. Dovrà distinguere `candidate_ready`, `needs_review`,
+`blocked`, `review_complete_with_residual_uncertainty` e l'eventuale validazione
+automatica calibrata. La chiusura della review umana non richiede incertezza zero:
+residui plausibili e localizzati si possono accettare con riserva, tenendo separati
+il conteggio dei residui e le decisioni manuali ancora richieste. Gli alert lessicali
+non diventano correzioni e la validazione automatica resta disabilitata finché
+la soglia di rischio non è misurata su calibrazione e holdout separati. Il comando non
+promuove reference, claim o fatti storici. L'implementazione è rinviata a un
+micro-incremento successivo, dopo il completamento della calibrazione richiesta.
+
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 
 Dipendenze: T40, T41 e risorsa JSON-LD del glossario militare.
