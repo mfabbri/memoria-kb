@@ -48,6 +48,7 @@ class DocumentStructureCliExportTest(unittest.TestCase):
             self.assertGreaterEqual(preview["duration_ms"], 0.0)
             self.assertGreaterEqual(preview["throughput_items_per_second"], 0.0)
             self.assertFalse(output.exists())
+            self.assertTrue(preview["documents"][0]["structure_output_path"].endswith("page-1.structure.json"))
 
             applied = export_structured_pages_markdown(root_dir=root, output_dir=output, profile="numbered_report", apply=True)
             manifest_path = output / "structured-checkpoint.manifest.json"
@@ -55,14 +56,39 @@ class DocumentStructureCliExportTest(unittest.TestCase):
             self.assertEqual(json.loads(manifest_path.read_text(encoding="utf-8"))["checkpoint_id"], applied["checkpoint_id"])
             item = applied["documents"][0]
             self.assertEqual(item["status"], "written")
+            structure_path = Path(item["structure_output_path"])
+            structure_payload = json.loads(structure_path.read_text(encoding="utf-8"))
+            self.assertEqual(structure_payload["@type"], "DocumentStructure")
+            self.assertEqual(structure_payload["schema_version"], "1.0")
+            self.assertEqual(structure_payload["source_evidence"]["source_image_hash"], "hash-page-1")
+            self.assertEqual(structure_payload["blocks"][0]["source_region_ids"], ["r-1"])
             text = Path(item["output_path"]).read_text(encoding="utf-8")
             self.assertIn("Document structure (unreviewed)", text)
             self.assertIn("Evidence source image hash: `hash-page-1`", text)
+            self.assertEqual(json.loads((root / "page.evidence.json").read_text(encoding="utf-8")), evidence_payload())
 
             repeated = export_structured_pages_markdown(root_dir=root, output_dir=output, profile="numbered_report", apply=True)
             self.assertEqual(repeated["documents"][0]["status"], "skipped_existing_output")
             self.assertEqual(repeated["checkpoint_id"], applied["checkpoint_id"])
             self.assertEqual(repeated["checkpoint_manifest"]["status"], "existing_compatible")
+
+    def test_existing_structure_json_blocks_markdown_write(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw) / "evidence"
+            output = Path(raw) / "markdown"
+            root.mkdir()
+            (root / "page.evidence.json").write_text(json.dumps(evidence_payload()), encoding="utf-8")
+            structure_dir = output / "synthetic-document"
+            structure_dir.mkdir(parents=True)
+            structure_path = structure_dir / "page-1.structure.json"
+            structure_path.write_text('{"keep":true}\n', encoding="utf-8")
+
+            report = export_structured_pages_markdown(root_dir=root, output_dir=output,
+                profile="numbered_report", apply=True)
+
+            self.assertEqual(report["documents"][0]["status"], "skipped_existing_output")
+            self.assertFalse((structure_dir / "page-1.md").exists())
+            self.assertEqual(structure_path.read_text(encoding="utf-8"), '{"keep":true}\n')
 
     def test_existing_mismatched_manifest_is_diagnostic_and_blocks_apply_without_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
@@ -138,6 +164,28 @@ class DocumentStructureCliExportTest(unittest.TestCase):
             self.assertIn("preview read-only", stdout.getvalue())
             self.assertIn("Manifest checkpoint: would_create", stdout.getvalue())
             self.assertFalse(output.exists())
+
+    def test_cli_apply_exports_json_and_markdown_for_scaffold(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw) / "evidence"
+            output = Path(raw) / "derived"
+            root.mkdir()
+            (root / "page.evidence.json").write_text(json.dumps(evidence_payload()), encoding="utf-8")
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                exit_code = memoria_main([
+                    "documents", "structure", "--root", str(root), "--output-dir", str(output),
+                    "--profile", "numbered_report", "--apply",
+                ])
+
+            self.assertEqual(exit_code, 0)
+            structure_path = output / "synthetic-document" / "page-1.structure.json"
+            markdown_path = output / "synthetic-document" / "page-1.md"
+            self.assertTrue(structure_path.is_file())
+            self.assertTrue(markdown_path.is_file())
+            self.assertEqual(json.loads(structure_path.read_text(encoding="utf-8"))["@type"], "DocumentStructure")
+            self.assertIn("structure=" + str(structure_path), stdout.getvalue())
+            self.assertIn("Scritte: 1", stdout.getvalue())
 
 
 if __name__ == "__main__":

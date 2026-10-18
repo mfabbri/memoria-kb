@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import shutil
 import sys
 import time
@@ -38,33 +39,59 @@ def run_ocr_transform_pilot(
     output_dir: Path,
     language: str,
     model: Mapping[str, str],
-    prediction_runner: PaddlePredictionRunner,
+    prediction_runner: PaddlePredictionRunner | None,
     tile_width: int = 1800,
     tile_height: int = 1800,
     tile_overlap: int = 200,
     enable_mkldnn: bool = False,
     text_det_limit_side_len: int = 8192,
     text_det_limit_type: str = "max",
+    device: str = "cpu",
+    runtime_identity: Mapping[str, Any] | None = None,
+    resume: bool = False,
+    retry_limit: int = 1,
+    clock: Callable[[], float] = time.perf_counter,
 ) -> dict[str, Any]:
     """Create transform/tile OCR artefacts for exactly two explicit TIFFs.
 
     ``prediction_runner`` is deliberately injectable: unit tests need no OCR
     runtime, while the CLI supplies a PP-OCRv5 runner configured with local
-    weights.  A pre-existing output directory is always rejected.
+    weights. ``resume`` only reuses a completed, fully verified checkpoint.
+    ``retry_limit`` bounds retries of runner calls and lazy materialization for
+    each target. Failed pages retain audit only; their partial artifacts are removed.
     """
     sources = _validate_sources(input_tiffs)
+    if type(retry_limit) is not int or retry_limit not in (0, 1):
+        raise ValueError("retry_limit deve essere 0 oppure 1.")
     destination = Path(output_dir)
-    _validate_new_output_directory(destination)
     language_key = _required_text(language, "language")
     model_payload = _validate_model(model)
     _validate_tiling(tile_width, tile_height, tile_overlap)
     runtime = _validate_runtime_options(enable_mkldnn, text_det_limit_side_len, text_det_limit_type)
+    runtime["device"] = _required_text(device, "device")
+    runner_provenance = getattr(prediction_runner, "runtime_provenance", None)
+    if isinstance(runner_provenance, Mapping) and "models" in runner_provenance:
+        model_identity = _json_value(runner_provenance["models"])
+        if runtime_identity is None:
+            runtime_identity = model_identity
+        elif _json_value(runtime_identity) != model_identity:
+            raise ValueError("Identita' dei pesi runtime diversa dalla fingerprint richiesta.")
+    source_hashes = [{"path": str(source), "sha256": _sha256_file(source)} for source in sources]
+    request = {"pilot_id": _TRANSFORM_VERSION, "inputs": source_hashes, "language": language_key,
+               "model": model_payload, "runtime_options": dict(runtime), "retry_limit": retry_limit,
+               "runtime_identity": _json_value(runtime_identity or {}),
+               "tiling": {"width": tile_width, "height": tile_height, "overlap": tile_overlap}}
+    fingerprint = _request_fingerprint(request)
+    if resume:
+        return _reuse_completed_checkpoint(destination, request, fingerprint)
+    _validate_new_output_directory(destination)
+    if prediction_runner is None:
+        raise ValueError("prediction_runner richiesto per un nuovo run T36.")
     runtime["paddle_excluded_prediction_fields"] = list(_EXCLUDED_PADDLE_FIELDS)
     runtime["full_page_caveat"] = (
         "PaddleOCR può riportare max_side_limit=4000 e downscalare le inferenze full-page; "
         "i tile raw nativi sono la verifica ad alta risoluzione del pilot."
     )
-    runner_provenance = getattr(prediction_runner, "runtime_provenance", None)
     if runner_provenance is not None:
         runtime["paddle"] = _json_value(runner_provenance)
 
@@ -73,69 +100,134 @@ def run_ocr_transform_pilot(
     except ImportError as exc:  # pragma: no cover - machine configuration
         raise RuntimeError("Pillow non disponibile: impossibile creare il pilot T36.") from exc
 
+    started = clock()
     destination.mkdir(parents=True, exist_ok=False)
     pages: list[dict[str, Any]] = []
+    attempts: list[dict[str, Any]] = []
     for source in sources:
         page_id = source.stem
         page_dir = destination / "pages" / page_id
-        variants = _write_variants(source=source, page_dir=page_dir, image_class=Image, enhance_class=ImageEnhance)
-        source_dimensions = variants[0]["image_dimensions"]
-        page = {
-            "page_id": page_id,
-            "source": {
-                "path": str(source),
-                "sha256": _sha256_file(source),
-                "image_dimensions": source_dimensions,
-            },
-            "variants": [],
-        }
-        for variant in variants:
-            tile_entries = (
-                _write_tiles(
-                    image_path=Path(variant["absolute_path"]),
-                    page_dir=page_dir,
-                    variant_id=variant["variant_id"],
-                    tile_width=tile_width,
-                    tile_height=tile_height,
-                    tile_overlap=tile_overlap,
-                    image_class=Image,
-                )
-                if variant["variant_id"] == "raw"
-                else []
-            )
-            targets = [{"kind": "full_page", "path": Path(variant["absolute_path"]), "source_bbox": [0, 0, source_dimensions["width"], source_dimensions["height"]]}]
-            targets.extend({"kind": "tile", "path": Path(tile["absolute_path"]), "source_bbox": tile["source_bbox"], "tile_id": tile["tile_id"]} for tile in tile_entries)
-            ocr_outputs = [
-                _run_target_ocr(
-                    target=target,
-                    page_id=page_id,
-                    source=source,
-                    source_dimensions=source_dimensions,
-                    variant=variant,
-                    language=language_key,
-                    model=model_payload,
-                    runner=prediction_runner,
-                    output_dir=destination,
-                )
-                for target in targets
-            ]
-            page["variants"].append(
-                {
-                    **_public_artifact_entry(variant, destination),
-                    "tiles": [_public_artifact_entry(tile, destination) for tile in tile_entries],
-                    "ocr_outputs": ocr_outputs,
-                }
-            )
+        page = {"page_id": page_id, "source": {"path": str(source), "sha256": _sha256_file(source)},
+                "variants": [], "status": "completed"}
+        try:
+            _process_page(source=source, page_dir=page_dir, page=page, destination=destination,
+                          language=language_key, model=model_payload, runner=prediction_runner,
+                          tile_width=tile_width, tile_height=tile_height, tile_overlap=tile_overlap,
+                          image_class=Image, enhance_class=ImageEnhance, clock=clock,
+                          retry_limit=retry_limit, attempts=attempts)
+        except Exception as exc:
+            # Only this newly created page directory is owned by the pilot.
+            if page_dir.exists():
+                if page_dir.is_symlink() or destination.resolve() not in page_dir.resolve().parents:
+                    raise ValueError("Cleanup pagina T36 fuori dalla directory output consentita.") from exc
+                shutil.rmtree(page_dir)
+            page.update(status="failed", variants=[], error={"type": type(exc).__name__, "message": str(exc)})
+        page["ocr_attempt_count"] = sum(item["page_id"] == page_id for item in attempts)
         pages.append(page)
 
-    manifest = {
+    if any(_sha256_file(Path(item["path"])) != item["sha256"] for item in source_hashes):
+        raise ValueError("Input T36 modificato durante il run; checkpoint non pubblicato.")
+    duration = clock() - started
+    latencies = [output["latency_ms"] for page in pages for variant in page["variants"] for output in variant["ocr_outputs"]]
+    completed_pages = sum(page["status"] == "completed" for page in pages)
+    status = "completed" if completed_pages == len(pages) else "partial"
+    manifest = _build_manifest(pages=pages, request=request, fingerprint=fingerprint, duration=duration,
+                               latencies=latencies, language=language_key, model=model_payload, runtime=runtime,
+                               tile_width=tile_width, tile_height=tile_height, tile_overlap=tile_overlap)
+    manifest["status"] = status
+    manifest["ocr_attempts"] = attempts
+    manifest["metrics"].update(completed_page_count=completed_pages, failed_page_count=len(pages) - completed_pages,
+                               ocr_attempt_count=len(attempts),
+                               failed_ocr_attempt_count=sum(item["status"] == "failed" for item in attempts))
+    manifest_path = destination / "pilot-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    report_path = destination / "review.md"
+    report_path.write_text(_markdown_report(manifest, destination), encoding="utf-8")
+    checkpoint = {"@type": "OcrTransformPilotCheckpoint", "schema_version": "1.0", "status": status,
+                  "request_fingerprint": fingerprint, "artifacts": _checkpoint_artifacts(destination)}
+    (destination / "checkpoint.json").write_text(json.dumps(checkpoint, ensure_ascii=False, indent=2), encoding="utf-8")
+    return {"manifest_path": str(manifest_path), "report_path": str(report_path), "manifest": manifest, "reused": False}
+
+
+def _process_page(*, source: Path, page_dir: Path, page: dict[str, Any], destination: Path,
+                  language: str, model: Mapping[str, str], runner: PaddlePredictionRunner,
+                  tile_width: int, tile_height: int, tile_overlap: int, image_class: Any,
+                  enhance_class: Any, clock: Callable[[], float], retry_limit: int,
+                  attempts: list[dict[str, Any]]) -> None:
+    page_id = page["page_id"]
+    variants = _write_variants(source=source, page_dir=page_dir, image_class=image_class, enhance_class=enhance_class)
+    source_dimensions = variants[0]["image_dimensions"]
+    page["source"]["image_dimensions"] = source_dimensions
+    for variant in variants:
+        tile_entries = (
+            _write_tiles(
+                image_path=Path(variant["absolute_path"]),
+                page_dir=page_dir,
+                variant_id=variant["variant_id"],
+                tile_width=tile_width,
+                tile_height=tile_height,
+                tile_overlap=tile_overlap,
+                image_class=image_class,
+            )
+            if variant["variant_id"] == "raw"
+            else []
+        )
+        targets = [{"kind": "full_page", "path": Path(variant["absolute_path"]), "source_bbox": [0, 0, source_dimensions["width"], source_dimensions["height"]]}]
+        targets.extend({"kind": "tile", "path": Path(tile["absolute_path"]), "source_bbox": tile["source_bbox"], "tile_id": tile["tile_id"]} for tile in tile_entries)
+        ocr_outputs = [
+            _run_target_ocr(
+                target=target,
+                page_id=page_id,
+                source=source,
+                source_dimensions=source_dimensions,
+                variant=variant,
+                language=language,
+                model=model,
+                runner=runner,
+                output_dir=destination,
+                clock=clock,
+                retry_limit=retry_limit,
+                attempts=attempts,
+            )
+            for target in targets
+        ]
+        page["variants"].append(
+            {
+                **_public_artifact_entry(variant, destination),
+                "tiles": [_public_artifact_entry(tile, destination) for tile in tile_entries],
+                "ocr_outputs": ocr_outputs,
+            }
+        )
+
+
+def _build_manifest(*, pages: list[dict[str, Any]], request: Mapping[str, Any], fingerprint: str,
+                    duration: float, latencies: list[float], language: str, model: Mapping[str, str],
+                    runtime: Mapping[str, Any], tile_width: int, tile_height: int, tile_overlap: int) -> dict[str, Any]:
+    return {
         "@type": "OcrTransformPilot",
         "schema_version": "1.0",
         "pilot_id": _TRANSFORM_VERSION,
+        "checkpoint_request": request,
+        "request_fingerprint": fingerprint,
+        "metrics": {
+            "duration_seconds": duration,
+            "duration_scope": "from_before_output_directory_creation_through_artifacts_and_ocr_excludes_manifest_report_checkpoint_serialization_and_runtime_initialization",
+            "page_count": len(pages),
+            "ocr_target_count": len(latencies),
+            "ocr_target_count_scope": "retained_outputs_from_completed_pages",
+            "throughput_pages_per_second": sum(page["status"] == "completed" for page in pages) / duration if duration > 0 else None,
+            "throughput_ocr_targets_per_second": len(latencies) / duration if duration > 0 else None,
+            "p95_target_latency_ms": sorted(latencies)[math.ceil(0.95 * len(latencies)) - 1] if latencies else None,
+            "latency_scope": "runner_call_and_prediction_iterator_materialization_per_full_page_or_tile",
+            "target_latency_retry_policy": "sum_of_attempt_latencies_for_retained_target",
+            "p95_method": "nearest_rank_ceil_0.95_times_ocr_target_count",
+            "cost": None,
+            "human_review_seconds": None,
+        },
         "review_status": "unreviewed",
         "accuracy_claim": "none_without_human_reference",
-        "language": language_key,
-        "model": model_payload,
+        "language": language,
+        "model": model,
         "runtime": runtime,
         "tiling": {"tile_width": tile_width, "tile_height": tile_height, "overlap": tile_overlap, "variant_id": "raw", "coordinate_convention": "left_top_inclusive_right_bottom_exclusive"},
         "pages": pages,
@@ -147,11 +239,45 @@ def run_ocr_transform_pilot(
             "Le trascrizioni sono output OCR grezzi da revisionare, non fatti storici.",
         ],
     }
+
+
+def _request_fingerprint(request: Mapping[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def _checkpoint_artifacts(destination: Path) -> list[dict[str, str]]:
+    artifacts = []
+    for path in sorted(destination.rglob("*")):
+        if path.is_symlink():
+            raise ValueError("Symlink non consentito nel checkpoint T36.")
+        if path.is_file() and path != destination / "checkpoint.json":
+            artifacts.append({"path": path.relative_to(destination).as_posix(), "sha256": _sha256_file(path)})
+    return artifacts
+
+
+def _reuse_completed_checkpoint(destination: Path, request: Mapping[str, Any], fingerprint: str) -> dict[str, Any]:
+    if destination.is_symlink():
+        raise ValueError("Symlink output non consentito per resume T36.")
+    checkpoint = json.loads((destination / "checkpoint.json").read_text(encoding="utf-8"))
     manifest_path = destination / "pilot-manifest.json"
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-    report_path = destination / "review.md"
-    report_path.write_text(_markdown_report(manifest, destination), encoding="utf-8")
-    return {"manifest_path": str(manifest_path), "report_path": str(report_path), "manifest": manifest}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if (not isinstance(checkpoint, dict) or not isinstance(manifest, dict)
+        or checkpoint.get("@type") != "OcrTransformPilotCheckpoint" or checkpoint.get("schema_version") != "1.0"
+        or checkpoint.get("status") != "completed" or checkpoint.get("request_fingerprint") != fingerprint
+        or manifest.get("@type") != "OcrTransformPilot" or manifest.get("schema_version") != "1.0"
+        or manifest.get("checkpoint_request") != request or manifest.get("request_fingerprint") != fingerprint
+        or checkpoint.get("artifacts") != _checkpoint_artifacts(destination)
+        or not (destination / "review.md").is_file()):
+        raise ValueError("Checkpoint T36 non valido: fingerprint, manifest o hash artifact non coincidono.")
+    return {"manifest_path": str(manifest_path), "report_path": str(destination / "review.md"), "manifest": manifest, "reused": True}
+
+
+def local_paddle_checkpoint_identity(*, text_detection_model_dir: Path, text_recognition_model_dir: Path) -> dict[str, Any]:
+    """Hash declared local weights without importing or initializing Paddle."""
+    return {field: {"directory": str(path), "files": _model_file_manifest(path)} for field, path in (
+        ("text_detection", _validated_model_dir(text_detection_model_dir, "text_detection_model_dir")),
+        ("text_recognition", _validated_model_dir(text_recognition_model_dir, "text_recognition_model_dir")),
+    )}
 
 
 def create_local_paddle_ocr_v5_runner(
@@ -219,6 +345,8 @@ def _validate_sources(input_tiffs: Sequence[Path]) -> list[Path]:
     sources = [Path(item).resolve(strict=True) for item in input_tiffs]
     if len(set(sources)) != 2:
         raise ValueError("I due input TIFF del pilot devono essere distinti.")
+    if len({source.stem.casefold() for source in sources}) != 2:
+        raise ValueError("Gli input T36 devono avere page_id (stem) distinti.")
     for source in sources:
         if not source.is_file() or source.suffix.lower() not in {".tif", ".tiff"}:
             raise ValueError(f"Input non TIFF valido per il pilot T36: {source}")
@@ -313,12 +441,29 @@ def _tile_starts(length: int, tile_length: int, overlap: int) -> list[int]:
     return starts if starts[-1] == last else [*starts, last]
 
 
-def _run_target_ocr(*, target: Mapping[str, Any], page_id: str, source: Path, source_dimensions: Mapping[str, int], variant: Mapping[str, Any], language: str, model: Mapping[str, str], runner: PaddlePredictionRunner, output_dir: Path) -> dict[str, Any]:
+def _run_target_ocr(*, target: Mapping[str, Any], page_id: str, source: Path, source_dimensions: Mapping[str, int], variant: Mapping[str, Any], language: str, model: Mapping[str, str], runner: PaddlePredictionRunner, output_dir: Path, retry_limit: int, attempts: list[dict[str, Any]], clock: Callable[[], float] = time.perf_counter) -> dict[str, Any]:
     image_path = Path(target["path"])
-    started = time.perf_counter()
-    prediction = runner(image_path, language)
-    latency_ms = round((time.perf_counter() - started) * 1000, 3)
-    stable_prediction = prediction if isinstance(prediction, str) else list(prediction)
+    target_attempts = []
+    for attempt_number in range(1, retry_limit + 2):
+        attempt = {"page_id": page_id, "variant_id": variant["variant_id"], "target": target["kind"],
+                   "tile_id": target.get("tile_id"), "attempt": attempt_number}
+        started = clock()
+        try:
+            prediction = runner(image_path, language)
+            stable_prediction = prediction if isinstance(prediction, str) else list(prediction)
+        except Exception as exc:
+            attempt.update(status="failed", latency_ms=round((clock() - started) * 1000, 3),
+                           error={"type": type(exc).__name__, "message": str(exc)})
+            attempts.append(attempt)
+            target_attempts.append(attempt)
+            if attempt_number > retry_limit:
+                raise
+        else:
+            attempt.update(status="completed", latency_ms=round((clock() - started) * 1000, 3))
+            attempts.append(attempt)
+            target_attempts.append(attempt)
+            break
+    latency_ms = round(sum(item["latency_ms"] for item in target_attempts), 3)
     normalized_prediction = _json_prediction(stable_prediction)
     source_hash = _sha256_file(source)
     evidence = paddle_ocr_v5_structured_evidence(
@@ -339,6 +484,7 @@ def _run_target_ocr(*, target: Mapping[str, Any], page_id: str, source: Path, so
     return {
         "target": target["kind"], "tile_id": target.get("tile_id"), "artifact": _relative_path(image_path, output_dir),
         "artifact_sha256": _sha256_file(image_path), "source_bbox": target["source_bbox"], "latency_ms": latency_ms,
+        "attempt_count": len(target_attempts),
         "raw_prediction": normalized_prediction, "structured_evidence": evidence,
     }
 
@@ -428,6 +574,14 @@ def _markdown_report(manifest: Mapping[str, Any], output_dir: Path) -> str:
     lines = ["# Pilot T36 — review OCR trasformazioni e tile", "", "Stato: **unreviewed**. Le trascrizioni sono OCR grezzo e non attestano accuratezza o fatti storici.", "", "Budget pilot: ogni variante ha OCR a pagina intera; tile e OCR dei tile sono eseguiti soltanto su `raw` alla risoluzione nativa.", ""]
     for page in manifest["pages"]:
         lines.extend([f"## {page['page_id']}", "", f"TIFF originale (riferimento esterno): `{page['source']['path']}`  ", f"SHA-256: `{page['source']['sha256']}`", ""])
+        lines.extend([f"Esito: **{page['status']}**; tentativi OCR: {page['ocr_attempt_count']}.", ""])
+        for attempt in manifest["ocr_attempts"]:
+            if attempt["page_id"] == page["page_id"] and attempt["status"] == "failed":
+                lines.extend([f"Tentativo {attempt['attempt']} {attempt['variant_id']}/{attempt['tile_id'] or 'full_page'}: "
+                              f"`{attempt['error']['type']}`: {attempt['error']['message']}", ""])
+        if page["status"] == "failed":
+            lines.extend([f"Errore: `{page['error']['type']}`: {page['error']['message']}",
+                          "Artifact parziali della pagina rimossi.", ""])
         for variant in page["variants"]:
             lines.extend([f"### Variante `{variant['variant_id']}`", "", f"[Immagine derivata]({variant['path']}) · SHA-256 `{variant['sha256']}`", ""])
             for output in variant["ocr_outputs"]:
@@ -463,6 +617,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--text-recognition-model-dir", required=True)
     parser.add_argument("--text-recognition-model-name", required=True)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--resume", action="store_true", help="Riusa un checkpoint completato senza inizializzare Paddle.")
+    parser.add_argument("--retry-limit", type=int, choices=(0, 1), default=1)
     parser.add_argument("--enable-mkldnn", action="store_true")
     parser.add_argument("--text-det-limit-side-len", type=int, default=8192)
     parser.add_argument("--text-det-limit-type", choices=("min", "max"), default="max")
@@ -471,7 +627,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--tile-overlap", type=int, default=200)
     args = parser.parse_args(argv)
     try:
-        runner = create_local_paddle_ocr_v5_runner(
+        runtime_identity = local_paddle_checkpoint_identity(
+            text_detection_model_dir=Path(args.text_detection_model_dir),
+            text_recognition_model_dir=Path(args.text_recognition_model_dir),
+        )
+        runner = None if args.resume else create_local_paddle_ocr_v5_runner(
             language=args.language, text_detection_model_dir=Path(args.text_detection_model_dir), text_detection_model_name=args.text_detection_model_name,
             text_recognition_model_dir=Path(args.text_recognition_model_dir), text_recognition_model_name=args.text_recognition_model_name, device=args.device,
             enable_mkldnn=args.enable_mkldnn, text_det_limit_side_len=args.text_det_limit_side_len, text_det_limit_type=args.text_det_limit_type,
@@ -480,12 +640,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             input_tiffs=[Path(path) for path in args.input_tiff], output_dir=Path(args.output_dir), language=args.language,
             model={"ocr_version": "PP-OCRv5", "text_detection_model_name": args.text_detection_model_name, "text_recognition_model_name": args.text_recognition_model_name}, prediction_runner=runner,
             tile_width=args.tile_width, tile_height=args.tile_height, tile_overlap=args.tile_overlap,
+            device=args.device, runtime_identity=runtime_identity, resume=args.resume, retry_limit=args.retry_limit,
             enable_mkldnn=args.enable_mkldnn, text_det_limit_side_len=args.text_det_limit_side_len, text_det_limit_type=args.text_det_limit_type,
         )
     except (FileExistsError, FileNotFoundError, RuntimeError, ValueError) as exc:
         parser.error(str(exc))
     print(json.dumps({"manifest_path": result["manifest_path"], "report_path": result["report_path"]}, ensure_ascii=False, indent=2))
-    return 0
+    return 1 if result["manifest"]["status"] == "partial" else 0
 
 
 if __name__ == "__main__":

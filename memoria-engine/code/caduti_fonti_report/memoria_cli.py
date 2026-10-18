@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections import Counter
@@ -39,6 +40,31 @@ from caduti_fonti_report.document_analysis.structured_markdown import export_str
 from caduti_fonti_report.document_analysis.glossary_revision import build_glossary_diff, build_glossary_preview
 from caduti_fonti_report.document_analysis.ocr_lexicon_candidates import build_document_lexicon_review
 from caduti_fonti_report.document_analysis.ocr_candidate_assessment import build_ocr_candidate_assessment
+from caduti_fonti_report.document_analysis.ocr_risk_features import build_ocr_risk_features
+from caduti_fonti_report.document_analysis.ocr_risk_score import build_ocr_risk_score
+from caduti_fonti_report.document_analysis.ocr_material_error_draft import build_ocr_material_error_draft
+from caduti_fonti_report.document_analysis.ocr_visual_review_ledger import audit_ocr_visual_review_ledger
+from caduti_fonti_report.document_analysis.ocr_page_layout import audit_ocr_page_layout
+from caduti_fonti_report.document_analysis.ocr_alert_dispositions import audit_ocr_alert_dispositions
+from caduti_fonti_report.document_analysis.ocr_review_orchestrator import run_ocr_review
+from caduti_fonti_report.document_analysis.ocr_review_scaffold import scaffold_ocr_review
+from caduti_fonti_report.document_analysis.ocr_threshold_audit import audit_ocr_auto_validation_threshold
+from caduti_fonti_report.document_analysis.ocr_threshold_calibration import calibrate_ocr_threshold
+from caduti_fonti_report.document_analysis.ocr_cohort_preregistration import (
+    require_external_path, validate_ocr_cohort_preregistration,
+)
+from caduti_fonti_report.document_analysis.ocr_evidence_comparison import compare_ocr_page_evidence
+from caduti_fonti_report.document_analysis.ocr_vlm_crop_evaluation import evaluate_ocr_vlm_crop_cohort
+from caduti_fonti_report.document_analysis.ocr_transform_pilot import (
+    local_paddle_checkpoint_identity,
+    create_local_paddle_ocr_v5_runner,
+    run_ocr_transform_pilot,
+)
+from caduti_fonti_report.document_analysis.ocr_transform_structure import export_ocr_transform_structure
+from caduti_fonti_report.document_analysis.ocr_review_package import build_ocr_review_package
+from caduti_fonti_report.document_analysis.ocr_tesseract_from_t36 import export_tesseract_from_t36
+from caduti_fonti_report.document_analysis.ocr_review_batch import run_ocr_review_batch
+from caduti_fonti_report.document_analysis.ocr_review_finalizer import finalize_ocr_review_package
 from caduti_fonti_report.document_analysis.ocr_hunspell_catalog import export_hunspell_lexicon
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
@@ -1753,6 +1779,20 @@ def _command_documents_register(args: argparse.Namespace) -> int:
 
 
 def _command_documents_process(args: argparse.Namespace) -> int:
+    if args.workflow_manifest:
+        from caduti_fonti_report.document_analysis.ocr_workflow import run_ocr_workflow
+
+        try:
+            report = run_ocr_workflow(manifest_path=Path(args.workflow_manifest), output_dir=Path(args.output_dir),
+                                      apply=args.apply, resume=args.resume)
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
+            print(f"Errore documents process: {exc}", file=sys.stderr)
+            return 1
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 1 if report["status"] == "partial_unreviewed" else 0
+    if args.resume:
+        print("Errore documents process: --resume richiede --workflow-manifest.", file=sys.stderr)
+        return 1
     root_dir = Path(args.root)
     output_dir = Path(args.output_dir)
     try:
@@ -1812,7 +1852,7 @@ def _command_documents_markdown(args: argparse.Namespace) -> int:
     counts = Counter(str(item.get("status", "")) for item in documents)
     print("Me.Mo.Ria documents markdown")
     print(f"Root OCR: {report['root_dir']}")
-    print(f"Output Markdown: {report['output_dir']}")
+    print(f"Output derivati (Markdown + DocumentStructure JSON): {report['output_dir']}")
     print(f"Modalita: {'apply esplicito' if args.apply else 'preview read-only'}")
     print(f"Pagine candidate: {len(documents)}")
     print(f"Da scrivere: {counts['would_write']}")
@@ -1857,8 +1897,11 @@ def _command_documents_structure(args: argparse.Namespace) -> int:
     print(f"Non valide: {counts['skipped_invalid_json'] + counts['skipped_invalid_evidence']}")
     print(f"Durata ms: {report['duration_ms']}")
     print(f"Throughput item/s: {report['throughput_items_per_second']}")
+    for item in documents:
+        if item.get("structure_output_path") and item.get("output_path"):
+            print(f"- {item.get('status')}: {item.get('page_id')} | structure={item['structure_output_path']} | markdown={item['output_path']}")
     if not args.apply:
-        print("Per scrivere i Markdown derivati, ripeti il comando con --apply.")
+        print("Per scrivere DocumentStructure JSON e Markdown derivato, ripeti il comando con --apply.")
     return 1 if args.apply and checkpoint_manifest["status"] == "mismatch_existing_manifest" else 0
 
 
@@ -1907,6 +1950,74 @@ def _command_documents_lexicon_review(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_ocr_visual_review_audit(args: argparse.Namespace) -> int:
+    try:
+        report = audit_ocr_visual_review_ledger(
+            ledger_path=Path(args.ledger), image_path=Path(args.image),
+            evidence_path=Path(args.evidence), structure_path=Path(args.structure),
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-visual-review-audit: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["processability_status"] == "blocked" else 0
+
+
+def _command_documents_ocr_layout_audit(args: argparse.Namespace) -> int:
+    report = audit_ocr_page_layout(
+        layout_path=Path(args.layout), evidence_path=Path(args.evidence),
+        visual_audit_path=Path(args.visual_audit),
+    )
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["processability_status"] == "blocked" else 0
+
+
+def _command_documents_ocr_alert_dispositions(args: argparse.Namespace) -> int:
+    try:
+        report = audit_ocr_alert_dispositions(
+            structure_path=Path(args.structure), lexicon_review_path=Path(args.lexicon_review),
+            visual_audit_path=Path(args.visual_audit), ledger_path=Path(args.ledger),
+            dispositions_path=Path(args.dispositions),
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-alert-dispositions-audit: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["processability_status"] == "blocked" else 0
+
+
+def _command_documents_ocr_review(args: argparse.Namespace) -> int:
+    try:
+        report = run_ocr_review(
+            image_path=Path(args.image), evidence_path=Path(args.evidence),
+            structure_path=Path(args.structure), markdown_path=Path(args.markdown),
+            lexicon_review_path=Path(args.lexicon_review), layout_path=Path(args.layout),
+            ledger_path=Path(args.ledger), dispositions_path=Path(args.dispositions),
+            comparison_path=Path(args.comparison), tesseract_evidence_path=Path(args.tesseract_evidence),
+        )
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"Errore documents ocr-review: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["status"] == "blocked" else 0
+
+
+def _command_documents_ocr_review_scaffold(args: argparse.Namespace) -> int:
+    try:
+        report = scaffold_ocr_review(
+            image_path=Path(args.image), evidence_path=Path(args.evidence),
+            comparison_path=Path(args.comparison), tesseract_evidence_path=Path(args.tesseract_evidence),
+            structure_path=Path(args.structure), markdown_path=Path(args.markdown),
+            lexicon_path=Path(args.lexicon), glossary_path=Path(args.glossary) if args.glossary else None,
+            output_dir=Path(args.output_dir), apply=args.apply, tile_size=args.tile_size,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-review-scaffold: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_candidate_assessment(args: argparse.Namespace) -> int:
     try:
         report = build_ocr_candidate_assessment(
@@ -1919,6 +2030,439 @@ def _command_documents_candidate_assessment(args: argparse.Namespace) -> int:
         return 1
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 1 if report["processability_status"] == "blocked" else 0
+
+
+def _command_documents_ocr_risk_score(args: argparse.Namespace) -> int:
+    try:
+        report = build_ocr_risk_score(
+            bundle_path=Path(args.bundle), output_path=Path(args.output), apply=args.apply,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-risk-score: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["score_status"] == "not_scorable" else 0
+
+
+def _command_documents_ocr_risk_features(args: argparse.Namespace) -> int:
+    try:
+        report = build_ocr_risk_features(
+            **{name + "_path": Path(getattr(args, name)) for name in (
+                "assessment", "structure", "markdown", "evidence", "lexicon_review",
+                "comparison", "left", "right", "image", "output")}, apply=args.apply,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-risk-features: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["processability_status"] == "blocked" else 0
+
+
+def _command_documents_ocr_material_error_draft(args: argparse.Namespace) -> int:
+    try:
+        report = build_ocr_material_error_draft(
+            reference_path=Path(args.reference), evidence_path=Path(args.evidence),
+            structure_path=Path(args.structure), image_path=Path(args.image),
+            output_path=Path(args.output), apply=args.apply,
+        )
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as exc:
+        print(f"Errore documents ocr-material-error-draft: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_cohort_preregistration(args: argparse.Namespace) -> int:
+    try:
+        target = require_external_path(Path(args.output))
+        inputs = [Path(args.manifest).resolve()]
+        if args.freeze_receipt:
+            inputs.append(Path(args.freeze_receipt).resolve())
+        if target in inputs:
+            raise ValueError("Il report deve essere separato dagli input.")
+        report = validate_ocr_cohort_preregistration(
+            manifest_path=Path(args.manifest),
+            freeze_receipt_path=Path(args.freeze_receipt) if args.freeze_receipt else None,
+        )
+        if args.apply:
+            encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            if target.exists():
+                if target.read_bytes() != encoded.encode("utf-8"):
+                    raise ValueError("Report esistente diverso; sovrascrittura vietata.")
+                report["operation_status"] = "skipped_existing"
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("x", encoding="utf-8", newline="\n") as stream:
+                    stream.write(encoded)
+                report["operation_status"] = "written"
+        else:
+            report["operation_status"] = "preview"
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-cohort-preregistration: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_threshold_calibration(args: argparse.Namespace) -> int:
+    try:
+        report = calibrate_ocr_threshold(dataset_path=Path(args.dataset))
+        encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+        target = Path(args.output)
+        if args.apply:
+            if target.exists():
+                if target.read_text(encoding="utf-8") != encoded:
+                    raise ValueError(f"Output gia' esistente e diverso: {target}")
+                report["operation_status"] = "skipped_existing"
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("x", encoding="utf-8", newline="\n") as stream:
+                    stream.write(encoded)
+                report["operation_status"] = "written"
+        else:
+            report["operation_status"] = "preview"
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-threshold-calibration: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_threshold_audit(args: argparse.Namespace) -> int:
+    try:
+        report = audit_ocr_auto_validation_threshold(
+            dataset_path=Path(args.dataset),
+            cohort_manifest_path=Path(args.cohort_manifest),
+        )
+        if args.apply:
+            encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            target = Path(args.output)
+            if target.exists():
+                if target.read_text(encoding="utf-8") != encoded:
+                    raise ValueError(f"Output gia' esistente e diverso: {target}")
+                report["operation_status"] = "skipped_existing"
+            else:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("x", encoding="utf-8", newline="\n") as stream:
+                    stream.write(encoded)
+                report["operation_status"] = "written"
+        else:
+            report["operation_status"] = "preview"
+            report["output_path"] = args.output
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-threshold-audit: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if report["pilot_activation_eligible"] else 2
+
+
+def _command_documents_ocr_evidence_compare(args: argparse.Namespace) -> int:
+    try:
+        left_path, right_path = Path(args.left), Path(args.right)
+        left_raw, right_raw = left_path.read_bytes(), right_path.read_bytes()
+        left, right = json.loads(left_raw.decode("utf-8")), json.loads(right_raw.decode("utf-8"))
+        if not isinstance(left, dict) or not isinstance(right, dict):
+            raise ValueError("Entrambe le evidence devono essere oggetti JSON.")
+        report = compare_ocr_page_evidence(left=left, right=right)
+        report["inputs"] = {
+            "left": {"path": str(left_path), "sha256": hashlib.sha256(left_raw).hexdigest()},
+            "right": {"path": str(right_path), "sha256": hashlib.sha256(right_raw).hexdigest()},
+        }
+        report["machine_pass"] = False
+        report["auto_validation_enabled"] = False
+        report["semantic_accuracy_status"] = "not_attested"
+        report["review_status"] = "unreviewed"
+        report["promotion_status"] = "unreviewed"
+        target = Path(args.output)
+        if args.apply:
+            report["operation_status"] = "written"
+            report["output_path"] = str(target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            with target.open("x", encoding="utf-8", newline="\n") as stream:
+                stream.write(encoded)
+        else:
+            report["operation_status"] = "preview"
+            report["output_path"] = str(target)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError, TypeError) as exc:
+        print(f"Errore documents ocr-evidence-compare: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_vlm_crop_evaluate(args: argparse.Namespace) -> int:
+    try:
+        target = Path(args.output)
+        if args.apply and target.exists():
+            raise FileExistsError(f"Output gia' esistente: {target}")
+        report = evaluate_ocr_vlm_crop_cohort(
+            manifest_path=Path(args.manifest), model=args.model,
+            endpoint=args.endpoint, timeout_seconds=args.timeout,
+        )
+        report["operation_status"] = "written" if args.apply else "preview"
+        report["output_path"] = str(target)
+        if args.apply:
+            encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("x", encoding="utf-8", newline="\n") as stream:
+                stream.write(encoded)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents vlm-crop-evaluate: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_transform_batch(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.ocr_transform_batch import run_ocr_transform_batch
+
+    try:
+        identity = local_paddle_checkpoint_identity(
+            text_detection_model_dir=Path(args.text_detection_model_dir),
+            text_recognition_model_dir=Path(args.text_recognition_model_dir),
+        )
+        result = run_ocr_transform_batch(
+            manifest_path=Path(args.manifest), output_dir=Path(args.output_dir), language=args.language,
+            model={"ocr_version": "PP-OCRv5", "text_detection_model_name": args.text_detection_model_name,
+                   "text_recognition_model_name": args.text_recognition_model_name},
+            runner_factory=lambda: create_local_paddle_ocr_v5_runner(
+                language=args.language, text_detection_model_dir=Path(args.text_detection_model_dir),
+                text_detection_model_name=args.text_detection_model_name,
+                text_recognition_model_dir=Path(args.text_recognition_model_dir),
+                text_recognition_model_name=args.text_recognition_model_name, device=args.device,
+                enable_mkldnn=args.enable_mkldnn, text_det_limit_side_len=args.text_det_limit_side_len,
+                text_det_limit_type=args.text_det_limit_type),
+            runtime_identity=identity, tile_width=args.tile_width, tile_height=args.tile_height,
+            tile_overlap=args.tile_overlap, device=args.device, retry_limit=args.retry_limit,
+            enable_mkldnn=args.enable_mkldnn, text_det_limit_side_len=args.text_det_limit_side_len,
+            text_det_limit_type=args.text_det_limit_type, resume=args.resume, apply=args.apply,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"Errore documents ocr-transform-batch: {exc}", file=sys.stderr)
+        return 1
+    if not args.apply:
+        report = result
+    else:
+        report = {"status": result["manifest"]["status"] + "_unreviewed",
+                  "manifest_path": result["manifest_path"], "report_path": result["report_path"],
+                  "metrics": result["manifest"]["metrics"], "checkpoint_reused": result["reused"],
+                  "review_status": "unreviewed", "semantic_accuracy_status": "not_attested",
+                  "machine_pass": False, "auto_validation_enabled": False}
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if args.apply and result["manifest"]["status"] == "partial" else 0
+
+
+def _command_documents_ocr_transform_pilot(args: argparse.Namespace) -> int:
+    sources = [Path(item).resolve() for item in args.input]
+    destination = Path(args.output_dir).resolve()
+    try:
+        if len(sources) != 2 or len(set(sources)) != 2:
+            raise ValueError("Il pilot T36 richiede esattamente due TIFF distinti con --input.")
+        for source in sources:
+            if not source.is_file() or source.suffix.lower() not in {".tif", ".tiff"}:
+                raise ValueError(f"Input T36 non e' un TIFF esistente: {source}")
+        if not Path(args.text_detection_model_dir).is_dir() or not Path(args.text_recognition_model_dir).is_dir():
+            raise FileNotFoundError("Le directory locali detection e recognition dichiarate devono esistere.")
+        if "PP-OCRv5" not in args.text_detection_model_name or "PP-OCRv5" not in args.text_recognition_model_name:
+            raise ValueError("I nomi dei modelli dichiarati devono identificare PP-OCRv5.")
+        repository_root = Path(__file__).resolve().parents[3]
+        try:
+            destination.relative_to(repository_root)
+        except ValueError:
+            pass
+        else:
+            raise ValueError(f"La directory output deve restare esterna al repository: {repository_root}")
+        if destination.exists() and not args.resume:
+            raise FileExistsError(f"La directory output T36 deve essere nuova: {destination}")
+        runtime_identity = None
+        if args.apply or args.resume:
+            runtime_identity = local_paddle_checkpoint_identity(
+                text_detection_model_dir=Path(args.text_detection_model_dir),
+                text_recognition_model_dir=Path(args.text_recognition_model_dir),
+            )
+        resume_result = None
+        if args.resume:
+            resume_result = run_ocr_transform_pilot(
+                input_tiffs=sources, output_dir=destination, language=args.language,
+                model={"ocr_version": "PP-OCRv5", "text_detection_model_name": args.text_detection_model_name,
+                       "text_recognition_model_name": args.text_recognition_model_name},
+                prediction_runner=None, tile_width=args.tile_width, tile_height=args.tile_height,
+                tile_overlap=args.tile_overlap, device=args.device, runtime_identity=runtime_identity,
+                enable_mkldnn=args.enable_mkldnn, text_det_limit_side_len=args.text_det_limit_side_len,
+                text_det_limit_type=args.text_det_limit_type, resume=True, retry_limit=args.retry_limit,
+            )
+        if not args.apply:
+            print(json.dumps({
+                "@type": "OcrTransformPilotCliPreview",
+                "status": "preview",
+                "inputs": [str(item) for item in sources],
+                "output_dir": str(destination),
+                "language": args.language,
+                "model": {
+                    "ocr_version": "PP-OCRv5",
+                    "text_detection_model_name": args.text_detection_model_name,
+                    "text_recognition_model_name": args.text_recognition_model_name,
+                },
+                "inference_performed": False,
+                "writes_performed": False,
+                "resume_requested": args.resume,
+                "retry_limit": args.retry_limit,
+                "checkpoint_validated": resume_result is not None,
+                "next_step": "Ripetere con --apply per eseguire il pilot e scrivere il pacchetto T36.",
+            }, ensure_ascii=False, indent=2))
+            return 0
+        runner = None if args.resume else create_local_paddle_ocr_v5_runner(
+            language=args.language,
+            text_detection_model_dir=Path(args.text_detection_model_dir),
+            text_detection_model_name=args.text_detection_model_name,
+            text_recognition_model_dir=Path(args.text_recognition_model_dir),
+            text_recognition_model_name=args.text_recognition_model_name,
+            device=args.device,
+            enable_mkldnn=args.enable_mkldnn,
+            text_det_limit_side_len=args.text_det_limit_side_len,
+            text_det_limit_type=args.text_det_limit_type,
+        )
+        result = resume_result if args.resume else run_ocr_transform_pilot(
+            input_tiffs=sources,
+            output_dir=destination,
+            language=args.language,
+            model={
+                "ocr_version": "PP-OCRv5",
+                "text_detection_model_name": args.text_detection_model_name,
+                "text_recognition_model_name": args.text_recognition_model_name,
+            },
+            prediction_runner=runner,
+            tile_width=args.tile_width,
+            tile_height=args.tile_height,
+            tile_overlap=args.tile_overlap,
+            retry_limit=args.retry_limit,
+            device=args.device,
+            runtime_identity=runtime_identity,
+            enable_mkldnn=args.enable_mkldnn,
+            text_det_limit_side_len=args.text_det_limit_side_len,
+            text_det_limit_type=args.text_det_limit_type,
+        )
+    except (OSError, RuntimeError, ValueError) as exc:
+        print(f"Errore documents ocr-transform-pilot: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "@type": "OcrTransformPilotCliResult",
+        "status": "partial_unreviewed" if result.get("manifest", {}).get("status") == "partial" else "completed_unreviewed",
+        "checkpoint_reused": result.get("reused", False),
+        "metrics": result.get("manifest", {}).get("metrics"),
+        "input_count": len(sources),
+        "output_dir": str(destination),
+        "manifest_path": result["manifest_path"],
+        "report_path": result["report_path"],
+        "review_status": "unreviewed",
+        "semantic_accuracy_status": "not_attested",
+        "machine_pass": False,
+        "auto_validation_enabled": False,
+        "next_step": "Esaminare il pacchetto T36; questa slice non esegue ancora T37, lessico o review page-level.",
+    }, ensure_ascii=False, indent=2))
+    return 1 if result.get("manifest", {}).get("status") == "partial" else 0
+
+
+def _command_documents_ocr_review_batch(args: argparse.Namespace) -> int:
+    try:
+        report = run_ocr_review_batch(manifest_path=Path(args.manifest),
+                                      output_path=Path(args.output), apply=args.apply)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-review-batch: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["status"] == "blocked" else 0
+
+
+def _command_documents_ocr_review_finalize(args: argparse.Namespace) -> int:
+    try:
+        report = finalize_ocr_review_package(
+            manifest_path=Path(args.manifest), final_manifest_path=Path(args.final_manifest),
+            output_path=Path(args.output), apply=args.apply)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-review-finalize: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["review_batch"]["status"] == "blocked" else 0
+
+
+def _command_documents_ocr_tesseract_page_batch(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.ocr_tesseract_page_batch import run_tesseract_page_batch
+    try:
+        report = run_tesseract_page_batch(
+            manifest_path=Path(args.manifest), output_dir=Path(args.output_dir),
+            report_path=Path(args.report), apply=args.apply,
+            tesseract_path=args.tesseract_path, language=args.language,
+            page_segmentation_mode=args.psm, engine_mode=args.oem, dpi=args.dpi,
+            preprocess_before_ocr=args.preprocess_before_ocr, enable_region_ocr=args.enable_region_ocr,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-tesseract-page-batch: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 1 if report["summary"]["error"] else 0
+
+
+def _command_documents_ocr_tesseract_from_t36(args: argparse.Namespace) -> int:
+    try:
+        texts: dict[str, Path] = {}
+        for item in args.processed_text:
+            page_id, separator, path = item.partition("=")
+            if not separator or not page_id.strip() or not path.strip() or page_id.strip() in texts:
+                raise ValueError("--processed-text richiede page_id=path senza duplicati o voci vuote.")
+            texts[page_id.strip()] = Path(path.strip())
+        report = export_tesseract_from_t36(manifest_path=Path(args.manifest), processed_text=texts,
+                                          output_dir=Path(args.output_dir), apply=args.apply)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-tesseract-from-t36: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_review_package(args: argparse.Namespace) -> int:
+    def mapping(values: list[str], label: str) -> dict[str, str]:
+        result: dict[str, str] = {}
+        for item in values:
+            key, separator, value = item.partition("=")
+            if not separator or not key.strip() or not value.strip() or key.strip() in result:
+                raise ValueError(f"--{label} richiede page_id=valore senza duplicati o voci vuote.")
+            result[key.strip()] = value.strip()
+        return result
+    try:
+        report = build_ocr_review_package(manifest_path=Path(args.manifest), variant_id=args.variant,
+            page_profiles=mapping(args.page_profile, "page-profile"),
+            tesseract_evidence=mapping(args.tesseract_evidence, "tesseract-evidence"),
+            lexicons=mapping(args.lexicon, "lexicon"),
+            glossaries=mapping(args.glossary, "glossary") if args.glossary else None,
+            output_dir=Path(args.output_dir), apply=args.apply)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-review-package: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_transform_structure(args: argparse.Namespace) -> int:
+    try:
+        page_profiles: dict[str, str] = {}
+        for item in args.page_profile:
+            if "=" not in item:
+                raise ValueError("--page-profile richiede la forma page_id=profile.")
+            page_id, profile = item.split("=", 1)
+            if not page_id.strip() or not profile.strip() or page_id.strip() in page_profiles:
+                raise ValueError("--page-profile contiene una voce vuota o un page_id duplicato.")
+            page_profiles[page_id.strip()] = profile.strip()
+        report = export_ocr_transform_structure(
+            manifest_path=Path(args.manifest), variant_id=args.variant,
+            page_profiles=page_profiles, output_dir=Path(args.output_dir), apply=args.apply,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-transform-structure: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
 
 
 def _command_documents_glossary_preview(args: argparse.Namespace) -> int:
@@ -2617,8 +3161,11 @@ def build_parser() -> argparse.ArgumentParser:
     documents_register.add_argument("--apply", action="store_true", help="Crea solo i sidecar mancanti; non sovrascrive quelli esistenti.")
     documents_register.set_defaults(handler=_command_documents_register)
     documents_process = documents_subparsers.add_parser("process", help="Mostra il batch OCR; esegue e scrive output solo con --apply.")
-    documents_process.add_argument("--root", required=True, help="Directory radice delle immagini gia' registrate.")
-    documents_process.add_argument("--output-dir", required=True, help="Directory esplicita per i testi OCR processati.")
+    documents_process_input = documents_process.add_mutually_exclusive_group(required=True)
+    documents_process_input.add_argument("--root", help="Directory radice delle immagini gia' registrate.")
+    documents_process_input.add_argument("--workflow-manifest", help="OcrWorkflow v1.0 (T36/T37), v1.1 (Tesseract diagnostico), v1.2 (package review incompleto con lessici espliciti).")
+    documents_process.add_argument("--resume", action="store_true", help="Riprende esclusivamente il workflow con checkpoint verificati.")
+    documents_process.add_argument("--output-dir", required=True, help="Directory esplicita per gli output del processo OCR.")
     documents_process.add_argument("--language", default="ita", help="Lingua OCR Tesseract.")
     documents_process.add_argument("--tesseract-path", default="tesseract", help="Comando o percorso Tesseract locale.")
     documents_process.add_argument("--psm", default="", help="Page segmentation mode Tesseract opzionale.")
@@ -2632,6 +3179,103 @@ def build_parser() -> argparse.ArgumentParser:
     documents_process.add_argument("--progress-every", type=int, default=25, help="Intervallo dei messaggi di avanzamento.")
     documents_process.add_argument("--apply", action="store_true", help="Esegue OCR e scrive output; senza questo flag il comando e' read-only.")
     documents_process.set_defaults(handler=_command_documents_process)
+    documents_transform_pilot = documents_subparsers.add_parser(
+        "ocr-transform-pilot",
+        help="Esegue il pilot T36 PP-OCRv5 su due TIFF; preview senza inferenza, output unreviewed con --apply.",
+    )
+    documents_transform_pilot.add_argument("--input", action="append", required=True, help="TIFF esplicito; ripetere due volte.")
+    documents_transform_pilot.add_argument("--output-dir", required=True, help="Directory esterna al repository: nuova per eseguire, esistente solo con --resume.")
+    documents_transform_pilot.add_argument("--language", required=True, help="Codice lingua PaddleOCR, per esempio deu o ita.")
+    documents_transform_pilot.add_argument("--text-detection-model-dir", required=True, help="Directory locale esplicita dei pesi detection.")
+    documents_transform_pilot.add_argument("--text-detection-model-name", required=True, help="Nome PP-OCRv5 esplicito del modello detection.")
+    documents_transform_pilot.add_argument("--text-recognition-model-dir", required=True, help="Directory locale esplicita dei pesi recognition.")
+    documents_transform_pilot.add_argument("--text-recognition-model-name", required=True, help="Nome PP-OCRv5 esplicito del modello recognition.")
+    documents_transform_pilot.add_argument("--device", default="cpu", help="Device locale PaddleOCR (default: cpu).")
+    documents_transform_pilot.add_argument("--enable-mkldnn", action="store_true")
+    documents_transform_pilot.add_argument("--text-det-limit-side-len", type=int, default=8192)
+    documents_transform_pilot.add_argument("--text-det-limit-type", choices=("min", "max"), default="max")
+    documents_transform_pilot.add_argument("--resume", action="store_true", help="Riusa solo un run completato con fingerprint e tutti gli hash verificati; non esegue inferenza.")
+    documents_transform_pilot.add_argument("--tile-width", type=int, default=2400, help="Larghezza tile raw (default: 2400).")
+    documents_transform_pilot.add_argument("--tile-height", type=int, default=2400, help="Altezza tile raw (default: 2400).")
+    documents_transform_pilot.add_argument("--tile-overlap", type=int, default=200, help="Sovrapposizione tile raw (default: 200).")
+    documents_transform_pilot.add_argument("--retry-limit", type=int, choices=(0, 1), default=1, help="Retry per eccezioni del runner OCR (0 oppure 1; default: 1).")
+    documents_transform_pilot.add_argument("--apply", action="store_true", help="Esegue il pilot o riusa il checkpoint con --resume; senza flag e' solo preflight.")
+    documents_transform_pilot.set_defaults(handler=_command_documents_ocr_transform_pilot)
+    documents_transform_batch = documents_subparsers.add_parser(
+        "ocr-transform-batch", help="T36 da manifest esplicito con checkpoint per pagina; preview senza --apply.",
+    )
+    documents_transform_batch.add_argument("--manifest", required=True, help="JSON v1.0: pages con page_id, path TIFF e sha256 espliciti.")
+    documents_transform_batch.add_argument("--output-dir", required=True, help="Directory esterna nuova; esistente solo con --resume.")
+    documents_transform_batch.add_argument("--language", required=True)
+    documents_transform_batch.add_argument("--text-detection-model-dir", required=True)
+    documents_transform_batch.add_argument("--text-detection-model-name", required=True)
+    documents_transform_batch.add_argument("--text-recognition-model-dir", required=True)
+    documents_transform_batch.add_argument("--text-recognition-model-name", required=True)
+    documents_transform_batch.add_argument("--device", default="cpu")
+    documents_transform_batch.add_argument("--enable-mkldnn", action="store_true")
+    documents_transform_batch.add_argument("--text-det-limit-side-len", type=int, default=8192)
+    documents_transform_batch.add_argument("--text-det-limit-type", choices=("min", "max"), default="max")
+    documents_transform_batch.add_argument("--tile-width", type=int, default=2400)
+    documents_transform_batch.add_argument("--tile-height", type=int, default=2400)
+    documents_transform_batch.add_argument("--tile-overlap", type=int, default=200)
+    documents_transform_batch.add_argument("--retry-limit", type=int, choices=(0, 1), default=1)
+    documents_transform_batch.add_argument("--resume", action="store_true", help="Verifica e riusa pagine complete; riprova pagine failed/interrotte con --apply.")
+    documents_transform_batch.add_argument("--apply", action="store_true", help="Esegue le pagine pendenti e scrive il manifest aggregato unreviewed.")
+    documents_transform_batch.set_defaults(handler=_command_documents_ocr_transform_batch)
+    documents_transform_structure = documents_subparsers.add_parser(
+        "ocr-transform-structure",
+        help="Valida manifest T36 e genera evidence, DocumentStructure e Markdown T37; non esegue OCR.",
+    )
+    documents_transform_structure.add_argument("--manifest", required=True, help="OcrTransformPilot JSON v1.0 esistente.")
+    documents_transform_structure.add_argument("--variant", required=True, choices=["raw", "grayscale", "contrast", "threshold"], help="Variante full-page esplicita.")
+    documents_transform_structure.add_argument("--page-profile", action="append", required=True, help="Profilo esplicito page_id=leader_list_report|numbered_report; ripetere per ogni pagina.")
+    documents_transform_structure.add_argument("--output-dir", required=True, help="Directory nuova esterna al repository per gli output T37.")
+    documents_transform_structure.add_argument("--apply", action="store_true", help="Scrive evidence, struttura, Markdown e run manifest; senza flag esegue preview read-only.")
+    documents_transform_structure.set_defaults(handler=_command_documents_ocr_transform_structure)
+    documents_tesseract_page_batch = documents_subparsers.add_parser(
+        "ocr-tesseract-page-batch", help="OCR Tesseract per pagine TIFF esplicite legate a T36; preview senza scritture."
+    )
+    documents_tesseract_page_batch.add_argument("--manifest", required=True, help="TesseractPageBatchManifest JSON v1.0.")
+    documents_tesseract_page_batch.add_argument("--output-dir", required=True, help="Directory dei nuovi ProcessedDocumentText.")
+    documents_tesseract_page_batch.add_argument("--report", required=True, help="Nuovo rapporto JSON per pagina.")
+    documents_tesseract_page_batch.add_argument("--language", default="ita")
+    documents_tesseract_page_batch.add_argument("--tesseract-path", default="tesseract")
+    documents_tesseract_page_batch.add_argument("--psm", default="")
+    documents_tesseract_page_batch.add_argument("--oem", default="")
+    documents_tesseract_page_batch.add_argument("--dpi", default="")
+    documents_tesseract_page_batch.add_argument("--preprocess-before-ocr", action="store_true")
+    documents_tesseract_page_batch.add_argument("--enable-region-ocr", action="store_true")
+    documents_tesseract_page_batch.add_argument("--apply", action="store_true", help="Esegue OCR e scrive nuovi output e rapporto.")
+    documents_tesseract_page_batch.set_defaults(handler=_command_documents_ocr_tesseract_page_batch)
+    documents_tesseract_t36 = documents_subparsers.add_parser("ocr-tesseract-from-t36", help="Collega ProcessedDocumentText Tesseract esistenti alle pagine raw T36; non esegue OCR.")
+    documents_tesseract_t36.add_argument("--manifest", required=True, help="OcrTransformPilot JSON v1.0 esistente.")
+    documents_tesseract_t36.add_argument("--processed-text", action="append", required=True, help="Mappa esplicita page_id=path ProcessedDocumentText; ripetere per ogni pagina.")
+    documents_tesseract_t36.add_argument("--output-dir", required=True, help="Directory nuova esterna al repository.")
+    documents_tesseract_t36.add_argument("--apply", action="store_true", help="Scrive atomicamente evidence e manifest; senza flag preview read-only.")
+    documents_tesseract_t36.set_defaults(handler=_command_documents_ocr_tesseract_from_t36)
+    documents_package = documents_subparsers.add_parser("ocr-review-package", help="Compone T37, confronto e template review incompleti da artifact espliciti; non esegue OCR.")
+    documents_package.add_argument("--manifest", required=True)
+    documents_package.add_argument("--variant", required=True, choices=["raw"], help="Variante raw byte-identica al TIFF; le altre trasformazioni non sono coordinate compatibili con lo scaffold.")
+    for option in ("page-profile", "tesseract-evidence", "lexicon"):
+        documents_package.add_argument("--" + option, action="append", required=True, help="Mappa esplicita page_id=valore per ogni pagina.")
+    documents_package.add_argument("--glossary", action="append", help="Mappa opzionale page_id=path per ogni pagina.")
+    documents_package.add_argument("--output-dir", required=True, help="Directory nuova esterna al repository.")
+    documents_package.add_argument("--apply", action="store_true", help="Scrive atomicamente il pacchetto; senza flag esegue preview.")
+    documents_package.set_defaults(handler=_command_documents_ocr_review_package)
+    documents_batch = documents_subparsers.add_parser("ocr-review-batch", help="Ricalcola il gate finale per pagina su un package hash-bound; non esegue OCR.")
+    documents_batch.add_argument("--manifest", required=True, help="OcrReviewPackage con review_inputs espliciti.")
+    documents_batch.add_argument("--output", required=True, help="Report nuovo esterno al package e al repository.")
+    documents_batch.add_argument("--apply", action="store_true", help="Scrive esclusivamente il report nuovo; senza flag preview read-only.")
+    documents_batch.set_defaults(handler=_command_documents_ocr_review_batch)
+    documents_finalize = documents_subparsers.add_parser(
+        "ocr-review-finalize",
+        help="Aggiorna in un manifest derivato solo gli hash dei sidecar di review editabili ed esegue il gate batch; non esegue OCR.",
+    )
+    documents_finalize.add_argument("--manifest", required=True, help="Manifest originale OcrReviewPackage generato dal workflow.")
+    documents_finalize.add_argument("--final-manifest", required=True, help="Nuovo manifest derivato nella directory del package.")
+    documents_finalize.add_argument("--output", required=True, help="Nuovo report batch esterno al package e al repository.")
+    documents_finalize.add_argument("--apply", action="store_true", help="Scrive il manifest derivato e il report; senza flag esegue preview read-only.")
+    documents_finalize.set_defaults(handler=_command_documents_ocr_review_finalize)
     documents_markdown = documents_subparsers.add_parser("markdown", help="Esporta righe OCR in Markdown per pagina; scrive solo con --apply.")
     documents_markdown.add_argument("--root", required=True, help="Directory dei ProcessedDocumentText OCR da leggere ricorsivamente.")
     documents_markdown.add_argument("--output-dir", required=True, help="Directory esplicita per Markdown per pagina.")
@@ -2641,7 +3285,7 @@ def build_parser() -> argparse.ArgumentParser:
         "structure", help="Esporta DocumentStructure in Markdown; scrive solo con --apply."
     )
     documents_structure.add_argument("--root", required=True, help="Directory delle OcrPageEvidence JSON.")
-    documents_structure.add_argument("--output-dir", required=True, help="Directory esplicita per Markdown derivato.")
+    documents_structure.add_argument("--output-dir", required=True, help="Directory esplicita per DocumentStructure JSON e Markdown derivato.")
     documents_structure.add_argument("--profile", choices=["leader_list_report", "numbered_report"], required=True)
     documents_structure.add_argument("--apply", action="store_true", help="Scrive output mancanti; senza flag e' read-only.")
     documents_structure.set_defaults(handler=_command_documents_structure)
@@ -2674,9 +3318,63 @@ def build_parser() -> argparse.ArgumentParser:
     documents_lexicon.add_argument("--max-suggestions", type=int, default=5)
     documents_lexicon.add_argument("--apply", action="store_true", help="Scrive solo il sidecar; senza flag stampa la preview.")
     documents_lexicon.set_defaults(handler=_command_documents_lexicon_review)
+    documents_visual_audit = documents_subparsers.add_parser(
+        "ocr-visual-review-audit", help="Audita il ledger visuale in sola lettura; nessuna attestazione semantica.",
+    )
+    documents_visual_audit.add_argument("--ledger", required=True, help="OcrVisualReviewLedger JSON v1.")
+    documents_visual_audit.add_argument("--image", required=True, help="TIFF originale da verificare per SHA-256 e frame.")
+    documents_visual_audit.add_argument("--evidence", required=True, help="OcrPageEvidence JSON originale.")
+    documents_visual_audit.add_argument("--structure", required=True, help="DocumentStructure JSON candidato.")
+    documents_visual_audit.set_defaults(handler=_command_documents_ocr_visual_review_audit)
+    documents_layout_audit = documents_subparsers.add_parser(
+        "ocr-layout-audit", help="Audita righe/celle OCR in sola lettura; nessuna attestazione semantica.",
+    )
+    documents_layout_audit.add_argument("--layout", required=True, help="OcrPageLayout JSON v1.")
+    documents_layout_audit.add_argument("--evidence", required=True, help="OcrPageEvidence JSON originale.")
+    documents_layout_audit.add_argument("--visual-audit", required=True, help="OcrVisualReviewLedgerAudit JSON v1 completo.")
+    documents_layout_audit.set_defaults(handler=_command_documents_ocr_layout_audit)
+    documents_dispositions = documents_subparsers.add_parser(
+        "ocr-alert-dispositions-audit",
+        help="Audita le disposition degli alert OCR; nessuna correzione o autorizzazione review.",
+    )
+    documents_dispositions.add_argument("--structure", required=True, help="DocumentStructure candidata JSON.")
+    documents_dispositions.add_argument("--lexicon-review", required=True, help="OcrDocumentLexiconReview JSON.")
+    documents_dispositions.add_argument("--visual-audit", required=True, help="OcrVisualReviewLedgerAudit JSON v1.")
+    documents_dispositions.add_argument("--ledger", required=True, help="OcrVisualReviewLedger JSON v1.")
+    documents_dispositions.add_argument("--dispositions", required=True, help="OcrLexicalDispositionLedger JSON v1.")
+    documents_dispositions.set_defaults(handler=_command_documents_ocr_alert_dispositions)
+    documents_ocr_review = documents_subparsers.add_parser(
+        "ocr-review", help="Esegue tutti i gate page-level prima di preparare un'eventuale review manuale.",
+    )
+    documents_ocr_review.add_argument("--image", required=True, help="TIFF originale con frame esplicito nel ledger.")
+    documents_ocr_review.add_argument("--evidence", required=True, help="OcrPageEvidence JSON.")
+    documents_ocr_review.add_argument("--tesseract-evidence", required=True, help="OcrPageEvidence Tesseract corrente per la stessa pagina.")
+    documents_ocr_review.add_argument("--comparison", required=True, help="OcrPageEvidenceComparison diagnostico con path e digest delle due evidence correnti.")
+    documents_ocr_review.add_argument("--structure", required=True, help="DocumentStructure candidata JSON.")
+    documents_ocr_review.add_argument("--markdown", required=True, help="Markdown derivato deterministico.")
+    documents_ocr_review.add_argument("--lexicon-review", required=True, help="OcrDocumentLexiconReview JSON.")
+    documents_ocr_review.add_argument("--layout", required=True, help="OcrPageLayout JSON v1.")
+    documents_ocr_review.add_argument("--ledger", required=True, help="OcrVisualReviewLedger JSON v1.")
+    documents_ocr_review.add_argument("--dispositions", required=True, help="OcrLexicalDispositionLedger JSON v1.")
+    documents_ocr_review.set_defaults(handler=_command_documents_ocr_review)
+    documents_ocr_scaffold = documents_subparsers.add_parser(
+        "ocr-review-scaffold", help="Prepara sidecar OCR incompleti e crop; non inventa letture o struttura."
+    )
+    documents_ocr_scaffold.add_argument("--image", required=True, help="TIFF originale legato all'evidence.")
+    documents_ocr_scaffold.add_argument("--evidence", required=True, help="OcrPageEvidence JSON.")
+    documents_ocr_scaffold.add_argument("--tesseract-evidence", required=True, help="OcrPageEvidence Tesseract corrente per la stessa pagina.")
+    documents_ocr_scaffold.add_argument("--comparison", required=True, help="Confronto PP-OCR/Tesseract diagnostico con path e digest delle evidence correnti.")
+    documents_ocr_scaffold.add_argument("--structure", required=True, help="DocumentStructure JSON candidata.")
+    documents_ocr_scaffold.add_argument("--markdown", required=True, help="Markdown candidato, incluso nel manifest tramite hash.")
+    documents_ocr_scaffold.add_argument("--lexicon", required=True, help="OcrLanguageLexicon JSON esplicito.")
+    documents_ocr_scaffold.add_argument("--glossary", help="MilitaryGlossary JSON-LD opzionale.")
+    documents_ocr_scaffold.add_argument("--output-dir", required=True, help="Directory nuova per i sidecar e crop.")
+    documents_ocr_scaffold.add_argument("--tile-size", type=int, default=1200, help="Lato massimo dei tile TIFF (128..4096).")
+    documents_ocr_scaffold.add_argument("--apply", action="store_true", help="Scrive atomicamente; senza flag esegue solo preview.")
+    documents_ocr_scaffold.set_defaults(handler=_command_documents_ocr_review_scaffold)
     documents_assessment = documents_subparsers.add_parser(
         "candidate-assessment",
-        help="Controlla coerenza e raggruppa diagnostica OCR; nessun auto-pass senza calibrazione.",
+        help="Diagnostica la candidata OCR; non autorizza la richiesta di review umana né l'auto-pass.",
     )
     documents_assessment.add_argument("--structure", required=True, help="DocumentStructure JSON candidato.")
     documents_assessment.add_argument("--markdown", required=True, help="Markdown derivato deterministico della struttura.")
@@ -2685,6 +3383,90 @@ def build_parser() -> argparse.ArgumentParser:
     documents_assessment.add_argument("--output", required=True, help="Nuovo sidecar OcrCandidateAssessment.")
     documents_assessment.add_argument("--apply", action="store_true", help="Scrive il sidecar; senza flag stampa la preview.")
     documents_assessment.set_defaults(handler=_command_documents_candidate_assessment)
+    documents_material_error_draft = documents_subparsers.add_parser(
+        "ocr-material-error-draft",
+        help="Prepara disallineamenti parola per parola per adjudication visuale; non classifica errori materiali.",
+    )
+    documents_material_error_draft.add_argument("--reference", required=True, help="OcrPageReference human_verified/verified JSON.")
+    documents_material_error_draft.add_argument("--evidence", required=True, help="OcrPageEvidence candidata esatta JSON.")
+    documents_material_error_draft.add_argument("--structure", required=True, help="DocumentStructure derivata dall'evidence esatta.")
+    documents_material_error_draft.add_argument("--image", required=True, help="TIFF originale legato a reference ed evidence.")
+    documents_material_error_draft.add_argument("--output", required=True, help="Nuova bozza esterna al repository; nessuna label gold.")
+    documents_material_error_draft.add_argument("--apply", action="store_true", help="Scrive la bozza; senza flag esegue preview read-only.")
+    documents_material_error_draft.set_defaults(handler=_command_documents_ocr_material_error_draft)
+    documents_risk_features = documents_subparsers.add_parser(
+        "ocr-risk-features",
+        help="Ricalcola feature OCR diagnostiche da assessment e confronto verificati; score non calibrato.",
+    )
+    for option, description in (
+        ("assessment", "OcrCandidateAssessment corrente."),
+        ("structure", "DocumentStructure candidata."),
+        ("markdown", "Markdown candidato."),
+        ("evidence", "Evidence esatta della candidata; deve essere left o right."),
+        ("lexicon-review", "Review lessicale corrente."),
+        ("comparison", "Confronto evidence con path e hash correnti."),
+        ("left", "Evidence sinistra del confronto."),
+        ("right", "Evidence destra del confronto."),
+        ("image", "TIFF sorgente originale; hash verificato contro tutte le evidence."),
+        ("output", "Nuovo OcrRiskFeatureBundle diagnostico."),
+    ):
+        documents_risk_features.add_argument("--" + option, required=True, help=description)
+    documents_risk_features.add_argument("--apply", action="store_true", help="Scrive il nuovo sidecar; default preview.")
+    documents_risk_features.set_defaults(handler=_command_documents_ocr_risk_features)
+    documents_risk_score = documents_subparsers.add_parser(
+        "ocr-risk-score", help="Indice OCR max(perdita copertura, disaccordo), senza cutoff o auto-validazione."
+    )
+    documents_risk_score.add_argument("--bundle", required=True, help="OcrRiskFeatureBundle v1.1 sorgente.")
+    documents_risk_score.add_argument("--output", required=True, help="Nuovo OcrRiskScore diagnostico.")
+    documents_risk_score.add_argument("--apply", action="store_true", help="Scrive un sidecar esclusivo e idempotente; default preview.")
+    documents_risk_score.set_defaults(handler=_command_documents_ocr_risk_score)
+    documents_cohort = documents_subparsers.add_parser(
+        "ocr-cohort-preregistration", help="Valida solo manifest pre-OCR e ricevuta esterna; preview senza scritture."
+    )
+    documents_cohort.add_argument("--manifest", required=True, help="OcrCohortPreregistration JSON v1.0.")
+    documents_cohort.add_argument("--output", required=True, help="Report esterno ai repository.")
+    documents_cohort.add_argument("--freeze-receipt", help="Ricevuta esterna del digest esatto; obbligatoria per frozen.")
+    documents_cohort.add_argument("--apply", action="store_true", help="Scrive un report esclusivo e idempotente.")
+    documents_cohort.set_defaults(handler=_command_documents_ocr_cohort_preregistration)
+    documents_calibration = documents_subparsers.add_parser(
+        "ocr-threshold-calibration", help="Congela cutoff da soli casi calibration adjudicati; default preview."
+    )
+    documents_calibration.add_argument("--dataset", required=True, help="OcrAutoValidationCalibration JSON v1.0.")
+    documents_calibration.add_argument("--output", required=True, help="Nuovo artefatto calibration congelato.")
+    documents_calibration.add_argument("--apply", action="store_true", help="Scrive esclusivamente il nuovo artefatto.")
+    documents_calibration.set_defaults(handler=_command_documents_ocr_threshold_calibration)
+    documents_threshold_audit = documents_subparsers.add_parser(
+        "ocr-threshold-audit",
+        help="Audita errori materiali <=1% delle parole reference per pagina e rischio di falsa accettazione <=5%; non abilita machine_pass.",
+    )
+    documents_threshold_audit.add_argument("--dataset", required=True, help="OcrAutoValidationHoldout JSON v1.2.")
+    documents_threshold_audit.add_argument(
+        "--cohort-manifest", required=True,
+        help="Manifest preregistrato OcrAutoValidationHoldoutCohort JSON v1.1.",
+    )
+    documents_threshold_audit.add_argument("--output", required=True, help="Nuovo rapporto OcrAutoValidationThresholdAudit.")
+    documents_threshold_audit.add_argument("--apply", action="store_true", help="Scrive il rapporto; senza flag stampa la preview.")
+    documents_threshold_audit.set_defaults(handler=_command_documents_ocr_threshold_audit)
+    documents_evidence_compare = documents_subparsers.add_parser(
+        "ocr-evidence-compare",
+        help="Confronta due evidence OCR compatibili; report diagnostic-only, nessuna correzione o validazione.",
+    )
+    documents_evidence_compare.add_argument("--left", required=True, help="Prima OcrPageEvidence JSON.")
+    documents_evidence_compare.add_argument("--right", required=True, help="Seconda OcrPageEvidence JSON di engine/modello distinto.")
+    documents_evidence_compare.add_argument("--output", required=True, help="Percorso del nuovo report JSON.")
+    documents_evidence_compare.add_argument("--apply", action="store_true", help="Scrive il report esclusivamente se il file non esiste.")
+    documents_evidence_compare.set_defaults(handler=_command_documents_ocr_evidence_compare)
+    documents_vlm_evaluate = documents_subparsers.add_parser(
+        "vlm-crop-evaluate",
+        help="Valuta live una coorte di crop ambigui con reference verificate; diagnostico, senza auto-pass.",
+    )
+    documents_vlm_evaluate.add_argument("--manifest", required=True, help="OcrVlmCropEvaluationCohort JSON v1.0 esterno al repository.")
+    documents_vlm_evaluate.add_argument("--model", required=True, help="Tag vision esplicito presente in Ollama WSL.")
+    documents_vlm_evaluate.add_argument("--output", required=True, help="Percorso per il rapporto diagnostico JSON.")
+    documents_vlm_evaluate.add_argument("--endpoint", default="http://127.0.0.1:11434", help="Endpoint Ollama loopback; su Windows le richieste passano da WSL/curl.")
+    documents_vlm_evaluate.add_argument("--timeout", type=float, default=300.0, help="Timeout secondi per richiesta Ollama (1..600).")
+    documents_vlm_evaluate.add_argument("--apply", action="store_true", help="Scrive il rapporto solo se il percorso non esiste; l'inferenza live avviene anche in preview.")
+    documents_vlm_evaluate.set_defaults(handler=_command_documents_vlm_crop_evaluate)
     documents_glossary = documents_subparsers.add_parser(
         "glossary-preview",
         help="Ricalcola menzioni candidate con una versione esplicita del glossario; scrive solo con --apply.",

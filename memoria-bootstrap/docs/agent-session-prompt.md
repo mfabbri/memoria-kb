@@ -57,6 +57,24 @@ presente nell'Ollama WSL verificato, ma la prova documentata la segnala
 incompatibile con Ollama 0.33.2. Non basarti sul solo elenco Windows. Valuta
 alternative OCR/VLM separatamente con il benchmark del progetto.
 
+Preflight VLM obbligatorio prima di qualsiasi inferenza: Ollama e' installato
+nel WSL dell'utente e quel runtime e' quello canonico. Verifica da WSL, in sola
+lettura, con entrambi i GET:
+
+```powershell
+wsl.exe -e curl --fail --silent --show-error --max-time 10 http://127.0.0.1:11434/api/version
+wsl.exe -e curl --fail --silent --show-error --max-time 10 http://127.0.0.1:11434/api/tags
+```
+
+Registra versione, tag richiesto, digest e capability del modello prima del
+benchmark. `E_ACCESSDENIED`/`Access denied` all'avvio di WSL dal sandbox significa
+`runtime_access_blocked`, non runtime assente: non ripiegare sull'istanza Ollama
+Windows e non riferire che WSL o Ollama mancano. Ferma solo l'operazione che
+richiede il VLM, prosegui i controlli offline e riprendi quando il percorso WSL
+documentato e' accessibile. `model_missing` e' lecito solo dopo una risposta
+valida di `/api/tags` dal runtime WSL. Non chiedere all'utente di fare la review
+OCR manualmente per compensare un limite di accesso del sandbox.
+
 Deduplica e classifica gli alert lessicali per forma e posizione prima di
 contarli come dubbi. Non trasformare `not_found` o fuzzy in correzioni. Chiedi
 all'utente una sola review page-level soltanto per le decisioni ancora

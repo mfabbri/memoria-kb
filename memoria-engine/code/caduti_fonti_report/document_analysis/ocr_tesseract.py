@@ -12,7 +12,10 @@ from typing import Any, Callable
 import yaml
 
 from .image_preprocessing import preprocess_dark_foreground_for_ocr
-from .transcription_registration import register_document_transcription
+from .transcription_registration import (
+    _check_metadata_binding, _resolve_sidecar, _validate_explicit_metadata,
+    register_document_transcription,
+)
 
 CommandRunner = Callable[[list[str]], subprocess.CompletedProcess[str]]
 OCR_FALLBACK_PAGE_SEGMENTATION_MODES = ("12", "6", "11")
@@ -38,11 +41,25 @@ def run_document_ocr(
     review_status: str = "unreviewed",
     overwrite: bool = False,
     command_runner: CommandRunner | None = None,
+    metadata_path: Path | None = None,
+    metadata_sha256: str | None = None,
+    sidecar_sha256: str | None = None,
 ) -> dict[str, Any]:
+    _check_metadata_binding(metadata_path, metadata_sha256, sidecar_sha256)
     image_path = Path(file_path)
     if not image_path.exists() or not image_path.is_file():
         raise FileNotFoundError(f"Documento immagine non trovato: {image_path}")
-    source_document_id = _source_document_id_from_sidecar(file_path=image_path, sidecar_path=sidecar_path)
+    explicit_sidecar_sha256 = None
+    if metadata_path is not None:
+        sidecar_path = _resolve_sidecar(file_path=image_path, sidecar_path=sidecar_path)
+        metadata, explicit_sidecar_sha256 = _validate_explicit_metadata(
+            metadata_path=metadata_path, metadata_sha256=metadata_sha256,
+            file_path=image_path, sidecar_path=sidecar_path, root_dir=root_dir,
+            expected_sidecar_sha256=sidecar_sha256,
+        )
+        source_document_id = metadata["source_document_id"]
+    else:
+        source_document_id = _source_document_id_from_sidecar(file_path=image_path, sidecar_path=sidecar_path)
     source_sha256_before = _image_sha256(image_path)
     source_probe = _probe_image(image_path)
 
@@ -126,6 +143,12 @@ def run_document_ocr(
             language=language, tesseract_path=tesseract_path,
             requested_psm=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
         )
+    if metadata_path is not None:
+        _validate_explicit_metadata(
+            metadata_path=metadata_path, metadata_sha256=metadata_sha256,
+            file_path=image_path, sidecar_path=sidecar_path, root_dir=root_dir,
+            expected_sidecar_sha256=explicit_sidecar_sha256,
+        )
     result = register_document_transcription(
         file_path=image_path,
         sidecar_path=sidecar_path,
@@ -136,6 +159,9 @@ def run_document_ocr(
         review_status=review_status,
         derived_metadata=ocr_metadata,
         overwrite=overwrite,
+        metadata_path=metadata_path,
+        metadata_sha256=metadata_sha256,
+        sidecar_sha256=sidecar_sha256,
     )
     result["@type"] = "DocumentOcrRegistration"
     result["ocr_engine"] = "tesseract"

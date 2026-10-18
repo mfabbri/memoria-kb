@@ -107,12 +107,35 @@ def build_ocr_candidate_assessment(
         }
         represented_region_ids = valid_region_ids & linked_region_ids
         unrepresented_region_ids = sorted(valid_region_ids - represented_region_ids)
+        region_owners: dict[str, list[str]] = {}
+        for block in structure["blocks"]:
+            if not isinstance(block, dict):
+                continue
+            block_id = block.get("block_id", block.get("id"))
+            region_ids = block.get("source_region_ids")
+            if not isinstance(region_ids, list):
+                continue
+            seen_in_block: set[str] = set()
+            for region_id in region_ids:
+                if not isinstance(region_id, str):
+                    continue
+                if region_id in seen_in_block:
+                    issues.append({"code": "duplicate_region_link", "block_id": str(block_id),
+                                   "region_id": region_id})
+                seen_in_block.add(region_id)
+                region_owners.setdefault(region_id, []).append(str(block_id))
+        for region_id, owners in sorted(region_owners.items()):
+            if len(owners) > 1:
+                issues.append({"code": "multiple_region_owners", "region_id": region_id,
+                               "block_ids": owners})
         region_coverage.update({
             "evidence_region_count": len(regions),
             "represented_region_count": len(represented_region_ids),
             "unrepresented_region_ids": unrepresented_region_ids,
             "coverage_ratio": len(represented_region_ids) / len(regions) if regions else None,
         })
+        if not regions:
+            issues.append({"code": "empty_evidence_regions"})
         if unrepresented_region_ids:
             issues.append({"code": "unrepresented_evidence_regions"})
         candidate_blocks: dict[str, dict[str, Any]] = {}
@@ -199,6 +222,12 @@ def build_ocr_candidate_assessment(
         "processability_status": status,
         "routing_status": "not_calibrated",
         "human_review_status": "pending_classification" if alert_groups else "not_assessed",
+        "review_preparation_status": "incomplete",
+        "human_review_request_allowed": False,
+        "visual_coverage_status": "not_assessed",
+        "missing_stage_artifacts": [
+            "visual_observations", "typed_structure_validation", "alert_dispositions",
+        ],
         "manual_action_count": None,
         "machine_pass": False,
         "human_verified": False,

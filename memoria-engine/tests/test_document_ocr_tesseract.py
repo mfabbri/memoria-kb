@@ -36,7 +36,135 @@ def completed(stdout: str = "", stderr: str = "", returncode: int = 0) -> subpro
     return subprocess.CompletedProcess(args=["tesseract"], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
+def explicit_metadata_fixture(tmp_dir: Path):
+    raw_dir = tmp_dir / "raw"
+    raw_dir.mkdir()
+    image = raw_dir / "page.tiff"
+    Image.new("RGB", (100, 100), "white").save(image)
+    sidecar = raw_dir / "page.tiff.document.yaml"
+    sidecar_payload = {"source_id": "archive", "document_id": "volume-1", "local_path": str(image)}
+    sidecar.write_text(json.dumps(sidecar_payload), encoding="utf-8")
+    metadata = {
+        "@type": "ProcessedDocumentMetadata", "document_class": "image_scan",
+        "source_id": "archive", "source_document_id": "volume-1",
+        "raw_file": image.name, "sidecar_file": sidecar.name,
+        "sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
+        "media_type": "image/tiff", "claim_eligible": False,
+    }
+    metadata_path = tmp_dir / "explicit.metadata.json"
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    return raw_dir, image, sidecar, metadata_path, metadata, sidecar_payload
+
+
+def usable_explicit_runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+    if command[-1] == "tsv":
+        return completed(stdout=(
+            "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+            "1\t1\t0\t0\t0\t0\t0\t0\t100\t100\t-1\t\n"
+            "5\t1\t1\t1\t1\t1\t0\t0\t10\t10\t92\tTesto\n"
+            "5\t1\t1\t1\t1\t2\t12\t0\t10\t10\t91\tvalido\n"
+        ))
+    return completed(stdout="Testo valido")
+
+
 class DocumentOcrTesseractTests(unittest.TestCase):
+    def test_explicit_metadata_preserves_identity_and_provenance_without_global_lookup(self):
+        with workspace_temp_dir() as tmp_dir:
+            raw, image, sidecar, metadata_path, metadata, _ = explicit_metadata_fixture(tmp_dir)
+            with patch("caduti_fonti_report.document_analysis.transcription_registration._find_metadata", side_effect=AssertionError("global lookup")), patch(
+                "caduti_fonti_report.document_analysis.transcription_registration.extract_document_metadata", side_effect=AssertionError("global extraction")
+            ):
+                result = run_document_ocr(
+                    file_path=image, sidecar_path=sidecar, root_dir=raw, output_dir=tmp_dir / "out",
+                    metadata_path=metadata_path, metadata_sha256=hashlib.sha256(metadata_path.read_bytes()).hexdigest(),
+                    sidecar_sha256=hashlib.sha256(sidecar.read_bytes()).hexdigest(),
+                    command_runner=usable_explicit_runner,
+                )
+            payload = json.loads(Path(result["text_path"]).read_text(encoding="utf-8"))
+            self.assertEqual(payload["source_document_id"], "volume-1")
+            self.assertEqual(payload["source_id"], "archive")
+            self.assertEqual(payload["metadata_file"], str(metadata_path))
+            self.assertEqual(payload["transcription_method"], "external_ocr_unreviewed")
+            self.assertEqual(payload["ocr_layout_lines"][0]["source_document_id"], "volume-1")
+            self.assertEqual(payload["ocr_run_provenance"], result["ocr_run_provenance"])
+            self.assertIn(metadata["sha256"], json.dumps(payload["ocr_run_provenance"]))
+            self.assertNotIn("adapter_ready", payload)
+
+    def test_invalid_explicit_binding_runs_zero_commands_and_writes_no_output(self):
+        cases = ("bad_hash", "missing_hash", "missing_path", "bad_sidecar_hash", "missing_sidecar_hash", "json", "array", "type", "class", "source_id", "document_id", "raw_file", "sidecar_file", "file_hash", "sidecar_source", "sidecar_document", "local_path", "sidecar_type", "sidecar_hash", "file_changed")
+        for case in cases:
+            with self.subTest(case=case), workspace_temp_dir() as tmp_dir:
+                raw, image, sidecar, metadata_path, metadata, sidecar_payload = explicit_metadata_fixture(tmp_dir)
+                field_values = {"type": ("@type", "Other"), "class": ("document_class", "book"), "source_id": ("source_id", "other"), "document_id": ("source_document_id", "other"), "raw_file": ("raw_file", "other.tiff"), "sidecar_file": ("sidecar_file", "other.yaml"), "file_hash": ("sha256", "0" * 64)}
+                if case in field_values:
+                    key, value = field_values[case]
+                    metadata[key] = value
+                metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+                if case in ("json", "array"):
+                    metadata_path.write_text("{" if case == "json" else "[]", encoding="utf-8")
+                if case in ("sidecar_source", "sidecar_document", "local_path"):
+                    key = {"sidecar_source": "source_id", "sidecar_document": "document_id", "local_path": "local_path"}[case]
+                    sidecar_payload[key] = "other"
+                    sidecar.write_text(json.dumps(sidecar_payload), encoding="utf-8")
+                if case == "sidecar_type":
+                    sidecar.write_text("[]", encoding="utf-8")
+                if case == "sidecar_hash":
+                    sidecar_payload["content_hash"] = "0" * 64
+                    sidecar.write_text(json.dumps(sidecar_payload), encoding="utf-8")
+                if case == "file_changed":
+                    image.write_bytes(b"changed")
+                digest = hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+                if case == "bad_hash":
+                    digest = "0" * 64
+                with patch("caduti_fonti_report.document_analysis.ocr_tesseract._default_command_runner") as runner:
+                    with self.assertRaises(ValueError):
+                        run_document_ocr(
+                            file_path=image, sidecar_path=sidecar, root_dir=raw, output_dir=tmp_dir / "out",
+                            metadata_path=None if case == "missing_path" else metadata_path,
+                            metadata_sha256=None if case == "missing_hash" else digest,
+                            sidecar_sha256=(None if case == "missing_sidecar_hash" else "0" * 64
+                                            if case == "bad_sidecar_hash" else hashlib.sha256(sidecar.read_bytes()).hexdigest()),
+                        )
+                    runner.assert_not_called()
+                self.assertFalse((tmp_dir / "out").exists())
+
+    def test_explicit_inputs_changed_during_ocr_fail_before_registration(self):
+        for target in ("metadata", "sidecar", "image"):
+            with self.subTest(target=target), workspace_temp_dir() as tmp_dir:
+                raw, image, sidecar, metadata_path, _, _ = explicit_metadata_fixture(tmp_dir)
+                digest = hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+                sidecar_digest = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+                def runner(command):
+                    if command[-1] == "tsv":
+                        path = {"metadata": metadata_path, "sidecar": sidecar, "image": image}[target]
+                        # A sidecar whitespace edit preserves its meaning but invalidates the binding.
+                        path.write_bytes(path.read_bytes() + b" ")
+                    return usable_explicit_runner(command)
+                with self.assertRaises(ValueError):
+                    run_document_ocr(file_path=image, sidecar_path=sidecar, root_dir=raw, output_dir=tmp_dir / "out",
+                                     metadata_path=metadata_path, metadata_sha256=digest, sidecar_sha256=sidecar_digest,
+                                     command_runner=runner)
+                self.assertFalse((tmp_dir / "out").exists())
+
+    def test_sidecar_changed_between_ocr_and_registration_keeps_original_binding(self):
+        from caduti_fonti_report.document_analysis.transcription_registration import register_document_transcription
+
+        with workspace_temp_dir() as tmp_dir:
+            raw, image, sidecar, metadata_path, _, _ = explicit_metadata_fixture(tmp_dir)
+            digest = hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+            sidecar_digest = hashlib.sha256(sidecar.read_bytes()).hexdigest()
+            def register_after_change(**kwargs):
+                self.assertEqual(kwargs["sidecar_sha256"], sidecar_digest)
+                sidecar.write_bytes(sidecar.read_bytes() + b" ")
+                return register_document_transcription(**kwargs)
+            with patch("caduti_fonti_report.document_analysis.ocr_tesseract.register_document_transcription",
+                       side_effect=register_after_change):
+                with self.assertRaisesRegex(ValueError, "Sidecar modificato"):
+                    run_document_ocr(file_path=image, sidecar_path=sidecar, root_dir=raw, output_dir=tmp_dir / "out",
+                                     metadata_path=metadata_path, metadata_sha256=digest, sidecar_sha256=sidecar_digest,
+                                     command_runner=usable_explicit_runner)
+            self.assertFalse((tmp_dir / "out").exists())
+
     def test_runs_tesseract_and_registers_external_ocr_without_touching_image(self) -> None:
         calls: list[list[str]] = []
 

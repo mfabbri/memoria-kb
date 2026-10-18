@@ -25,7 +25,11 @@ def register_document_transcription(
     review_status: str = "unreviewed",
     derived_metadata: dict[str, Any] | None = None,
     overwrite: bool = False,
+    metadata_path: Path | None = None,
+    metadata_sha256: str | None = None,
+    sidecar_sha256: str | None = None,
 ) -> dict[str, Any]:
+    _check_metadata_binding(metadata_path, metadata_sha256, sidecar_sha256)
     if file_path is None and sidecar_path is None:
         raise ValueError("Specificare file_path o sidecar_path.")
     if transcription_method not in ALLOWED_TRANSCRIPTION_METHODS:
@@ -38,13 +42,21 @@ def register_document_transcription(
         raise ValueError("File e sidecar non si riferiscono allo stesso documento.")
 
     transcription_text = _read_transcription_text(text=text, text_file=text_file)
-    metadata = _resolve_or_create_metadata(
-        sidecar=sidecar,
-        sidecar_path=resolved_sidecar,
-        file_path=resolved_file,
-        root_dir=root_dir,
-        output_dir=output_dir,
-    )
+    explicit_sidecar_sha256 = None
+    if metadata_path is not None:
+        metadata, explicit_sidecar_sha256 = _validate_explicit_metadata(
+            metadata_path=metadata_path, metadata_sha256=metadata_sha256,
+            file_path=resolved_file, sidecar_path=resolved_sidecar, root_dir=root_dir,
+            expected_sidecar_sha256=sidecar_sha256,
+        )
+    else:
+        metadata = _resolve_or_create_metadata(
+            sidecar=sidecar,
+            sidecar_path=resolved_sidecar,
+            file_path=resolved_file,
+            root_dir=root_dir,
+            output_dir=output_dir,
+        )
     if str(metadata.get("document_class", "")) != "image_scan":
         raise ValueError("La trascrizione manuale e' supportata solo per documenti image_scan.")
 
@@ -58,6 +70,12 @@ def register_document_transcription(
     text_path = output_dir / _text_relative_path(document_text)
     if text_path.exists() and not overwrite:
         raise FileExistsError(f"Testo processato gia' presente: {text_path}")
+    if metadata_path is not None:
+        _validate_explicit_metadata(
+            metadata_path=metadata_path, metadata_sha256=metadata_sha256,
+            file_path=resolved_file, sidecar_path=resolved_sidecar, root_dir=root_dir,
+            expected_sidecar_sha256=explicit_sidecar_sha256,
+        )
     text_path.parent.mkdir(parents=True, exist_ok=True)
     text_path.write_text(json.dumps(document_text, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
@@ -68,6 +86,71 @@ def register_document_transcription(
         "transcription_method": transcription_method,
         "review_status": document_text["review_status"],
     }
+
+
+def _check_metadata_binding(metadata_path: Path | None, metadata_sha256: str | None, sidecar_sha256: str | None) -> None:
+    supplied = (metadata_path is not None, metadata_sha256 is not None, sidecar_sha256 is not None)
+    if any(supplied) and not all(supplied):
+        raise ValueError("metadata_path, metadata_sha256 e sidecar_sha256 devono essere specificati insieme.")
+    for name, digest in (("metadata_sha256", metadata_sha256), ("sidecar_sha256", sidecar_sha256)):
+        if digest is not None and (
+            not isinstance(digest, str) or len(digest) != 64
+            or any(ch not in "0123456789abcdef" for ch in digest)
+        ):
+            raise ValueError(f"{name} deve essere uno SHA-256 esadecimale minuscolo.")
+
+
+def _sha256_file(path: Path) -> str:
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def _validate_explicit_metadata(
+    *, metadata_path: Path, metadata_sha256: str | None,
+    file_path: Path, sidecar_path: Path | None, root_dir: Path,
+    expected_sidecar_sha256: str | None = None,
+) -> tuple[dict[str, Any], str]:
+    """Validate only the supplied document binding, without scanning the root."""
+    _check_metadata_binding(metadata_path, metadata_sha256, expected_sidecar_sha256)
+    metadata_bytes = Path(metadata_path).read_bytes()
+    if hashlib.sha256(metadata_bytes).hexdigest() != metadata_sha256:
+        raise ValueError("SHA-256 metadata non corrispondente.")
+    metadata = json.loads(metadata_bytes)
+    if not isinstance(metadata, dict) or metadata.get("@type") != "ProcessedDocumentMetadata":
+        raise ValueError("Atteso ProcessedDocumentMetadata JSON.")
+    if metadata.get("document_class") != "image_scan":
+        raise ValueError("Metadata esplicito richiede document_class image_scan.")
+    resolved_sidecar = _resolve_sidecar(file_path=file_path, sidecar_path=sidecar_path)
+    sidecar_bytes = resolved_sidecar.read_bytes()
+    sidecar_digest = hashlib.sha256(sidecar_bytes).hexdigest()
+    if expected_sidecar_sha256 is not None and sidecar_digest != expected_sidecar_sha256:
+        raise ValueError("Sidecar modificato durante la registrazione OCR.")
+    sidecar = yaml.safe_load(sidecar_bytes)
+    if not isinstance(sidecar, dict):
+        raise ValueError("Sidecar deve essere un oggetto YAML.")
+    for metadata_key, sidecar_key in (("source_id", "source_id"), ("source_document_id", "document_id")):
+        identity = metadata.get(metadata_key)
+        if not isinstance(identity, str) or not identity.strip() or identity != sidecar.get(sidecar_key):
+            raise ValueError(f"Identita metadata/sidecar non corrispondente: {metadata_key}.")
+    for key, expected in (("raw_file", file_path), ("sidecar_file", resolved_sidecar)):
+        value = metadata.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"Percorso metadata obbligatorio: {key}.")
+        candidate = Path(value)
+        if not candidate.is_absolute():
+            candidate = root_dir / candidate
+        if candidate.resolve() != expected.resolve():
+            raise ValueError(f"Percorso metadata non corrispondente: {key}.")
+    local_path = sidecar.get("local_path")
+    if not isinstance(local_path, str) or not local_path.strip() or Path(local_path).resolve() != file_path.resolve():
+        raise ValueError("local_path sidecar non corrispondente al documento.")
+    file_digest = _sha256_file(file_path)
+    if metadata.get("sha256") != file_digest:
+        raise ValueError("SHA-256 documento non corrispondente al metadata.")
+    if "content_hash" in sidecar and sidecar["content_hash"] != file_digest:
+        raise ValueError("content_hash sidecar non corrispondente al documento.")
+    metadata["_metadata_file"] = str(metadata_path)
+    return metadata, sidecar_digest
 
 
 def _resolve_sidecar(*, file_path: Path | None, sidecar_path: Path | None) -> Path:

@@ -57,6 +57,11 @@ class TesseractEvidenceAdapterTest(unittest.TestCase):
         evidence["source_page"]["original_page"]["source_file"] = "changed"
         self.assertEqual((self.payload, self.primary, self.anchor), before)
 
+    def test_equivalent_paddle_and_tesseract_language_codes_are_accepted(self) -> None:
+        self.primary["language"] = "de"
+        evidence = self.adapt()
+        self.assertEqual(evidence["language"], "de")
+
     def test_byte_copy_primary_frame_is_supported_with_exact_identity(self) -> None:
         self.primary.update(transform_id="pilot-v1:raw", image_transform={
             "id": "pilot-v1:raw", "parameters": {"operation": "byte_copy", "source_mode": "L"}})
@@ -64,6 +69,18 @@ class TesseractEvidenceAdapterTest(unittest.TestCase):
         evidence = self.adapt()
         self.assertEqual(evidence["image_transform"], self.primary["image_transform"])
         self.assertEqual(len(compare_ocr_page_evidence(left=self.primary, right=evidence)["agreements"]), 1)
+
+    def test_t36_engine_spelling_is_accepted_without_relabeling_primary(self) -> None:
+        self.primary["engine"] = "paddle-ocr-v5"
+        self.primary.update(transform_id="pilot-v1:raw", image_transform={
+            "id": "pilot-v1:raw", "parameters": {"operation": "byte_copy"}})
+        self.primary["source_page"].update(variant_id="raw", target="full_page", tile_id=None)
+        original = deepcopy(self.primary)
+        evidence = self.adapt()
+        self.assertEqual(self.primary, original)
+        comparison = compare_ocr_page_evidence(left=self.primary, right=evidence)
+        self.assertEqual(comparison["left_evidence"]["engine"], "paddle-ocr-v5")
+        self.assertEqual(len(comparison["agreements"]), 1)
 
     def test_registration_pairing_must_attest_same_run(self) -> None:
         registration = {"@type": "DocumentOcrRegistration", "source_document_id": "synthetic-document",

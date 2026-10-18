@@ -85,6 +85,41 @@ class OcrCandidateAssessmentTest(unittest.TestCase):
         self.assertEqual(report["processability_status"], "diagnostic_only")
         self.assertEqual(report["routing_status"], "not_calibrated")
         self.assertFalse(report["machine_pass"])
+        self.assertEqual(report["review_preparation_status"], "incomplete")
+        self.assertFalse(report["human_review_request_allowed"])
+        self.assertEqual(report["visual_coverage_status"], "not_assessed")
+
+    def test_region_repeated_within_one_block_blocks_assessment(self) -> None:
+        block = self.structure["blocks"][0] | {"source_region_ids": ["r1", "r1"]}
+        self.write(self.structure_path, self.structure | {"blocks": [block]})
+        report = self.assess()
+        self.assertEqual(report["processability_status"], "blocked")
+        self.assertIn("duplicate_region_link", {issue["code"] for issue in report["checks"]["issues"]})
+
+    def test_region_shared_between_blocks_blocks_assessment(self) -> None:
+        first = self.structure["blocks"][0]
+        second = first | {"block_id": "block-second"}
+        self.write(self.structure_path, self.structure | {"blocks": [first, second]})
+        report = self.assess()
+        shared = [issue for issue in report["checks"]["issues"]
+                  if issue["code"] == "multiple_region_owners"]
+        self.assertEqual(report["processability_status"], "blocked")
+        self.assertEqual(shared, [{"code": "multiple_region_owners", "region_id": "r1",
+                                   "block_ids": [first["block_id"], "block-second"]}])
+
+    def test_empty_evidence_regions_block_assessment(self) -> None:
+        empty_evidence = self.evidence | {"regions": []}
+        empty_structure = reconstruct_document_structure(evidence=empty_evidence, profile="numbered_report")
+        self.write(self.evidence_path, empty_evidence)
+        self.write(self.structure_path, empty_structure.to_dict())
+        self.markdown_path.write_text(render_document_structure_markdown(empty_structure), encoding="utf-8")
+        self.write(self.lexicon_path, self.lexicon | {
+            "source_structure_digest": "sha256:" + hashlib.sha256(self.structure_path.read_bytes()).hexdigest(),
+            "blocks": [],
+        })
+        report = self.assess()
+        self.assertEqual(report["processability_status"], "blocked")
+        self.assertIn("empty_evidence_regions", {issue["code"] for issue in report["checks"]["issues"]})
 
     def test_unrepresented_ocr_regions_block_assessment(self) -> None:
         extra = [{"region_id": region_id, "text": "Extra",
@@ -121,6 +156,7 @@ class OcrCandidateAssessmentTest(unittest.TestCase):
         })
         self.assertEqual(report["routing_status"], "not_calibrated")
         self.assertFalse(report["machine_pass"])
+        self.assertFalse(report["human_review_request_allowed"])
 
     def test_stale_or_missing_lexical_review_blocks_routing(self) -> None:
         self.write(self.lexicon_path, self.lexicon | {"source_structure_digest": "sha256:stale"})

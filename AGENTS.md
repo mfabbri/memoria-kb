@@ -13,6 +13,10 @@ task; dettagli e workflow verticali vivono nelle skill e nei contratti dedicati.
    `$memoria-model-router` una sola volta dopo che scope e rischio sono chiari.
 5. Usa `$memoria-planner` solo quando devi aprire, aggiornare o chiudere lavoro
    persistente. Carica al massimo una skill verticale pertinente.
+6. Per ogni task OCR, leggi il preflight obbligatorio Ollama WSL in
+   `memoria-bootstrap/docs/agent-session-prompt.md` prima di valutare un VLM o
+   dichiarare runtime/modello non disponibile. Un `E_ACCESSDENIED` del sandbox
+   non prova che WSL sia assente; non usare Ollama Windows come fallback.
 
 Non leggere automaticamente tutte le roadmap, tutti i playbook o le run reali.
 

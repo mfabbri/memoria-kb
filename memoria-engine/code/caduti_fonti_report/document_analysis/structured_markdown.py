@@ -19,7 +19,7 @@ _CHECKPOINT_MANIFEST_VERSION = "1.0"
 def export_structured_pages_markdown(
     *, root_dir: Path, output_dir: Path, profile: str, apply: bool = False
 ) -> dict[str, Any]:
-    """Plan or write Markdown derived from ``OcrPageEvidence`` JSON files."""
+    """Plan or write provenance-bound structure JSON and Markdown per evidence."""
     root = Path(root_dir)
     destination = Path(output_dir)
     if not root.is_dir():
@@ -170,25 +170,46 @@ def _export_one(*, evidence_path: Path, output_dir: Path, profile: str, apply: b
     page_id = structure.page_id
     source_document_id = _safe_path_part(str(payload.get("source_document_id", page_id)))
     target = output_dir / source_document_id / f"{_safe_path_part(page_id)}.md"
-    item = {**base, "source_document_id": source_document_id, "page_id": page_id, "output_path": str(target)}
-    normalized = target.resolve()
+    structure_target = target.with_name(target.stem + ".structure.json")
+    item = {**base, "source_document_id": source_document_id, "page_id": page_id,
+            "output_path": str(target), "structure_output_path": str(structure_target)}
+    normalized_paths = (target.resolve(), structure_target.resolve())
     try:
-        normalized.relative_to(output_dir.resolve())
+        for normalized in normalized_paths:
+            normalized.relative_to(output_dir.resolve())
     except ValueError:
         return {**item, "status": "skipped_unsafe_output", "reason": "output fuori dalla directory richiesta"}
-    if normalized in planned:
+    if any(normalized in planned for normalized in normalized_paths):
         return {**item, "status": "skipped_duplicate_output", "reason": "output duplicato"}
-    planned.add(normalized)
-    if target.exists():
-        return {**item, "status": "skipped_existing_output", "reason": "output gia' presente"}
+    planned.update(normalized_paths)
+    if target.exists() or structure_target.exists():
+        return {**item, "status": "skipped_existing_output", "reason": "Markdown o DocumentStructure JSON gia' presente"}
     if not apply:
         return {**item, "status": "would_write", "block_count": len(structure.blocks)}
     target.parent.mkdir(parents=True, exist_ok=True)
+    structure_text = json.dumps(structure.to_dict(), ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+    markdown_text = render_document_structure_markdown(structure)
+    structure_created = False
+    markdown_created = False
     try:
+        with structure_target.open("x", encoding="utf-8", newline="\n") as handle:
+            structure_created = True
+            handle.write(structure_text)
         with target.open("x", encoding="utf-8") as handle:
-            handle.write(render_document_structure_markdown(structure))
+            markdown_created = True
+            handle.write(markdown_text)
     except FileExistsError:
+        if markdown_created:
+            target.unlink(missing_ok=True)
+        if structure_created:
+            structure_target.unlink(missing_ok=True)
         return {**item, "status": "skipped_existing_output", "reason": "output creato durante l'esportazione"}
+    except OSError:
+        if markdown_created:
+            target.unlink(missing_ok=True)
+        if structure_created:
+            structure_target.unlink(missing_ok=True)
+        raise
     return {**item, "status": "written", "block_count": len(structure.blocks)}
 
 

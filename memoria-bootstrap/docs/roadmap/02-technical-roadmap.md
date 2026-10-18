@@ -1896,6 +1896,12 @@ Protocollo minimo:
   lettura e latenza, con risultati disaggregati per strato e configurazione;
 - separare il sottoinsieme di calibrazione dall'holdout prima del campione
   esplorativo e controllare anche output non segnalati dai gate di triage.
+- il limite di qualità per pagina e' `material_word_error_count / reference_word_count <= 0.01`;
+  un singolo errore su 300 parole vale 0,33% e non blocca da solo la pagina;
+- il rischio per l'eventuale auto-validazione e' la quota di pagine auto-
+  accettate che superano il limite di qualità dell'1%; il limite superiore
+  unilaterale al 95% deve essere al massimo 5% sul holdout indipendente e negli
+  strati pre-dichiarati.
 
 Vincolo tecnico obbligatorio per ogni run OCR successivo:
 
@@ -1937,23 +1943,46 @@ la griglia e resta diagnostica. Sono risultati page/configuration-scoped: quattr
 pagine non bastano per le 8-10 iniziali né per definire una soglia. Holdout e
 decisioni archivistiche restano separati.
 
-Incremento futuro richiesto: aggiungere un comando CLI unico, candidato
-`memoria documents ocr-review`, che orchestra il flusso page-level già
-documentato senza rilanciare OCR quando gli output persistenti sono validi.
-Il comando dovrà legare input e output per hash/provenance, costruire o caricare
-la mappa strutturata, confrontare gli output OCR per blocco, generare la
-candidata esatta, eseguire Hunspell/glossario sulla candidata, deduplicare e
-classificare gli alert lessicali per forma e posizione, controllare copertura,
-ordine e struttura e produrre un report con dubbi residui e numero effettivo di
-decisioni manuali. Dovrà distinguere `candidate_ready`, `needs_review`,
-`blocked`, `review_complete_with_residual_uncertainty` e l'eventuale validazione
-automatica calibrata. La chiusura della review umana non richiede incertezza zero:
-residui plausibili e localizzati si possono accettare con riserva, tenendo separati
-il conteggio dei residui e le decisioni manuali ancora richieste. Gli alert lessicali
-non diventano correzioni e la validazione automatica resta disabilitata finché
-la soglia di rischio non è misurata su calibrazione e holdout separati. Il comando non
-promuove reference, claim o fatti storici. L'implementazione è rinviata a un
-micro-incremento successivo, dopo il completamento della calibrazione richiesta.
+La policy del pilot usa un limite di qualità per pagina dell'1% di parole con
+errore materiale rispetto alle parole della reference e un limite di rischio del
+5% sulle pagine auto-accettate che superano l'1%. `documents ocr-threshold-audit`
+verifica il cutoff di score congelato prima dell'holdout usando solo casi
+`human_verified` e `accuracy_eligible`; calcola il limite superiore binomiale
+esatto unilaterale al 95% sul totale e limiti per strato con correzione Bonferroni
+per copertura simultanea al 95%. Con zero pagine oltre l'1% servono almeno 59
+pagine auto-accettate per sostenere il limite aggregato del 5%; il requisito per
+strato può essere maggiore. Il report lascia sempre `auto_validation_enabled=false`
+e `machine_pass=false` finché il pilot non è sostenuto da holdout sufficiente.
+L'audit rifiuta dati incompleti o non verificati e non deduce correttezza da
+confidence OCR o alert lessicali.
+
+Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
+candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
+tipizzato e le disposition legate agli stessi digest. Richiede i sidecar
+`OcrDocumentLexiconReview`, `OcrPageLayout`, `OcrVisualReviewLedger` e
+`OcrLexicalDispositionLedger` già preparati; non rilancia OCR, non genera le
+osservazioni o le disposition e non applica correzioni. Un gate fallito blocca
+la sequenza; correzioni proposte richiedono rigenerare la candidata e gli
+artefatti dipendenti. Il report distingue `blocked`, `candidate_ready`,
+`needs_review` e `correction_required`, deduplica le azioni manuali per unità e
+consente di preparare la richiesta soltanto dopo tutti i gate. Questo soddisfa
+il preflight necessario prima della review manuale anche mentre la calibrazione
+prosegue. La validazione automatica resta disabilitata finché la soglia di
+rischio non è misurata su calibrazione e holdout separati. Il comando non
+promuove reference, claim o fatti storici. `documents structure --apply` salva
+ora il JSON `DocumentStructure` provenance-bound insieme al Markdown derivato;
+`documents ocr-review-scaffold` genera la review lessicale, crop verificabili e
+template incompleti per ledger, layout e disposition. Restano da automatizzare
+la lettura visuale/strutturale dei crop e la rigenerazione controllata della
+candidata dopo eventuali correzioni; la soglia 5% non è attiva.
+
+`documents ocr-evidence-compare` espone ora in CLI il confronto regionale
+diagnostico tra due `OcrPageEvidence` con stessa identita' pagina, immagine,
+frame e trasformazioni e con engine/modello distinti. Il report lega i byte di
+entrambi gli input con SHA-256; preview e' read-only e `--apply` scrive solo su
+destinazioni nuove. Il comando non produce correzioni, osservazioni visuali o
+auto-validazione. T39 resta condizionale a un vantaggio VLM misurato su
+reference; il target pilot 5% resta disattivato.
 
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 

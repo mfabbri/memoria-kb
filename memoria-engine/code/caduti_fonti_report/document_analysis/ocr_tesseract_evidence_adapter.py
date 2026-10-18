@@ -14,6 +14,11 @@ from typing import Any
 from .ocr_evidence_comparison import _identity, _regions
 
 
+def _canonical_language(language: str) -> str:
+    aliases = {"deu": "de", "ger": "de", "ita": "it", "eng": "en", "fra": "fr", "fre": "fr"}
+    return aliases.get(language, language)
+
+
 def adapt_tesseract_page_evidence(
     *, processed_text: Mapping[str, Any], primary_evidence: Mapping[str, Any],
     original_page: Mapping[str, Any], registration: Mapping[str, Any] | None = None,
@@ -27,7 +32,7 @@ def adapt_tesseract_page_evidence(
     """
     primary = _identity(primary_evidence)
     _regions(primary_evidence)
-    if primary["engine"] != "PP-OCRv5":
+    if primary["engine"] not in {"PP-OCRv5", "paddle-ocr-v5"}:
         raise ValueError("Primary evidence must be PP-OCRv5 (paddle-ocr-v5).")
     anchor = _copy(original_page)
     if anchor != primary["source_page"]["original_page"]:
@@ -103,7 +108,8 @@ def adapt_tesseract_page_evidence(
                        "effective_page_segmentation_mode", "engine_mode", "dpi")
     if any(not isinstance(config.get(field), str) for field in required_config) or not config["executable"].strip():
         raise ValueError("Tesseract configuration is incomplete.")
-    if config["language"] != primary["language"] or payload.get("ocr_language") != config["language"]:
+    if (_canonical_language(config["language"]) != _canonical_language(primary["language"])
+            or payload.get("ocr_language") != config["language"]):
         raise ValueError("Tesseract language does not match primary evidence.")
     if payload.get("ocr_effective_page_segmentation_mode") != config["effective_page_segmentation_mode"]:
         raise ValueError("Effective Tesseract configuration is inconsistent.")

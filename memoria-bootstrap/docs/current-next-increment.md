@@ -1,5 +1,574 @@
 # Current Next Increment
 
+## Inferenza OCR reale dal CLI - 2026-10-18
+
+Per verificare l'inferenza end-to-end, `documents process --workflow-manifest`
+e' stato eseguito con `--apply` su una nuova destinazione runtime isolata, per la
+sola pagina reale `T314-1275-00598`. La preview indicava una pagina pending e
+zero riusi. Il run ha eseguito T36 PP-OCRv5 (10 chiamate OCR, una pagina
+completata, zero fallimenti e zero riusi), T37 raw e Tesseract (un successo,
+zero errori), poi ha prodotto evidence diagnostiche e package di review. T36 ha
+richiesto 385,15 secondi di elaborazione. Il workflow termina correttamente con
+`awaiting_review`; il package resta `template_incomplete`/`unreviewed`.
+
+Run esterno:
+`D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t41-real-cli-inference-00598-20261018`.
+Il nuovo manifest riporta `reused_page_count=0` e Tesseract `reused=false`:
+l'output precedente non e' stato usato come risultato dell'inferenza. Questo
+dimostra che il CLI esegue il riconoscimento reale, non l'accuratezza OCR.
+`machine_pass` e `auto_validation_enabled` restano false. Il run e' uno smoke
+isolato e non entra nel campione statistico; nessun holdout e' stato aperto.
+
+## Audit degli ID della coorte calibration - 2026-10-18
+
+L'utente ha confermato che, per questa coorte, ogni TIFF selezionato e' un
+documento autonomo per ora. Gli ID esistenti `leaf:<page_id>` identificano quindi
+le unita' indipendenti dichiarate per questo ciclo; non si deducono collegamenti
+tra pagine dalla somiglianza dei nomi. Non serve un ulteriore registro per
+questo assunto. L'inventario Tiff rimane il binding autorevole di page ID,
+percorso e hash immagine.
+
+La coorte resta `prepared` e non e' stata modificata o congelata. Il disegno
+non copre tutti gli strati richiesti in entrambe le partizioni:
+`deu-handwritten-prose-low` non compare nel holdout; la selezione e' purposive e
+la numerosita' non sostiene ancora l'inferenza della soglia. Non avviare OCR
+batch finche' il disegno preregistrato non e' completo e congelato. Il prossimo
+passo e' espandere il campione calibration/holdout, conservando l'unita' singola
+per pagina dichiarata dall'utente e senza usare risultati OCR per la selezione.
+
+Screen TIFF-only: `T314-1275-00362` e' stato escluso per layout tabellare. In
+seguito sono state create anteprime locali per tutti i 995 TIFF eleggibili del
+frame completo, senza errori di lettura e senza eseguire OCR. La revisione dei
+10 fogli di contatto mostra un solo caso chiaramente classificabile come prosa
+manoscritta a bassa leggibilita': `T314-1275-00361`, gia' in calibration; non
+emerge un caso indipendente da assegnare al holdout di questo strato. E' un
+segnale di insufficienza della coorte, non una stima certificata di prevalenza.
+Non aggiungere `deu-handwritten-prose-low` al perimetro di auto-validazione
+senza un frame piu' ampio; mantenere queste pagine fuori dall'auto-accept e nel
+flusso di review manuale. Nessuna pagina e' stata aggiunta alla coorte.
+
+## Correzione di direzione: stato reale del processo OCR - 2026-10-18
+
+La decisione di non ampliare la coorte riportata nel testo storico qui sotto e'
+superata dall'audit aggiornato nella sezione precedente: il campione va ampliato
+e preregistrato prima di avviare il batch di calibrazione.
+
+Il censimento ha identificato e hashato 995 TIFF eleggibili; non ha eseguito OCR,
+estratto trascrizioni o traduzioni, né verificato la struttura delle 995 pagine.
+La coorte da 30 pagine è stata classificata visivamente per layout e leggibilità,
+ma non processata OCR e le sue strutture non sono state confermate.
+
+Nel CLI è implementata l'orchestrazione T36→T37→Tesseract con preparazione del
+package di review visuale/lessicale. La prova reale documentata è una sola pagina,
+`T314-1275-00598`: il workflow ha prodotto gli artefatti e si è fermato a
+`awaiting_review`/`unreviewed`. Una precedente struttura della stessa scansione
+era stata revisionata, ma quella conferma non chiude la review del nuovo run.
+Esiste inoltre una bozza di traduzione italiana per `00150`, separata dal run OCR
+e non approvata; la coorte corrente non ha traduzioni.
+
+Inventario e coorte sono prerequisiti, non avanzamento del trattamento OCR. La
+prossima priorità è riprendere il workflow concreto e completare il percorso CLI
+dalla scansione alla preparazione e chiusura della review visuale/lessicale,
+registrando gli artefatti e gli eventuali soli dubbi residui. Non ampliare ancora
+il censimento o la coorte. Non dichiarare il processo OCR completato finché un
+run reale non attraversa il flusso orchestrato e i suoi gate di review; lo smoke
+test dimostra integrazione tecnica, non accuratezza né completamento sul corpus.
+
+## Orchestrazione T36-T37 con ramo Tesseract - 2026-10-17
+
+`documents process --workflow-manifest` supporta ora OcrWorkflow v1.0 e v1.1.
+v1.0 mantiene il flusso T36→T37; v1.1 aggiunge Tesseract page-scoped come stage
+diagnostico indipendente. T37 continua a consumare esclusivamente l'evidence
+PP-OCRv5 di T36; il manifest Tesseract viene derivato dopo T36 e lega il digest
+del manifest effettivamente prodotto.
+
+Il preview v1.1 valida prima di ogni inferenza tutti i binding di TIFF, sidecar,
+metadata, identita' e destinazioni, senza scrivere o inizializzare i runtime.
+Apply esegue T36, poi T37 e Tesseract, con checkpoint e inventory distinti.
+Resume riusa stage completi senza rilanciare i runtime; stage Tesseract partial
+resta immutabile e i crash gap pubblicati senza checkpoint falliscono chiusi.
+Gli output restano `diagnostic_only` e `unreviewed`; T36 partial blocca entrambi
+gli stage successivi. Nessuna OCR reale e' stata eseguita.
+
+Verifica offline: 15 test workflow, 4 test CLI e 12 test page-batch passano con
+fixture sintetiche e runner finti. La prova concreta successiva e' registrata
+piu' sotto.
+
+### Smoke concreto del workflow v1.1 - 2026-10-17
+
+Su richiesta dell'utente, il CLI ha eseguito il ciclo T36→T37→Tesseract sulla
+sola pagina di calibrazione `T314-1275-00598`, esclusivamente per verificare
+l'integrazione. La preview ha validato tutti i binding prima dell'inferenza.
+L'apply ha completato tutti e tre gli stage; il resume successivo li ha riusati
+senza rilanciare i runtime. T36 ha elaborato 10 target OCR in 412,14 secondi;
+Tesseract ha registrato 1 successo e 0 errori. L'hash del TIFF sorgente e'
+rimasto `2bbf335032236ebad42afae52c832ba2da301566a467fb765848619df0b0fd28`.
+
+Run esterno: `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t40-workflow-integration-smoke-00598-20261017`.
+Il risultato resta `completed_unreviewed`: nessuna accuratezza e' stata
+valutata, nessun confronto con reference e' stato svolto e non sono avvenute
+review, promozioni o scritture canoniche. I manifest usati per il resume sono
+in `C:\Users\info\AppData\Local\Temp\memoria-t40-workflow-smoke-00598`.
+
+## OcrWorkflow v1.2: preparazione review nello stesso processo - 2026-10-17
+
+`documents process --workflow-manifest` supporta v1.2 con una sezione `review`
+che lega per ogni `page_id` un `OcrLanguageLexicon` e, facoltativamente, un
+`MilitaryGlossary`, ciascuno con path e SHA-256. Il preflight controlla mappa,
+contenuto, lingua, digest e collisioni con l'output prima di inizializzare i
+runtime. Per mantenere le coordinate originali richieste dal ledger, v1.2 usa
+T37 `raw`, Tesseract nella stessa lingua di T36 (accettando i codici equivalenti
+come PP-OCR `de` e Tesseract `deu`), e disabilita preprocessing e
+OCR per regione.
+
+Quando aggiunge il locator `frame_index` alle copie evidence e structure, il
+package rigenera il Markdown dalla struttura aggiornata. Così il gate di
+candidate assessment vede riferimenti coerenti prima di bloccare sui template
+visuali e lessicali ancora incompleti.
+
+Dopo T36/T37/Tesseract, il workflow collega i testi Tesseract alle pagine T36
+come evidence diagnostiche, poi produce `review/package-manifest.json`, crop,
+review lessicale e template per ledger visuale, layout e disposition. Il package
+è hash-bound e resta `template_incomplete`/`unreviewed`; il workflow termina con
+`awaiting_review`. Il builder mantiene il proprio T37 nel package, distinto
+dallo stage T37 del workflow, senza rilanciare OCR.
+
+Preview non scrive e non invoca i runtime. Resume verifica i checkpoint e riusa
+gli stage completi; i crash gap, package alterati e binding divergenti falliscono
+chiusi. Dopo la compilazione dei sidecar di review, `documents ocr-review-finalize
+--manifest <review/package-manifest.json> --final-manifest
+<review/finalized-package-manifest.json> --output <review-batch-report.json>
+--apply` ricalcola il gate in un'unica invocazione. Il finalizer rinfresca gli
+hash solo per `lexicon_review`, `layout`, `ledger` e `dispositions`, scrivendo
+un manifest derivato; ogni mutazione a TIFF, evidence, struttura, Markdown,
+comparison o altri output blocca la finalizzazione. La preview esegue gli stessi
+gate senza scrivere. Il manifest package originale resta immutato; dopo aver
+editato template o finalizzato, non riprendere il workflow OCR originale. Nessun
+esito attesta accuratezza, abilita auto-validation o promuove candidati.
+
+I test v1.2 usano fixture e runtime finti: 24 test workflow e 6 test CLI
+coprono preflight lessicale, preview, creazione package, ripresa senza OCR,
+crash gap e rifiuto di artifact alterati. Nessuna OCR reale o osservazione
+visuale viene simulata.
+
+## Runner T36 manifest-driven con checkpoint per pagina - 2026-10-17
+
+Il nuovo comando `documents ocr-transform-batch` legge un manifest v1.0 con
+`page_id`, path TIFF esplicito e SHA-256. Il path relativo e' risolto dalla
+directory del manifest; schema, ID unici case-insensitive, hash degli input e
+destinazione vengono validati prima del runtime. La preview non scrive e non
+inizializza Paddle.
+
+Con `--apply`, ogni pagina viene elaborata in isolamento e riceve un checkpoint
+atomico legato alla richiesta e all'inventario hash degli artifact. `--resume`
+riusa solo pagine complete verificate; riprocessa pagine mancanti, interrotte o
+fallite conservando l'audit dei tentativi precedenti. I checkpoint completi
+alterati e le richieste divergenti falliscono chiusi. Il manifest batch resta
+compatibile `OcrTransformPilot` v1.0; un run partial conserva le pagine fallite
+senza varianti, e T37/Tesseract rifiutano il lotto incompleto. Output
+`unreviewed`, senza machine pass o auto-validation.
+
+I test usano tre TIFF sintetici e runner iniettato: 9 test core e 4 CLI passano;
+8 regressioni del pilot CLI, 21 test pilot core, 5 test T37, 13 del bridge
+Tesseract, help CLI, validator planner e `git diff --check` passano. Nessuna OCR
+reale eseguita. Il pilot guida `ocr-transform-pilot` resta limitato a due TIFF;
+Tesseract non e' ancora orchestrato nella stessa invocazione batch.
+
+## Confine architetturale T40: T36-T37 e ramo Tesseract - 2026-10-17
+
+La review dei writer e consumer conferma due rami distinti:
+
+```text
+T36 batch ───────────────────────→ T37 → DocumentStructure + Markdown
+    └─ + ProcessedDocumentText ──→ bridge Tesseract → evidence diagnostiche
+```
+
+T37 deriva direttamente dalle evidence PP-OCRv5 del manifest T36; non consuma
+l'evidence prodotta dal bridge Tesseract, che alimenta il confronto successivo.
+Quindi il prossimo incremento CLI compone soltanto T36→T37 e aggiunge una
+modalita' `documents process --workflow-manifest` alternativa alla discovery
+per root, lasciando invariato il comando `documents process` esistente. Il wrapper
+possiede request e stato workflow; i writer T36/T37 mantengono ownership esclusiva
+dei rispettivi artifact e checkpoint. T37 richiede variante e profilo espliciti
+per ogni pagina e resta atomico come lotto. T36 partial blocca T37 e produce un
+workflow partial; resume verifica e riusa gli stage completi senza riscriverli.
+
+Non invocare T36 in resume per ricostruire uno stage T37 gia' completo: il runner
+T36 puo' aggiornare le metriche del manifest aggregato e cambiarne il digest. Un
+manifest/stato stage discordante fallisce chiuso. L'orchestratore non ricostruisce
+evidence e non richiama i comandi tramite subprocess.
+
+L'incremento CLI T40 e' implementato: `documents process` accetta
+`--workflow-manifest` al posto di `--root`, con manifest `OcrWorkflow` v1.0 che
+lega hash del batch T36, modello/runtime locali, variante T37 e mappa esatta
+`page_id=profile`. Preview non crea directory e non inizializza Paddle; `--apply`
+compone i writer batch T36 e struttura T37 via API Python. T36 partial blocca
+T37; resume verifica request e inventory, riusa gli stage completi senza
+riscriverli e rifiuta crash gap o artifact alterati. Il percorso root storico
+resta coperto dai test di regressione. Test core e CLI usano TIFF sintetici e
+runner finti; nessuna OCR reale e' stata eseguita.
+
+Il ramo Tesseract conserva il percorso legacy `documents process --root`. Per il
+percorso page-scoped e' stato aggiunto `documents ocr-tesseract-page-batch`, che
+usa un manifest dedicato legato dal digest al manifest T36. Il batch adatta ed
+esegue OCR per TIFF raw dichiarati, senza comporre ancora T36, Tesseract e T37
+nella stessa invocazione.
+
+Review del contratto Tesseract page/document (2026-10-17): `page_id` T36 e
+`source_document_id` restano identita' distinte; il bridge lega il testo
+all'anchor T36 e rifiuta mismatch di TIFF/hash/frame. La registrazione attuale
+scrive `ProcessedDocumentText` in `<source_id>/<source_document_id>.text.json`;
+due pagine dello stesso documento collidono e la ricerca metadata per il solo
+document ID puo' scegliere una fonte errata prima del controllo sidecar. Inoltre
+un metadata mancante avvia estrazione sull'intera root.
+
+Il micro-incremento metadata espliciti e' implementato: `register_document_transcription`
+e `run_document_ocr` accettano il percorso opzionale hash-bound `metadata_path`,
+`metadata_sha256` e `sidecar_sha256`. Il percorso esplicito valida classe, identita'
+source/document, riferimenti a TIFF e sidecar e hash dell'immagine prima di
+invocare Tesseract; metadata, TIFF e sidecar vengono ricontrollati dopo l'OCR e
+prima della registrazione. Evita lookup ricorsivo ed estrazione globale; il
+percorso legacy resta invariato. I test mirati passano: 7 di registrazione e 31
+Tesseract; nessuna OCR reale e' stata eseguita. La provenance non viene promossa
+ad `adapter_ready`.
+
+Il runner page-scoped Tesseract e' implementato. Il manifest v1 copre esattamente
+le pagine T36 completate e lega, per ciascun `page_id`, path/hash del TIFF raw,
+sidecar YAML e metadata processato. Preflight verifica identita' source/document,
+classe `image_scan`, riferimenti raw/sidecar, TIFF single-frame e digest prima di
+qualsiasi inferenza; rifiuta tuple documentali duplicate e collisioni di input,
+output o alias dopo normalizzazione Windows. JSON/YAML con chiavi duplicate,
+manifest T36 partial e destinazioni nel repository falliscono chiusi.
+
+Il comando `documents ocr-tesseract-page-batch` espone preview/apply e inoltra
+lingua, eseguibile, PSM, OEM, DPI, preprocessing e OCR per regione al runner
+esistente. Preview non scrive e non invoca Tesseract. Apply registra un
+`ProcessedDocumentText` diagnostico e `unreviewed` per pagina; gli errori runtime
+sono isolati, gli output sono esclusivi e il report conserva configurazione,
+identita' e hash. 12 test sintetici con runner fake e i 31 test del runner OCR
+passano; nessuna OCR reale e' stata eseguita.
+
+Restano fuori da questa slice la composizione T36-Tesseract-T37, resume/checkpoint,
+rollback globale del lotto e supporto a piu' pagine con la stessa tupla
+source/document. Il preprocessing automatico puo' selezionare una variante
+trasformata anche quando il flag esplicito e' false: la provenance originale viene
+conservata e non si forza `adapter_ready`.
+
+## Retry limitato e isolamento errori per pagina T36 - 2026-10-17
+
+Il pilot `documents ocr-transform-pilot` accetta `--retry-limit 0|1` (default
+`1`) e ritenta soltanto eccezioni del runner/materializzazione Paddle. Errori
+deterministici di input o validazione non vengono ritentati. Se una pagina resta
+in errore, i suoi artifact parziali sono rimossi, viene registrata come `failed`
+e la seconda pagina continua. Il manifest e il checkpoint diventano `partial`,
+il comando termina con exit 1 e il resume rifiuta quel lotto. T37 e il bridge
+Tesseract falliscono chiusi sulle pagine incomplete.
+
+La fingerprint include il limite retry. Audit e report registrano tentativi,
+errori e tempi; nessun esito cambia lo stato `unreviewed`. Il pilot resta a due
+TIFF: il runner manifest-driven multi-pagina e l'orchestrazione tra PP-OCRv5 e
+Tesseract sono ancora da implementare.
+
+## Checkpoint e metriche runtime del pilot T36 - 2026-10-17
+
+`memoria documents ocr-transform-pilot --resume` ora riusa un run completato
+solo se gli hash di input/modelli, lingua, tiling e opzioni coincidono con il
+fingerprint registrato. Verifica checkpoint, manifest e inventario completo di
+output senza inizializzare Paddle, scrivere o rilanciare inferenza. Run legacy,
+parziali, alterati o con file aggiunti vengono rifiutati senza sovrascrittura.
+
+Il manifest aggrega durata di processing, throughput per pagina e target e p95
+nearest-rank della latenza target, includendo la materializzazione dell'output
+Paddle. Inizializzazione runtime e serializzazione finale non rientrano nella
+durata; costo e tempo di review restano `null`, non misurati. Restano fuori da
+questa slice la ripresa parziale, retry e isolamento per pagina, e il pilot
+continua ad accettare esattamente due TIFF.
+
+## Evidence Tesseract dai run T36 - 2026-10-17
+
+`memoria documents ocr-tesseract-from-t36` collega i `ProcessedDocumentText`
+gia' prodotti da Tesseract alle pagine raw/full-page di un manifest T36 tramite
+una mappa esplicita `page_id=path`. Verifica frame singolo, identita' byte per
+byte col TIFF, digest e provenance, quindi crea nuove `OcrPageEvidence`
+Tesseract diagnostiche e un `run-manifest.json` con input/output hash-bound.
+Preview e' read-only; `--apply` pubblica atomicamente in una directory nuova.
+Il comando non esegue OCR e non promuove risultati.
+
+Resta da orchestrare in un'unica invocazione i runner OCR e i checkpoint/metriche
+batch T40; la review umana e i gate finali restano separati.
+
+## Gate batch finale OCR per pagina - 2026-10-17
+
+`memoria documents ocr-review-batch` consuma `OcrReviewPackage` e ricalcola il
+preflight finale per ogni pagina usando i dieci ruoli `review_inputs` con path e
+SHA-256. Errori di package/digest bloccano prima del gate; una pagina bloccata
+resta isolata e le altre vengono comunque valutate. Preview e' read-only;
+`--apply` scrive solo un nuovo report aggregato, senza modificare package o
+sidecar. Status, coda umana e diagnosi restano per pagina; nessun esito viene
+promosso e `machine_pass`/auto-validation restano false.
+
+Questo completa il preflight batch dei sidecar già compilati. `documents
+ocr-review-finalize` collega il refresh hash consentito al gate batch senza
+richiedere l'editing manuale del manifest. L'esecuzione PP-OCRv5/Tesseract resta
+nel precedente `documents process --workflow-manifest`; la review usa i sidecar
+mirati prodotti e compilati dopo quel run.
+
+## Package CLI per T36/T37 e preparazione review - 2026-10-17
+
+`memoria documents ocr-review-package` compone T37, confronto PP-OCRv5/Tesseract,
+lessico e scaffold page-level da mappe esplicite. La slice supporta soltanto la
+variante T36 `raw`: controlla manifest, digest e uguaglianza byte per byte col TIFF
+e richiede un TIFF single-frame. Solo le copie distaccate per la review ricevono
+`frame_index=0`; gli artifact T36/T37 originali mantengono la provenance. Preview
+pulisce lo staging; `--apply` pubblica atomicamente in una directory nuova. Il
+package resta incompleto e `unreviewed`; nessuna OCR o decisione umana/automatica
+viene prodotta.
+
+La CLI e lo scaffold rifiutano identita', input, mappe o frame incoerenti. Test
+offline coprono byte-copy, frame singolo, confronto e hash degli artifact finali.
+Il gate batch finale descritto sopra consuma il manifest generato dal package.
+
+## Scaffold vincolato al confronto Tesseract - 2026-10-17
+
+`memoria documents ocr-review-scaffold` ora richiede evidence Tesseract e report
+`ocr-evidence-compare` correnti. Riusa la validazione del preflight per
+verificare digest, path, engine, identita' pagina/TIFF e risultato ricalcolato
+prima di creare lessico, crop e ledger incompleti. `scaffold-manifest.json`
+registra path e digest del confronto e dell'evidence Tesseract insieme agli
+input T37. Preview e' read-only; `--apply` crea solo artefatti nuovi e
+incompleti. Nessuna OCR, selezione testuale o autorizzazione automatica.
+
+I test usano fixture sintetiche. T36/T37, il confronto Tesseract e la review
+umana restano fasi distinte; il preflight finale `ocr-review` continua a
+ricalcolare i propri gate prima di preparare un'eventuale coda manuale.
+
+## Gate Tesseract nel preflight page-level - 2026-10-17
+
+`memoria documents ocr-review` richiede ora il report `ocr-evidence-compare` e
+l'evidence Tesseract della stessa pagina. Il preflight verifica engine
+`paddle-ocr-v5`/`tesseract`, identita' pagina e TIFF, percorsi e SHA-256 dei due
+input, quindi ricalcola il confronto prima degli altri gate. Input assenti,
+obsoleti o incoerenti bloccano la coda manuale. Un confronto valido resta
+diagnostico: non attesta accuratezza, non seleziona il testo e non abilita
+`machine_pass` o auto-validazione.
+
+Test mirati usano solo fixture sintetiche. Restano distinti l'esecuzione dei
+passaggi OCR/lessicali che producono gli artefatti richiesti e la review visuale
+umana; questo gate non li esegue e non modifica raw OCR, reference o holdout.
+
+## CLI T37 da pacchetto T36 - 2026-10-16
+
+`memoria documents ocr-transform-structure` consuma un manifest T36 esistente,
+accetta una variante full-page e il profilo per ogni pagina in modo esplicito,
+verifica gli hash della scansione e della variante, poi genera sidecar
+`OcrPageEvidence`, `DocumentStructure`, Markdown e un manifest di run legati al
+digest d'ingresso. Preview read-only; `--apply` scrive in una directory nuova
+esterna al repository.
+
+Il report conserva gli output come `unreviewed` e mostra ancora pending il
+confronto Tesseract, il controllo lessicale, copertura visuale, audit layout,
+disposition degli alert e review page-level. Non abilita machine pass. Il package
+CLI del 2026-10-17 collega T36/T37, confronto, lessico e scaffold; la review
+umana e i gate finali restano separati e obbligatori.
+
+## CLI per il pilot OCR T36 - 2026-10-16
+
+`memoria documents ocr-transform-pilot` espone il pilot T36 PP-OCRv5 alla CLI
+Python canonica: accetta i due TIFF guida espliciti, modelli locali dichiarati
+e directory runtime nuova. La preview non carica Paddle, non inferisce e non
+scrive; `--apply` produce trasformazioni, tile raw, evidence con coordinate e
+provenance e un report. I risultati restano `unreviewed`; il comando non attesta
+accuratezza e non abilita machine pass o auto-validation.
+
+Questa e' la prima slice eseguibile del percorso CLI e non ancora l'orchestratore
+end-to-end. Il prossimo incremento deve collegare evidence a struttura/Markdown,
+confronto Tesseract, lessico e gate di review page-level, mantenendo ogni fase
+obbligatoria fail-closed. VLM e soglia 5% restano fuori dal percorso.
+
+## T41 doppia soglia CLI per qualità pagina e rischio di falsa accettazione - 2026-10-18
+
+`documents ocr-threshold-audit` applica due soglie distinte. La qualità di una
+pagina è misurata come `material_word_error_count / reference_word_count` e deve
+restare entro l'1%. Un errore su 300 parole vale circa 0,33% e non fa fallire da
+solo la pagina; quattro errori su 300 superano invece l'1%. Il conteggio usa
+l'allineamento della candidata esatta alla reference verificata e comprende
+sostituzioni, omissioni e aggiunte adjudicate come materiali.
+
+La soglia di sistema resta il 5%: tra le pagine che lo score congelato avrebbe
+auto-accettato, al massimo il 5% può superare il limite d'errore dell'1% per
+pagina. L'audit calcola il limite superiore binomiale esatto unilaterale al 95%
+per il campione aggregato e applica Bonferroni ai limiti per strato. Con zero
+pagine oltre il limite servono almeno 59 pagine auto-accettate per sostenere il
+target aggregato; gli strati possono richiederne di più.
+
+Il codice di calibrazione applica anch'esso il bound per strato: con zero breach
+servono almeno 86 pagine accettate in calibration e altre 86 in holdout per
+ciascuno dei quattro strati attuali (688 casi accettati complessivi); con tre
+strati il minimo e' 80 per partizione e strato. Qualunque breach richiede
+campioni piu' grandi. Il feature bundle corrente non produce ancora uno score:
+`risk_score` e `cutoff` restano null, quindi prima di calibrare va definita e
+implementata una formula deterministica versionata.
+
+Il dataset `OcrAutoValidationHoldout` v1.2 registra in `policy`
+`max_page_material_word_error_rate: 0.01`,
+`target_false_accept_page_rate: 0.05` e `confidence_level: 0.95`. Ogni caso
+`human_verified`/`accuracy_eligible` riporta `material_word_error_count`,
+`reference_word_count`, le categorie materiali, score e digest della reference
+evaluation. Identità e digest della coorte restano verificati contro il manifest
+holdout preregistrato v1.1. `schema_version` v1.1 non è compatibile con la nuova
+unità di misura e non può sostenere questo audit.
+
+Il report espone separatamente le pagine oltre l'1% e la loro quota tra le
+auto-accettate. `auto_validation_enabled` e `machine_pass` restano `false`: le
+soglie diventano operative solo dopo una calibrazione e un holdout indipendente
+sufficienti per lingua e strato. La review è richiesta ai campioni di
+calibrazione/audit e ai casi stimati sopra soglia o incerti, non a ogni scansione.
+
+La review visuale T41 01000 resta incompleta e distinta da questo incremento:
+189/189 regioni OCR sono collegate, ma mancano ancora confronto riproducibile
+per blocco, controlli deterministici di ordine/righe/celle, classificazione
+completa degli alert e report runtime integro. Non chiedere conferma umana né
+promuovere la candidata 01000 finché tali passaggi non sono completati.
+
+### Contratto di preregistrazione della coorte T41 - 2026-10-18
+
+Il manifest `OcrAutoValidationHoldoutCohort` passa alla versione 1.1. L'audit
+richiede frame e metodo di campionamento, unità di indipendenza a livello di
+documento, definizioni esplicite degli strati per lingua/leggibilità/layout e
+per ogni pagina motivazione di selezione, esposizione precedente ai motori e
+trasformazioni applicate. I descrittori devono concordare con lo strato; hash
+TIFF o documenti ripetuti vengono rifiutati per non trattare scansioni correlate
+come prove indipendenti. Questa regola riduce la pseudoreplicazione entro lo
+stesso documento, ma non dimostra indipendenza statistica tra documenti della
+stessa serie, unità archivistica o processo di acquisizione.
+
+Questo è il contratto e il suo controllo sintetico, non una coorte reale
+congelata: non sono stati consultati output OCR o reference holdout e non è
+stato prodotto uno score/cutoff calibrato. I due casi riservati 00072/00900
+restano insufficienti per validare il target. Il holdout dovrà contenere un
+numero adeguato di documenti indipendenti per ogni strato e una registrazione
+separata della partizione di calibrazione. Le soglie 1%/5% e
+`machine_pass=false` restano invariate.
+
+### Feature OCR hash-bound per la calibrazione T41 - 2026-10-18
+
+Il CLI `documents ocr-risk-features` ricalcola l'assessment candidato e il
+confronto tra evidence usando i file esatti e ne verifica path, digest e identità
+di pagina, frame e immagine. L'hash TIFF è ricalcolato dai byte sorgente e deve
+corrispondere a tutte le evidence. Il bundle `OcrRiskFeatureBundle` v1.1
+riporta diagnostiche numeriche versionate: issue e blocchi candidati, alert
+lessicali, copertura delle regioni OCR già rilevate, accordi/disaccordi
+one-to-one, componenti ambigue e regioni non abbinate. Report obsoleti, artefatti
+modificati o destinazioni che collidono con gli input falliscono chiusi.
+`source_document_id` deve essere presente e concordare fra candidata e due
+evidence. Il bundle v1.1 aggiunge statistiche di confidence separate per lato
+(media, mediana, p10 nearest-rank, minimo, massimo e copertura), conservando la
+scala nativa e pesando ogni regione allo stesso modo (non per parole).
+Scale mancanti o miste e valori invalidi non producono statistiche aggregate;
+confidence assente è dichiarata `not_exposed`. Le confidence dei due motori non
+vengono normalizzate né confrontate direttamente.
+
+Queste sono feature descrittive, non uno score di rischio: `risk_score` e
+`cutoff` restano null, `score_status=not_calibrated`, `machine_pass=false`.
+Copertura e accordo tra motori non rilevano omissioni condivise e non attestano
+accuratezza; le statistiche di confidence sono descrittive e non calibrate. Il
+comando non lancia OCR o VLM e non legge reference/label; i test usano
+esclusivamente TIFF sintetici. Prima di stimare pesi o cutoff servono conteggi
+di errori materiali adjudicati sulle sole pagine di calibrazione.
+
+### Baseline CLI dello score di rischio OCR - 2026-10-18
+
+`documents ocr-risk-score --bundle <features.json> --output <score.json>`
+calcola la baseline candidata `ocr-coverage-disagreement-max-v1` dal solo
+`OcrRiskFeatureBundle` hash-bound. Definisce `D` come quota di disaccordi nei
+match uno-a-uno e `C` come
+uno meno la copertura delle regioni rilevate rappresentate nella candidata; lo
+score è `max(D,C)`, con direzione `lower_is_safer`. La quota di regioni non
+abbinate resta nel bundle ma non entra in questa versione. Il risultato lega
+digest della formula e dei byte esatti del bundle e conserva identità e
+componenti. Il comando verifica conteggi e rapporti; feature mancanti, issue di
+assessment, denominatori zero o processo bloccato
+producono `not_scorable`, mai score zero. `--apply` scrive un nuovo sidecar in
+modo esclusivo e idempotente.
+
+È un indice diagnostico non calibrato, non una probabilità di errore. `C` misura
+solo copertura interna delle regioni già rilevate; non verifica la pagina e lo
+score non rileva omissioni condivise dai due motori. Non usa reference,
+confidence o label. I test sintetici verificano formula, provenienza, controlli
+di coerenza e fail-closed; non costituiscono una calibrazione su OCR reale.
+Cutoff resta null e `machine_pass`/
+`auto_validation_enabled` restano false. Prima di collegarlo alla calibrazione
+occorre verificare la separazione degli errori materiali adjudicati e congelare
+il legame fra score-spec e ogni caso; se gli errori materiali con score zero
+sono troppi, questa baseline non supporta l'auto-accettazione.
+
+Per preparare l'adjudication dei campioni di calibrazione, `documents
+ocr-material-error-draft --reference <reference.json> --evidence <evidence.json>
+--structure <structure.json> --image <page.tif> --output <draft.json>` allinea
+token reference ed evidence, ricalcola la struttura e lega TIFF, reference,
+evidence e struttura con SHA-256. Le differenze sono localizzate a
+`region_id`/bounding box; `material_word_error_count` e categoria restano null
+finché non sono verificate visivamente sul TIFF/crop e rispetto agli output OCR
+persistenti. La bozza è esterna al repository, preview read-only per default e
+non certifica pagine senza differenze testuali come prive di errori strutturali.
+Il campione documentato resta insufficiente per calibrare score o cutoff: le
+cinque metriche reference non hanno label materiali e solo `00007` ha uno strato
+attestato come preregistrato. Nessun holdout è stato consultato.
+
+### Prova del CLI su OCR reale 00598 - 2026-10-18
+
+Usati gli output PP-OCRv5 e Tesseract persistiti per `T314-1275-00598`, senza
+rilanciare OCR. `documents ocr-material-error-draft` ha inizialmente rifiutato
+una struttura non allineata; rieseguito con evidence e struttura T37 corrispondenti,
+ha prodotto il sidecar esterno
+`ocr-runs/t41-00598-ocr-structure-20261003/material-error-draft-calibration-20261018.json`
+(SHA-256 `672be28bcb499fb490cbbacde83da3315cdfe4beabeffd393bdeb84ce6728eb`).
+La bozza segnala tre differenze, tutte `pending_visual_adjudication`; conteggio e
+categorie di errori materiali restano null. Il confronto visuale mirato mostra
+che la regione `8` cade su una macchia chiara e che la regione `T` si sovrappone
+alla prima lettera di `Teilnehmer`; queste osservazioni non sono state convertite
+in label. Il package v1.2 denominato `reviewed` risulta invece
+`template_incomplete/unreviewed`, con review lessicale, visuale e strutturale
+ancora scaffold.
+
+`candidate-assessment` reale riporta copertura delle regioni OCR 54/54, 46 alert
+lessicali e preparazione review incompleta. `ocr-risk-features` ha fallito chiuso:
+le tre evidence non portano `source_document_id` concorde, richiesto dal contratto.
+L'identità non è stata derivata dal filename; non sono stati prodotti feature
+bundle, score reale o cutoff. Nessun holdout è stato aperto. Prima della
+calibrazione servono identity binding da manifest autorevole, review completa e
+label materiali adjudicate per la sola partizione calibration.
+
+La coorte esplorativa T41 30-page è in stato `prepared`. `T314-1275-00598` non
+appartiene alla sua partizione calibration, quindi quei document ID non possono
+essere riusati per colmare il campo mancante del caso storico. L'utente ha poi
+confermato l'unità singolo TIFF=documento per la coorte selezionata; resta da
+completare il disegno e congelare il manifest prima del batch OCR.
+
+### Calibrazione CLI del cutoff OCR - 2026-10-18
+
+`documents ocr-threshold-calibration --dataset <calibration.json> --output
+<calibration-artifact.json>` seleziona, in preview per default, il cutoff più
+alto fra gli score osservati per cui il limite superiore binomiale esatto
+unilaterale al 95%, con correzione Bonferroni per strato, resta al massimo 5%
+nei casi di calibrazione accettati. I tie score restano indivisibili. L'input
+`OcrAutoValidationCalibration` v1.0 richiede partizione `calibration`, score
+numerici lower-is-safer, label materiali complete e adjudicate, reference
+accuracy-eligible, identità e hash distinti per pagina, documento e immagine,
+strati dichiarati e `holdout_not_opened=true`. L'artefatto lega il digest esatto
+del dataset e presenta un threshold compatibile con
+`documents ocr-threshold-audit`; `--apply` scrive solo un nuovo file ed è
+idempotente.
+
+Il comando seleziona un cutoff per score già calcolati: non addestra né valida
+la formula dello score. Il bound sui dati di calibrazione è un criterio di
+selezione e non prova generalizzazione. Il cutoff resta inutilizzabile in
+produzione finché il punteggio non è definito e congelato e un holdout
+indipendente, non consultato durante il tuning, non sostiene il target per il
+totale e per ciascuno strato richiesto. `machine_pass` e
+`auto_validation_enabled` restano sempre `false`; il campione T41 attuale non ha
+ancora label materiali sufficienti e non produce una soglia reale.
+
 ## T41 provenance, adapter Tesseract e confronto 00598 - 2026-10-13
 
 Le nuove registrazioni `ProcessedDocumentText` includono `ocr_run_provenance`
@@ -1549,6 +2118,25 @@ Il contratto T39 e' completato: il resolver riceve crop, candidato OCR e
 provenance page-scoped e puo' restituire solo testo o `[illeggibile]`. I 4 test
 mirati passano. L'integrazione con un VLM reale resta fuori scope e non e'
 giustificata finche' un confronto verificato non dimostra beneficio.
+
+### Sessione 2026-10-16 - valutazione VLM e CLI di coorte
+
+Il pilot live sul crop ambiguo adjudicato della pagina `00007` ha verificato
+Ollama WSL 0.34.2 e i modelli `qwen3-vl:4b`, `qwen3-vl:8b`, `gemma3:4b`.
+Nessuna delle tre risposte testuali e' stata esatta: Qwen ha restituito campi
+`response` vuoti con generazione terminata per `length`; Gemma ha prodotto una
+stringa non corrispondente alla reference `vorzustoßen`. Il campione di un solo
+crop non dimostra beneficio, affidabilita' generale o il target pilot 5%; non
+sono stati consultati holdout e auto-validation resta disattivata.
+
+Per rendere ripetibile la prova, `documents vlm-crop-evaluate` esegue una coorte
+esterna di crop da immagine sorgente, bbox e reference `OcrPageReference`
+hash-bound e human-verified. Verifica tutti gli input prima del runtime,
+confronta output e reference senza inviare la reference al modello e registra
+digest, prompt, output, stato di generazione, latenze e metriche per coorte.
+Su Windows chiama `curl` da WSL; non usa un Ollama Windows. Preview esegue
+comunque inferenza live; `--apply` scrive esclusivamente il report nuovo. Test e
+fixture sono sintetici e offline.
 
 ## Chiusura T40 CLI strutturata - 2026-09-22
 
@@ -5549,3 +6137,225 @@ il prossimo passo e' aggiungere pagine di altri strati e valutare anche gli
 errori visivi/strutturali prima di proporre un cutoff. Reference, adapter
 diagnostico ed evaluation restano nella directory runtime esterna
 `t41-00007-visual-review-20261015`; OCR grezzo e TIFF sono invariati.
+
+## Review T41 01000: audit procedurale incompleto - 2026-10-16
+
+Riprendere il checkpoint umano della pagina `T314-1275-01000`, già avviato e
+annotato nel planner, per ampliare il campione con il suo layout distinto. Prima
+della review applicare il playbook di analisi documentale: verificare identità e
+provenance, confrontare immagine/crop con tutti gli output OCR persistenti,
+completare la candidata dalla mappa di regioni e ricontrollarne il lessico con
+Hunspell/glossario espliciti. Non rilanciare OCR se gli output persistenti sono
+validi.
+
+La preparazione ha verificato 8/8 hash degli output OCR, identità del TIFF e
+copertura univoca di 189/189 regioni; Hunspell/glossario sono stati eseguiti
+sulla candidata esatta e l'OCR non è stato rilanciato. È stato aggiunto al
+pacchetto runtime `legacy-tsv-spatial-comparison.json`: confronta per overlap
+positivo i bbox PP-OCRv5 con le parole del TSV Tesseract persistente. Tutti i
+controlli d'identità e gli hash degli input passano; risultano overlap per
+60/189 regioni PP-OCRv5 e 256/335 parole Tesseract, con 129 regioni e 79 parole
+senza overlap.
+
+Il TSV storico non ha `ProcessedDocumentText` né
+`TesseractRunProvenance.adapter_ready` v1: il sidecar è diagnostico, non un
+`OcrPageEvidenceComparison`, non prova copertura o accuratezza e non può
+alimentare una soglia. Il report UTF-8 è stato rigenerato senza caratteri di
+escape alterati e il manifest ora include il sidecar; tutti gli hash del
+pacchetto passano. Il sidecar runtime `ocr-layout-map.json` tipizza tutte le
+189/189 regioni e localizza le 45 righe nel crop completo: 1-25 a sinistra,
+26-45 a destra. I ruoli cella sono geometrici, conservano i box che attraversano
+più celle e non modificano la candidata strutturale. La verifica visuale ha
+individuato discrepanze materiali nelle voci 39 (indice assente e testo
+frammentario), 41 (numero OCR `47.` e testo non rilevato) e 45 (riga visibile
+senza regioni OCR); letture provvisorie sono annotate nel sidecar solo per la
+review. Il report e il manifest includono il sidecar e tutti i 12 hash output
+passano. Il pacchetto è predisposto per una sola conferma page-level; non è
+ancora una reference né un campione valido per la calibrazione. Nessuna
+promozione gold, metrica o `machine_pass`; `00072` e `00900` restano holdout.
+
+## Matrice descrittiva dei segnali OCR T41 - 2026-10-16
+
+Riconciliazione read-only dei cinque riferimenti page-level confermati. Tutte le
+cinque evaluation sono `accuracy_eligible=true`, con 5/5 identity checks veri.
+I valori CER/WER sono diagnostici per pagina; non sono label di errore materiale
+e non autorizzano una soglia. Confidence PP-OCRv5 e' la media aritmetica non
+pesata dei punteggi di regione; il numero di regioni sotto 0.50 e' un conteggio
+descrittivo. Questi punteggi non sono calibrati come probabilita' di correttezza
+per pagina. Le metriche PP-OCRv5 e Tesseract sono mantenute separate.
+
+| Pagina | Descrittori disponibili | Engine / regioni | Confidence raw | CER / WER | Coverage / invention | Struttura |
+|---|---|---:|---:|---:|---:|---|
+| `00150` | tedesco; elenco amministrativo denso a piu' colonne; strato non attestato come pre-dichiarato | PP-OCRv5 / 102 | media 0.957842; min 0.119933; 2 <0.50 | 0.145366 / 0.126904 | 0.921320 / 0.092500 | non exact; confronto disponibile ma con forte disallineamento blocchi/ordine |
+| `00415` | tedesco; rapporto denso con sezioni e righe tabellari; strato non attestato come pre-dichiarato | PP-OCRv5 / 59 | media 0.870700; min 0; 3 <0.50 | 0.008187 / 0.023622 | 0.981627 / 0.020942 | non exact; order recall 0.836735 |
+| `00598` | tedesco; testo dattiloscritto a paragrafi numerati; strato non attestato come pre-dichiarato | PP-OCRv5 / 54 | media 0.922549; min 0; 2 <0.50 | 0.004681 / 0.011407 | 0.996198 / 0.007576 | non eleggibile: reference non codifica relazioni di parentesi/graffe e posizioni |
+| `00750` | tedesco; bassa leggibilita', modulo/registro e area vuota; strato non attestato come pre-dichiarato | PP-OCRv5 / 74 | media 0.750617; min 0; 18 <0.50 | 0.586381 / 0.621891 | 0.527363 / 0.485437 | non exact; struttura/grid non eleggibile per questo confronto |
+| `00007` | tedesco; alta leggibilita', prosa dattiloscritta continua; strato dichiarato prima delle metriche | PP-OCRv5 / 51 | media 0.880917; min 0; 7 <0.50 | 0.026440 / 0.090909 | 0.958944 / 0.086592 | esclusa: `leader_list_report` non applicabile alla prosa continua |
+
+Il confronto Tesseract disponibile per `00150` e' riportato separatamente:
+51 regioni, confidence media 65.2504 e min 7.1552 sulla scala 0-100; CER
+0.324046, WER 0.385787, coverage 0.662437, invention 0.264789; 261 token
+abbinati, 133 omessi, 94 aggiunti. La diversa scala di confidence e la diversa
+segmentazione impediscono il confronto diretto con la confidence PP-OCRv5.
+
+Provenienza runtime (root `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs`):
+
+- `00150`: `t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json`, SHA-256
+  `30e3a6a909decd17dd8bc1f3415af22048f379882ed0e8354265a35710e9b7e1`;
+  `t41-00150-calibration-20261001/region-register.json`, SHA-256
+  `e4830035b079624e14667228b889b1270ae62a9f1505f5c5746c297c33e3b400`.
+- `00415`: `t41-00415-ocr-structure-20261003/ocr-page-reference-evaluation-00415-20261011.json`, SHA-256
+  `e57e152bd15b462263e3e2f41bce5265e20c3bdbf1bc0d7d5f737e1bae9b4878`;
+  `t41-00415-ocr-structure-20261003/normalized-ppocr-evidence-00415-20261011.json`, SHA-256
+  `f2f08430e3ffaa43d5ae9f2e46ff073422c4c1037992f395c87ba08dc482e7c9`.
+- `00598`: `t41-00598-ocr-structure-20261003/ocr-page-reference-evaluation-00598-20261011.json`, SHA-256
+  `9701e75f1f40f4d36c4dea8310ed57fb1630866fde24d09cb0c2a0c90b08a3c8`;
+  `t41-00598-ocr-structure-20261003/normalized-ppocr-evidence-00598-20261011.json`, SHA-256
+  `502203a8476cc5715c789cd11e7fcda36db601745815276da55be332bf500550`.
+- `00750`: `t41-00750-ocr-structure-20261006/ocr-page-reference-evaluation-00750-20261013.json`, SHA-256
+  `99279b65059415a59e0d5237babfc070cd9b8f89e5cb4bd8ac362edfb692cb5c`;
+  `t41-00750-ocr-structure-20261006/ppocr-evidence-adapter-00750-20261013.json`, SHA-256
+  `d9433f4df98ec9bf12691fddec7155c1f9dac63a258a8a2a0f5bc8583d379283`.
+- `00007`: `t41-00007-visual-review-20261015/ocr-page-reference-evaluation.json`, SHA-256
+  `80164b3a1723776c9863fc14348a95a17c060d7c9d8215d97c9a39c2923d0b6c`;
+  `t41-00007-visual-review-20261015/ppocr-evidence-original-anchor.json`, SHA-256
+  `538dc6e3edcff7b86befb4d65358f16ee442738493b40ace99016e18d6f8f013`.
+
+Quattro descrittori di pagina sono documentati nel contatto visivo del
+2026-10-03, ma non e' dimostrabile che siano stati congelati prima di consultare
+metriche o confidence; non vanno trattati come strata preregistrati. Solo lo
+strato di `00007` e' registrato prima della sua selezione e valutazione. Il
+campione di cinque pagine e' piccolo, non copre adeguatamente gli strati e non
+ha adjudication page-level degli errori materiali. La confidence elevata di
+`00150` coesiste con errori testuali, mentre `00007` e `00415` hanno segnali di
+confidence medi piu' bassi ma metriche testuali migliori: non emerge un cutoff
+difendibile da questi dati.
+
+Esito: descrizione utile per scegliere e preregistrare nuovi casi di
+calibrazione, non validazione del target 5%. Mantenere `auto_validation_enabled`
+e `machine_pass` false. Non consultare o etichettare gli holdout `00072` e
+`00900` finche' definizione dell'errore materiale, score e cutoff non sono
+congelati; dopo la calibrazione, verificare su un holdout indipendente e
+rappresentativo prima di collegare il gate al flusso `ocr-review`.
+
+## Rubrica di adjudication e preregistrazione T41 - 2026-10-16
+
+Il playbook ora definisce `material_error=true` a livello di pagina quando almeno
+una discrepanza confermata tra candidata esatta, reference verificata e TIFF
+altera significato, informazione leggibile o associazione strutturale. Le label
+usano solo le categorie CLI `text`, `omission`, `number_or_name` e `structure`;
+CER/WER, confidence e alert lessicali orientano il controllo ma non determinano
+l'esito. Un caso non adjudicabile blocca il pilot e non diventa una label falsa.
+
+La selezione futura registra prima di leggere output OCR: ID, hash TIFF,
+motivazione/frame di campionamento, lingua, leggibilita', layout, strato,
+partizione, esposizione precedente, trasformazioni e responsabile. La coorte
+holdout resta sigillata fino al congelamento e digest di score, cutoff e set di
+calibrazione. Le label del holdout sono cieche allo score/cutoff e devono essere
+riconciliate con tutti gli ID preregistrati.
+
+Incremento CLI 2026-10-16: `ocr-threshold-audit` richiede un manifest holdout
+esterno legato dal digest del dataset e confronta ID e identita' pagina/documento/
+TIFF/strato. Casi mancanti, extra, duplicati o divergenti falliscono chiuso. I
+test usano solo manifest sintetici; nessun holdout reale e' stato aperto. Il
+digest dimostra che dataset e manifest forniti corrispondono, ma non certifica
+da solo la data di congelamento: conservare una copia esterna immutabile prima di
+consultare il holdout. I cinque gold e la matrice restano invariati; `00312` non
+e' gold e `01000` ha ancora un audit procedurale incompleto. `00072` e `00900`
+non sono stati aperti o etichettati.
+
+Nessuna pagina reale e' stata etichettata in questo incremento. Prossimo passo:
+selezionare ulteriori pagine di calibrazione sulla base dei soli TIFF, completare
+le reference page-level e misurare gli errori materiali con la rubrica. Il target
+resta 5%; cutoff e `machine_pass` restano disabilitati fino a holdout indipendente
+sufficiente.
+
+## Validatore preregistrazione coorte T41 - 2026-10-18
+
+`documents ocr-cohort-preregistration --manifest <cohort.json> --output
+<report.json> [--freeze-receipt <receipt.json>] [--apply]` valida un manifesto
+esterno `OcrCohortPreregistration` v1.0 con partizioni `calibration` e
+`holdout`. Controlla strati predefiniti (lingua, leggibilita', layout),
+descrittori coerenti, SHA-256 dichiarati, motivazione/responsabile, esposizione
+pregressa e trasformazioni. Rifiuta ID o TIFF duplicati e piu' pagine dello
+stesso documento, dentro o fra partizioni.
+
+Lo stato `prepared` puo' avere strati ancora incompleti. `frozen` richiede tutti
+gli strati in entrambe le partizioni e una ricevuta esterna legata ai byte esatti
+del manifest; la ricevuta deve essere successiva al timestamp di congelamento.
+L'hash verifica solo il binding manifest-ricevuta: non prova immutabilita'
+dell'archivio, indipendenza statistica o adeguatezza della numerosita'. Il
+validatore non apre i TIFF, ne' OCR, reference, evaluation o label; legge i soli
+metadati preregistrati di entrambe le partizioni e verifica soltanto il formato
+dei digest dichiarati, non i file immagine.
+
+Campi extra sono rifiutati, inclusi contenuti testuali OCR/reference/label.
+Preview e' read-only; `--apply` scrive un report esterno con conteggi e digest,
+senza righe pagina o contenuti sorgente. Non seleziona pagine reali, non assegna
+label, non calcola score/cutoff e lascia `machine_pass`/auto-validation
+disabilitati. Test offline sintetici coprono partizioni sovrapposte, strati,
+ricevuta, input vietati e scrittura idempotente; nessun dato reale o runtime OCR
+e' stato consultato.
+
+### Coorte T41 preparata dai soli TIFF - 2026-10-18
+
+La prima coorte concreta e' stata registrata come `prepared` nel runtime
+esterno `ocr-runs/t41-cohort-preregistration-20261018`: 8 pagine calibration
+(3 prosa, 3 tabella, 2 moduli manoscritti) e 2 holdout provvisori (1 prosa,
+1 tabella). La selezione e gli strati derivano da anteprime visive TIFF-only;
+nessun OCR, reference, evaluation, metrica o label e' stato letto. Il report CLI
+e' `valid_preregistration`, ma lascia `machine_pass`, auto-validazione,
+indipendenza e adeguatezza statistica non certificate.
+
+Il censimento ha trovato 997 TIFF con nome esatto prima delle esclusioni; il
+playbook esclude `00026` e `00028`, lasciando 995 eleggibili. L'hashing
+integrale e' stato completato: tutti i 995 TIFF hanno un SHA-256, non ci sono
+hash duplicati (22.394.133.944 byte eleggibili) e il digest aggregato del frame e'
+`03d94db81b777a74728426d0429244bcce3ec2733ba3b5609c1318a8869d5e5d`. Il manifest
+aggiornato e' legato all'inventario completo; il report CLI versionato conferma
+`valid_preregistration`. L'applicazione ha preservato il report precedente,
+legato al digest del manifest iniziale. Gli artefatti aggiornati sono
+`tiff-frame-inventory.json`, `cohort-preregistration.json` e
+`validation-report-frame-inventory-complete.json` nel runtime. Il manifest dichiara
+anche esposizione precedente dei motori `unknown` e ID documento `leaf` ancora
+provvisori. Non e' una coorte frozen: lo strato manoscritto e' assente dal
+holdout, le partizioni sono purposive e troppo piccole per inferenza di soglia.
+
+Prossimo passo: verificare i raggruppamenti documentali e ampliare
+calibration/holdout in tutti gli strati prima di congelare la coorte o
+processare le pagine selezionate per la calibrazione.
+
+### Espansione esplorativa e controllo dei gruppi - 2026-10-18
+
+Il controllo visivo dei candidati e dei TIFF vicini ha portato la coorte a 30
+pagine: 19 calibration e 11 holdout. Il manifest resta `prepared`; il report
+`validation-report-cohort-30-tiff-only.json` è `valid_preregistration` e lega
+SHA-256 `d8d3571c727511348b3ac4aeda13c89e737697e1ce3cb1adf7bafdfbad29ae06`.
+La distribuzione è:
+
+| Strato | Calibration | Holdout |
+|---|---:|---:|
+| `deu-prose-medium` | 7 | 3 |
+| `deu-table-medium` | 6 | 7 |
+| `deu-handwritten-low` | 5 | 1 |
+| `deu-handwritten-prose-low` | 1 | 0 |
+
+La lettura dei soli TIFF ha individuato possibili sovrapposizioni: `00701` è
+stato rimosso per la vicinanza a `00700`; `00201` non è stato aggiunto accanto
+al simile `00200`. `00510` e `00550` potrebbero avere un legame più ampio non
+verificabile dalle immagini locali; sono entrambi in calibration. Le identità
+`leaf` restano provvisorie dove il confine del documento fisico non è sostenuto
+dall'immagine. `00361`, nota manoscritta su righe, usa uno strato distinto che
+non è presente nel holdout.
+
+Gli SHA-256 delle 30 pagine sono stati riconciliati con l'inventario completo;
+la validazione CLI ha confermato 30 ID/documenti distinti nel manifest, ma non
+certifica l'indipendenza statistica delle unità provvisorie. Nessun OCR,
+reference, evaluation, metrica o label è stato aperto. `machine_pass`,
+auto-validazione, immutabilità e indipendenza restano false/non certificate; il
+campione non consente di validare il target di errore materiale dell'1% o il
+limite del 5% di false accettazioni.
+
+Prossimo passo: consolidare le unità documentali e ampliare il holdout
+indipendente, compreso lo strato handwritten prose, prima di un eventuale freeze
+o di qualunque valutazione OCR.
