@@ -232,7 +232,7 @@ def _build_manifest(*, pages: list[dict[str, Any]], request: Mapping[str, Any], 
         "tiling": {"tile_width": tile_width, "tile_height": tile_height, "overlap": tile_overlap, "variant_id": "raw", "coordinate_convention": "left_top_inclusive_right_bottom_exclusive"},
         "pages": pages,
         "notes": [
-            "Gli originali TIFF non sono modificati.",
+            "Le immagini originali non sono modificate.",
             "Le coordinate source_page_* riportano tutte le geometrie nello spazio della pagina sorgente.",
             "Le varianti ricevono OCR a pagina intera; crop, tile e OCR dei tile sono limitati a raw per il budget CPU del pilot.",
             "Le inferenze full-page possono essere downscalate dal max_side_limit Paddle; i tile raw restano nativi.",
@@ -358,6 +358,21 @@ def _validate_new_output_directory(output_dir: Path) -> None:
         raise FileExistsError(f"La directory output del pilot deve essere nuova: {output_dir}")
 
 
+def _validate_batch_source(source: Path) -> None:
+    """Keep JPEG coordinates in the stored raster, without implicit rotation."""
+    if not source.is_file() or source.suffix.lower() not in {".tif", ".tiff", ".jpg", ".jpeg"}:
+        raise ValueError(f"Input TIFF/JPEG non valido: {source}")
+    if source.suffix.lower() in {".jpg", ".jpeg"}:
+        from PIL import Image
+
+        with Image.open(source) as image:
+            if image.format != "JPEG" or getattr(image, "n_frames", 1) != 1:
+                raise ValueError(f"Input JPEG deve essere JPEG reale a frame singolo: {source}")
+            if image.getexif().get(274, 1) != 1:
+                raise ValueError(f"Orientamento EXIF JPEG deve essere assente oppure 1: {source}")
+            image.load()  # Reject unreadable raster data before runtime or output writes.
+
+
 def _validate_model(model: Mapping[str, str]) -> dict[str, str]:
     if not isinstance(model, Mapping):
         raise ValueError("model deve essere un oggetto con identificativi PP-OCRv5 espliciti.")
@@ -388,7 +403,8 @@ def _validate_runtime_options(enable_mkldnn: bool, text_det_limit_side_len: int,
 def _write_variants(*, source: Path, page_dir: Path, image_class: Any, enhance_class: Any) -> list[dict[str, Any]]:
     variants_dir = page_dir / "variants"
     variants_dir.mkdir(parents=True, exist_ok=False)
-    raw_path = variants_dir / "raw.tif"
+    raw_suffix = source.suffix.lower() if source.suffix.lower() in {".jpg", ".jpeg"} else ".tif"
+    raw_path = variants_dir / f"raw{raw_suffix}"
     shutil.copyfile(source, raw_path)
     entries: list[dict[str, Any]] = []
     with image_class.open(source) as image:
@@ -573,7 +589,7 @@ def _model_file_manifest(model_dir: Path) -> list[dict[str, Any]]:
 def _markdown_report(manifest: Mapping[str, Any], output_dir: Path) -> str:
     lines = ["# Pilot T36 — review OCR trasformazioni e tile", "", "Stato: **unreviewed**. Le trascrizioni sono OCR grezzo e non attestano accuratezza o fatti storici.", "", "Budget pilot: ogni variante ha OCR a pagina intera; tile e OCR dei tile sono eseguiti soltanto su `raw` alla risoluzione nativa.", ""]
     for page in manifest["pages"]:
-        lines.extend([f"## {page['page_id']}", "", f"TIFF originale (riferimento esterno): `{page['source']['path']}`  ", f"SHA-256: `{page['source']['sha256']}`", ""])
+        lines.extend([f"## {page['page_id']}", "", f"Immagine originale (riferimento esterno): `{page['source']['path']}`  ", f"SHA-256: `{page['source']['sha256']}`", ""])
         lines.extend([f"Esito: **{page['status']}**; tentativi OCR: {page['ocr_attempt_count']}.", ""])
         for attempt in manifest["ocr_attempts"]:
             if attempt["page_id"] == page["page_id"] and attempt["status"] == "failed":

@@ -12,6 +12,9 @@ OcrWorkflow v1.2 adds review {lexicons, glossaries?}, each an exact page_id map
 of {path, sha256}. It requires raw single-frame inputs and original-pixel
 Tesseract in the same language. The package builder derives its own T37 copy
 without inference; this is separate from the immutable workflow t37 stage.
+OcrWorkflow v1.3 keeps the v1.2 sections and accepts native TIFF/JPEG with
+TesseractPageBatchManifest v1.1/raw_image and raw-pixel-only PSM retries.
+Non-comparable diagnostic text blocks the evidence and review stages.
 T37 always consumes only T36 evidence. Tesseract stages are diagnostic_only and
 unreviewed, including partial runtime results, and are immutable on resume.
 The wrapper owns workflow-request.json, workflow-state.json and the derived
@@ -56,11 +59,11 @@ def _prepare(manifest_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
     source = manifest_path.resolve(strict=True)
     payload = _read(source)
     version = payload.get("schema_version")
-    if payload.get("@type") != "OcrWorkflow" or version not in {"1.0", "1.1", "1.2"}:
-        raise ValueError("E' richiesto OcrWorkflow v1.0, v1.1 o v1.2.")
+    if payload.get("@type") != "OcrWorkflow" or version not in {"1.0", "1.1", "1.2", "1.3"}:
+        raise ValueError("E' richiesto OcrWorkflow v1.0, v1.1, v1.2 o v1.3.")
     _keys(payload, {"@type", "schema_version", "t36", "t37"}
           | ({"tesseract"} if version != "1.0" else set())
-          | ({"review"} if version == "1.2" else set()), "workflow")
+          | ({"review"} if version in {"1.2", "1.3"} else set()), "workflow")
     t36, t37 = payload["t36"], payload["t37"]
     _keys(t36, {"input_manifest", "language", "model", "runtime"}, "t36")
     _keys(t36["input_manifest"], {"path", "sha256"}, "t36.input_manifest")
@@ -70,6 +73,8 @@ def _prepare(manifest_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
     if version != "1.0":
         _read(inputs)  # The v1.1 input boundary also rejects duplicate JSON keys.
     pages = batch._inputs(inputs)
+    if version in {"1.1", "1.2"} and any(Path(page["path"]).suffix.lower() not in {".tif", ".tiff"} for page in pages):
+        raise ValueError("OcrWorkflow v1.1/v1.2 con Tesseract/review richiede input TIFF; JPEG richiede v1.0 o v1.3.")
     model = t36["model"]
     model_fields = {"ocr_version", "text_detection_model_name", "text_recognition_model_name"}
     _keys(model, model_fields | {"text_detection_model_dir", "text_recognition_model_dir"}, "t36.model")
@@ -127,10 +132,11 @@ def _prepare(manifest_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
                 references[role] = {"path": str(_path(source.parent, page[role]["path"])),
                                     "sha256": structure._required_sha256(page[role]["sha256"], role)}
             raw = by_id[page["page_id"]]
-            bound.append(page | references | {"raw_tiff": {"path": raw["path"], "sha256": raw["sha256"]}})
+            raw_role = "raw_image" if version == "1.3" else "raw_tiff"
+            bound.append(page | references | {raw_role: {"path": raw["path"], "sha256": raw["sha256"]}})
         request["tesseract"] = {"root_dir": str(_path(source.parent, section["root_dir"])),
                                 "configuration": {key: section[key] for key in sorted(configuration)}, "pages": bound}
-    if version == "1.2":
+    if version in {"1.2", "1.3"}:
         section = payload["review"]
         if not isinstance(section, dict) or set(section) not in ({"lexicons"}, {"lexicons", "glossaries"}):
             raise ValueError("review richiede lexicons e, opzionalmente, glossaries.")
@@ -183,7 +189,7 @@ def _review_preflight(request: dict[str, Any], destination: Path) -> None:
 
 def _tesseract_manifest(request: dict[str, Any], t36: Path) -> dict[str, Any]:
     section = request["tesseract"]
-    return {"@type": "TesseractPageBatchManifest", "schema_version": "1.0",
+    return {"@type": "TesseractPageBatchManifest", "schema_version": "1.1" if request["schema_version"] == "1.3" else "1.0",
             "root_dir": section["root_dir"], "t36_manifest": {"path": str(t36),
             "sha256": pilot._sha256_file(t36) if t36.is_file() else "0" * 64}, "pages": section["pages"]}
 
@@ -195,10 +201,17 @@ def _tesseract_preflight(request: dict[str, Any], destination: Path, existing: b
                            {"page_id": page["page_id"], "status": "completed",
                             "source": {"path": page["path"], "sha256": page["sha256"]}}
                            for page in request["t36"]["inputs"]]}
+    if request["schema_version"] == "1.3":
+        from PIL import Image
+        for page in provisional_t36["pages"]:
+            with Image.open(page["source"]["path"]) as image:
+                width, height = image.size
+                page["source"]["image_dimensions"] = {"width": width, "height": height}
     # All external bindings are checked before Paddle; prospective T36 pages
     # supply only raw paths/hashes, never OCR evidence or T37 inputs.
     paths = [Path(request["workflow_manifest"]["path"]), Path(request["t36"]["input_manifest"]["path"])]
-    paths.extend(Path(page[role]["path"]) for page in manifest["pages"] for role in ("raw_tiff", "sidecar", "metadata"))
+    raw_role = "raw_image" if request["schema_version"] == "1.3" else "raw_tiff"
+    paths.extend(Path(page[role]["path"]) for page in manifest["pages"] for role in (raw_role, "sidecar", "metadata"))
     for path in paths:
         if tesseract_batch._key(path).startswith(tesseract_batch._key(destination) + "\\") or tesseract_batch._key(path) == tesseract_batch._key(destination):
             raise ValueError("Input workflow sovrapposto alla directory output.")
@@ -381,6 +394,20 @@ def run_ocr_workflow(*, manifest_path: Path, output_dir: Path, apply: bool = Fal
             if "review" in request:
                 report.update(blocked_stage="tesseract-evidence", blocked_stages=["tesseract-evidence", "review"])
             return report
+        if version == "1.3":
+            non_comparable = []
+            for page in result["pages"]:
+                text = _read(Path(page["output_path"]))
+                if (text.get("ocr_quality_gate_status") != "accepted"
+                        or text.get("ocr_run_provenance", {}).get("adapter_ready") is not True):
+                    non_comparable.append(page["page_id"])
+            if non_comparable:
+                report["tesseract_evidence"]["status"] = report["review"]["status"] = "blocked_non_comparable"
+                report.update(status="partial_unreviewed", blocked_stage="tesseract-evidence",
+                    blocked_stages=["tesseract-evidence", "review"], blocked_page_ids=non_comparable,
+                    block_reason="tesseract_diagnostic_not_comparable",
+                    state_path=str(destination / "workflow-state.json"))
+                return report
     if "review" in request:
         _review_preflight(request, destination)
         evidence_root = destination / "tesseract-evidence"

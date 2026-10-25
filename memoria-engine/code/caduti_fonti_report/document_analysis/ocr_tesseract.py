@@ -44,11 +44,18 @@ def run_document_ocr(
     metadata_path: Path | None = None,
     metadata_sha256: str | None = None,
     sidecar_sha256: str | None = None,
+    retry_policy: str = "legacy_quality",
 ) -> dict[str, Any]:
+    if retry_policy not in {"legacy_quality", "raw_pixels_only"}:
+        raise ValueError("Policy retry OCR sconosciuta.")
+    if retry_policy == "raw_pixels_only" and (preprocess_before_ocr or enable_region_ocr):
+        raise ValueError("raw_pixels_only esclude preprocessing e OCR di regioni trasformate.")
     _check_metadata_binding(metadata_path, metadata_sha256, sidecar_sha256)
     image_path = Path(file_path)
     if not image_path.exists() or not image_path.is_file():
         raise FileNotFoundError(f"Documento immagine non trovato: {image_path}")
+    if retry_policy == "raw_pixels_only":
+        _validate_raw_image(image_path)
     explicit_sidecar_sha256 = None
     if metadata_path is not None:
         sidecar_path = _resolve_sidecar(file_path=image_path, sidecar_path=sidecar_path)
@@ -84,6 +91,7 @@ def run_document_ocr(
             temporary_dir=Path(tmp_dir),
             initial_preprocessing_report=initial_preprocessing_report,
             command_runner=command_runner,
+            retry_policy=retry_policy,
         )
         ocr_text = ocr_text_result["text"]
         effective_page_segmentation_mode = ocr_text_result["page_segmentation_mode"]
@@ -110,9 +118,12 @@ def run_document_ocr(
             "ocr_reference_candidates": ocr_quality["ocr_reference_candidates"],
             "ocr_preprocessing_enabled": preprocessing_report is not None,
             "ocr_preprocessing_status": ocr_text_result["preprocessing_status"],
-            "ocr_quality_gate_status": "accepted",
+            "ocr_quality_gate_status": "accepted" if ocr_text_result["usable"] else "diagnostic_insufficient",
             "ocr_quality_gate_score": ocr_text_result["quality_score"],
         }
+        if retry_policy == "raw_pixels_only":
+            ocr_metadata.update(ocr_retry_policy=retry_policy, diagnostic_only=True,
+                                machine_pass=False, auto_validation_enabled=False)
         if preprocessing_report is not None:
             ocr_metadata["ocr_preprocessing_method"] = preprocessing_report["preprocessing_method"]
             ocr_metadata["ocr_preprocessing_parameters"] = preprocessing_report["parameters"]
@@ -200,6 +211,27 @@ def _probe_image(image_path: Path) -> dict[str, Any]:
         return {"status": "probe_failed", "frame_count": None, "frames": []}
 
 
+def _validate_raw_image(image_path: Path, dimensions: Any = None) -> None:
+    """Validate a native single raster without rotating or converting its pixels."""
+    from PIL import Image
+    expected = {".tif": "TIFF", ".tiff": "TIFF", ".jpg": "JPEG", ".jpeg": "JPEG"}.get(image_path.suffix.lower())
+    if expected is None:
+        raise ValueError("Richiesto raster TIFF o JPEG nativo.")
+    if dimensions is not None and (
+        not isinstance(dimensions, dict) or set(dimensions) != {"width", "height"}
+        or any(type(value) is not int or value <= 0 for value in dimensions.values())
+    ):
+        raise ValueError("Dimensioni sorgente non valide.")
+    with Image.open(image_path) as image:
+        if image.format != expected or getattr(image, "n_frames", 1) != 1:
+            raise ValueError("Formato raster divergente o immagine non single-frame.")
+        if image.format == "JPEG" and image.getexif().get(274, 1) != 1:
+            raise ValueError("JPEG richiede EXIF Orientation assente o 1.")
+        if dimensions is not None and image.size != (dimensions["width"], dimensions["height"]):
+            raise ValueError("Dimensioni raster divergenti dalla sorgente T36.")
+        image.load()
+
+
 def _run_provenance(
     *, source_document_id: str, source_sha256_before: str, source_sha256_after: str,
     source_probe: dict[str, Any], selected: dict[str, Any], language: str,
@@ -220,6 +252,8 @@ def _run_provenance(
         reasons.append("single_frame_required")
     if transform == "unknown":
         reasons.append("unknown_input_transform")
+    if selected.get("usable") is False:
+        reasons.append("ocr_quality_insufficient")
     source_frames, input_frames = source_probe["frames"], input_probe["frames"]
     dimensions_match = bool(source_frames and input_frames and source_frames == input_frames)
     if not dimensions_match:
@@ -278,6 +312,7 @@ def _run_tesseract_with_quality_retries(
     temporary_dir: Path,
     initial_preprocessing_report: dict[str, Any] | None,
     command_runner: CommandRunner | None = None,
+    retry_policy: str = "legacy_quality",
 ) -> dict[str, Any]:
     attempts: list[dict[str, Any]] = []
     candidates: list[dict[str, Any]] = []
@@ -300,7 +335,7 @@ def _run_tesseract_with_quality_retries(
     usable = [candidate for candidate in candidates if candidate["usable"]]
     preprocessing_report = initial_preprocessing_report
     preprocessing_status = "preprocessed_temporary" if initial_preprocessing_report else "not_requested"
-    if not usable:
+    if not usable and retry_policy != "raw_pixels_only":
         best = max(candidates, key=lambda candidate: candidate["quality_score"])
         preprocessed_path = temporary_dir / "preprocessed-quality-retry.png"
         try:
@@ -320,10 +355,13 @@ def _run_tesseract_with_quality_retries(
             preprocessing_report = retry_report
             preprocessing_status = "quality_retry_temporary"
             usable = [candidate for candidate in candidates if candidate["usable"]]
-    if not usable:
+    if not usable and retry_policy != "raw_pixels_only":
         reasons = "; ".join(str(attempt.get("reason", "")) for attempt in attempts if attempt.get("reason"))
         raise ValueError(f"OCR Tesseract qualitativamente insufficiente prima della registrazione.{(' ' + reasons) if reasons else ''}")
-    selected = max(usable, key=lambda candidate: candidate["quality_score"])
+    selectable = usable or [candidate for candidate in candidates if candidate["text"].strip()]
+    if not selectable:
+        raise ValueError("OCR Tesseract vuoto su tutti i tentativi raw.")
+    selected = max(selectable, key=lambda candidate: candidate["quality_score"])
     for attempt in attempts:
         if attempt.get("candidate_id") == selected["candidate_id"]:
             attempt["status"] = "selected"
@@ -334,6 +372,7 @@ def _run_tesseract_with_quality_retries(
         "preprocessing_status": preprocessing_status if selected["input_kind"] != "original" else "not_requested",
         "input_kind": selected["input_kind"], "input_sha256": selected["input_sha256"],
         "input_probe": selected["input_probe"],
+        "usable": selected["usable"],
     }
 
 

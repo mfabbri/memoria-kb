@@ -28,7 +28,8 @@ fatti verificati senza review e non crea una pipeline parallela per la demo.
 `documents process --workflow-manifest` orchestra il runner batch T36 e la
 derivazione T37 `DocumentStructure`/Markdown. OcrWorkflow v1.0 esegue T36→T37;
 v1.1 aggiunge Tesseract page-scoped diagnostico; v1.2 aggiunge la preparazione
-del package di review visuale/lessicale dopo T36/T37/Tesseract. T37 consuma
+del package di review visuale/lessicale dopo T36/T37/Tesseract; v1.3 abilita
+questa preparazione su TIFF/JPEG nativi con retry solo sui pixel originali. T37 consuma
 soltanto evidence PP-OCRv5 di T36 e non usa l'output Tesseract.
 
 Il manifest `OcrWorkflow` v1.0 usa percorsi assoluti o relativi alla propria
@@ -36,6 +37,30 @@ directory e dichiara l'hash del manifest batch, configurazione locale del
 modello/runtime e profilo T37 per ogni pagina. Le varianti T37 supportate sono
 `raw`, `grayscale`, `contrast`, `threshold`; i profili sono
 `numbered_report` e `leader_list_report`.
+
+Il batch T36 e OcrWorkflow v1.0 accettano anche JPG/JPEG nativi: ogni file
+deve essere un JPEG reale a frame singolo, con orientamento EXIF assente o 1.
+Formato, raster e orientamento vengono verificati prima del runtime e delle
+scritture; altri orientamenti richiedono una normalizzazione esplicita esterna.
+La variante `raw.jpg`/`raw.jpeg` conserva gli stessi byte e SHA-256 del sorgente,
+senza rotazione o conversione TIFF; le coordinate restano quelle del raster
+originale. T37 produce per pagina `OcrPageEvidence` JSON, `DocumentStructure`
+JSON e trascrizione Markdown da un solo output OCR full-page della variante
+dichiarata: non fonde i tile. I risultati restano `unreviewed`, senza soglia
+o auto-accettazione. OcrWorkflow v1.1/v1.2 con Tesseract/review rimangono
+esplicitamente limitati ai TIFF e rifiutano JPEG nel preflight.
+
+OcrWorkflow v1.3 mantiene i campi obbligatori v1.2 (`t36`, `t37`, `tesseract`,
+`review`) e accetta anche un batch misto TIFF/JPEG. Deriva un
+`TesseractPageBatchManifest` v1.1 con `raw_image` e policy `raw_pixels_only`;
+richiede T37 `raw`, lingua coerente e preprocessing/OCR per regione disabilitati.
+Formato, frame, EXIF, hash, sidecar/metadata e lessici vengono verificati prima
+di runtime e scritture. Se la lettura Tesseract resta non confrontabile, il run
+termina `partial_unreviewed`, conserva il diagnostico e blocca
+`tesseract-evidence` e `review`. Con evidence tecnicamente idonee produce il
+package incompleto e termina `awaiting_review`. Il resume verifica request,
+checkpoint e inventari hash, riusa gli stage immutabili e non ripete inferenza.
+I risultati restano `unreviewed`, `machine_pass=false` e auto-validazione false.
 
 OcrWorkflow v1.1 mantiene gli stessi campi T36/T37 e aggiunge `tesseract` con
 `root_dir`, `language`, `tesseract_path`, `page_segmentation_mode`,
@@ -852,7 +877,7 @@ Per collegare output Tesseract gia' esistenti alle pagine raw di T36 usare
 `memoria documents ocr-tesseract-from-t36 --manifest <t36-manifest.json>
 --processed-text page_id=<ProcessedDocumentText.json> ... --output-dir
 <nuova-directory>`. Ripetere `--processed-text` per ogni pagina. La CLI verifica
-che la variante sia full-page/raw e byte-identica al TIFF single-frame, e che
+che la variante sia full-page/raw e byte-identica al raster TIFF/JPEG single-frame, e che
 digest e provenance dei testi processati corrispondano. Preview non scrive;
 `--apply` crea un nuovo package evidence con `run-manifest.json`, dove
 `pages[].evidence.path` identifica l'output da passare a
@@ -860,17 +885,46 @@ digest e provenance dei testi processati corrispondano. Preview non scrive;
 gia' stato eseguito: questo raccordo non avvia OCR e l'evidence resta
 diagnostica/non revisionata.
 
+Per eseguire la seconda lettura nativa su TIFF/JPEG, usare
+`documents ocr-tesseract-page-batch` con `TesseractPageBatchManifest` v1.1:
+ogni pagina dichiara `raw_image: {path, sha256}`, `page_id`, `source_id`,
+`source_document_id`, `sidecar` e `metadata`; il manifest mantiene `root_dir`
+e `t36_manifest: {path, sha256}`. V1.0 conserva il campo `raw_tiff` e il
+comportamento precedente. V1.1 verifica formato reale, singolo frame,
+dimensioni T36, hash e JPEG EXIF Orientation assente/1 prima di OCR/output.
+Non converte in TIFF e non ruota i pixel. La policy `raw_pixels_only` ritenta
+soltanto PSM sullo stesso file e rifiuta preprocessing e OCR per regione.
+Un testo non vuoto che non supera il gate tecnico resta
+`diagnostic_insufficient`, con provenance `adapter_ready=false`: non puo'
+essere adattato al confronto. Un risultato tecnicamente idoneo puo' essere
+collegato tramite `ocr-tesseract-from-t36`; resta diagnostico, `unreviewed`,
+`machine_pass=false`, `auto_validation_enabled=false`, senza soglia di
+accuratezza. I workflow v1.1/v1.2 restano TIFF-only; il percorso nativo usa v1.3.
+
 Per comporre T36/T37 e la preparazione page-level usare
 `memoria documents ocr-review-package` con `--page-profile page_id=profile`,
 `--tesseract-evidence page_id=path` e `--lexicon page_id=path` ripetuti per ogni
 pagina; `--glossary page_id=path` e' opzionale. Questa CLI accetta solo la
-variante T36 `raw` se manifest e digest confermano che i byte coincidono col TIFF
-originale, e verifica che il TIFF abbia un solo frame prima di aggiungere il
-locator 0 alle copie detached di review. Gli artifact sorgente T36/T37 e i loro
+variante T36 `raw` se manifest e digest confermano che i byte coincidono col raster
+TIFF/JPEG originale, e verifica un solo frame prima di aggiungere il
+locator 0 alle copie detached di review. Per JPEG verifica formato reale,
+EXIF Orientation assente/1, decodifica e dimensioni originali prima di creare
+lo stage temporaneo; registra `verified_single_frame_jpeg` e `image/jpeg`.
+Gli artifact sorgente T36/T37 e i loro
 identificativi di trasformazione non vengono riscritti. Preview non lascia
 artifact persistenti; `--apply` richiede una directory nuova. Il risultato e'
 un template incompleto `unreviewed`: confronto e package non attestano accuratezza
 e non sostituiscono review visuale, audit layout o disposition umane.
+
+Anche lo scaffold diretto accetta JPG/JPEG originali sul frame 0, preservando
+la selezione esplicita dei frame TIFF multipagina. I crop PNG derivano dai
+pixel decodificati del frame originale senza rotazione o TIFF intermedi;
+hash e coordinate restano legati al raster sorgente. Locator e media type
+sono dichiarati nel manifest dello scaffold. I template restano incompleti
+e diagnostici, con `machine_pass=false` e auto-validazione disabilitata.
+Questo supporto prepara gli artifact; i gate visuali successivi richiedono
+ancora l'estensione JPEG dedicata. OcrWorkflow v1.1/v1.2 restano TIFF-only;
+v1.3 orchestra la preparazione nativa.
 
 Dopo aver completato e verificato i sidecar umani, il gate aggregato si esegue
 con `memoria documents ocr-review-batch --manifest <package-manifest.json>

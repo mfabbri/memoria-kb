@@ -11,7 +11,7 @@ import tempfile
 from typing import Any, Mapping
 
 from .ocr_evidence_comparison import compare_ocr_page_evidence
-from .ocr_review_scaffold import scaffold_ocr_review, _read_object
+from .ocr_review_scaffold import scaffold_ocr_review, _read_object, _validate_review_raster
 from .ocr_transform_structure import export_ocr_transform_structure
 
 
@@ -32,7 +32,7 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
                              apply: bool = False) -> dict[str, Any]:
     """Compose T37, comparison and incomplete review templates without inference.
 
-    Only byte-identical raw single-frame TIFFs can provide the original pixel
+    Only byte-identical raw single-frame TIFF/JPEG can provide the original pixel
     frame required by the review scaffold. The added frame locator is recorded
     in detached copies; all original evidence and its digest remain available.
     """
@@ -50,13 +50,23 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
         raise ValueError("La mappa --glossary deve dichiarare esattamente ogni page_id del manifest.")
     if variant_id != "raw":
         raise ValueError("Il pacchetto review richiede la variante raw byte_copy.")
-    from PIL import Image
+    manifest, _ = _read_object(source_manifest, "T36 manifest")
+    raw_evidence = {page["page_id"]: next(output["structured_evidence"]
+        for variant in page["variants"] if isinstance(variant, dict) and variant.get("variant_id") == "raw"
+        for output in variant["ocr_outputs"] if isinstance(output, dict) and output.get("target") == "full_page")
+        for page in manifest["pages"]}
+    locators = {}
     for page in pages:
         if page["variant_image"]["sha256"] != page["source_image"]["sha256"]:
-            raise ValueError("La variante raw deve essere una copia byte-identica del TIFF sorgente.")
-        with Image.open(page["source_image"]["path"]) as image:
-            if image.format != "TIFF" or image.n_frames != 1:
-                raise ValueError("Il pacchetto review richiede un TIFF single-frame.")
+            raise ValueError("La variante raw deve essere una copia byte-identica del raster sorgente.")
+        source_page = raw_evidence[page["page_id"]]["source_page"]
+        if "frame_index" in source_page and (type(source_page["frame_index"]) is not int or source_page["frame_index"] != 0):
+            raise ValueError("frame_index incompatibile con raster single-frame.")
+        width, height, locators[page["page_id"]] = _validate_review_raster(
+            Path(page["source_image"]["path"]), 0, single_frame=True)
+        if source_page["original_page"]["source_dimensions"] != {"width": width, "height": height}:
+            raise ValueError("Dimensioni raster divergenti dalle coordinate originali T36.")
+        _validate_review_raster(Path(page["variant_image"]["path"]), 0, single_frame=True)
 
     with tempfile.TemporaryDirectory(prefix=".ocr-review-package-", dir=destination.parent) as temporary:
         stage = Path(temporary) / "package"
@@ -81,7 +91,7 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
                     or source_page.get("crop") is not None or source_page.get("tile_id") is not None):
                 raise ValueError("Evidence raw richiede identita' full-page byte_copy verificabile.")
             if "frame_index" in source_page and (type(source_page["frame_index"]) is not int or source_page["frame_index"] != 0):
-                raise ValueError("frame_index incompatibile con TIFF single-frame.")
+                raise ValueError("frame_index incompatibile con raster single-frame.")
             right_path = Path(tesseract_evidence[page_id]).resolve(strict=True)
             right, _ = _read_object(right_path, "Tesseract evidence")
             # Validate exact supplied identity before adding the same locator to
@@ -143,7 +153,9 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
                 tesseract_evidence_path=str(destination / right_copy.relative_to(stage)))
             _write(scaffold_path, scaffold)
             entry = {"page_id": page_id, "profile": page["profile"], "status": "template_incomplete",
-                "review_status": "unreviewed", "frame_locator": {"frame_index": 0, "basis": "verified_single_frame_tiff"},
+                "review_status": "unreviewed", "frame_locator": {
+                    key: locators[page_id][key] for key in ("frame_index", "basis")},
+                "source_media_type": locators[page_id]["media_type"],
                 "inputs": {"source_image": page["source_image"], "variant_image": page["variant_image"],
                            "tesseract_evidence": _artifact(right_path), "lexicon": _artifact(lexicon)},
                 "t37": {name: _artifact(stage / "t37" / page[name]["path"], stage=stage, destination=destination)
@@ -173,6 +185,11 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
             "gold_promotion_allowed": False, "operation_status": "written" if apply else "preview",
             "output_dir": str(destination), "report_path": str(destination / "package-manifest.json")}
         _write(stage / "package-manifest.json", report)
+        for page in pages:
+            for role in ("source_image", "variant_image"):
+                artifact = page[role]
+                if hashlib.sha256(Path(artifact["path"]).read_bytes()).hexdigest() != artifact["sha256"]:
+                    raise ValueError("Raster sorgente/raw modificato durante la preparazione del package.")
         if apply:
             if destination.exists():
                 raise FileExistsError(f"La directory output deve essere nuova: {destination}")

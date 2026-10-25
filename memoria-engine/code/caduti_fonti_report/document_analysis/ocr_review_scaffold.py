@@ -41,6 +41,31 @@ def _tiles(width: int, height: int, tile_size: int) -> list[dict[str, Any]]:
     return result
 
 
+def _validate_review_raster(image_path: Path, frame: int, *, single_frame: bool = False) -> tuple[int, int, dict[str, Any]]:
+    """Probe and decode the selected original raster frame without conversion."""
+    from PIL import Image
+    if type(frame) is not int or frame < 0:
+        raise ValueError("frame_index esplicito richiesto.")
+    with Image.open(image_path) as image:
+        jpeg_path = image_path.suffix.lower() in {".jpg", ".jpeg"}
+        if image.format == "JPEG" and jpeg_path:
+            if getattr(image, "n_frames", 1) != 1 or frame != 0:
+                raise ValueError("JPEG richiede single-frame e frame_index 0.")
+            if image.getexif().get(274, 1) != 1:
+                raise ValueError("JPEG richiede EXIF Orientation assente o 1.")
+            media_type, basis = "image/jpeg", "verified_single_frame_jpeg"
+        elif image.format == "TIFF" and not jpeg_path:
+            if single_frame and image.n_frames != 1:
+                raise ValueError("Il pacchetto review richiede un TIFF single-frame.")
+            media_type = "image/tiff"
+            basis = "verified_single_frame_tiff" if image.n_frames == 1 else "explicit_tiff_frame_index"
+        else:
+            raise ValueError("Richiesto formato TIFF o JPEG nativo coerente con il file.")
+        image.seek(frame)
+        image.load()
+        return (*image.size, {"frame_index": frame, "basis": basis, "media_type": media_type})
+
+
 def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path: Path,
                         markdown_path: Path, lexicon_path: Path, output_dir: Path,
                         comparison_path: Path, tesseract_evidence_path: Path,
@@ -62,7 +87,7 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
     markdown_digest = _digest(markdown)
     image_digest = _digest(image_path.read_bytes())
     if evidence.get("source_image_hash") != image_digest.removeprefix("sha256:"):
-        raise ValueError("Hash TIFF diverso da OcrPageEvidence.")
+        raise ValueError("Hash TIFF/JPEG diverso da OcrPageEvidence.")
     comparison_paths = {"image": image_path, "evidence": evidence_path,
                         "comparison": Path(comparison_path),
                         "tesseract_evidence": Path(tesseract_evidence_path)}
@@ -121,14 +146,10 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
         raise ValueError("Ogni regione deve appartenere esattamente a un block.")
     try:
         from PIL import Image
+        frame = evidence["source_page"].get("frame_index")
+        width, height, frame_locator = _validate_review_raster(image_path, frame)
         with Image.open(image_path) as image:
-            if image.format != "TIFF":
-                raise ValueError("L'immagine deve essere TIFF.")
-            frame = evidence["source_page"].get("frame_index")
-            if type(frame) is not int or frame < 0:
-                raise ValueError("frame_index esplicito richiesto.")
             image.seek(frame)
-            width, height = image.size
             source_dims = {"width": width, "height": height}
             anchor = evidence["source_page"].get("original_page", {})
             if (anchor.get("source_dimensions") != source_dims or anchor.get("page_id") != evidence.get("page_id")
@@ -147,9 +168,9 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                       and evidence["source_page"].get("crop") is None)
             if copied and (variant_image_path is None
                            or _digest(Path(variant_image_path).read_bytes()) != image_digest):
-                raise ValueError("La variante raw byte_copy deve essere fornita e byte-identica al TIFF.")
+                raise ValueError("La variante raw byte_copy deve essere fornita e byte-identica al raster.")
             if not (plain or copied):
-                raise ValueError("Scaffold ammesso solo su coordinate originali TIFF.")
+                raise ValueError("Scaffold ammesso solo su coordinate originali TIFF/JPEG.")
             boxes = {"tile:" + t["tile_id"]: t["bbox"] for t in _tiles(width, height, tile_size)}
             for region_id, region in region_by_id.items():
                 geometry = region.get("geometry")
@@ -218,7 +239,9 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                     "source_lexicon_review_digest": "", "source_visual_audit_digest": "",
                     "dispositions": not_found}
     manifest = {"@type": "OcrReviewScaffold", "schema_version": "1.0", "status": "template_incomplete",
+                "review_status": "unreviewed", "diagnostic_only": True, "frame_locator": frame_locator,
                 "inputs": {"image_digest": image_digest, "evidence_digest": evidence_digest,
+                           "image_media_type": frame_locator["media_type"],
                            "tesseract_evidence_path": str(comparison_paths["tesseract_evidence"]),
                            "tesseract_evidence_digest": tesseract_digest,
                            "comparison_path": str(comparison_paths["comparison"]),
@@ -233,6 +256,7 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                 "authorizations": {"human_review_request_allowed": False, "machine_pass": False,
                                    "auto_validation_enabled": False, "gold_promotion_allowed": False}}
     report = {"@type": "OcrReviewScaffoldReport", "schema_version": "1.0", "status": "template_incomplete",
+              "review_status": "unreviewed", "diagnostic_only": True, "frame_locator": frame_locator,
               "operation_status": "preview", "output_dir": str(output_dir), "tile_count": len(tiles),
               "observation_count": len(observations), "crop_count": len(observations),
               "lexical_disposition_count": len(not_found), "outputs": manifest["outputs"],
@@ -261,5 +285,9 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
         _write_json(stage / "dispositions.json", dispositions)
         manifest["inputs"]["lexicon_review_digest"] = dispositions["source_lexicon_review_digest"]
         _write_json(stage / "scaffold-manifest.json", manifest)
+        if _digest(image_path.read_bytes()) != image_digest or (
+            copied and _digest(Path(variant_image_path).read_bytes()) != image_digest
+        ):
+            raise ValueError("Raster sorgente/raw modificato durante la preparazione dei crop.")
         os.replace(stage, output_dir)
     return report | {"operation_status": "written"}

@@ -185,6 +185,109 @@ class OcrWorkflowTests(unittest.TestCase):
         self.assertEqual(len(self.calls), count)
 
 
+class OcrWorkflowJpegTests(unittest.TestCase):
+    """Exercise the real stage orchestration with synthetic JPEGs and fake OCR."""
+
+    def setUp(self):
+        self.fixture = OcrWorkflowTests()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
+
+    def use_jpeg(self, suffix=".jpg", orientation=None, actual_format="JPEG"):
+        from PIL import Image
+        fixture = self.fixture
+        source = fixture.root / f"scan0{suffix}"
+        exif = Image.Exif()
+        if orientation is not None:
+            exif[274] = orientation
+        Image.new("RGB", (16, 16), "white").save(source, format=actual_format, exif=exif)
+        inputs = json.loads(fixture.inputs.read_text())
+        inputs["pages"][0].update(path=source.name, sha256=hashlib.sha256(source.read_bytes()).hexdigest())
+        fixture.inputs.write_text(json.dumps(inputs))
+        fixture.payload["t36"]["input_manifest"]["sha256"] = hashlib.sha256(fixture.inputs.read_bytes()).hexdigest()
+        fixture.write_manifest()
+        return source
+
+    def test_jpeg_outputs_preserve_bytes_coordinates_and_resume(self):
+        fixture = self.fixture
+        source = self.use_jpeg()
+        preview_factory = Mock(side_effect=AssertionError("no runtime"))
+        self.assertEqual(fixture.run_workflow(apply=False, runner_factory=preview_factory)["status"], "preview")
+        preview_factory.assert_not_called()
+        self.assertFalse(fixture.output.exists())
+        report = fixture.run_workflow()
+        self.assertEqual(report["status"], "completed_unreviewed")
+        raw = fixture.output / "t36/pages/p0/variants/raw.jpg"
+        self.assertEqual(raw.read_bytes(), source.read_bytes())
+        self.assertFalse(raw.with_suffix(".tif").exists())
+        evidence = json.loads((fixture.output / "t37/evidence/p0.evidence.json").read_text())
+        self.assertEqual(evidence["@type"], "OcrPageEvidence")
+        self.assertEqual(evidence["source_image_hash"], hashlib.sha256(source.read_bytes()).hexdigest())
+        self.assertEqual(evidence["source_page"]["original_page"]["source_dimensions"], {"width": 16, "height": 16})
+        self.assertEqual(evidence["source_page"]["target"], "full_page")
+        self.assertEqual(evidence["regions"][0]["geometry"]["bbox"], [1, 1, 14, 10])
+        structure = json.loads((fixture.output / "t37/structure/p0.structure.json").read_text())
+        self.assertEqual(structure["@type"], "DocumentStructure")
+        self.assertIn("Synthetic report", (fixture.output / "t37/markdown/p0.md").read_text())
+        before = fixture.snapshot()
+        factory = Mock(side_effect=AssertionError("no runtime on resume"))
+        fixture.run_workflow(resume=True, runner_factory=factory)
+        factory.assert_not_called()
+        self.assertEqual(fixture.snapshot(), before)
+        self.assertFalse(report["machine_pass"])
+
+    def test_jpeg_long_extension_and_explicit_orientation_one(self):
+        source = self.use_jpeg(suffix=".JPEG", orientation=1)
+        self.fixture.run_workflow()
+        self.assertEqual((self.fixture.output / "t36/pages/p0/variants/raw.jpeg").read_bytes(), source.read_bytes())
+
+    def test_invalid_jpeg_rejected_before_runtime_and_writes(self):
+        fixture = self.fixture
+        for orientation, actual_format in [(value, "JPEG") for value in range(2, 9)] + [(None, "PNG")]:
+            with self.subTest(orientation=orientation, actual_format=actual_format):
+                self.use_jpeg(orientation=orientation, actual_format=actual_format)
+                factory = Mock()
+                with self.assertRaises(ValueError):
+                    fixture.run_workflow(runner_factory=factory)
+                factory.assert_not_called()
+                self.assertFalse(fixture.output.exists())
+
+    def test_jpeg_source_tamper_fails_before_runtime(self):
+        source = self.use_jpeg()
+        source.write_bytes(source.read_bytes() + b"changed")
+        factory = Mock()
+        with self.assertRaisesRegex(ValueError, "SHA-256 input non valido"):
+            self.fixture.run_workflow(runner_factory=factory)
+        factory.assert_not_called()
+        self.assertFalse(self.fixture.output.exists())
+
+    def test_multiframe_file_with_jpeg_extension_is_rejected(self):
+        from PIL import Image
+        source = self.use_jpeg()
+        Image.new("RGB", (16, 16)).save(source, format="TIFF", save_all=True,
+                                      append_images=[Image.new("RGB", (16, 16))])
+        factory = Mock()
+        with self.assertRaisesRegex(ValueError, "JPEG reale a frame singolo"):
+            self.fixture.run_workflow(runner_factory=factory)
+        factory.assert_not_called()
+        self.assertFalse(self.fixture.output.exists())
+
+    def test_jpeg_rejected_by_tesseract_workflow_versions_before_runtime(self):
+        self.use_jpeg()
+        fixture = self.fixture
+        for version in ("1.1", "1.2"):
+            fixture.payload["schema_version"] = version
+            fixture.payload["tesseract"] = {}
+            if version == "1.2":
+                fixture.payload["review"] = {}
+            fixture.write_manifest()
+            factory = Mock()
+            with self.assertRaisesRegex(ValueError, "JPEG richiede v1.0 o v1.3"):
+                fixture.run_workflow(runner_factory=factory)
+            factory.assert_not_called()
+            self.assertFalse(fixture.output.exists())
+
+
 class OcrWorkflowV11Tests(unittest.TestCase):
     write_manifest = OcrWorkflowTests.write_manifest
     runner = OcrWorkflowTests.runner
@@ -545,6 +648,127 @@ class OcrWorkflowV12Tests(unittest.TestCase):
         report = self.run_workflow(runner_factory=lambda: failure, command_runner=command)
         self.assertEqual(report["blocked_stages"], ["t37", "tesseract", "tesseract-evidence", "review"])
         self.assertFalse((self.output / "review").exists())
+        command.assert_not_called()
+
+
+class OcrWorkflowV13Tests(unittest.TestCase):
+    write_manifest = OcrWorkflowTests.write_manifest
+    runner = OcrWorkflowTests.runner
+    snapshot = OcrWorkflowTests.snapshot
+    ref = OcrWorkflowV11Tests.ref
+    tesseract = OcrWorkflowV11Tests.tesseract
+    run_workflow = OcrWorkflowV11Tests.run_workflow
+    test_preview_apply_resume_without_repeating_inference = OcrWorkflowV12Tests.test_preview_apply_resume_without_repeating_inference
+    test_invalid_review_preflight_rejects_before_runtime_or_write = OcrWorkflowV12Tests.test_invalid_review_preflight_rejects_before_runtime_or_write
+
+    def setUp(self):
+        OcrWorkflowV12Tests.setUp(self)
+        self.payload["schema_version"] = "1.3"
+        for index, suffix in ((0, ".jpg"), (1, ".JPEG")):
+            self.use_source(index, suffix=suffix)
+
+    def use_source(self, index=0, *, suffix=".jpg", orientation=None, actual_format="JPEG", corrupt=False):
+        from PIL import Image
+        source = self.root / f"scan{index}{suffix}"
+        options = {}
+        if orientation is not None:
+            exif = Image.Exif()
+            exif[274] = orientation
+            options["exif"] = exif
+        Image.new("RGB", (16, 16), "white").save(source, format=actual_format, **options)
+        if corrupt:
+            source.write_bytes(source.read_bytes()[:70])
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        inputs = json.loads(self.inputs.read_text())
+        inputs["pages"][index].update(path=source.name, sha256=digest)
+        self.inputs.write_text(json.dumps(inputs))
+        self.payload["t36"]["input_manifest"] = self.ref(self.inputs)
+        binding = self.payload["tesseract"]["pages"][index]
+        for role in ("sidecar", "metadata"):
+            path = self.root / binding[role]["path"]
+            payload = json.loads(path.read_text())
+            if role == "sidecar": payload["local_path"] = str(source)
+            else: payload.update(raw_file=source.name, sha256=digest)
+            path.write_text(json.dumps(payload))
+            binding[role] = self.ref(path)
+        self.write_manifest()
+        return source
+
+    def test_native_contract_raw_bytes_coordinates_and_truthful_review_locator(self):
+        report = self.run_workflow()
+        self.assertEqual(report["schema_version"], "1.3")
+        self.assertEqual(report["status"], "awaiting_review")
+        self.assertFalse(report["machine_pass"])
+        self.assertFalse(report["auto_validation_enabled"])
+        manifest = workflow._read(self.output / "tesseract/page-batch-manifest.json")
+        self.assertEqual(manifest["schema_version"], "1.1")
+        self.assertTrue(all("raw_image" in page and "raw_tiff" not in page for page in manifest["pages"]))
+        package = workflow._read(self.output / "review/package-manifest.json")
+        for index, suffix in ((0, ".jpg"), (1, ".jpeg")):
+            source = self.root / f"scan{index}{'.JPEG' if index else suffix}"
+            raw = self.output / f"t36/pages/p{index}/variants/raw{suffix}"
+            self.assertEqual(source.read_bytes(), raw.read_bytes())
+            text = workflow._read(self.output / f"tesseract/texts/archive/doc{index}.text.json")
+            self.assertEqual(text["ocr_retry_policy"], "raw_pixels_only")
+            self.assertFalse(text["ocr_preprocessing_enabled"])
+            evidence = workflow._read(self.output / f"tesseract-evidence/evidence/p{index}.json")
+            self.assertEqual(evidence["source_image_hash"], hashlib.sha256(source.read_bytes()).hexdigest())
+            self.assertEqual(evidence["source_page"]["original_page"]["source_dimensions"], {"width": 16, "height": 16})
+        self.assertTrue(all(page["source_media_type"] == "image/jpeg" for page in package["pages"]))
+        self.assertTrue(all(page["frame_locator"]["basis"] == "verified_single_frame_jpeg" for page in package["pages"]))
+
+    def test_invalid_native_source_rejects_before_runtime_and_writes(self):
+        for options in ({"orientation": 6}, {"actual_format": "PNG"}, {"actual_format": "TIFF"}, {"corrupt": True}):
+            with self.subTest(options=options):
+                self.use_source(**options)
+                factory, command = Mock(), Mock()
+                with self.assertRaises((ValueError, OSError)):
+                    self.run_workflow(runner_factory=factory, command_runner=command)
+                factory.assert_not_called()
+                command.assert_not_called()
+                self.assertFalse(self.output.exists())
+
+    def test_mutated_request_or_bound_source_is_never_reused(self):
+        self.run_workflow()
+        original = json.dumps(self.payload)
+        self.payload["tesseract"]["page_segmentation_mode"] = "3"
+        self.write_manifest()
+        OcrWorkflowTests.assert_rejected_unchanged(self)
+        self.payload = json.loads(original)
+        self.write_manifest()
+        self.use_source(orientation=1)  # Valid native image with a changed hash.
+        OcrWorkflowTests.assert_rejected_unchanged(self)
+
+    def test_native_v13_mixed_tiff_and_jpeg_keeps_media_and_raw_contract(self):
+        self.use_source(index=1, suffix=".tif", actual_format="TIFF")
+        report = self.run_workflow()
+        self.assertEqual(report["status"], "awaiting_review")
+        package = workflow._read(self.output / "review/package-manifest.json")
+        self.assertEqual([page["source_media_type"] for page in package["pages"]], ["image/jpeg", "image/tiff"])
+        self.assertEqual(workflow._read(self.output / "tesseract/page-batch-manifest.json")["schema_version"], "1.1")
+    def test_insufficient_raw_result_blocks_evidence_and_review_without_reinference(self):
+        def low_quality(command):
+            result = self.tesseract(command)
+            if command[-1] == "tsv":
+                result.stdout = result.stdout.replace("92\t", "1\t").replace("91\t", "2\t")
+            return result
+        with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                   side_effect=AssertionError("hidden preprocessing")):
+            report = self.run_workflow(command_runner=low_quality)
+        self.assertEqual(report["status"], "partial_unreviewed")
+        self.assertEqual(report["block_reason"], "tesseract_diagnostic_not_comparable")
+        self.assertEqual(report["blocked_page_ids"], ["p0", "p1"])
+        self.assertFalse((self.output / "tesseract-evidence").exists())
+        self.assertFalse((self.output / "review").exists())
+        text = workflow._read(self.output / "tesseract/texts/archive/doc0.text.json")
+        self.assertEqual(text["ocr_quality_gate_status"], "diagnostic_insufficient")
+        self.assertFalse(text["ocr_run_provenance"]["adapter_ready"])
+        before = self.snapshot()
+        factory, command = Mock(side_effect=AssertionError("Paddle repeated")), Mock(side_effect=AssertionError("Tesseract repeated"))
+        resumed = self.run_workflow(resume=True, runner_factory=factory, command_runner=command)
+        self.assertEqual(resumed["status"], "partial_unreviewed")
+        self.assertEqual(self.snapshot(), before)
+        factory.assert_not_called()
         command.assert_not_called()
 
 

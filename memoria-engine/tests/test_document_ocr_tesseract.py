@@ -68,6 +68,46 @@ def usable_explicit_runner(command: list[str]) -> subprocess.CompletedProcess[st
 
 
 class DocumentOcrTesseractTests(unittest.TestCase):
+    def test_raw_pixel_retry_keeps_low_quality_text_diagnostic_without_preprocessing(self):
+        with workspace_temp_dir() as tmp_dir:
+            raw, image, sidecar, metadata_path, _, _ = explicit_metadata_fixture(tmp_dir)
+            commands = []
+            def runner(command):
+                commands.append(command)
+                result = usable_explicit_runner(command)
+                if command[-1] == "tsv":
+                    result.stdout = result.stdout.replace("92\t", "1\t").replace("91\t", "2\t")
+                return result
+            with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                       side_effect=AssertionError("hidden preprocessing")):
+                result = run_document_ocr(
+                    file_path=image, sidecar_path=sidecar, root_dir=raw, output_dir=tmp_dir / "out",
+                    metadata_path=metadata_path, metadata_sha256=hashlib.sha256(metadata_path.read_bytes()).hexdigest(),
+                    sidecar_sha256=hashlib.sha256(sidecar.read_bytes()).hexdigest(),
+                    command_runner=runner, retry_policy="raw_pixels_only", page_segmentation_mode="3",
+                )
+            self.assertEqual(len(commands), 4)
+            self.assertEqual({command[1] for command in commands}, {str(image)})
+            self.assertEqual({command[command.index("--psm") + 1] for command in commands}, {"3", "12"})
+            payload = json.loads(Path(result["text_path"]).read_text())
+            self.assertEqual(payload["text"], "Testo valido")
+            self.assertEqual(payload["ocr_quality_gate_status"], "diagnostic_insufficient")
+            self.assertFalse(payload["ocr_preprocessing_enabled"])
+            self.assertFalse(payload["machine_pass"])
+            self.assertFalse(payload["auto_validation_enabled"])
+            self.assertFalse(payload["ocr_run_provenance"]["adapter_ready"])
+            self.assertIn("ocr_quality_insufficient", payload["ocr_run_provenance"]["reasons"])
+
+    def test_raw_retry_rejects_transforming_options_and_unknown_policy_before_inference(self):
+        for options in ({"preprocess_before_ocr": True}, {"enable_region_ocr": True}, {"retry_policy": "unknown"}):
+            with self.subTest(options=options), patch(
+                "caduti_fonti_report.document_analysis.ocr_tesseract._default_command_runner"
+            ) as runner:
+                with self.assertRaises(ValueError):
+                    run_document_ocr(file_path=Path("missing.jpg"),
+                                     **{"retry_policy": "raw_pixels_only", **options})
+                runner.assert_not_called()
+
     def test_explicit_metadata_preserves_identity_and_provenance_without_global_lookup(self):
         with workspace_temp_dir() as tmp_dir:
             raw, image, sidecar, metadata_path, metadata, _ = explicit_metadata_fixture(tmp_dir)

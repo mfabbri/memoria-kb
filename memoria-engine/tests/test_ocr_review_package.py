@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -64,6 +65,75 @@ class OcrReviewPackageTests(unittest.TestCase):
             tesseract_evidence={"p1": self.right}, lexicons={"p1": self.lexicon}, output_dir=self.output)
         args.update(overrides)
         return build_ocr_review_package(**args)
+
+    def use_jpeg(self, orientation=None):
+        self.image, self.variant = self.root / "original.jpg", self.root / "raw.jpg"
+        options = {}
+        if orientation is not None:
+            exif = Image.Exif()
+            exif[274] = orientation
+            options["exif"] = exif
+        Image.new("RGB", (20, 10), "white").save(self.image, **options)
+        self.sync_raster()
+
+    def sync_raster(self):
+        self.variant.write_bytes(self.image.read_bytes())
+        digest = hashlib.sha256(self.image.read_bytes()).hexdigest()
+        self.page["source"].update(path=str(self.image), sha256=digest)
+        self.evidence["source_image_hash"] = digest
+        self.evidence["source_page"]["original_page"].update(source_file=str(self.image), source_image_hash=digest)
+        variant = self.page["variants"][0]
+        variant.update(path=self.variant.name, sha256=digest)
+        variant["ocr_outputs"][0].update(artifact=self.variant.name, artifact_sha256=digest)
+        self.sync()
+
+    def test_native_jpeg_package_preserves_hash_frame_and_truthful_media_type(self):
+        self.use_jpeg()
+        before = self.image.read_bytes(), self.variant.read_bytes()
+        preview = self.run_package()
+        self.assertFalse(self.output.exists())
+        self.assertEqual(preview["pages"][0]["frame_locator"], {
+            "frame_index": 0, "basis": "verified_single_frame_jpeg"})
+        report = self.run_package(apply=True)
+        self.assertEqual(report["pages"][0]["source_media_type"], "image/jpeg")
+        self.assertEqual(report["review_status"], "unreviewed")
+        self.assertFalse(report["machine_pass"])
+        self.assertFalse(report["auto_validation_enabled"])
+        folder = self.output / "pages/p1.evidence/review"
+        scaffold = json.loads((folder / "scaffold-manifest.json").read_text())
+        self.assertEqual(scaffold["inputs"]["image_media_type"], "image/jpeg")
+        with Image.open(self.image) as original:
+            for path in (folder / "crops").glob("*.png"):
+                with Image.open(path) as crop:
+                    self.assertEqual(crop.tobytes(), original.tobytes())
+        self.assertEqual((self.image.read_bytes(), self.variant.read_bytes()), before)
+        self.assertFalse(list(self.output.rglob("*.tif")))
+        self.assertFalse(list(self.output.rglob("*.tiff")))
+
+    def test_invalid_native_jpeg_fails_before_any_temporary_stage(self):
+        for case in ("format", "orientation", "corrupt", "frame", "hash", "dimensions"):
+            with self.subTest(case=case):
+                self.evidence["source_page"].pop("frame_index", None)
+                self.use_jpeg(orientation=6 if case == "orientation" else 1)
+                if case == "format":
+                    Image.new("L", (20, 10)).save(self.image, format="PNG")
+                    self.sync_raster()
+                elif case == "corrupt":
+                    self.image.write_bytes(self.image.read_bytes()[:70])
+                    self.sync_raster()
+                elif case == "frame":
+                    self.evidence["source_page"]["frame_index"] = 1
+                    self.sync()
+                elif case == "hash": self.image.write_bytes(self.image.read_bytes() + b"changed")
+                elif case == "dimensions":
+                    Image.new("RGB", (21, 10)).save(self.image)
+                    self.sync_raster()
+                before = {str(p): p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+                with patch("caduti_fonti_report.document_analysis.ocr_review_package.tempfile.TemporaryDirectory",
+                           side_effect=AssertionError("invalid JPEG created a stage")):
+                    with self.assertRaises((ValueError, OSError)):
+                        self.run_package(apply=True)
+                self.assertEqual(before, {str(p): p.read_bytes() for p in self.root.rglob("*") if p.is_file()})
 
     def test_preview_is_clean_and_deterministic(self):
         before = {p.name: p.read_bytes() for p in self.root.iterdir()}

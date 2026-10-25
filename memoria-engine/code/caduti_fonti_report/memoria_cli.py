@@ -3163,7 +3163,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_process = documents_subparsers.add_parser("process", help="Mostra il batch OCR; esegue e scrive output solo con --apply.")
     documents_process_input = documents_process.add_mutually_exclusive_group(required=True)
     documents_process_input.add_argument("--root", help="Directory radice delle immagini gia' registrate.")
-    documents_process_input.add_argument("--workflow-manifest", help="OcrWorkflow v1.0 (T36/T37), v1.1 (Tesseract diagnostico), v1.2 (package review incompleto con lessici espliciti).")
+    documents_process_input.add_argument("--workflow-manifest", help="OcrWorkflow v1.0 (T36/T37), v1.1 (Tesseract diagnostico), v1.2 (package review TIFF), v1.3 (package review TIFF/JPEG nativo con lessici espliciti).")
     documents_process.add_argument("--resume", action="store_true", help="Riprende esclusivamente il workflow con checkpoint verificati.")
     documents_process.add_argument("--output-dir", required=True, help="Directory esplicita per gli output del processo OCR.")
     documents_process.add_argument("--language", default="ita", help="Lingua OCR Tesseract.")
@@ -3204,7 +3204,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_transform_batch = documents_subparsers.add_parser(
         "ocr-transform-batch", help="T36 da manifest esplicito con checkpoint per pagina; preview senza --apply.",
     )
-    documents_transform_batch.add_argument("--manifest", required=True, help="JSON v1.0: pages con page_id, path TIFF e sha256 espliciti.")
+    documents_transform_batch.add_argument("--manifest", required=True, help="JSON v1.0: pages con page_id, path TIFF/JPEG e sha256 espliciti.")
     documents_transform_batch.add_argument("--output-dir", required=True, help="Directory esterna nuova; esistente solo con --resume.")
     documents_transform_batch.add_argument("--language", required=True)
     documents_transform_batch.add_argument("--text-detection-model-dir", required=True)
@@ -3233,9 +3233,9 @@ def build_parser() -> argparse.ArgumentParser:
     documents_transform_structure.add_argument("--apply", action="store_true", help="Scrive evidence, struttura, Markdown e run manifest; senza flag esegue preview read-only.")
     documents_transform_structure.set_defaults(handler=_command_documents_ocr_transform_structure)
     documents_tesseract_page_batch = documents_subparsers.add_parser(
-        "ocr-tesseract-page-batch", help="OCR Tesseract per pagine TIFF esplicite legate a T36; preview senza scritture."
+        "ocr-tesseract-page-batch", help="OCR Tesseract per pagine raster esplicite legate a T36; preview senza scritture."
     )
-    documents_tesseract_page_batch.add_argument("--manifest", required=True, help="TesseractPageBatchManifest JSON v1.0.")
+    documents_tesseract_page_batch.add_argument("--manifest", required=True, help="TesseractPageBatchManifest JSON v1.0/v1.1.")
     documents_tesseract_page_batch.add_argument("--output-dir", required=True, help="Directory dei nuovi ProcessedDocumentText.")
     documents_tesseract_page_batch.add_argument("--report", required=True, help="Nuovo rapporto JSON per pagina.")
     documents_tesseract_page_batch.add_argument("--language", default="ita")

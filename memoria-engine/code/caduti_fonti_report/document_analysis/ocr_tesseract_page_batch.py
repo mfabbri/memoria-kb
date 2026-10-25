@@ -11,7 +11,7 @@ from typing import Any
 
 import yaml
 
-from .ocr_tesseract import CommandRunner, run_document_ocr
+from .ocr_tesseract import CommandRunner, _validate_raw_image, run_document_ocr
 from .ocr_transform_structure import _required_sha256, _required_text, _sha256_file
 from .ocr_tesseract_from_t36 import _read
 from .transcription_registration import _text_relative_path, _validate_explicit_metadata
@@ -91,6 +91,8 @@ def run_tesseract_page_batch(
     and pages with page_id, source_id, source_document_id, raw_tiff, sidecar and
     metadata. Each file reference contains path and sha256. Relative paths resolve
     from this manifest's directory; metadata internal paths use root_dir.
+    v1.1 replaces raw_tiff with raw_image (native TIFF/JPEG) and retries only PSM
+    on the same pixels; preprocessing/region OCR are forbidden.
     """
     if apply and (_preflight_payloads is not None or _existing_stage):
         raise ValueError("Il preflight workflow in memoria non puo' eseguire OCR.")
@@ -103,8 +105,12 @@ def run_tesseract_page_batch(
     if set(manifest) != {"@type", "schema_version", "root_dir", "t36_manifest", "pages"}:
         raise ValueError("Campi manifest v1 incompleti o sconosciuti.")
     if (manifest.get("@type") != "TesseractPageBatchManifest"
-            or manifest.get("schema_version") != "1.0"):
-        raise ValueError("Atteso TesseractPageBatchManifest v1.0.")
+            or manifest.get("schema_version") not in {"1.0", "1.1"}):
+        raise ValueError("Atteso TesseractPageBatchManifest v1.0 o v1.1.")
+    native_raw = manifest["schema_version"] == "1.1"
+    raw_role = "raw_image" if native_raw else "raw_tiff"
+    if native_raw and (preprocess_before_ocr or enable_region_ocr):
+        raise ValueError("Batch v1.1 raw_pixels_only esclude preprocessing e OCR di regioni trasformate.")
     base = manifest_path.parent
     root = _resolve(base, manifest.get("root_dir"))
     if not root.is_dir():
@@ -160,7 +166,7 @@ def run_tesseract_page_batch(
     from PIL import Image
     for page in pages:
         if not isinstance(page, dict) or set(page) != {
-            "page_id", "source_id", "source_document_id", "raw_tiff", "sidecar", "metadata"
+            "page_id", "source_id", "source_document_id", raw_role, "sidecar", "metadata"
         }:
             raise ValueError("Campi pagina incompleti o sconosciuti.")
         page_id, source_id, document_id = (
@@ -171,7 +177,7 @@ def run_tesseract_page_batch(
             raise ValueError("Identita pagina/documento duplicata o page_id T36 sconosciuto.")
         seen_ids.add(page_id.casefold())
         seen_documents.add(identity)
-        raw, raw_hash = reference(page["raw_tiff"])
+        raw, raw_hash = reference(page[raw_role])
         sidecar, sidecar_hash = reference(page["sidecar"])
         metadata, metadata_hash = reference(page["metadata"])
         _read(metadata)  # Reject duplicate JSON keys before the shared legacy validator.
@@ -184,10 +190,16 @@ def run_tesseract_page_batch(
             raise ValueError("Sorgente T36 mancante.")
         source_path = _resolve(t36_path.parent, source.get("path"))
         if _key(raw) != _key(source_path) or raw_hash != source.get("sha256"):
-            raise ValueError("TIFF pagina non corrisponde alla sorgente raw T36.")
-        with Image.open(raw) as image:
-            if image.format != "TIFF" or image.n_frames != 1:
-                raise ValueError("Richiesto TIFF single-frame per ogni pagina.")
+            raise ValueError("Raster pagina non corrisponde alla sorgente raw T36.")
+        if native_raw:
+            dimensions = source.get("image_dimensions")
+            if dimensions is None:
+                raise ValueError("Dimensioni sorgente T36 richieste per batch v1.1.")
+            _validate_raw_image(raw, dimensions)
+        else:
+            with Image.open(raw) as image:
+                if image.format != "TIFF" or image.n_frames != 1:
+                    raise ValueError("Richiesto TIFF single-frame per ogni pagina.")
         payload, _ = _validate_explicit_metadata(
             metadata_path=metadata, metadata_sha256=metadata_hash,
             file_path=raw, sidecar_path=sidecar, root_dir=root,
@@ -209,7 +221,7 @@ def run_tesseract_page_batch(
         for target in [report_target, *(item[-1] for item in prepared)]:
             _new_target(target)
     report: dict[str, Any] = {
-        "@type": "TesseractPageBatchReport", "schema_version": "1.0",
+        "@type": "TesseractPageBatchReport", "schema_version": manifest["schema_version"],
         "manifest": {"path": str(manifest_path), "sha256": inputs[manifest_path]},
         "t36_manifest": {"path": str(t36_path), "sha256": t36_hash},
         "configuration": {"tesseract_path": tesseract_path, "language": language,
@@ -220,11 +232,14 @@ def run_tesseract_page_batch(
         "diagnostic_only": True, "review_status": "unreviewed",
         "operation_status": "applied" if apply else "preview", "pages": [],
     }
+    if native_raw:
+        report.update(machine_pass=False, auto_validation_enabled=False)
+        report["configuration"]["retry_policy"] = "raw_pixels_only"
     for page, raw, sidecar, metadata, target in prepared:
         record = {"page_id": page["page_id"], "source_id": page["source_id"],
                   "source_document_id": page["source_document_id"],
                   "inputs": {role: {"path": str(path), "sha256": inputs[path]}
-                             for role, path in (("raw_tiff", raw), ("sidecar", sidecar), ("metadata", metadata))},
+                             for role, path in ((raw_role, raw), ("sidecar", sidecar), ("metadata", metadata))},
                   "output_path": str(target), "status": "ready", "written": False}
         report["pages"].append(record)
         if not apply:
@@ -244,6 +259,7 @@ def run_tesseract_page_batch(
                     command_runner=command_runner, tesseract_path=tesseract_path, language=language,
                     page_segmentation_mode=page_segmentation_mode, engine_mode=engine_mode, dpi=dpi,
                     preprocess_before_ocr=preprocess_before_ocr, enable_region_ocr=enable_region_ocr,
+                    **({"retry_policy": "raw_pixels_only"} if native_raw else {}),
                 )
                 data = Path(result["text_path"]).read_bytes()
                 for path in (manifest_path, t36_path, raw, sidecar, metadata):

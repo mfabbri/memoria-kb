@@ -1,5 +1,100 @@
 # Current Next Increment
 
+## Direzione confermata nella sessione - 2026-10-25
+
+Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua
+originale insieme alla sua `DocumentStructure` e al Markdown derivato. Il
+percorso primario resta PP-OCRv5 T36 → T37; Tesseract è una seconda lettura
+diagnostica per confronto, non sostituisce la trascrizione primaria né alimenta
+T37. L'uso di un LLM/VLM è opzionale: si valuta solo se un dubbio misurato lo
+giustifica, senza renderlo prerequisito del flusso.
+
+L'obiettivo di ridurre a zero la revisione manuale resta condizionato a una
+soglia dimostrata su reference adjudicate e holdout indipendente. Non è ancora
+raggiunto: gli output reali disponibili restano esplorativi/unreviewed e la
+soglia 1%/5% non è calibrata. I pochi token del precedente Tesseract grezzo non
+sono un motivo per ricominciare il tuning: nel pilot JPG documentato T36
+PP-OCRv5 ha riconosciuto 98 e 343 token sulle stesse due pagine che Tesseract
+grezzo aveva reso con 3 e 8; il confronto è diagnostico e non prova accuratezza.
+La successiva versione v1.3 è stata verificata solo offline con fixture e
+runner iniettati, non ancora validata su un corpus reale.
+
+Riprendere dal gate di qualificazione visuale e lessicale della candidata
+coorte JPG, verificando prima gli artifact già disponibili e i dubbi effettivi.
+Non ripetere la classificazione visiva dei 995 TIFF né il pilot esplorativo di
+10 JPG; quelle attività non sono necessarie per integrare il workflow v1.3 o
+stabilire il prossimo gate.
+
+## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
+
+OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione
+del package di review su TIFF/JPEG. Conserva i campi e i lessici espliciti
+v1.2; v1.1/v1.2 rimangono TIFF-only. I raw restano byte-identici, i crop
+derivano dalle coordinate originali e i locator JPEG dichiarano `image/jpeg`.
+I retry Tesseract cambiano soltanto PSM sullo stesso file; un diagnostico
+non confrontabile produce `partial_unreviewed` e blocca evidence/review.
+Preview e preflight non avviano inferenza; apply e resume mantengono request,
+checkpoint e inventari hash, senza ripetere inferenza sugli stage completi.
+
+Verifica esclusivamente offline con immagini sintetiche e runner iniettati:
+JPG/JPEG validi, batch misto TIFF/JPEG, input malformati/EXIF non ammessi,
+request o sorgenti modificati e diagnostici insufficienti.
+Gate mirato: 37 test workflow e 8 test dispatcher CLI superati;
+`git diff --check` pulito. Nessuna OCR sul
+corpus, accesso a holdout o riclassificazione dei 995 TIFF. Il workflow termina
+`awaiting_review` soltanto per la preparazione degli artifact: non misura
+accuratezza e non chiude il gate visuale JPEG o la calibrazione T41.
+`machine_pass` e `auto_validation_enabled` restano false.
+
+## Workflow OCR v1.0 nativo per JPG/JPEG - 2026-10-21
+
+Il batch T36 e OcrWorkflow v1.0 ora accettano JPG/JPEG nativi, preservano
+l'hash byte-level del sorgente e le coordinate del raster, e rifiutano JPEG con
+orientamento EXIF diverso da 1. I rami v1.1/v1.2 con Tesseract/review restano
+TIFF-only. T37 produce evidence JSON, DocumentStructure JSON e Markdown
+dall'output OCR full-page dichiarato; non fonde i tile.
+
+Verifica offline: 72 test mirati passati tra workflow, batch, pilot, struttura
+e dispatcher CLI; quality review indipendente: altri 8 test passati.
+
+Prova reale isolata T36->T37 su due JPG gia classificati nel pilot esplorativo:
+RH_26_305_28_0051 (lista) e RH_26_305_28_0067 (prosa numerata). T36 ha
+completato 18 target OCR in 647,24 s, senza errori o riusi. T37 ha prodotto per
+entrambi evidence, struttura e Markdown: rispettivamente 51 regioni/38 blocchi
+e 59 regioni/59 blocchi. Gli hash di raw.jpg coincidono con quelli dei JPG
+sorgente. La lettura PP-OCRv5 raw contiene rispettivamente 98 e 343 token
+riconosciuti, contro i 3 e 8 del precedente Tesseract grezzo: questo conferma
+che il pilot precedente usava il percorso sbagliato, ma non misura accuratezza.
+Il run termina completed_unreviewed; machine_pass e
+auto_validation_enabled restano false.
+
+Run: `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t43-jpg-t36-t37-20261021`.
+La classificazione dei 995 TIFF non e' stata ripetuta. Il cutoff 1%/5% resta
+non calibrato: la prova JPG e' esplorativa e non sostituisce reference adjudicate
+o holdout indipendente.
+
+## Secondo motore Tesseract raw-native per TIFF/JPEG - 2026-10-22
+
+Il batch Tesseract accetta ora `TesseractPageBatchManifest` v1.1 con `raw_image`
+per TIFF/JPEG nativi; il contratto v1.0 `raw_tiff` resta invariato. Il path
+valida formato reale, frame singolo, EXIF JPEG assente/1, dimensioni e hash prima
+dell'inferenza. I retry possono cambiare PSM ma non alterare i pixel; un caso che
+richiede preprocessing resta `diagnostic_insufficient` e non entra nel confronto.
+
+Gate offline: 62 test mirati superati e review indipendente di 12 test senza
+blocchi; `git diff --check` pulito. Fixture JPEG arrivano a
+`OcrPageEvidence` con byte sorgente invariati e nessuna conversione TIFF.
+Nessuna OCR sul corpus, nessuna reference/holdout letta, nessuna classificazione
+dei 995 TIFF ripetuta; machine pass e auto-validazione restano false.
+
+Inventario di disponibilita' (solo percorsi/estensioni): il data root contiene
+999 TIFF (995 nel catalogo esistente, due unici fuori catalogo e due copie) e
+13.240 JPG piu' 65 JPEG. Il catalogo resta riutilizzabile; nessuna etichetta di
+layout o indipendenza e' inferita dal nome file. Review package/scaffold e
+workflow nativo sono ora disponibili come preparazione; restano da estendere
+i gate visuali JPEG prima di selezionare una coorte. Le 10 pagine del pilot
+restano fuori dal futuro holdout.
+
 ## Inferenza OCR reale dal CLI - 2026-10-18
 
 Per verificare l'inferenza end-to-end, `documents process --workflow-manifest`

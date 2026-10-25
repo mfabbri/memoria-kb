@@ -9,6 +9,7 @@ import tempfile
 from typing import Any, Mapping
 
 from .ocr_tesseract_evidence_adapter import adapt_tesseract_page_evidence
+from .ocr_tesseract import _validate_raw_image
 from .ocr_transform_structure import (
     _json_bytes, _manifest_artifact_path, _reject_constant, _required_sha256,
     _required_text, _safe_name, _sha256_bytes, _sha256_file, _unique_object,
@@ -64,7 +65,6 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
         inputs[path] = digest
         return {"path": str(path), "sha256": digest}
 
-    from PIL import Image
     for page, page_id in zip(pages, ids):
         source = page.get("source")
         if not isinstance(source, dict):
@@ -72,15 +72,12 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
         source_path = Path(_required_text(source.get("path"), "source.path")).resolve(strict=True)
         source_hash = _required_sha256(source.get("sha256"), "source.sha256")
         if _sha256_file(source_path) != source_hash:
-            raise ValueError(f"SHA-256 TIFF sorgente divergente per {page_id}.")
+            raise ValueError(f"SHA-256 raster sorgente divergente per {page_id}.")
         dimensions = source.get("image_dimensions")
         if (not isinstance(dimensions, dict) or set(dimensions) != {"width", "height"}
                 or any(type(dimensions[key]) is not int or dimensions[key] <= 0 for key in dimensions)):
             raise ValueError(f"Dimensioni sorgente non valide per {page_id}.")
-        with Image.open(source_path) as image:
-            if (image.format != "TIFF" or image.n_frames != 1
-                    or image.size != (dimensions["width"], dimensions["height"])):
-                raise ValueError("Serve un TIFF single-frame con dimensioni originali verificate.")
+        _validate_raw_image(source_path, dimensions)
         variants = page.get("variants")
         raw = [item for item in variants if isinstance(item, dict) and item.get("variant_id") == "raw"] if isinstance(variants, list) else []
         if len(raw) != 1:
@@ -89,7 +86,8 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
         variant_path = _manifest_artifact_path(source_manifest.parent, variant.get("path"))
         variant_hash = _required_sha256(variant.get("sha256"), "raw.sha256")
         if variant_hash != source_hash or _sha256_file(variant_path) != variant_hash:
-            raise ValueError("La variante raw deve essere byte-identica al TIFF sorgente.")
+            raise ValueError("La variante raw deve essere byte-identica al raster sorgente.")
+        _validate_raw_image(variant_path, dimensions)
         transform = variant.get("transform")
         if (not isinstance(transform, dict) or set(transform) != {"id", "parameters"}
                 or not isinstance(transform.get("id"), str) or not transform["id"].strip()
@@ -114,7 +112,7 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
             raise ValueError("image_transform evidence divergente dalla variante raw.")
         if "frame_index" in primary["source_page"] and (
                 type(primary["source_page"]["frame_index"]) is not int or primary["source_page"]["frame_index"] != 0):
-            raise ValueError("frame_index incompatibile con TIFF single-frame.")
+            raise ValueError("frame_index incompatibile con raster single-frame.")
         text_path = Path(processed_text[page_id]).resolve(strict=True)
         text, text_bytes = _read(text_path)
         content = text.get("text")

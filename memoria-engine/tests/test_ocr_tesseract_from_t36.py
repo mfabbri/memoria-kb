@@ -7,6 +7,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -15,6 +16,7 @@ from PIL import Image
 from caduti_fonti_report.document_analysis.ocr_evidence_comparison import compare_ocr_page_evidence
 from caduti_fonti_report.document_analysis.ocr_tesseract import _layout_payload, _parse_tesseract_tsv, _run_provenance
 from caduti_fonti_report.document_analysis import ocr_tesseract_from_t36 as bridge
+from caduti_fonti_report.document_analysis.ocr_tesseract_page_batch import run_tesseract_page_batch
 from caduti_fonti_report.memoria_cli import main
 
 
@@ -79,6 +81,84 @@ class TesseractFromT36Tests(unittest.TestCase):
 
     def snapshot(self):
         return {str(path.relative_to(self.root)): path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
+
+    def use_jpeg(self, orientation=None):
+        old_image, old_raw, old_hash = self.image, self.raw, self.digest(self.image)
+        self.image, self.raw = self.root / "source.jpg", self.root / "raw.jpg"
+        options = {}
+        if orientation is not None:
+            exif = Image.Exif()
+            exif[274] = orientation
+            options["exif"] = exif
+        Image.new("RGB", (300, 160), "white").save(self.image, **options)
+        self.raw.write_bytes(self.image.read_bytes())
+        for attr in ("manifest_data", "payload"):
+            serialized = json.dumps(getattr(self, attr))
+            for old, new in ((old_hash, self.digest(self.image)), (str(old_image), str(self.image)),
+                             (old_raw.name, self.raw.name)):
+                # JSON escaping also works for Windows paths.
+                serialized = serialized.replace(json.dumps(old)[1:-1], json.dumps(new)[1:-1])
+            setattr(self, attr, json.loads(serialized))
+        self.sync()
+
+    def test_native_jpeg_batch_to_evidence_without_intermediate_tiff(self):
+        self.use_jpeg(orientation=1)
+        self.manifest_data["pages"][0]["status"] = "completed"
+        self.sync()
+        sidecar, metadata, batch = (self.root / name for name in ("source.yaml", "metadata.json", "batch.json"))
+        sidecar.write_text(json.dumps({"source_id": "archive", "document_id": "synthetic",
+                                      "local_path": str(self.image)}))
+        metadata.write_text(json.dumps({"@type": "ProcessedDocumentMetadata", "source_id": "archive",
+            "source_document_id": "synthetic", "document_class": "image_scan", "raw_file": self.image.name,
+            "sidecar_file": sidecar.name, "sha256": self.digest(self.image), "claim_eligible": False}))
+        def ref(path):
+            return {"path": path.name, "sha256": self.digest(path)}
+        batch.write_text(json.dumps({"@type": "TesseractPageBatchManifest", "schema_version": "1.1",
+            "root_dir": ".", "t36_manifest": ref(self.manifest), "pages": [{"page_id": "p1",
+            "source_id": "archive", "source_document_id": "synthetic", "raw_image": ref(self.image),
+            "metadata": ref(metadata), "sidecar": ref(sidecar)}]}))
+        commands = []
+        def runner(command):
+            commands.append(command)
+            text = "REPORT VALID"
+            if command[-1] == "tsv":
+                text = ("level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n"
+                        "1\t1\t0\t0\t0\t0\t0\t0\t300\t160\t-1\t\n"
+                        "5\t1\t1\t1\t1\t1\t10\t10\t90\t20\t88\tREPORT\n"
+                        "5\t1\t1\t1\t1\t2\t110\t10\t90\t20\t88\tVALID\n")
+            return subprocess.CompletedProcess(command, 0, stdout=text, stderr="")
+        tiffs_before = set(self.root.rglob("*.tif"))
+        originals = self.image.read_bytes(), self.raw.read_bytes()
+        with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                   side_effect=AssertionError("hidden preprocessing")):
+            batch_report = run_tesseract_page_batch(manifest_path=batch, output_dir=self.root / "texts",
+                report_path=self.root / "batch-report.json", language="deu", apply=True, command_runner=runner)
+        self.assertEqual(batch_report["summary"]["success"], 1)
+        processed = Path(batch_report["pages"][0]["output_path"])
+        report = self.run_bridge(processed_text={"p1": processed}, apply=True)
+        evidence = json.loads(Path(report["pages"][0]["evidence"]["path"]).read_text())
+        self.assertEqual(evidence["@type"], "OcrPageEvidence")
+        self.assertEqual(evidence["source_image_hash"], self.digest(self.image))
+        self.assertEqual(evidence["regions"][0]["geometry"]["bbox"], [10, 10, 200, 30])
+        self.assertFalse(evidence["machine_pass"])
+        self.assertFalse(evidence["auto_validation_enabled"])
+        self.assertEqual({command[1] for command in commands}, {str(self.image)})
+        self.assertEqual(set(self.root.rglob("*.tif")), tiffs_before)
+        self.assertEqual((self.image.read_bytes(), self.raw.read_bytes()), originals)
+
+    def test_jpeg_orientation_and_mislabeled_raw_fail_before_output(self):
+        for orientation in (6, 1):
+            with self.subTest(orientation=orientation):
+                self.use_jpeg(orientation)
+                if orientation == 1:
+                    raw = self.manifest_data["pages"][0]["variants"][0]
+                    raw["path"] = "raw.tif"
+                    (self.root / "raw.tif").write_bytes(self.raw.read_bytes())
+                    raw["ocr_outputs"][0]["artifact"] = "raw.tif"
+                    self.sync()
+                with self.assertRaises(ValueError):
+                    self.run_bridge(apply=True)
+                self.assertFalse(self.output.exists())
 
     def test_preview_is_read_only_and_deterministic(self):
         before = self.snapshot()

@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -67,6 +68,71 @@ class OcrReviewScaffoldTest(unittest.TestCase):
             tesseract_evidence_path=self.root / "tesseract.json", comparison_path=self.root / "comparison.json",
             lexicon_path=self.root / "lexicon.json", output_dir=self.output, apply=apply, tile_size=128,
             variant_image_path=variant_image_path)
+
+    def _sync_raster(self, frame=0):
+        digest = hashlib.sha256(self.image.read_bytes()).hexdigest()
+        self.evidence["source_image_hash"] = digest
+        self.evidence["source_page"]["frame_index"] = frame
+        self.evidence["source_page"]["original_page"].update(source_image_hash=digest, source_file=self.image.name)
+        self.tesseract.update(source_image_hash=digest, source_page=copy.deepcopy(self.evidence["source_page"]))
+        self._write("evidence.json", self.evidence)
+        self._write("tesseract.json", self.tesseract)
+        self._write("structure.json", reconstruct_document_structure(evidence=self.evidence, profile="numbered_report").to_dict())
+        self._make_comparison()
+
+    def test_native_jpeg_crops_use_original_pixels_and_truthful_locator(self):
+        self.image = self.root / "page.jpg"
+        exif = Image.Exif()
+        exif[274] = 1
+        image = Image.new("RGB", (20, 10), "white")
+        image.putpixel((0, 0), (12, 30, 200))
+        image.save(self.image, exif=exif)
+        self._sync_raster()
+        before = self.image.read_bytes()
+        report = self._scaffold(apply=True)
+        manifest = json.loads((self.output / "scaffold-manifest.json").read_text())
+        self.assertEqual(manifest["inputs"]["image_media_type"], "image/jpeg")
+        self.assertEqual(report["frame_locator"]["basis"], "verified_single_frame_jpeg")
+        self.assertEqual(report["review_status"], "unreviewed")
+        self.assertFalse(report["authorizations"]["machine_pass"])
+        self.assertEqual(before, self.image.read_bytes())
+        with Image.open(self.image) as original:
+            for path in (self.output / "crops").glob("*.png"):
+                with Image.open(path) as crop:
+                    self.assertEqual(crop.size, original.size)
+                    self.assertEqual(crop.tobytes(), original.tobytes())
+
+    def test_invalid_jpeg_fails_before_any_output_or_temporary_stage(self):
+        for case in ("format", "orientation", "corrupt", "frame", "hash"):
+            with self.subTest(case=case):
+                self.image = self.root / "page.jpeg"
+                options = {}
+                if case == "orientation":
+                    exif = Image.Exif()
+                    exif[274] = 6
+                    options["exif"] = exif
+                Image.new("RGB", (20, 10), "white").save(self.image, **options)
+                if case == "format": Image.new("L", (20, 10)).save(self.image, format="PNG")
+                if case == "corrupt": self.image.write_bytes(self.image.read_bytes()[:70])
+                self._sync_raster(frame=1 if case == "frame" else 0)
+                if case == "hash": self.image.write_bytes(self.image.read_bytes() + b"changed")
+                before = {str(p): p.read_bytes() for p in self.root.rglob("*") if p.is_file()}
+                with patch("caduti_fonti_report.document_analysis.ocr_review_scaffold.tempfile.TemporaryDirectory",
+                           side_effect=AssertionError("invalid JPEG created a stage")):
+                    with self.assertRaises((ValueError, OSError)):
+                        self._scaffold(apply=True)
+                self.assertEqual(before, {str(p): p.read_bytes() for p in self.root.rglob("*") if p.is_file()})
+
+    def test_tiff_multipage_scaffold_keeps_explicit_selected_frame(self):
+        Image.new("L", (20, 10), 255).save(self.image, save_all=True,
+                                         append_images=[Image.new("L", (20, 10), 23)])
+        self._sync_raster(frame=1)
+        report = self._scaffold(apply=True)
+        self.assertEqual(report["frame_locator"], {"frame_index": 1,
+            "basis": "explicit_tiff_frame_index", "media_type": "image/tiff"})
+        for path in (self.output / "crops").glob("*.png"):
+            with Image.open(path) as crop:
+                self.assertEqual(set(crop.tobytes()), {23})
 
     def test_raw_byte_copy_requires_actual_matching_variant(self):
         self.evidence["source_page"].update(variant_id="raw", target="full_page", tile_id=None)

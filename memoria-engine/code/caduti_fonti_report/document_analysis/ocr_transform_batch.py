@@ -2,7 +2,7 @@
 
 Input v1: {"schema_version": "1.0", "pages": [{"page_id": "p1",
 "path": "scan.tif", "sha256": "<64 lowercase hex characters>"}]}.
-Relative TIFF paths resolve against the input manifest, never the working directory.
+TIFF/JPEG paths resolve against the input manifest, never the working directory.
 """
 from __future__ import annotations
 
@@ -56,10 +56,9 @@ def _inputs(manifest_path: Path) -> list[dict[str, str]]:
         path_text = pilot._required_text(item["path"], "path")
         source = Path(path_text)
         source = (source if source.is_absolute() else manifest_path.parent / source).resolve(strict=True)
-        if not source.is_file() or source.suffix.lower() not in {".tif", ".tiff"}:
-            raise ValueError(f"Input TIFF non valido: {source}")
+        pilot._validate_batch_source(source)
         if str(source).casefold() in sources:
-            raise ValueError("TIFF duplicato nel manifest batch.")
+            raise ValueError("Immagine duplicata nel manifest batch.")
         sources.add(str(source).casefold())
         digest = item["sha256"]
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest) or pilot._sha256_file(source) != digest:

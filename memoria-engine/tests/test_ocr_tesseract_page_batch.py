@@ -25,10 +25,11 @@ def ref(path):
     return {"path": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
-def fixture(base):
+def fixture(base, native_format=None):
     pages, sources = [], []
     for index in (1, 2):
-        raw, sidecar, metadata = (base / f"p{index}{suffix}" for suffix in (".tiff", ".yaml", ".metadata.json"))
+        raw, sidecar, metadata = (base / f"p{index}{suffix}" for suffix in (
+            ".jpg" if native_format == "JPEG" else ".tiff", ".yaml", ".metadata.json"))
         Image.new("RGB", (100, 100), "white").save(raw)
         write(sidecar, {"source_id": "archive", "document_id": f"doc{index}", "local_path": str(raw)})
         write(metadata, {"@type": "ProcessedDocumentMetadata", "source_id": "archive",
@@ -36,13 +37,15 @@ def fixture(base):
                          "raw_file": raw.name, "sidecar_file": sidecar.name,
                          "sha256": ref(raw)["sha256"], "claim_eligible": False})
         pages.append({"page_id": f"p{index}", "source_id": "archive", "source_document_id": f"doc{index}",
-                      "raw_tiff": ref(raw), "sidecar": ref(sidecar), "metadata": ref(metadata)})
+                      "raw_image" if native_format else "raw_tiff": ref(raw), "sidecar": ref(sidecar), "metadata": ref(metadata)})
         sources.append({"page_id": f"p{index}", "status": "completed",
                         "source": {"path": str(raw), "sha256": ref(raw)["sha256"]}})
+        if native_format:
+            sources[-1]["source"]["image_dimensions"] = {"width": 100, "height": 100}
     t36 = base / "t36.json"
     write(t36, {"@type": "OcrTransformPilot", "schema_version": "1.0", "review_status": "unreviewed",
                 "accuracy_claim": "none_without_human_reference", "pages": sources})
-    manifest = {"@type": "TesseractPageBatchManifest", "schema_version": "1.0", "root_dir": ".",
+    manifest = {"@type": "TesseractPageBatchManifest", "schema_version": "1.1" if native_format else "1.0", "root_dir": ".",
                 "t36_manifest": ref(t36), "pages": pages}
     path = base / "batch.json"
     write(path, manifest)
@@ -61,6 +64,64 @@ def fake_runner(command):
 
 
 class TesseractPageBatchTests(unittest.TestCase):
+    def test_native_v11_preserves_original_bytes_and_uses_only_raw_pixels(self):
+        for raster in ("JPEG", "TIFF"):
+            with self.subTest(raster=raster), tempfile.TemporaryDirectory() as temporary:
+                base = Path(temporary)
+                path, manifest = fixture(base, raster)
+                originals = {base / page["raw_image"]["path"]: (base / page["raw_image"]["path"]).read_bytes()
+                             for page in manifest["pages"]}
+                runner = Mock(side_effect=fake_runner)
+                with patch("caduti_fonti_report.document_analysis.ocr_tesseract.preprocess_dark_foreground_for_ocr",
+                           side_effect=AssertionError("raw policy preprocessed")):
+                    report = self.run_batch(path, runner, apply=True)
+                self.assertEqual(report["summary"]["success"], 2)
+                self.assertEqual(report["configuration"]["retry_policy"], "raw_pixels_only")
+                self.assertFalse(report["machine_pass"])
+                self.assertFalse(report["auto_validation_enabled"])
+                self.assertEqual({Path(call.args[0][1]) for call in runner.call_args_list}, set(originals))
+                for raw, data in originals.items():
+                    self.assertEqual(raw.read_bytes(), data)
+                payload = json.loads((base / "out/archive/doc1.text.json").read_text())
+                self.assertEqual(payload["ocr_retry_policy"], "raw_pixels_only")
+                self.assertTrue(payload["ocr_run_provenance"]["adapter_ready"])
+
+    def test_v11_invalid_native_raster_or_transform_aborts_entire_batch(self):
+        cases = ("format", "orientation", "truncated", "dimensions", "missing_dimensions", "multiframe",
+                 "preprocess", "regions", "old_key")
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
+                base = Path(temporary)
+                path, manifest = fixture(base, "TIFF" if case == "multiframe" else "JPEG")
+                page = manifest["pages"][1]
+                raw = base / page["raw_image"]["path"]
+                t36 = json.loads((base / "t36.json").read_text())
+                source = t36["pages"][1]["source"]
+                if case == "format": Image.new("L", (100, 100)).save(raw, format="PNG")
+                elif case == "orientation":
+                    exif = Image.Exif()
+                    exif[274] = 6
+                    Image.new("RGB", (100, 100)).save(raw, exif=exif)
+                elif case == "truncated": raw.write_bytes(raw.read_bytes()[:80])
+                elif case == "dimensions": source["image_dimensions"]["width"] = 101
+                elif case == "missing_dimensions": source.pop("image_dimensions")
+                elif case == "multiframe":
+                    Image.new("L", (100, 100)).save(raw, format="TIFF", save_all=True,
+                                                    append_images=[Image.new("L", (100, 100))])
+                elif case == "old_key": page["raw_tiff"] = page.pop("raw_image")
+                if case != "old_key": page["raw_image"] = ref(raw)
+                source["sha256"] = ref(raw)["sha256"]
+                write(base / "t36.json", t36)
+                manifest["t36_manifest"] = ref(base / "t36.json")
+                write(path, manifest)
+                before = sorted(str(item) for item in base.rglob("*"))
+                runner = Mock(side_effect=AssertionError("invalid input reached OCR"))
+                with self.assertRaises((ValueError, OSError)):
+                    self.run_batch(path, runner, apply=True, preprocess_before_ocr=case == "preprocess",
+                                   enable_region_ocr=case == "regions")
+                runner.assert_not_called()
+                self.assertEqual(sorted(str(item) for item in base.rglob("*")), before)
+
     def run_batch(self, path, runner, **kwargs):
         return run_tesseract_page_batch(manifest_path=path, output_dir=path.parent / "out",
                                         report_path=path.parent / "report.json", command_runner=runner, **kwargs)

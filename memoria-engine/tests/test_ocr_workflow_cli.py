@@ -15,6 +15,30 @@ from caduti_fonti_report.memoria_cli import main as memoria_main  # noqa: E402
 
 
 class OcrWorkflowCliTests(unittest.TestCase):
+    def test_v10_jpeg_dispatcher_produces_transcript_and_structure_offline(self) -> None:
+        from test_ocr_workflow import OcrWorkflowJpegTests
+        from caduti_fonti_report.document_analysis import ocr_workflow as workflow
+        jpeg_fixture = OcrWorkflowJpegTests()
+        jpeg_fixture.setUp()
+        self.addCleanup(jpeg_fixture.doCleanups)
+        jpeg_fixture.use_jpeg()
+        fixture = jpeg_fixture.fixture
+        arguments = ["documents", "process", "--workflow-manifest", str(fixture.manifest),
+                     "--output-dir", str(fixture.output), "--apply"]
+        with redirect_stdout(io.StringIO()), patch.object(
+            workflow.pilot, "create_local_paddle_ocr_v5_runner", return_value=fixture.runner
+        ) as factory:
+            self.assertEqual(memoria_main(arguments), 0)
+            factory.assert_called_once()
+            self.assertTrue((fixture.output / "t37/evidence/p0.evidence.json").is_file())
+            self.assertTrue((fixture.output / "t37/structure/p0.structure.json").is_file())
+            self.assertIn("Synthetic report", (fixture.output / "t37/markdown/p0.md").read_text())
+            before = fixture.snapshot()
+            factory.reset_mock()
+            self.assertEqual(memoria_main(arguments + ["--resume"]), 0)
+            factory.assert_not_called()
+            self.assertEqual(fixture.snapshot(), before)
+
     def test_v11_dispatcher_runs_and_resumes_both_engines_offline(self) -> None:
         from test_ocr_workflow import OcrWorkflowV11Tests
         fixture = OcrWorkflowV11Tests()
@@ -27,6 +51,15 @@ class OcrWorkflowCliTests(unittest.TestCase):
         package = json.loads((fixture.output / "review/package-manifest.json").read_text())
         self.assertEqual(package["status"], "template_incomplete")
         self.assertEqual(package["review_status"], "unreviewed")
+
+    def test_v13_dispatcher_prepares_native_jpeg_review_and_resumes_offline(self) -> None:
+        from test_ocr_workflow import OcrWorkflowV13Tests
+        fixture = OcrWorkflowV13Tests()
+        self.assert_dispatcher_runs_and_resumes(fixture, "awaiting_review")
+        package = json.loads((fixture.output / "review/package-manifest.json").read_text())
+        self.assertTrue(all(page["source_media_type"] == "image/jpeg" for page in package["pages"]))
+        self.assertFalse(package["machine_pass"])
+        self.assertFalse(package["auto_validation_enabled"])
 
     def assert_dispatcher_runs_and_resumes(self, fixture, expected_status) -> None:
         from caduti_fonti_report.document_analysis import ocr_workflow as workflow

@@ -1,14 +1,14 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "in_progress",
-  "selected_at": "2026-10-18T16:06:51Z",
-  "updated_at": "2026-10-18T17:39:26Z",
+  "status": "completed",
+  "selected_at": "2026-10-22T19:15:51Z",
+  "updated_at": "2026-10-22T19:21:38Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Feature OCR hash-bound per la calibrazione T41 - 2026-10-18",
-      "reason": "La baseline diagnostica versionata dal bundle e' stata implementata; va verificato se discrimina errori materiali sulle sole label adjudicate di calibration, prima di definire un cutoff."
+    "section": "Feature OCR hash-bound per la calibrazione T41 - 2026-10-18",
+      "reason": "Estendere il secondo motore e i successivi gate JPG prima di costruire una coorte calibration/holdout; la base di 995 TIFF resta catalogata e non va riclassificata."
     },
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -17,69 +17,68 @@
     }
   ],
   "increment": {
-    "id": "ocr-real-calibration-intake-20261018",
-    "title": "Calibrazione OCR su evidenze reali",
-    "objective": "Eseguire il flusso CLI sui soli dati reali di calibrazione, legare evidence e score a identità documentali autorevoli e stimare il cutoff solo con label materiali adjudicate.",
+    "id": "ocr-workflow-jpg-v13-20261022",
+    "title": "Orchestrazione OCR JPG con workflow v1.3",
+    "objective": "Integrare il batch Tesseract raw_image v1.1 e i gate di review JPG in una versione OcrWorkflow esplicita, preservando i contratti TIFF v1.1/v1.2, provenance e semantica preview/apply/resume.",
     "scope": [
-      "Usare un nuovo run CLI OCR isolato quando si verifica l'inferenza; usare output persistiti solo per controlli che non richiedono inferenza.",
-      "Preparare e verificare material-error drafts soltanto per reference accuracy-eligible della partizione calibration.",
-      "Produrre feature e score solo quando source_document_id e input hash sono attestati; per questa coorte l'utente dichiara ogni TIFF selezionato documento autonomo.",
-      "Calibrare soltanto con label materiali adjudicate complete; mantenere holdout sigillato e auto-validation disabilitata."
+      "Aggiungere OcrWorkflow v1.3 per instradare JPG/JPEG a T36-T37 v1.0, batch Tesseract v1.1 raw_image e gate review compatibile.",
+      "Mantenere v1.1/v1.2 TIFF-only e preservare checkpoint, digest input e comportamento resume.",
+      "Preview valida source JPG, manifest e output prima dell'inferenza; apply scrive solo in destinazione nuova esplicita.",
+      "Mantenere output diagnostici/unreviewed e machine_pass=false."
     ],
     "out_of_scope": [
-      "Definire un modello predittivo o pesi appresi senza label materiali adjudicate.",
-      "Usare lo score per auto-accettazione o dichiararlo probabilità di errore.",
-      "Consultare o usare label, score o membership del holdout.",
-      "Inventare source_document_id dal nome file o assegnare automaticamente label materiali."
+      "Estendere la formula o la calibrazione risk-features/score o abilitare auto-validation.",
+      "Avviare OCR reale su corpus JPG o creare la coorte calibration/holdout.",
+      "Rieseguire la classificazione visiva dei 995 TIFF.",
+      "Usare un LLM/VLM o abilitare auto-validazione."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
       "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-      "memoria-engine/tests/test_ocr_risk_score.py",
+      "memoria-engine/tests/test_ocr_workflow.py",
+      "memoria-engine/tests/test_ocr_workflow_cli.py",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-cohort-preregistration-20261018/cohort-preregistration.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003/material-error-draft-calibration-20261018.json",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Il campione preregistrato di calibration ha feature e score hash-bound e label materiali adjudicate complete; il CLI produce una decisione di cutoff riproducibile senza leggere holdout. In mancanza dei requisiti, mantenere no-go e registrare il blocco specifico."
+    "stop_condition": "Fixture offline verificano preview/apply/resume workflow v1.3 su JPG con T36, T37, Tesseract v1.1 e package/scaffold compatibili; rifiuti fail-closed prima degli output; workflow TIFF v1.1/v1.2 invariati e nessun reinferenza al resume. Nessuna OCR reale o auto-validazione."
   },
   "verification": {
-    "tests": ["memoria-engine/.venv/Scripts/python.exe -m unittest test_ocr_risk_score (20 test superati; PYTHONPATH=code;tests)"],
-    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md", "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md"],
-    "result": "partial",
-    "notes": "CLI documents process --workflow-manifest --apply verificato su nuova destinazione runtime: T36 ha eseguito 10 OCR calls, 1 pagina completata, 0 fallimenti/riusi in 385.15 s; T37 raw e Tesseract rieseguiti, Tesseract 1 successo/0 errori, evidence e package prodotti. Esito awaiting_review/template_incomplete e unreviewed; questo smoke non entra nella calibrazione statistica. L'utente ha confermato che per la coorte selezionata ogni TIFF e' un documento autonomo per ora; gli ID leaf:<page_id> sono quindi le unita' dichiarate e non si inferiscono gruppi dai nomi. Coorte ancora prepared e invariata. Freeze no-go per lo strato deu-handwritten-prose-low assente nel holdout e numerosita'/selezione purposive inadeguate alla soglia. Nessun OCR batch avviato, nessun holdout aperto. Material-error draft 00598 precedente ha 3 differenze pending_visual_adjudication; risk-features aveva rifiutato evidence senza source_document_id concorde. Implementato documents ocr-risk-score con formula diagnostica versionata max(D,C), hash dei byte bundle e fail-closed; 20 test mirati superati. Non e' una calibrazione reale: cutoff null e auto-validation disabilitata.",
+    "tests": ["Incremento 1: 62 focused tests + 12-test independent review passed","Incremento 2: 24 focused tests + 11-test independent review passed","Incremento 3: 45 focused tests + 12-test independent review passed","git diff --check passed","validate-codex-model-routing.py passed"],
+    "documentation_touchpoints": ["memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md", "memoria-bootstrap/docs/current-next-increment.md"],
+    "result": "passed",
+    "notes": "Three sequential OCR increments completed with separate gates. Increment 1 adds TesseractPageBatchManifest v1.1 raw_image for validated TIFF/JPEG and raw_pixels_only retries, preserving v1.0 raw_tiff. Increment 2 enables native JPG/JPEG review package/scaffold with truthful image/jpeg locator, original-frame crops, hash and dimension checks, preserving TIFF multipage behavior. Increment 3 adds OcrWorkflow v1.3 for native and mixed TIFF/JPEG batches with T36/T37, Tesseract v1.1 and review preparation; v1.1/v1.2 stay TIFF-only, preview/apply/resume/checkpoint semantics remain, insufficient raw OCR is partial_unreviewed and blocks evidence/review. Gates passed: 62+12, 24+11, 45+12 focused/independent tests; git diff check and planner validation passed. Inventory only: 999 TIFF under documenti_da_processare (995 already catalogued, two unique outside catalog, two duplicate copies), 13,240 JPG and 65 JPEG under the Me.Mo.Ri.A data root. No corpus OCR, no images opened for classification, no reference/labels/holdout read, no 995 reclassification, no LLM/VLM. Machine pass and auto-validation remain disabled.",
     "task_envelope": {
-      "mode": "quality-slice",
-      "repositories": ["memoria-engine", "memoria-bootstrap", "runtime esterno T41"],
+      "mode": "feature-slice",
+      "repositories": ["memoria-engine", "memoria-bootstrap"],
       "read_set": [
-        "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_material_error_draft.py",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017"
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+        "memoria-engine/tests/test_ocr_workflow.py",
+        "memoria-engine/tests/test_ocr_workflow_cli.py"
       ],
       "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003/material-error-draft-calibration-20261018.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-cohort-preregistration-20261018/cohort-preregistration.json",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
         "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
-        "memoria-engine/tests/test_ocr_risk_score.py",
-        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-engine/tests/test_ocr_workflow.py",
+        "memoria-engine/tests/test_ocr_workflow_cli.py",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "documents process --workflow-manifest <registered 00598 OcrWorkflow v1.2> --output-dir <new isolated runtime dir> --apply",
+      "test_command": "`python -m unittest test_ocr_workflow test_ocr_workflow_cli`",
       "stop_conditions": [
-        "Per la coorte selezionata, ogni TIFF e' un source_document autonomo per attestazione esplicita dell'utente; ogni pagina mantiene ID leaf e non si uniscono file per similarita' del nome.",
-        "Feature e score sono prodotti dal CLI solo con evidence e reference calibration hash-bound e review completa.",
-        "Cutoff no-go finché label/materiality e numerosità non sostengono il target; holdout non consultato."
+        "v1.3 seleziona T36-T37 JPG e batch Tesseract v1.1 raw_image con provenance e destinazioni hash-bound.",
+        "v1.1/v1.2 TIFF e il resume restano compatibili; manifest alterati o orientamento JPEG non supportato falliscono chiusi.",
+        "Nessuna OCR reale, reference/label, soglia o auto-validazione introdotta."
       ]
     }
   },
   "session_notes": [
+    "2026-10-21: micro-increment selected: native JPG/JPEG support in OcrWorkflow v1.0 T36->T37. T37 already emits page evidence JSON, DocumentStructure JSON and Markdown from one selected full-page OCR output; it does not merge tiles. Preserve original byte hash and raster coordinates; v1.1/v1.2 remain TIFF-only. Do not rerun the 995 TIFF visual classification; keep auto-validation disabled.",
+    "2026-10-20: chiarimento dell'utente sull'obiettivo finale: azzerare la revisione manuale di routine. La precedente opzione di lasciare lo strato handwritten-low permanentemente in manual review non soddisfa l'obiettivo e non va trattata come chiusura. L'insufficienza del frame è un blocco da risolvere ampliando il frame o migliorando la copertura OCR; le review di calibration/audit restano necessarie per dimostrare i target 1%/5% prima dell'auto-accept. Nessuna soglia è ancora validata.",
+    "2026-10-20: completata la classificazione visiva dei 995 TIFF eleggibili. Catalogo runtime D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json: 995 righe, zero duplicati/mancanti/extra, SHA-256 per ogni TIFF; frame_sha256 03d94db81b777a74728426d0429244bcce3ec2733ba3b5609c1318a8869d5e5d. Report di readiness nello stesso run: deu-prose-medium=187, deu-table-medium=437, deu-handwritten-low=7; no-go per il campione statistico corrente (minimo teorico 160 raw per strato a 80 accettate x due partizioni). Nessun OCR, nessun holdout letto/creato, cutoff nullo e auto-validation disabilitata. Prossimo passo candidato: estendere il frame handwritten-low o mantenere manual review.",
     "2026-10-18: inferenza end-to-end dal CLI reale su TIFF 00598 in output dir isolata; T36 10 chiamate/385.15 s e zero riusi, T37 e Tesseract rieseguiti, package prodotto in awaiting_review. E' prova di inferenza, non accuratezza e non fa parte del campione soglia.",
     "2026-10-18: rettifica dopo chiarimento utente: ogni TIFF selezionato e' un documento autonomo per questa coorte; gli ID leaf esistenti sono l'unita' dichiarata e non occorre un mapping tra file. La coorte resta da espandere per coprire tutti gli strati e raggiungere numerosita' utile alla soglia, poi va congelata prima del batch OCR.",
     "2026-10-18: screening TIFF-only successivo, senza OCR: T314-1275-00362 escluso perche' tabella dattiloscritta; 32 candidati non selezionati da campione casuale riproducibile visualizzati, nessuno con prosa manoscritta idonea. Coorte invariata; questo screening non stima la prevalenza nello frame e non abilita freeze.",
@@ -91,11 +90,15 @@
     "L'utente richiede minimizzare l'intervento umano: una singola discrepanza su 300 parole vale circa 0,33% e non deve invalidare automaticamente la pagina; target per pagina 1%, target di false accettazioni 5% con limite superiore unilaterale al 95% su holdout indipendente.",
     "Il run OCR reale T314-1275-00598 e' completed_unreviewed; il finalizer CLI post-review e' stato implementato e verificato con 20 test mirati nella sessione precedente.",
     "Cinque reference T41 confermate non equivalgono a label di parole materialmente errate; il report 2026-10-16 dichiara che nessuna delle cinque ha adjudication page-level degli errori materiali. Solo 00007 ha strato documentato come preregistrato.",
-    "OcrRiskFeatureBundle v1.1 contiene feature descrittive, risk_score/cutoff null e non legge reference/label. Il CLI separato produce ora un indice diagnostico non calibrato; l'audit holdout richiede ancora score/cutoff congelato. Holdout 00072/00900 restano esclusi dal tuning."
+    "OcrRiskFeatureBundle v1.1 contiene feature descrittive, risk_score/cutoff null e non legge reference/label. Il CLI separato produce ora un indice diagnostico non calibrato; l'audit holdout richiede ancora score/cutoff congelato. Holdout 00072/00900 restano esclusi dal tuning.",
+    "2026-10-20: ripresa procedura: lette le istruzioni di sessione e verificate le anteprime TIFF-only del frame (995/995, nessuna inferenza OCR). Il validatore di preregistrazione e' stato eseguito in preview e ha letto i metadati aggregati delle due partizioni, inclusi i conteggi del holdout; nessun OCR, reference, score o label e' stato letto e il risultato non e' stato usato per selezione. Correzione rispetto alla nota storica 'nessun holdout aperto': il precedente holdout non va riutilizzato; estrarre un nuovo holdout casuale dopo avere registrato il catalogo TIFF-only. Manifest invariato, stato prepared, digest d8d3571c727511348b3ac4aeda13c89e737697e1ce3cb1adf7bafdfbad29ae06; nessun report persistito e nessun batch OCR avviato. Il minimo per tre strati supportati e' 80 pagine accettate x 3 strati x 2 partizioni = 480 accettate; il numero grezzo di TIFF da processare non e' stimabile senza un tasso di accettazione. Serve catalogo visivo riproducibile per strato e piano di oversampling prima di preregistrare/fissare una nuova coorte.",
+    "2026-10-20: per indicazione esplicita dell'utente, questo task procede in batch sequenziali di tre incrementi con gate separato per ciascuno. Ollama WSL verificato via GET read-only: versione 0.34.2; qwen3-vl:4b disponibile con capability vision, SHA-256 digest 1343d82ebee38e26a4dd6b0180b915eb91550184e67c505dea97509571c8f683. Nessuna inferenza lanciata: i contact sheet a 10x10 non bastano per classificare layout/leggibilita' in modo auditabile e il modello non ha ancora un benchmark task-matched su label gold di classificazione. Prima di catalogo e sampling occorre una valutazione controllata del classificatore e anteprime individuali adatte; non consultare il vecchio holdout, OCR o reference per questo passaggio.",
+    "2026-10-20: corretto il percorso: nessun benchmark LLM e' richiesto. L'utente conferma che la classificazione visiva dei 995 TIFF e' gia' completata; non ripeterla. La ricognizione read-only ha trovato l'inventario TIFF e la vecchia coorte, ma non un catalogo machine-readable delle etichette pagina-per-pagina nei percorsi runtime/Temp/repository verificati. L'utente ha indicato P:\\Comune\\Me.Mo.Ri.a\\documenti_da_processare\\foto\\T314 R1275: la cartella contiene il corpus TIFF e directory di prova, nessun sidecar CSV/JSON/TSV/XLSX/MD/TXT; nessuna immagine aperta in questa verifica. Il vecchio holdout resta inutilizzabile e non va consultato. Prossimi tre incrementi: (1) riusare l'artefatto di classificazione esistente, senza rifarla; (2) selezionare con seed una nuova coorte calibration e un holdout indipendente; (3) validare e congelare la preregistrazione prima di qualsiasi OCR.",
+    "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "resume",
-    "description": "Costruire una coorte casuale indipendente per tre strati supportati, con prosa manoscritta low esclusa dall'auto-accept e fallback review; rendere esplicito il numero di pagine OCR necessarie per ottenere almeno 80 casi accettati per strato e partizione, quindi preregistrare e congelare prima di lanciare OCR reale solo su calibration. Usare la baseline max(D,C) senza cutoff per assegnare score; adjudicare gli errori materiali calibration e verificare la separazione. Il holdout resta sigillato finche' score e cutoff sono congelati. Lo smoke 00598 resta fuori dal campione statistico."
+    "mode": "recalculate",
+    "description": "Next, qualify the visual and lexical review gates for a small, hash-bound JPG calibration candidate set using the new v1.3 path; resolve any remaining OCR doubts before asking for a page review. The 13,240 JPG/65 JPEG inventory does not imply usable strata or document independence. Do not use the 10 exploratory pilot pages in a blind holdout, repeat the 995-TIFF classification, or open the prior holdout. Threshold remains no-go until sufficient references are adjudicated and a new independent cohort is frozen."
   },
   "routing": {
     "policy_version": "3.0",
@@ -104,8 +107,62 @@
     "agent": "mmr_implementer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Implementazione runtime circoscritta di uno score diagnostico versionato; niente fitting o auto-accettazione senza label e holdout.",
+    "rationale": "Scoped implementation of a versioned original-pixel Tesseract JPEG batch contract; downstream review/workflow and calibration remain separate increments.",
     "trace": [
+      {
+        "event": "completed",
+        "at": "2026-10-22T19:21:38Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Three gated increments completed: Tesseract raw_image v1.1, JPG review package/scaffold, OcrWorkflow v1.3."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-22T19:03:42Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Add Tesseract raw JPEG batch v1.1 and guarantee raw-pixel-only retry semantics; preserve v1.0 TIFF behavior."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-22T19:10:52Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Extend native JPG support through OCR review package/scaffold while preserving TIFF multipage behavior and original-frame provenance."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-22T19:15:51Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Integrate native Tesseract JPG and review gates through explicit OcrWorkflow v1.3; preserve TIFF v1.1/v1.2 resume semantics."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-21T19:29:26Z",
+        "tier": "high",
+        "agent": "mmr_architect",
+        "model": "gpt-6-astra",
+        "reasoning_effort": "low",
+        "reason": "Read-only contract review for native JPG provenance and TIFF-only downstream boundaries."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-21T19:29:26Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implement and test native JPG/JPEG input for T36->T37 v1.0; retain source hash, geometry, transcript and structure."
+      },
       {
         "event": "selected",
         "at": "2026-10-18T15:41:08Z",
@@ -114,6 +171,24 @@
         "model": "gpt-6.1-sol",
         "reasoning_effort": "medium",
         "reason": "Definire uno score diagnostico riproducibile da sottoporre a calibrazione; nessun cutoff operativo o auto-pass."
+      },
+      {
+        "event": "delegated",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Review indipendente read-only del campione e del no-go del pilot JPG."
+      },
+      {
+        "event": "completed",
+        "at": null,
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Hash, TSV, conteggi e confidence riconciliati; no-go confermato. Membership completa del frame non riproducibile e 10 sorgenti esposte escluse da futuro holdout."
       }
     ]
   }
