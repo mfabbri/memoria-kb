@@ -44,6 +44,16 @@ calibrato e congelato. Nessun holdout e' stato consultato. `machine_pass` e
 auto-validation restano disabilitati; occorre completare reference e calibration
 prima di congelare score/cutoff e valutare un holdout indipendente.
 
+La review calibration-only di `T314-1275-00598` ha prodotto una proposta
+preview-only in `ocr-runs/t41-00598-material-error-review-20261030`. I tre diff
+originari sono stati riconciliati con immagine, struttura revisionata e Tesseract;
+la verifica ha inoltre rilevato una possibile discrepanza condivisa tra immagine,
+PP-OCR e reference umana. Dopo l'adjudication dell'utente, la proposta registra
+un errore materiale: 1/263 = 0,38%, entro il limite per-pagina dell'1%. La
+reference originale resta invariata. Il risultato riguarda una sola pagina e
+non calibra score/cutoff né abilita l'autovalidazione; il holdout non e' stato
+consultato.
+
 ## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
 
 OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione

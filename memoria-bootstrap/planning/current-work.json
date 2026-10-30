@@ -2,74 +2,82 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-25T20:32:14Z",
-  "updated_at": "2026-10-30T20:09:31Z",
+  "selected_at": "2026-10-30T20:14:39Z",
+  "updated_at": "2026-10-30T20:23:44Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Direzione confermata nella sessione - 2026-10-25",
-      "reason": "Qualificare il gate OCR JPG sugli artifact esistenti senza rianalizzare il pilot o usare pagine esplorative come holdout."
+      "section": "Esito review esplorativa JPG e gate soglia - 2026-10-30",
+      "reason": "La soglia resta no-go; il prossimo lavoro deve completare label materiali solo su reference calibration note."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "Decidere la fattibilità del cutoff solo con calibration eleggibile e holdout indipendente protetto."
+      "reason": "Completa adjudication materiale calibration-only mantenendo il holdout sigillato."
     }
   ],
   "increment": {
-    "id": "ocr-jpg-review-and-threshold-gates-20261025",
-    "title": "Qualificare review OCR JPG e fattibilità soglia T41",
-    "objective": "Completare in due incrementi sequenziali il gate visuale/lessicale degli artifact JPG esplorativi disponibili e la decisione di fattibilità della soglia T41 usando solo evidenze calibration eleggibili.",
+    "id": "t41-00598-material-error-adjudication-20261030",
+    "title": "Adjudication visuale calibration-only per T314-1275-00598",
+    "objective": "Riconciliare i tre diff del draft e una possibile discrepanza condivisa reference/evidence per T314-1275-00598; produrre una proposta preview-only e riepilogare soltanto il contributo descrittivo calibration della pagina.",
     "scope": [
-      "Incremento 1: riconciliare immagini, regioni, Markdown e output OCR già persistiti per RH_26_305_28_0051 e RH_26_305_28_0067; correggere solo letture sostenute dai pixel.",
-      "Eseguire Hunspell tedesco versionato e glossari espliciti sulla candidata aggiornata; registrare digest, alert classificati e dubbi materiali residui.",
-      "Incremento 2: verificare prerequisiti e numerosità delle sole reference calibration human_verified/accuracy_eligible e congelabilità score/cutoff.",
-      "Non leggere holdout finché score e cutoff non sono congelati; produrre no-go motivato se calibration o holdout indipendente sono insufficienti."
+      "Increment 1: verify all three draft differences and the shared reference/evidence discrepancy against source image, crops, human-confirmed reference, reviewed structure, and diagnostic Tesseract output.",
+      "Write a separate preview-only classification proposal; do not promote assistant labels to human_verified.",
+      "Increment 2: calculate only a descriptive calibration-only summary; leave material_word_error_count null until the shared discrepancy is human-adjudicated.",
+      "Do not read any holdout, freeze a cutoff, or enable machine_pass/auto-validation."
     ],
     "out_of_scope": [
-      "Usare i 10 JPG esplorativi in holdout o promuoverli a reference gold.",
-      "Aprire o leggere membership, label, score o output del vecchio holdout.",
-      "Abilitare machine_pass/auto-validation senza audit positivo su holdout indipendente.",
-      "Rieseguire la classificazione visiva dei 995 TIFF o avviare OCR su corpus non selezionato."
+      "Modify source image, human-verified reference, raw OCR, or original draft.",
+      "Promote assistant proposals to human_verified or approved calibration labels.",
+      "Read membership, labels, scores, or output for any holdout.",
+      "Freeze a score/cutoff or enable machine_pass/auto-validation."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-t36-t37-20261021",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t42-jpg-exploratory-pilot-20261021",
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-tesseract-adapter-20261013",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017",
+      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00598.tif",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-bootstrap/planning/current-work.json"
+    ],
+    "stop_condition": "All three differences and the possible shared reference/evidence discrepancy are mapped to image pixels and persistent OCR in a provenance-bound proposal; uncertainty stays explicit, the reference is unchanged, no holdout is read, and auto-validation remains disabled."
+  },
+  "verification": {
+    "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Due gate chiusi separatamente: candidata JPG verificata visualmente e lessicalmente con soli residui localizzati; decisione di soglia registrata con evidenza calibration e verdetto go/no-go senza consultare holdout prima del freeze. Auto-validation resta disabilitata se il protocollo statistico non è soddisfatto."
-  },
-  "verification": {
-    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md"],
     "result": "passed",
     "tests": [
-      "Identity/hash and one-to-one region coverage: 0051 51/51 across 38 blocks; 0067 59/59 across 59 blocks.",
-      "Versioned Hunspell and explicit German glossaries run on the exact candidate texts; lexical alerts classified by form/occurrence; fuzzy suggestions preserved as alerts.",
-      "All runtime JSON sidecars parsed as UTF-8; no replacement characters; originals unchanged; no holdout accessed. No code tests run."
+      "Three OCR draft differences visually reconciled; the T glyph is one order displacement, not two independent word errors.",
+      "User adjudicated one material error for the shared reference/evidence discrepancy; 1/263 = 0.38%, within the 1% page limit.",
+      "Proposal binds 13 inputs/crops by SHA-256; all input hashes rechecked with zero mismatches; reference/raw evidence unchanged; holdout not accessed.",
+      "Planner schema/routing validation and git diff --check passed; no code tests run."
     ],
-    "notes": "Completed the paired increments: exploratory JPG candidates and lexical reports are in runtime t43-jpg-review-20261030; candidates remain unverified and are not gold. Hunspell 58 exact/12 not_found on 0051; 274 exact/18 not_found on 0067. Five historical verified references do not establish current calibration membership or complete material-error labels; no score/cutoff is calibrated/frozen, so T41 is no-go and automatic validation remains disabled. Holdout was not read.",
+    "notes": "Calibration-only proposal finalized in runtime t41-00598-material-error-review-20261030. One page has one user-adjudicated material error (0.38%); this is within page tolerance but cannot calibrate a score/cutoff. Source reference remains immutable. No holdout read; machine_pass and auto-validation remain false.",
     "task_envelope": {
       "mode": "quality-slice",
-      "repositories": ["memoria-bootstrap", "memoria-workspace-runtime"],
+      "repositories": [
+        "memoria-bootstrap",
+        "memoria-workspace-runtime"
+      ],
       "read_set": [
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-t36-t37-20261021",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t42-jpg-exploratory-pilot-20261021",
-        "P:/Comune/Me.Mo.Ri.a/risorse_lessicali/hunspell/libreoffice-26.8.0.3"
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-tesseract-adapter-20261013",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017",
+        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00598.tif"
       ],
       "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-review-20261030",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030",
+        "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "Hash/cobertura deterministici, Hunspell versionato e validazione JSON dei sidecar; nessun test codice previsto",
+      "test_command": "Image/crop identity, region comparison, and JSON validation of preview proposal; no code tests",
       "stop_conditions": [
-        "Entrambe le candidate JPG hanno identità/hash, copertura regioni e trascrizione confrontate con gli artifact OCR e i pixel.",
-        "Hunspell e glossario esplicito sono eseguiti sulla candidata esatta; not_found/fuzzy sono classificati senza correzione automatica.",
-        "Le pagine restano esplorative/unverified e non entrano in holdout o gold."
+        "All three initial alignment differences and the shared reference/evidence discrepancy have provenance-bound visual dispositions.",
+        "The user-adjudicated material error is recorded in a derived preview proposal; original reference remains unchanged.",
+        "The per-page ratio is below 1%; no threshold is calibrated, no holdout is accessed, and safety flags remain disabled."
       ]
     }
   },
@@ -96,7 +104,7 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Paired JPG review and T41 feasibility increments closed. Select the next calibration prerequisite from the current roadmap; preserve the no-go, keep auto-validation disabled, and do not inspect holdout until score/cutoff freeze."
+    "description": "Select the next calibration prerequisite from the roadmap; one adjudicated page is below the per-page limit but is insufficient to calibrate a cutoff. Keep holdout closed until score/cutoff freeze."
   },
   "routing": {
     "policy_version": "3.0",
