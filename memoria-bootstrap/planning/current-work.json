@@ -2,76 +2,74 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-22T19:15:51Z",
-  "updated_at": "2026-10-22T19:21:38Z",
+  "selected_at": "2026-10-25T20:32:14Z",
+  "updated_at": "2026-10-30T20:09:31Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-    "section": "Feature OCR hash-bound per la calibrazione T41 - 2026-10-18",
-      "reason": "Estendere il secondo motore e i successivi gate JPG prima di costruire una coorte calibration/holdout; la base di 995 TIFF resta catalogata e non va riclassificata."
+      "section": "Direzione confermata nella sessione - 2026-10-25",
+      "reason": "Qualificare il gate OCR JPG sugli artifact esistenti senza rianalizzare il pilot o usare pagine esplorative come holdout."
     },
     {
-      "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Gate per una soglia di validazione automatica",
-      "reason": "Lo score deve essere deterministico e congelabile prima che il cutoff venga scelto in calibration e verificato su holdout indipendente."
+      "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "section": "T41 - Calibrazione OCR su campione reale stratificato",
+      "reason": "Decidere la fattibilità del cutoff solo con calibration eleggibile e holdout indipendente protetto."
     }
   ],
   "increment": {
-    "id": "ocr-workflow-jpg-v13-20261022",
-    "title": "Orchestrazione OCR JPG con workflow v1.3",
-    "objective": "Integrare il batch Tesseract raw_image v1.1 e i gate di review JPG in una versione OcrWorkflow esplicita, preservando i contratti TIFF v1.1/v1.2, provenance e semantica preview/apply/resume.",
+    "id": "ocr-jpg-review-and-threshold-gates-20261025",
+    "title": "Qualificare review OCR JPG e fattibilità soglia T41",
+    "objective": "Completare in due incrementi sequenziali il gate visuale/lessicale degli artifact JPG esplorativi disponibili e la decisione di fattibilità della soglia T41 usando solo evidenze calibration eleggibili.",
     "scope": [
-      "Aggiungere OcrWorkflow v1.3 per instradare JPG/JPEG a T36-T37 v1.0, batch Tesseract v1.1 raw_image e gate review compatibile.",
-      "Mantenere v1.1/v1.2 TIFF-only e preservare checkpoint, digest input e comportamento resume.",
-      "Preview valida source JPG, manifest e output prima dell'inferenza; apply scrive solo in destinazione nuova esplicita.",
-      "Mantenere output diagnostici/unreviewed e machine_pass=false."
+      "Incremento 1: riconciliare immagini, regioni, Markdown e output OCR già persistiti per RH_26_305_28_0051 e RH_26_305_28_0067; correggere solo letture sostenute dai pixel.",
+      "Eseguire Hunspell tedesco versionato e glossari espliciti sulla candidata aggiornata; registrare digest, alert classificati e dubbi materiali residui.",
+      "Incremento 2: verificare prerequisiti e numerosità delle sole reference calibration human_verified/accuracy_eligible e congelabilità score/cutoff.",
+      "Non leggere holdout finché score e cutoff non sono congelati; produrre no-go motivato se calibration o holdout indipendente sono insufficienti."
     ],
     "out_of_scope": [
-      "Estendere la formula o la calibrazione risk-features/score o abilitare auto-validation.",
-      "Avviare OCR reale su corpus JPG o creare la coorte calibration/holdout.",
-      "Rieseguire la classificazione visiva dei 995 TIFF.",
-      "Usare un LLM/VLM o abilitare auto-validazione."
+      "Usare i 10 JPG esplorativi in holdout o promuoverli a reference gold.",
+      "Aprire o leggere membership, label, score o output del vecchio holdout.",
+      "Abilitare machine_pass/auto-validation senza audit positivo su holdout indipendente.",
+      "Rieseguire la classificazione visiva dei 995 TIFF o avviare OCR su corpus non selezionato."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-      "memoria-engine/tests/test_ocr_workflow.py",
-      "memoria-engine/tests/test_ocr_workflow_cli.py",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-t36-t37-20261021",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t42-jpg-exploratory-pilot-20261021",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Fixture offline verificano preview/apply/resume workflow v1.3 su JPG con T36, T37, Tesseract v1.1 e package/scaffold compatibili; rifiuti fail-closed prima degli output; workflow TIFF v1.1/v1.2 invariati e nessun reinferenza al resume. Nessuna OCR reale o auto-validazione."
+    "stop_condition": "Due gate chiusi separatamente: candidata JPG verificata visualmente e lessicalmente con soli residui localizzati; decisione di soglia registrata con evidenza calibration e verdetto go/no-go senza consultare holdout prima del freeze. Auto-validation resta disabilitata se il protocollo statistico non è soddisfatto."
   },
   "verification": {
-    "tests": ["Incremento 1: 62 focused tests + 12-test independent review passed","Incremento 2: 24 focused tests + 11-test independent review passed","Incremento 3: 45 focused tests + 12-test independent review passed","git diff --check passed","validate-codex-model-routing.py passed"],
-    "documentation_touchpoints": ["memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md", "memoria-bootstrap/docs/current-next-increment.md"],
+    "documentation_touchpoints": ["memoria-bootstrap/docs/current-next-increment.md"],
     "result": "passed",
-    "notes": "Three sequential OCR increments completed with separate gates. Increment 1 adds TesseractPageBatchManifest v1.1 raw_image for validated TIFF/JPEG and raw_pixels_only retries, preserving v1.0 raw_tiff. Increment 2 enables native JPG/JPEG review package/scaffold with truthful image/jpeg locator, original-frame crops, hash and dimension checks, preserving TIFF multipage behavior. Increment 3 adds OcrWorkflow v1.3 for native and mixed TIFF/JPEG batches with T36/T37, Tesseract v1.1 and review preparation; v1.1/v1.2 stay TIFF-only, preview/apply/resume/checkpoint semantics remain, insufficient raw OCR is partial_unreviewed and blocks evidence/review. Gates passed: 62+12, 24+11, 45+12 focused/independent tests; git diff check and planner validation passed. Inventory only: 999 TIFF under documenti_da_processare (995 already catalogued, two unique outside catalog, two duplicate copies), 13,240 JPG and 65 JPEG under the Me.Mo.Ri.A data root. No corpus OCR, no images opened for classification, no reference/labels/holdout read, no 995 reclassification, no LLM/VLM. Machine pass and auto-validation remain disabled.",
+    "tests": [
+      "Identity/hash and one-to-one region coverage: 0051 51/51 across 38 blocks; 0067 59/59 across 59 blocks.",
+      "Versioned Hunspell and explicit German glossaries run on the exact candidate texts; lexical alerts classified by form/occurrence; fuzzy suggestions preserved as alerts.",
+      "All runtime JSON sidecars parsed as UTF-8; no replacement characters; originals unchanged; no holdout accessed. No code tests run."
+    ],
+    "notes": "Completed the paired increments: exploratory JPG candidates and lexical reports are in runtime t43-jpg-review-20261030; candidates remain unverified and are not gold. Hunspell 58 exact/12 not_found on 0051; 274 exact/18 not_found on 0067. Five historical verified references do not establish current calibration membership or complete material-error labels; no score/cutoff is calibrated/frozen, so T41 is no-go and automatic validation remains disabled. Holdout was not read.",
     "task_envelope": {
-      "mode": "feature-slice",
-      "repositories": ["memoria-engine", "memoria-bootstrap"],
+      "mode": "quality-slice",
+      "repositories": ["memoria-bootstrap", "memoria-workspace-runtime"],
       "read_set": [
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/tests/test_ocr_workflow.py",
-        "memoria-engine/tests/test_ocr_workflow_cli.py"
+        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-t36-t37-20261021",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t42-jpg-exploratory-pilot-20261021",
+        "P:/Comune/Me.Mo.Ri.a/risorse_lessicali/hunspell/libreoffice-26.8.0.3"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/tests/test_ocr_workflow.py",
-        "memoria-engine/tests/test_ocr_workflow_cli.py",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t43-jpg-review-20261030",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "`python -m unittest test_ocr_workflow test_ocr_workflow_cli`",
+      "test_command": "Hash/cobertura deterministici, Hunspell versionato e validazione JSON dei sidecar; nessun test codice previsto",
       "stop_conditions": [
-        "v1.3 seleziona T36-T37 JPG e batch Tesseract v1.1 raw_image con provenance e destinazioni hash-bound.",
-        "v1.1/v1.2 TIFF e il resume restano compatibili; manifest alterati o orientamento JPEG non supportato falliscono chiusi.",
-        "Nessuna OCR reale, reference/label, soglia o auto-validazione introdotta."
+        "Entrambe le candidate JPG hanno identità/hash, copertura regioni e trascrizione confrontate con gli artifact OCR e i pixel.",
+        "Hunspell e glossario esplicito sono eseguiti sulla candidata esatta; not_found/fuzzy sono classificati senza correzione automatica.",
+        "Le pagine restano esplorative/unverified e non entrano in holdout o gold."
       ]
     }
   },
@@ -98,17 +96,26 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Next, qualify the visual and lexical review gates for a small, hash-bound JPG calibration candidate set using the new v1.3 path; resolve any remaining OCR doubts before asking for a page review. The 13,240 JPG/65 JPEG inventory does not imply usable strata or document independence. Do not use the 10 exploratory pilot pages in a blind holdout, repeat the 995-TIFF classification, or open the prior holdout. Threshold remains no-go until sufficient references are adjudicated and a new independent cohort is frozen."
+    "description": "Paired JPG review and T41 feasibility increments closed. Select the next calibration prerequisite from the current roadmap; preserve the no-go, keep auto-validation disabled, and do not inspect holdout until score/cutoff freeze."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "implementation",
-    "agent": "mmr_implementer",
+    "tier": "review",
+    "task_class": "quality",
+    "agent": "mmr_test_reviewer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Scoped implementation of a versioned original-pixel Tesseract JPEG batch contract; downstream review/workflow and calibration remain separate increments.",
+    "rationale": "Independent quality gate for OCR artifact provenance and T41 threshold eligibility; holdout remains sealed.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-25T20:32:14Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Review OCR artifact integrity and calibration-only threshold feasibility; do not inspect holdout."
+      },
       {
         "event": "completed",
         "at": "2026-10-22T19:21:38Z",

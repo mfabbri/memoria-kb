@@ -25,6 +25,25 @@ Non ripetere la classificazione visiva dei 995 TIFF né il pilot esplorativo di
 10 JPG; quelle attività non sono necessarie per integrare il workflow v1.3 o
 stabilire il prossimo gate.
 
+## Esito review esplorativa JPG e gate soglia - 2026-10-30
+
+La candidata visuale/lessicale dei due JPG esistenti e' stata salvata fuori dal
+repository in `D:\CaDiMalanca\me.mo.ri.a-kb-runtime\ocr-runs\t43-jpg-review-20261030`.
+Tutte le 51/59 regioni hanno copertura unica nelle rispettive strutture; le
+candidate restano `unverified_model_assisted`, senza promozione a reference gold.
+Hunspell `de_DE-frami-modern` (LibreOffice dictionaries 26.8.0.3, spylls 0.1.7)
+e i due glossari tedeschi espliciti sono stati applicati ai testi candidati
+esatti. I report lessicali e la classificazione per forma/occorrenza sono nei
+sidecar runtime. `not_found` e fuzzy restano alert, non correzioni; la firma
+della pagina 0051 resta illeggibile.
+
+Il gate T41 e' **no-go**: cinque reference storiche human-verified non sono
+dimostrate come membri della calibration corrente e non forniscono adjudication
+completa delle parole materialmente errate; non esiste uno score/cutoff
+calibrato e congelato. Nessun holdout e' stato consultato. `machine_pass` e
+auto-validation restano disabilitati; occorre completare reference e calibration
+prima di congelare score/cutoff e valutare un holdout indipendente.
+
 ## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
 
 OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione
