@@ -2,45 +2,41 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-30T20:14:39Z",
-  "updated_at": "2026-10-30T20:23:44Z",
+  "selected_at": "2026-10-30T20:46:40Z",
+  "updated_at": "2026-10-30T20:47:51Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
       "section": "Esito review esplorativa JPG e gate soglia - 2026-10-30",
-      "reason": "La soglia resta no-go; il prossimo lavoro deve completare label materiali solo su reference calibration note."
+      "reason": "Il frame corrente non supporta ancora il target per strato; ampliare e fissare un inventario prima di campionare e calibrare."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "Completa adjudication materiale calibration-only mantenendo il holdout sigillato."
+      "reason": "La soglia richiede reference adjudicate, partizioni indipendenti e audit del limite per pagina/strato."
     }
   ],
   "increment": {
-    "id": "t41-00598-material-error-adjudication-20261030",
-    "title": "Adjudication visuale calibration-only per T314-1275-00598",
-    "objective": "Riconciliare i tre diff del draft e una possibile discrepanza condivisa reference/evidence per T314-1275-00598; produrre una proposta preview-only e riepilogare soltanto il contributo descrittivo calibration della pagina.",
+    "id": "t41-candidate-frame-inventory-20261030",
+    "title": "Inventario hash delle collezioni immagine candidate per estendere T41",
+    "objective": "Produrre un inventario riproducibile di percorsi e metadati delle collezioni immagine locali candidate a estendere il frame T41, mantenendo distinte le famiglie sorgente e senza eseguire OCR.",
     "scope": [
-      "Increment 1: verify all three draft differences and the shared reference/evidence discrepancy against source image, crops, human-confirmed reference, reviewed structure, and diagnostic Tesseract output.",
-      "Write a separate preview-only classification proposal; do not promote assistant labels to human_verified.",
-      "Increment 2: calculate only a descriptive calibration-only summary; leave material_word_error_count null until the shared discrepancy is human-adjudicated.",
-      "Do not read any holdout, freeze a cutoff, or enable machine_pass/auto-validation."
+      "Inventariare immagini JPG/JPEG/PNG/TIFF nelle directory di documenti_da_processare/foto, conservando famiglia, percorso relativo, estensione, dimensione e mtime_ns.",
+      "Riutilizzare il catalogo visuale TIFF esistente senza riclassificare o ricalcolare il frame 995.",
+      "Registrare conteggi, byte, errori e duplicati di percorso per famiglia e un digest canonico dell'inventario; gli SHA-256 dei byte immagine saranno calcolati solo per i candidati selezionati nel passo successivo."
     ],
     "out_of_scope": [
-      "Modify source image, human-verified reference, raw OCR, or original draft.",
-      "Promote assistant proposals to human_verified or approved calibration labels.",
-      "Read membership, labels, scores, or output for any holdout.",
-      "Freeze a score/cutoff or enable machine_pass/auto-validation."
+      "Eseguire OCR, inferenza VLM, scrivere o correggere trascrizioni/reference o leggere artefatti holdout.",
+      "Promuovere immagini esplorative a calibration/gold, scegliere cutoff o abilitare auto-validation.",
+      "Fondere famiglie sorgente o modificare immagini originali."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-tesseract-adapter-20261013",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017",
-      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00598.tif",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-bootstrap/planning/current-work.json"
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json",
+      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto",
+      "memoria-bootstrap/planning/current-work.json",
+      "memoria-bootstrap/docs/current-next-increment.md"
     ],
-    "stop_condition": "All three differences and the possible shared reference/evidence discrepancy are mapped to image pixels and persistent OCR in a provenance-bound proposal; uncertainty stays explicit, the reference is unchanged, no holdout is read, and auto-validation remains disabled."
+    "stop_condition": "Inventario completo per le famiglie immagine candidate con digest canonico riproducibile, zero duplicati di percorso e zero errori di metadati; frame TIFF esistente invariato e nessun OCR, reference, score o holdout consultato."
   },
   "verification": {
     "documentation_touchpoints": [
@@ -49,12 +45,12 @@
     ],
     "result": "passed",
     "tests": [
-      "Three OCR draft differences visually reconciled; the T glyph is one order displacement, not two independent word errors.",
-      "User adjudicated one material error for the shared reference/evidence discrepancy; 1/263 = 0.38%, within the 1% page limit.",
-      "Proposal binds 13 inputs/crops by SHA-256; all input hashes rechecked with zero mismatches; reference/raw evidence unchanged; holdout not accessed.",
+      "Metadata inventory contains 13,298 unique relative paths across seven source families, with zero metadata read errors.",
+      "Canonical inventory SHA-256 recomputed and matched: 0008db13fc61b5062c9c39e2954e850f7bbb5b0a8227b6d18b8b4bd47ce6e77e.",
+      "Existing 995-page visual TIFF catalog was reused; inventory did not read image bytes, OCR, references, labels, scores, or holdout content.",
       "Planner schema/routing validation and git diff --check passed; no code tests run."
     ],
-    "notes": "Calibration-only proposal finalized in runtime t41-00598-material-error-review-20261030. One page has one user-adjudicated material error (0.38%); this is within page tolerance but cannot calibrate a score/cutoff. Source reference remains immutable. No holdout read; machine_pass and auto-validation remain false.",
+    "notes": "Candidate metadata inventory saved to runtime D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json. It is not a classified frame or calibration cohort; selected pages need byte SHA-256 and visual/lexical classification before cohort freeze. No threshold found or holdout read.",
     "task_envelope": {
       "mode": "quality-slice",
       "repositories": [
@@ -62,22 +58,19 @@
         "memoria-workspace-runtime"
       ],
       "read_set": [
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-ocr-structure-20261003",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-tesseract-adapter-20261013",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017",
-        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto/T314 R1275/T314-1275-00598.tif"
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json",
+        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto"
       ],
       "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/planning/current-work.json"
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030",
+        "memoria-bootstrap/planning/current-work.json",
+        "memoria-bootstrap/docs/current-next-increment.md"
       ],
-      "test_command": "Image/crop identity, region comparison, and JSON validation of preview proposal; no code tests",
+      "test_command": "Recompute canonical metadata inventory digest and assert file counts/unique paths, source-family separation, and zero metadata errors; no OCR or code tests.",
       "stop_conditions": [
-        "All three initial alignment differences and the shared reference/evidence discrepancy have provenance-bound visual dispositions.",
-        "The user-adjudicated material error is recorded in a derived preview proposal; original reference remains unchanged.",
-        "The per-page ratio is below 1%; no threshold is calibrated, no holdout is accessed, and safety flags remain disabled."
+        "Metadata inventory covers candidate image files with canonical digest, unique paths, and zero read errors.",
+        "Existing 995-page TIFF catalog and source files are unchanged; content SHA-256 is deferred to selected candidates.",
+        "No OCR/reference/label/score/holdout content is read and no threshold is frozen."
       ]
     }
   },
@@ -104,17 +97,44 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Select the next calibration prerequisite from the roadmap; one adjudicated page is below the per-page limit but is insufficient to calibrate a cutoff. Keep holdout closed until score/cutoff freeze."
+    "description": "Select the second of the user's three T41 increments: classify and hash candidate pages, then freeze a disjoint calibration/holdout design only if the expanded frame supports the predeclared strata."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "review",
-    "task_class": "quality",
-    "agent": "mmr_test_reviewer",
+    "tier": "medium",
+    "task_class": "runtime_calibration",
+    "agent": "mmr_implementer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Independent quality gate for OCR artifact provenance and T41 threshold eligibility; holdout remains sealed.",
+    "rationale": "Runtime artifact increment with deterministic file inventory and provenance; no OCR accuracy adjudication or threshold decision is performed in this step.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-30T20:46:40Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Create a hash-complete candidate image inventory for T41 frame expansion; preserve source families and avoid OCR/holdout access."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-30T20:47:51Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "13,298-path candidate metadata inventory generated and digest validated; source files and OCR/holdout data untouched."
+      },
+      {
+        "event": "selected",
+        "at": "2026-10-30T20:31:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Create a hash-complete candidate image inventory for T41 frame expansion; preserve source families and avoid OCR/holdout access."
+      },
       {
         "event": "selected",
         "at": "2026-10-25T20:32:14Z",

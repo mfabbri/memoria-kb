@@ -54,6 +54,20 @@ reference originale resta invariata. Il risultato riguarda una sola pagina e
 non calibra score/cutoff né abilita l'autovalidazione; il holdout non e' stato
 consultato.
 
+### Inventario candidati per estendere il frame T41 - 2026-10-30
+
+Creato fuori dal repository un inventario metadati di 13.298 immagini candidate
+nelle famiglie locali `RH 20-10_199` (87), `RH 20-14_46` (912),
+`RH 26-305_28_305 div_5-12-44_8-4-45` (108), `T311 R8` (37), file immagine
+alla radice (80), `T314 R1275` non presenti nel catalogo (4) e
+`wwii.germandocsinrussia.org` (12.070). Il catalogo visuale dei 995 TIFF
+esistenti e' stato riusato senza rileggere i byte; il digest canonico del nuovo
+inventario e' `0008db13fc61b5062c9c39e2954e850f7bbb5b0a8227b6d18b8b4bd47ce6e77e`.
+Zero errori di metadati e zero percorsi duplicati. Non sono state lette immagini,
+eseguiti OCR, consultate reference/holdout o create label: questi file sono
+candidati, non ancora un frame classificato o una coorte. Gli SHA-256 dei byte
+verranno fissati soltanto per i candidati selezionati prima della review.
+
 ## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
 
 OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione
