@@ -1,14 +1,14 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-10-31T11:44:54Z",
-  "updated_at": "2026-10-31T12:13:11Z",
+  "status": "in_progress",
+  "selected_at": "2026-10-31T12:17:52Z",
+  "updated_at": "2026-10-31T12:17:52Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
       "section": "Aggiornamento policy T41 - 2026-10-31",
-      "reason": "L'utente autorizza ad alzare il limite pagina se l'1% impedisce un OCR affidabile; si adotta 2% per la raccolta calibration, mantenendo 5% di false-accept risk."
+      "reason": "L'utente chiede se il gate termina con 80 casi e se il processo OCR→trascrizione definito sia stato seguito; distinguere calibration e holdout e verificare la catena prima di dichiarare chiusa l'automazione."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
@@ -17,57 +17,65 @@
     }
   ],
   "increment": {
-    "id": "t41-readiness-recalc-two-percent-20261031",
-    "title": "Ricalcolare readiness T41 con limite pagina al 2%",
-    "objective": "Ricalcolare il gate T41 usando il limite materiale per pagina del 2% e chiudere la decisione sul cutoff supportabile dai dati esistenti, senza aprire holdout.",
+    "id": "t41-closure-and-transcription-pipeline-audit-20261031",
+    "title": "Definire la chiusura statistica e verificare la catena OCR-trascrizione",
+    "objective": "Stabilire se 80 casi bastano a chiudere la calibrazione T41 e verificare se il flusso operativo definito da OCR a trascrizione è effettivamente implementato e applicato agli artifact correnti.",
     "scope": [
-      "Applicare il limite 2% ai soli errori materiali adjudicati e ricontrollare eleggibilità dei case score-label.",
-      "Mantenere 5% false-accept risk, confidenza 95% e tre strati pre-dichiarati; riportare il requisito n esatto per strato/partizione.",
-      "Registrare un no-go esplicito se non esistono score provenance-bound, cutoff o holdout utilizzati."
+      "Confrontare il gate 80 per strato/partizione con i criteri di freeze calibration e con la verifica indipendente holdout.",
+      "Tracciare i contratti e il percorso T36→T37→Tesseract diagnostico→review package→Hunspell/glossario→review/finalizzazione.",
+      "Riconciliare la catena con i run reali citati nella documentazione e registrare evidenze/gap senza inferire passaggi non provati."
     ],
     "out_of_scope": [
-      "Cambiare la policy 2%/5%/95%, score o strata pre-dichiarati.",
-      "Calibrare/congelare un cutoff, attivare machine_pass/auto-validation o aprire holdout.",
-      "Eseguire OCR o cambiare reference/label storiche."
+      "Aprire holdout o modificare cutoff, labels e reference canoniche.",
+      "Eseguire una nuova inferenza OCR o modificare i byte degli originali.",
+      "Abilitare auto-validation prima di holdout sufficiente."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017/workflow-state.json",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Il readiness aggiornato distingue limite pagina e rischio sistema, espone i conteggi richiesti e motiva con numeri espliciti un cutoff valido o no-go; holdout resta chiuso."
+    "stop_condition": "La risposta documenta il requisito calibration e holdout e traccia ciascuno stadio OCR→trascrizione con code/doc/run evidence, indicando i passaggi non verificati; nessun holdout o original viene aperto o modificato."
   },
   "verification": {
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "passed",
+    "result": "partial",
     "tests": [],
-    "notes": "Batch di tre incrementi completato: (1) policy pagina 2% applicata in audit/calibration e push 236466d; (2) artifact riconciliati e push 4d46d12: 1 pagina con materiale adjudicato (00598, 1/263=0,38%), 0 score/label eleggibili. (3) readiness 2%: no-go cutoff; 80 accettate per ciascuno dei 3 strati e partizione, 480 totali a zero breach; handwritten-low frame 7, gap teorico 153 raw; 13.298 nuovi candidati non classificati, 0 accuracy-eligible. Holdout non letto, cutoff null e flag machine/auto false. Planner validation e git diff --check passati; nessun test codice eseguito.",
+    "notes": "Incremento 1/3 completato: chiarito che 80 per ciascuno dei 3 strati servono in calibration e poi in un holdout indipendente separato, solo con zero breach; 480 accettate complessive. L'audit attuale non attiva machine_pass/auto-validation nemmeno con esito statistico positivo. Planner validation e git diff --check da completare prima del commit. Incremento 2/3: audit con evidenza della catena OCR→trascrizione e run reali. Incremento 3/3: aggiornare conclusione e gap residui. Nessun holdout aperto.",
     "task_envelope": {
-      "mode": "quality-slice",
+      "mode": "architecture-review",
       "repositories": [
         "memoria-workspace-runtime",
         "memoria-bootstrap"
       ],
       "read_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/ocr-page-reference-evaluation-00415-20261011.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/ocr-page-reference-evaluation.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017/workflow-state.json",
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
       "write_set": [
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "Reconcile targeted JSON metadata and reported counts; no code tests, OCR, or holdout access.",
+      "test_command": "Read-only code/doc/run trace; no code tests, OCR, or holdout access.",
       "stop_conditions": [
-        "Material-error labels are counted separately from descriptive WER/CER.",
-        "Only score provenance-bound to the exact OCR bytes is counted as calibration score.",
-        "No holdout or user-confirmed reference is changed."
+        "Each process stage is marked implemented, executed, missing or unverified with evidence.",
+        "Calibration and holdout closure criteria are clearly separated.",
+        "No holdout or source image is accessed or changed."
       ]
     }
   },
@@ -93,18 +101,27 @@
     "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "recalculate",
-    "description": "Per riaprire il tuning: ampliare il frame per handwritten-low, creare casi calibration human_verified con adjudication materiale e score legato agli stessi byte; raggiungere 80 pagine accettate per ciascuno dei 3 strati prima di congelare un cutoff. Il nuovo holdout resta successivo al freeze."
+    "mode": "resume",
+    "description": "Complete the three-step calibration closure and end-to-end OCR-to-transcription audit, then update the current-next decision with evidence and remaining gaps."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "low",
-    "task_class": "discovery",
-    "agent": "mmr_scanner",
-    "model": "gpt-6-luna",
+    "tier": "high",
+    "task_class": "architecture",
+    "agent": "mmr_architect",
+    "model": "gpt-6-astra",
     "reasoning_effort": "low",
-    "rationale": "Read-only reconciliation of a small, known set of runtime artifacts; distinguish material labels from descriptive OCR metrics without changing thresholds or accessing holdout.",
+    "rationale": "Cross-stage audit of OCR evidence, deterministic transcript generation, review procedures and run-level provenance across contracts, code and real artifacts.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-31T12:17:52Z",
+        "tier": "high",
+        "agent": "mmr_architect",
+        "model": "gpt-6-astra",
+        "reasoning_effort": "low",
+        "reason": "Audit end-to-end OCR-to-transcription conformance and clarify separate calibration/holdout closure gates."
+      },
       {
         "event": "selected",
         "at": "2026-10-31T11:44:54Z",

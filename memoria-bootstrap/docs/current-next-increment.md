@@ -40,8 +40,8 @@ evaluation `00007` `80164b3a1723776c9863fc14348a95a17c060d7c9d8215d97c9a39c2923d
 | Gate | Dato attuale | Requisito | Esito |
 |---|---:|---:|---|
 | Pagine con conteggio materiale adjudicato | 1 (`00598`), 0 sopra il 2% | Etichette verificate accoppiate a score per calibration | insufficiente |
-| Casi calibration con score T41 provenance-bound | 0 | 80 accettati per ciascuno dei 3 strati | no-go |
-| Holdout indipendente | non consultato | 80 accettati per strato dopo freeze del cutoff | da tenere chiuso |
+| Casi calibration con score T41 provenance-bound | 0 | 80 accettati per ciascuno dei 3 strati, con 0 breach | no-go |
+| Holdout indipendente | non consultato | 80 accettati per strato dopo freeze, con limite superiore entro il 5% | da tenere chiuso |
 | Accettati complessivi a zero breach | 0 eleggibili con score | 480 (80 x 3 strati x 2 partizioni) | gap 480 |
 | Frame TIFF classificato corrente | prose 187; tabella 437; manoscritto-low 7 | almeno 160 raw per strato solo assumendo 100% acceptance | gap di 153 raw handwritten-low |
 | Nuovi candidati immagine | 13.298 metadati; 0 accuracy-eligible | classificazione e reference verificata | non utilizzabili ancora |
@@ -56,11 +56,23 @@ invariato; il minimo 80 per strato/partizione non cambia alzando il limite di
 errore della singola pagina.
 
 **Decisione:** chiusa la scelta del limite pagina; tuning del cutoff e
-auto-accettazione restano no-go. Per riaprire il gate servono reference
-`human_verified`/`accuracy_eligible`, material-error adjudication e score
-legati agli stessi byte per almeno 80 pagine accettate in ognuno dei tre strati
-calibration; soltanto dopo un cutoff congelato si raccoglie l'holdout separato
-di almeno 80 accettate per strato. Nessun holdout è stato letto in questa fase.
+auto-accettazione restano no-go. Gli **80 non bastano da soli** a chiudere
+l'automazione: sono il minimo teorico per ciascuno strato in calibration e, dopo
+il freeze del cutoff, in un holdout indipendente nuovo, assumendo zero breach.
+Una o più pagine oltre il 2% possono richiedere più casi; decide il limite
+superiore binomiale, non il solo conteggio.
+
+Per chiudere la validazione statistica servono quindi: 80 casi accettati in
+ciascuno dei tre strati calibration e cutoff congelato; poi 80 casi accettati
+per strato nell'holdout separato; bound unilaterale al 95% non superiore al 5%
+sia in ogni strato sia sul totale. Il dataset deve riconciliare tutte le pagine
+preregistrate e legare reference, score e immagini agli stessi hash. Anche un
+esito holdout positivo oggi non attiva l'automazione: `ocr_threshold_audit`
+restituisce `pilot_activation_eligible`, ma imposta comunque
+`machine_pass: false` e `auto_validation_enabled: false`; serve un successivo
+passaggio implementativo e operativo per consumare tale esito.
+
+Nessun holdout è stato letto in questa fase.
 Il readiness di base è `t41-threshold-readiness-20261031/threshold-readiness.json`
 (SHA-256 `b51c2fae20eb90abb759206e0c8baed304a63598d4dd1c300a020d18fb8cc97c`).
 
