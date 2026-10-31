@@ -673,14 +673,29 @@ o scelte in base al valore piu' favorevole.
 
 Definire prima gli strati rilevanti (almeno lingua, leggibilita' e layout), fissare
 la divisione calibrazione/holdout e mantenere il holdout fuori da tuning e scelta
-della soglia. Valutare errori testuali, omissioni, aggiunte, copertura e fedelta'
-strutturale nei soli strati eleggibili. Un campione iniziale di 8-10 pagine avvia
-il pilot ma non autorizza da solo l'auto-accettazione: servono criteri congelati,
-misura dei falsi passaggi e holdout separato. Se mancano reference verificate,
-stratificazione, metriche riconciliate o holdout integro, dichiarare `no-go` e
-continuare a produrre candidati non verificati; non inventare una soglia.
+della soglia nel percorso statistico formale. Valutare errori testuali, omissioni,
+aggiunte, copertura e fedelta' strutturale nei soli strati eleggibili.
 
-Con l'attuale calibrazione CLI, i minimi di 80 (tre strati) o 86 (quattro
+**Pilot operativo rapido autorizzato il 2026-10-31:** l'utente ha stabilito che
+10 conferme manuali page-level totali sono sufficienti per chiudere la selezione
+di un cutoff empirico. Usare dieci pagine distinte con membership congelata
+prima della review; legare candidati, reference, evaluation e score ai rispettivi
+hash; mantenere tutti i casi, compresi quelli oltre il limite materiale del 2%.
+Una conferma manuale per pagina basta per questo pilot; dubbi non risolti restano
+no-go e non si sostituiscono con casi piu' favorevoli. Scegliere il cutoff piu'
+alto che non accetta alcun caso revisionato oltre il 2%, includendo i punteggi
+pari. Se non esiste tale cutoff, chiudere il pilot con esito no-go senza chiedere
+altri casi automaticamente. Il risultato e' empirico, circoscritto ai profili
+rappresentati e **non dimostra** il target 5%/95%; non chiamarlo holdout.
+
+Il percorso formale resta separato: solo questo percorso richiede una misura dei
+falsi passaggi sul holdout indipendente prima di dichiarare il target 5%/95%.
+Il CLI attuale supporta il percorso formale e non consuma ancora un artifact
+provisional a dieci casi; non attivare il nuovo cutoff in produzione finche' un
+incremento implementativo non aggiunge quel consumer.
+
+Nel percorso statistico formale dell'attuale calibrazione CLI, i minimi di 80
+(tre strati) o 86 (quattro
 strati) sono casi **auto-accettati** per strato in ciascuna partizione, con zero
 falsi passaggi; non sono il numero grezzo di pagine da processare. Qualunque
 falso passaggio richiede un campione maggiore. Stimare quindi il volume grezzo

@@ -1957,6 +1957,18 @@ e `machine_pass=false` finché il pilot non è sostenuto da holdout sufficiente.
 L'audit rifiuta dati incompleti o non verificati e non deduce correttezza da
 confidence OCR o alert lessicali.
 
+Decisione utente 2026-10-31: per chiudere rapidamente il tuning operativo sono
+sufficienti **10 conferme manuali page-level totali**. Questo percorso alternativo
+seleziona un cutoff empirico entro il limite pagina del 2%, senza dichiarare la
+garanzia formale di false acceptance <=5% al 95% e senza richiedere il holdout
+indipendente. Congelare prima la lista di dieci pagine, non rimuovere dal campione
+gli esiti oltre il limite e limitare il cutoff a lingue/layout/motori rappresentati.
+Una conferma manuale per pagina basta per questo pilot; dubbi irrisolti o punteggi
+non separabili producono no-go, senza estendere automaticamente il campione.
+Il percorso rigoroso 5%/95% resta separato e invariato. Il CLI attuale ancora
+applica solo il percorso rigoroso; un nuovo artifact/consumer provisional deve
+essere implementato prima di usare il cutoff nelle esecuzioni automatiche.
+
 Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
 candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
 tipizzato e le disposition legate agli stessi digest. Richiede i sidecar
