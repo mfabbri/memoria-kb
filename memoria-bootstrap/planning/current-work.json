@@ -1,14 +1,14 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-10-31T12:17:52Z",
-  "updated_at": "2026-10-31T12:44:58Z",
+  "status": "in_progress",
+  "selected_at": "2026-10-31T16:03:26Z",
+  "updated_at": "2026-10-31T16:06:39Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Aggiornamento policy T41 - 2026-10-31",
-      "reason": "L'utente chiede se il gate termina con 80 casi e se il processo OCR→trascrizione definito sia stato seguito; distinguere calibration e holdout e verificare la catena prima di dichiarare chiusa l'automazione."
+      "section": "Decisione operativa T41: chiusura con 10 conferme - 2026-10-31",
+      "reason": "Nuova decisione esplicita dell'utente: dieci conferme manuali sono sufficienti a chiudere il cutoff operativo e passare ad altri task; documentare il livello di garanzia effettivo e non imporre 80 casi al pilot rapido."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
@@ -17,22 +17,24 @@
     }
   ],
   "increment": {
-    "id": "t41-closure-and-transcription-pipeline-audit-20261031",
-    "title": "Definire la chiusura statistica e verificare la catena OCR-trascrizione",
-    "objective": "Stabilire se 80 casi bastano a chiudere la calibrazione T41 e verificare se il flusso operativo definito da OCR a trascrizione è effettivamente implementato e applicato agli artifact correnti.",
+    "id": "t41-ten-confirmation-operational-threshold-20261031",
+    "title": "Definire il pilot OCR rapido chiudibile con dieci conferme",
+    "objective": "Registrare la policy utente per scegliere un cutoff operativo dopo dieci conferme manuali totali e mantenere separata la garanzia statistica 5%/95%; preparare l'implementazione/dataset necessari senza inventare conferme o cutoff.",
     "scope": [
-      "Confrontare il gate 80 per strato/partizione con i criteri di freeze calibration e con la verifica indipendente holdout.",
-      "Tracciare i contratti e il percorso T36→T37→Tesseract diagnostico→review package→Hunspell/glossario→review/finalizzazione.",
-      "Riconciliare la catena con i run reali citati nella documentazione e registrare evidenze/gap senza inferire passaggi non provati."
+      "Aggiornare la decisione corrente: dieci conferme manuali totali chiudono il pilot operativo empirico; non si attribuisce il target 5%/95%.",
+      "Allineare playbook e roadmap: sample list fissata prima delle review, casi oltre il 2% conservati, cutoff empirico tie-inclusive e ambito limitato ai profili rappresentati.",
+      "Registrare che il CLI attuale applica ancora il gate rigoroso e che occorre un artifact/consumer provisional prima dell'uso automatico."
     ],
     "out_of_scope": [
-      "Aprire holdout o modificare cutoff, labels e reference canoniche.",
-      "Eseguire una nuova inferenza OCR o modificare i byte degli originali.",
-      "Abilitare auto-validation prima di holdout sufficiente."
+      "Raccogliere o simulare le dieci conferme manuali e calcolare un cutoff senza le relative label/score provenance-bound.",
+      "Dichiarare dimostrato il target formale di false acceptance 5% al 95%.",
+      "Aprire holdout, eseguire nuova inferenza OCR o modificare i byte degli originali."
     ],
     "candidate_files": [
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
@@ -40,7 +42,7 @@
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "La risposta documenta il requisito calibration e holdout e traccia ciascuno stadio OCR→trascrizione con code/doc/run evidence, indicando i passaggi non verificati; nessun holdout o original viene aperto o modificato."
+    "stop_condition": "La policy 10-casi e il percorso formale 5%/95% sono distinti in current-next, playbook e roadmap; il gate CLI rigoroso è dichiarato invariato; planner indica esplicitamente che il cutoff resta da calcolare dopo dieci conferme reali e il successivo artifact/consumer. Nessuna conferma o risultato viene simulato."
   },
   "verification": {
     "documentation_touchpoints": [
@@ -49,9 +51,9 @@
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "passed",
+    "result": "partial",
     "tests": [],
-    "notes": "Batch di tre incrementi completato. (1) Chiusura statistica: non bastano 80 casi complessivi; minimo teorico 80 accettati per ciascuno dei tre strati in calibration e 80 per strato in un nuovo holdout indipendente, solo con zero breach, 480 totali. Una o piu' breach richiedono piu' casi se il bound superiore unilaterale 95% non rientra entro il 5%. L'audit non attiva machine_pass/auto-validation. (2) Audit T36→T37→Tesseract→review package→review/finalizer: T41 si ferma a awaiting_review; T40 ha batch candidate_ready ma non human_verified, lexicon Hunspell con 166 match, 49 not_found e 20 fuzzy, glossario/abbreviazioni non attestati e nessun OcrReviewFinalization trovato. Candidata T40 e output grezzi T41 hanno hash diversi e l'esito non si trasferisce implicitamente. (3) Regola di chiusura e prossimo passo documentati in current-next-increment.md. Nessun test, OCR, accesso a immagini o holdout in questa sessione. Qualificata la validazione planner e git diff --check; nessun rischio risolto per il cutoff o l'attivazione automatica.",
+    "notes": "Decisione utente accolta: 10 conferme manuali page-level totali saranno sufficienti a chiudere il cutoff operativo empirico; il target formale 5% al 95% è ritirato per questo percorso, non falsamente dichiarato raggiunto. Il cutoff resta limitato ai profili rappresentati, mantiene i casi oltre il 2% e deve includere ties; se non separa, chiudere con no-go senza campioni aggiuntivi. La modalità non esiste ancora nel CLI, che mantiene il gate formale, e non ci sono 10 coppie score/label; una conferma storica (00598) non ha score. Tre incrementi: (1) current-next policy aggiornata; (2) playbook e roadmap allineati; (3) planner riaperto per l'implementazione del consumer/artifact e la raccolta review. Architecture review mmr_architect raccomanda di mantenere distinti i due percorsi e nessun claim 5%/95%. Nessun OCR, immagini, holdout o test eseguiti.",
     "task_envelope": {
       "mode": "architecture-review",
       "repositories": [
@@ -61,6 +63,8 @@
       "read_set": [
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
         "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
@@ -69,17 +73,20 @@
       ],
       "write_set": [
         "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "Read-only code/doc/run trace; no code tests, OCR, or holdout access.",
+      "test_command": "Policy/doc consistency and planner validation; no code tests, OCR, image review or holdout access.",
       "stop_conditions": [
-        "Each process stage is marked implemented, executed, missing or unverified with evidence.",
-        "Calibration and holdout closure criteria are clearly separated.",
-        "No holdout or source image is accessed or changed."
+        "The 10-case empirical closure makes no unsupported 5%/95% claim and is scoped to represented profiles.",
+        "The strict existing CLI remains clearly identified as unchanged; no cutoff or human confirmation is fabricated.",
+        "No holdout, source image or source byte is accessed or changed."
       ]
     }
   },
   "session_notes": [
+    "2026-10-31: nuova decisione esplicita dell'utente: dieci conferme manuali totali devono bastare per chiudere il cutoff operativo e passare ad altri task. Aggiornati current-next, playbook e roadmap distinguendo il pilot empirico dal target formale 5%/95%; il CLI rigoroso resta invariato. Una conferma manuale non equivale a garanzia statistica, e nessuna delle dieci è stata inventata o raccolta in questa sessione. Prossimo passo: implementare un artifact/consumer provisional e preparare dieci pagine provenance-bound per review raggruppata.",
     "2026-10-21: micro-increment selected: native JPG/JPEG support in OcrWorkflow v1.0 T36->T37. T37 already emits page evidence JSON, DocumentStructure JSON and Markdown from one selected full-page OCR output; it does not merge tiles. Preserve original byte hash and raster coordinates; v1.1/v1.2 remain TIFF-only. Do not rerun the 995 TIFF visual classification; keep auto-validation disabled.",
     "2026-10-20: chiarimento dell'utente sull'obiettivo finale: azzerare la revisione manuale di routine. La precedente opzione di lasciare lo strato handwritten-low permanentemente in manual review non soddisfa l'obiettivo e non va trattata come chiusura. L'insufficienza del frame è un blocco da risolvere ampliando il frame o migliorando la copertura OCR; le review di calibration/audit restano necessarie per dimostrare i target 1%/5% prima dell'auto-accept. Nessuna soglia è ancora validata.",
     "2026-10-20: completata la classificazione visiva dei 995 TIFF eleggibili. Catalogo runtime D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json: 995 righe, zero duplicati/mancanti/extra, SHA-256 per ogni TIFF; frame_sha256 03d94db81b777a74728426d0429244bcce3ec2733ba3b5609c1318a8869d5e5d. Report di readiness nello stesso run: deu-prose-medium=187, deu-table-medium=437, deu-handwritten-low=7; no-go per il campione statistico corrente (minimo teorico 160 raw per strato a 80 accettate x due partizioni). Nessun OCR, nessun holdout letto/creato, cutoff nullo e auto-validation disabilitata. Prossimo passo candidato: estendere il frame handwritten-low o mantenere manual review.",
@@ -102,7 +109,7 @@
   ],
   "next_action": {
     "mode": "resume",
-    "description": "Completa il controllo lessicale/glossario e l'attestazione umana hash-bound con finalizer per la candidata 00598; poi acquisisci coppie reference/score eleggibili per calibration, congela il cutoff e usa un nuovo holdout indipendente solo dopo il freeze."
+    "description": "Implementa un artifact e consumer di cutoff provisional e prepara una coorte hash-bound di dieci pagine; raccogli le conferme manuali, calcola il cutoff empirico con limite materiale 2% e chiudi il pilot senza dichiarare il target formale 5%/95%."
   },
   "routing": {
     "policy_version": "3.0",
@@ -111,16 +118,16 @@
     "agent": "mmr_architect",
     "model": "gpt-6-astra",
     "reasoning_effort": "low",
-    "rationale": "Cross-stage audit of OCR evidence, deterministic transcript generation, review procedures and run-level provenance across contracts, code and real artifacts.",
+    "rationale": "Architecture/contract decision separating the user-authorized 10-confirmation operational pilot from the statistically supported 5%/95% path while preserving provenance and truthful risk claims.",
     "trace": [
       {
         "event": "selected",
-        "at": "2026-10-31T12:17:52Z",
+        "at": "2026-10-31T16:03:26Z",
         "tier": "high",
         "agent": "mmr_architect",
         "model": "gpt-6-astra",
         "reasoning_effort": "low",
-        "reason": "Audit end-to-end OCR-to-transcription conformance and clarify separate calibration/holdout closure gates."
+        "reason": "Select a policy-compatible architecture for the user-approved 10-confirmation operational cutoff, distinct from the formal 5%/95% audit."
       },
       {
         "event": "selected",
