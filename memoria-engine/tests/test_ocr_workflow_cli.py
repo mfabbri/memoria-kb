@@ -15,6 +15,14 @@ from caduti_fonti_report.memoria_cli import main as memoria_main  # noqa: E402
 
 
 class OcrWorkflowCliTests(unittest.TestCase):
+    def test_documents_help_renders_threshold_percentages(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            memoria_main(["documents", "--help"])
+        self.assertEqual(raised.exception.code, 0)
+        self.assertIn("<=2%", output.getvalue())
+        self.assertIn("<=5%", output.getvalue())
+
     def test_v10_jpeg_dispatcher_produces_transcript_and_structure_offline(self) -> None:
         from test_ocr_workflow import OcrWorkflowJpegTests
         from caduti_fonti_report.document_analysis import ocr_workflow as workflow

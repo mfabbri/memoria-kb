@@ -3504,7 +3504,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_calibration.set_defaults(handler=_command_documents_ocr_threshold_calibration)
     documents_threshold_audit = documents_subparsers.add_parser(
         "ocr-threshold-audit",
-        help="Audita errori materiali <=2% delle parole reference per pagina e rischio di falsa accettazione <=5%; non abilita machine_pass.",
+        help="Audita errori materiali <=2%% delle parole reference per pagina e rischio di falsa accettazione <=5%%; non abilita machine_pass.",
     )
     documents_threshold_audit.add_argument("--dataset", required=True, help="OcrAutoValidationHoldout JSON v1.2.")
     documents_threshold_audit.add_argument(
