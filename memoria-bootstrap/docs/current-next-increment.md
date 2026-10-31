@@ -52,10 +52,11 @@ con glossario esplicito -> `ocr-visual-review-audit`/`ocr-visual-correct` ->
 La catena già presente copre T36/T37, confronto PP-OCR/Tesseract, crop, struttura
 Markdown, controlli di copertura/ordine/righe/celle, review residua raggruppata,
 finalizer e audit batch. Il gate rigoroso 5%/95% resta separato dal cutoff
-provisional. I test sintetici mirati passano; non sono state raccolte nuove
-conferme reali né generato il package delle dieci pagine. Il prossimo passo è
-preparare la lista preregistrata e una coda di review reale; solo allora chiedere
-le conferme page-level.
+provisional. Il run reale T314 R1275 ha completato PP-OCRv5, Tesseract,
+lessico/Hunspell, confronto e score CLI per 10 pagine. Il package hash-bound è
+in `ocr-runs/t42-provisional-threshold-ten-pages-3800px-20261031/output/review-final`;
+le 10 conferme umane sono ancora vuote. Il prossimo passo è la review manuale di
+questo package, poi il congelamento del cutoff o l'esito no-go.
 
 ## Aggiornamento policy T41 - 2026-10-31
 
@@ -839,13 +840,19 @@ separata della partizione di calibrazione. Le soglie 1%/5% e
 Il CLI `documents ocr-risk-features` ricalcola l'assessment candidato e il
 confronto tra evidence usando i file esatti e ne verifica path, digest e identità
 di pagina, frame e immagine. L'hash TIFF è ricalcolato dai byte sorgente e deve
-corrispondere a tutte le evidence. Il bundle `OcrRiskFeatureBundle` v1.1
+corrispondere a tutte le evidence. Il bundle `OcrRiskFeatureBundle` v1.2
 riporta diagnostiche numeriche versionate: issue e blocchi candidati, alert
 lessicali, copertura delle regioni OCR già rilevate, accordi/disaccordi
 one-to-one, componenti ambigue e regioni non abbinate. Report obsoleti, artefatti
 modificati o destinazioni che collidono con gli input falliscono chiusi.
-`source_document_id` deve essere presente e concordare fra candidata e due
-evidence. Il bundle v1.1 aggiunge statistiche di confidence separate per lato
+L'evidence PP-OCR T36 non sempre incorpora l'identificativo archivistico. Nei
+workflow v1.1+ `ocr-tesseract-from-t36` ora trasferisce `source_document_id`
+dalla pagina Tesseract già legata a sidecar, metadata e hash raster. In
+`ocr-risk-features` l'identificativo viene ereditato dall'evidence Tesseract
+destra solo se candidata e Tesseract hanno lo stesso `page_id` e hash immagine;
+eventuali identificativi presenti ma discordanti sono rifiutati. Il bundle
+registra ruolo, digest dell'evidence che fornisce l'identità e hash immagine.
+Il bundle v1.2 aggiunge statistiche di confidence separate per lato
 (media, mediana, p10 nearest-rank, minimo, massimo e copertura), conservando la
 scala nativa e pesando ogni regione allo stesso modo (non per parole).
 Scale mancanti o miste e valori invalidi non producono statistiche aggregate;

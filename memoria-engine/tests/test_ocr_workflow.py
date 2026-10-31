@@ -718,6 +718,7 @@ class OcrWorkflowV13Tests(unittest.TestCase):
             self.assertFalse(text["ocr_preprocessing_enabled"])
             evidence = workflow._read(self.output / f"tesseract-evidence/evidence/p{index}.json")
             self.assertEqual(evidence["source_image_hash"], hashlib.sha256(source.read_bytes()).hexdigest())
+            self.assertEqual(evidence["source_document_id"], f"doc{index}")
             self.assertEqual(evidence["source_page"]["original_page"]["source_dimensions"], {"width": 16, "height": 16})
         self.assertTrue(all(page["source_media_type"] == "image/jpeg" for page in package["pages"]))
         self.assertTrue(all(page["frame_locator"]["basis"] == "verified_single_frame_jpeg" for page in package["pages"]))

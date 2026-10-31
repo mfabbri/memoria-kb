@@ -919,6 +919,13 @@ digest e provenance dei testi processati corrispondano. Preview non scrive;
 gia' stato eseguito: questo raccordo non avvia OCR e l'evidence resta
 diagnostica/non revisionata.
 
+Per un export autonomo si puo' aggiungere `--source-document-id page_id=id` per
+ogni pagina. Il workflow Tesseract v1.1+ passa questa mappa dopo aver verificato
+metadata e sidecar hash-bound; l'export registra l'identificativo sia nell'evidence
+sia nel run manifest. Il risk feature bundle lo eredita solo dall'evidence
+Tesseract quando pagina e hash raster coincidono con la candidata; ogni valore
+discordante blocca il calcolo.
+
 Per eseguire la seconda lettura nativa su TIFF/JPEG, usare
 `documents ocr-tesseract-page-batch` con `TesseractPageBatchManifest` v1.1:
 ogni pagina dichiara `raw_image: {path, sha256}`, `page_id`, `source_id`,
@@ -937,8 +944,10 @@ accuratezza. I workflow v1.1/v1.2 restano TIFF-only; il percorso nativo usa v1.3
 
 Per comporre T36/T37 e la preparazione page-level usare
 `memoria documents ocr-review-package` con `--page-profile page_id=profile`,
-`--tesseract-evidence page_id=path` e `--lexicon page_id=path` ripetuti per ogni
-pagina; `--glossary page_id=path` e' opzionale. Questa CLI accetta solo la
+`--tesseract-evidence page_id=path`, `--lexicon page_id=path` e
+`--glossary page_id=path` ripetuti per ogni pagina. Il glossario e' obbligatorio
+e versionato; un glossario senza voci va dichiarato esplicitamente con
+`entries: []`. Questa CLI accetta solo la
 variante T36 `raw` se manifest e digest confermano che i byte coincidono col raster
 TIFF/JPEG originale, e verifica un solo frame prima di aggiungere il
 locator 0 alle copie detached di review. Per JPEG verifica formato reale,

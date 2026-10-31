@@ -412,6 +412,8 @@ def run_ocr_workflow(*, manifest_path: Path, output_dir: Path, apply: bool = Fal
         if "tesseract-evidence" not in state["stages"]:
             tesseract_evidence.export_tesseract_from_t36(
                 manifest_path=t36 / "pilot-manifest.json", output_dir=evidence_root, apply=True,
+                source_document_ids={page["page_id"]: page["source_document_id"]
+                                     for page in request["tesseract"]["pages"]},
                 processed_text={page["page_id"]: Path(page["output_path"])
                                 for page in _read(diagnostic / "report.json")["pages"]})
             state["stages"]["tesseract-evidence"] = _checkpoint(evidence_root, request, "completed",

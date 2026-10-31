@@ -109,10 +109,17 @@ def build_ocr_risk_features(
     right, _ = _read(paths["right"])
     candidate, _ = _read(paths["evidence"])
     structure, _ = _read(paths["structure"])
-    document_id = candidate.get("source_document_id")
-    if (not isinstance(document_id, str) or not document_id.strip()
-            or any(evidence.get("source_document_id") != document_id for evidence in (left, right))):
-        raise ValueError("Evidence source_document_id must be present and equal across candidate, left and right.")
+    # T36 evidence can predate the workflow-level document binding, while the
+    # paired diagnostic evidence is exported from the hash-bound Tesseract page
+    # manifest. Bind the candidate to that identifier only through the exact
+    # same page and original image bytes; reject any conflicting identifier.
+    document_id = right.get("source_document_id")
+    if not isinstance(document_id, str) or not document_id.strip():
+        raise ValueError("Right evidence source_document_id must be present.")
+    if any(evidence.get("source_document_id") not in (None, document_id) for evidence in (candidate, left)):
+        raise ValueError("Evidence source_document_id conflicts with right evidence.")
+    if any(candidate.get(field) != right.get(field) for field in ("page_id", "source_image_hash")):
+        raise ValueError("Candidate and right evidence must bind the same page and source image.")
     if any(evidence.get("source_image_hash") != before["image"]
            for evidence in (candidate, left, right)):
         raise ValueError("Source image bytes do not match evidence source_image_hash.")
@@ -183,7 +190,13 @@ def build_ocr_risk_features(
         "inputs": {name: {"path": str(path), "sha256": before[name]} for name, path in paths.items()},
         "candidate_identity": ({key: candidate.get(key) for key in (
             "source_document_id", "page_id", "source_image_hash", "source_page", "transform_id", "image_transform", "engine", "model", "language")}
-            | {"profile": structure.get("profile")}),
+            | {"source_document_id": document_id, "profile": structure.get("profile")}),
+        "source_document_binding": {
+            "source_document_id": document_id, "evidence_role": "right",
+            "evidence_sha256": before["right"], "page_id": candidate["page_id"],
+            "source_image_hash": before["image"],
+            "policy": "candidate_and_right_page_and_source_image_hash_match",
+        },
         "left_evidence": recomputed["left_evidence"], "right_evidence": recomputed["right_evidence"],
         "features": features,
         "feature_semantics": {

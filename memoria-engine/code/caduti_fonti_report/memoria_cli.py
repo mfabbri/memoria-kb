@@ -2465,8 +2465,15 @@ def _command_documents_ocr_tesseract_from_t36(args: argparse.Namespace) -> int:
             if not separator or not page_id.strip() or not path.strip() or page_id.strip() in texts:
                 raise ValueError("--processed-text richiede page_id=path senza duplicati o voci vuote.")
             texts[page_id.strip()] = Path(path.strip())
+        source_document_ids: dict[str, str] = {}
+        for item in args.source_document_id:
+            page_id, separator, document_id = item.partition("=")
+            if not separator or not page_id.strip() or not document_id.strip() or page_id.strip() in source_document_ids:
+                raise ValueError("--source-document-id richiede page_id=id senza duplicati o voci vuote.")
+            source_document_ids[page_id.strip()] = document_id.strip()
         report = export_tesseract_from_t36(manifest_path=Path(args.manifest), processed_text=texts,
-                                          output_dir=Path(args.output_dir), apply=args.apply)
+                                          output_dir=Path(args.output_dir),
+                                          source_document_ids=source_document_ids or None, apply=args.apply)
     except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
         print(f"Errore documents ocr-tesseract-from-t36: {exc}", file=sys.stderr)
         return 1
@@ -3303,6 +3310,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_tesseract_t36 = documents_subparsers.add_parser("ocr-tesseract-from-t36", help="Collega ProcessedDocumentText Tesseract esistenti alle pagine raw T36; non esegue OCR.")
     documents_tesseract_t36.add_argument("--manifest", required=True, help="OcrTransformPilot JSON v1.0 esistente.")
     documents_tesseract_t36.add_argument("--processed-text", action="append", required=True, help="Mappa esplicita page_id=path ProcessedDocumentText; ripetere per ogni pagina.")
+    documents_tesseract_t36.add_argument("--source-document-id", action="append", default=[], help="Mappa opzionale page_id=source_document_id; ripetere per ogni pagina per legare l'evidenza alla provenienza archivistica.")
     documents_tesseract_t36.add_argument("--output-dir", required=True, help="Directory nuova esterna al repository.")
     documents_tesseract_t36.add_argument("--apply", action="store_true", help="Scrive atomicamente evidence e manifest; senza flag preview read-only.")
     documents_tesseract_t36.set_defaults(handler=_command_documents_ocr_tesseract_from_t36)

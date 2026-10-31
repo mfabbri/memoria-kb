@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "in_progress",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-10-31T16:28:53Z",
+  "updated_at": "2026-10-31T22:34:33Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -46,6 +46,7 @@
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_from_t36.py",
       "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
@@ -64,8 +65,11 @@
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "partial",
-    "tests": ["memoria-engine/.venv/Scripts/python.exe -m unittest test_document_ocr_lexicon_review test_ocr_threshold_calibration test_ocr_threshold_audit test_ocr_risk_score test_ocr_risk_features test_ocr_provisional_threshold test_ocr_review_scaffold test_ocr_review_package test_ocr_review_orchestrator test_ocr_review_finalizer test_ocr_review_batch test_ocr_workflow test_ocr_lexicon_candidates test_ocr_candidate_assessment test_ocr_workflow_cli: 195 tests passed."],
-    "notes": "Audit protocollo->CLI: T36/T37, confronto PP-OCR/Tesseract, crop e scaffold, Hunspell/glossario richiesto e hash-bound, layout/region coverage, correzioni visuali versionate, queue residua aggregata, batch/finalizer, score e cutoff provisional a 10 casi sono implementati e verificati. Il cutoff resta empirico/scoped, non statistico; machine_pass/auto-validation/human_verified restano falsi. Quality gate: 195 test mirati passati, routing v3.0 valido, diff check pulito. Non sono state create label reali, eseguite nuove inferenze o aperto holdout. Resta da preparare un campione reale preregistrato di dieci pagine e chiedere le conferme soltanto al punto di review; nessuna label simulata.",
+    "tests": [
+      "195 test mirati passati per i precedenti incrementi CLI.",
+      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_tesseract_from_t36.py; test_ocr_workflow.py; test_ocr_workflow_cli.py; test_ocr_risk_features.py; test_ocr_risk_score.py; test_ocr_provisional_threshold.py; test_ocr_review_package.py: 117 test passati."
+    ],
+    "notes": "Audit protocollo->CLI completato: T36/T37, Tesseract con identita' d'archivio hash-bound, confronto, crop/scaffold, glossario e Hunspell, review visuale/lessicale/layout, correzioni versionate, queue/batch/finalizer e cutoff provisional dopo 10 conferme hanno comandi e gate. Trovato e corretto il passaggio mancante di source_document_id nell'evidence Tesseract; il risk bundle ora eredita l'identita' solo con page_id e hash immagine coincidenti, rifiutando conflitti. Il run reale ha 10/10 PP-OCR e Tesseract, package incompleto solo per le review umane, score diagnostici pronti e nessuna label compilata. Sette suite mirate (117 test) passano oltre ai 195 test degli incrementi precedenti. Nessuna correzione OCR, label, holdout o promozione automatica e' stata fatta. Restano solo le 10 review page-level, poi calibratore provisional o no-go.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -100,6 +104,7 @@
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_correction.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_from_t36.py",
         "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
         "memoria-engine/tests/",
         "memoria-bootstrap/docs/current-next-increment.md",
@@ -108,7 +113,7 @@
       "memoria-bootstrap/docs/agent-session-prompt.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-    "test_command": "$env:PYTHONPATH='code;tests'; .\\.venv\\Scripts\\python.exe -m unittest test_document_ocr_lexicon_review test_ocr_threshold_calibration test_ocr_threshold_audit test_ocr_risk_score test_ocr_risk_features test_ocr_provisional_threshold test_ocr_review_scaffold test_ocr_review_package test_ocr_review_orchestrator test_ocr_review_finalizer test_ocr_review_batch test_ocr_workflow test_ocr_lexicon_candidates test_ocr_candidate_assessment test_ocr_workflow_cli",
+      "test_command": ".\\memoria-engine\\.venv\\Scripts\\python.exe -m unittest discover -s memoria-engine\\tests -p test_ocr_tesseract_from_t36.py; repeated for test_ocr_workflow.py, test_ocr_workflow_cli.py, test_ocr_risk_features.py, test_ocr_risk_score.py, test_ocr_provisional_threshold.py, test_ocr_review_package.py",
       "stop_conditions": [
         "Every mandatory procedure stage maps to an executable CLI command/gate; no known implementation gap remains before manual review.",
         "The 10-case empirical cutoff is executable and consumable, without any 5%/95% claim; formal audit path remains intact.",
@@ -118,6 +123,7 @@
   },
   "session_notes": [
     "2026-10-31: nuova decisione esplicita dell'utente: dieci conferme manuali totali devono bastare per chiudere il cutoff operativo e passare ad altri task. Aggiornati current-next, playbook e roadmap distinguendo il pilot empirico dal target formale 5%/95%; il CLI rigoroso resta invariato. Una conferma manuale non equivale a garanzia statistica, e nessuna delle dieci è stata inventata o raccolta in questa sessione. Prossimo passo: implementare un artifact/consumer provisional e preparare dieci pagine provenance-bound per review raggruppata.",
+    "2026-10-31: il run reale t42 su 10 pagine T314 R1275 è completato a 3800 px con T36/T37, Tesseract, lessico/Hunspell, confronto, feature e score CLI. Corretto il binding source_document_id nell'export Tesseract e nella composizione workflow; test bridge/workflow/risk passano. Package review-final con 10 score diagnostici e form di conferma vuota pronto. Prossima azione esclusiva: review manuale delle 10 pagine; non inventare label né aprire holdout.",
     "2026-10-21: micro-increment selected: native JPG/JPEG support in OcrWorkflow v1.0 T36->T37. T37 already emits page evidence JSON, DocumentStructure JSON and Markdown from one selected full-page OCR output; it does not merge tiles. Preserve original byte hash and raster coordinates; v1.1/v1.2 remain TIFF-only. Do not rerun the 995 TIFF visual classification; keep auto-validation disabled.",
     "2026-10-20: chiarimento dell'utente sull'obiettivo finale: azzerare la revisione manuale di routine. La precedente opzione di lasciare lo strato handwritten-low permanentemente in manual review non soddisfa l'obiettivo e non va trattata come chiusura. L'insufficienza del frame è un blocco da risolvere ampliando il frame o migliorando la copertura OCR; le review di calibration/audit restano necessarie per dimostrare i target 1%/5% prima dell'auto-accept. Nessuna soglia è ancora validata.",
     "2026-10-20: completata la classificazione visiva dei 995 TIFF eleggibili. Catalogo runtime D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json: 995 righe, zero duplicati/mancanti/extra, SHA-256 per ogni TIFF; frame_sha256 03d94db81b777a74728426d0429244bcce3ec2733ba3b5609c1318a8869d5e5d. Report di readiness nello stesso run: deu-prose-medium=187, deu-table-medium=437, deu-handwritten-low=7; no-go per il campione statistico corrente (minimo teorico 160 raw per strato a 80 accettate x due partizioni). Nessun OCR, nessun holdout letto/creato, cutoff nullo e auto-validation disabilitata. Prossimo passo candidato: estendere il frame handwritten-low o mantenere manual review.",
@@ -139,8 +145,8 @@
     "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "resume",
-    "description": "Completa la matrice di conformità CLI, applica i gap tecnici identificati e prepara una review batch hash-bound di dieci pagine; chiedi le conferme solo quando i gate e il package sono pronti, poi congela il cutoff empirico senza dichiarare il target formale 5%/95%."
+    "mode": "review",
+    "description": "Richiedi la review manuale delle 10 pagine nel package hash-bound t42; con le conferme, esegui il calibratore provisional a 2% per pagina e chiudi con cutoff scoped o no-go, senza dichiarare il target formale 5%/95%."
   },
   "routing": {
     "policy_version": "3.0",

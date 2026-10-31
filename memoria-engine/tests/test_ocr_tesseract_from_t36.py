@@ -331,15 +331,21 @@ class TesseractFromT36Tests(unittest.TestCase):
 
     def test_cli_preview_apply_and_invalid_duplicate_mapping(self):
         args = ["documents", "ocr-tesseract-from-t36", "--manifest", str(self.manifest),
-                "--processed-text", f"p1={self.text}", "--output-dir", str(self.output)]
+                "--processed-text", f"p1={self.text}", "--source-document-id", "p1=synthetic",
+                "--output-dir", str(self.output)]
         with redirect_stdout(io.StringIO()) as output:
             self.assertEqual(main(args), 0)
         self.assertEqual(json.loads(output.getvalue())["operation_status"], "preview")
         with redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
             self.assertEqual(main(args + ["--processed-text", f"p1={self.text}"]), 1)
             self.assertEqual(main(args + ["--processed-text", "malformed"]), 1)
+            self.assertEqual(main(args + ["--source-document-id", "p1="]), 1)
         with redirect_stdout(io.StringIO()):
             self.assertEqual(main(args + ["--apply"]), 0)
+        evidence = json.loads((self.output / "evidence/p1.json").read_text(encoding="utf-8"))
+        report = json.loads((self.output / "run-manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(evidence["source_document_id"], "synthetic")
+        self.assertEqual(report["pages"][0]["source_document_id"], "synthetic")
 
 
 if __name__ == "__main__":

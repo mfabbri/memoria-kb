@@ -27,7 +27,8 @@ def _read(path: Path) -> tuple[dict[str, Any], bytes]:
 
 
 def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[str, Path],
-                              output_dir: Path, apply: bool = False) -> dict[str, Any]:
+                              output_dir: Path, source_document_ids: Mapping[str, str] | None = None,
+                              apply: bool = False) -> dict[str, Any]:
     """Prepare all pages before publishing a new, diagnostic evidence directory."""
     source_manifest = Path(manifest_path).resolve(strict=True)
     destination = Path(output_dir).resolve()
@@ -54,6 +55,10 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
         raise ValueError("page_id T36 duplicati o collisioni nei nomi artifact.")
     if set(processed_text) != set(ids):
         raise ValueError("La mappa --processed-text deve dichiarare esattamente ogni page_id del manifest.")
+    if source_document_ids is not None:
+        if set(source_document_ids) != set(ids) or any(
+                not isinstance(value, str) or not value.strip() for value in source_document_ids.values()):
+            raise ValueError("La mappa source_document_id deve dichiarare esattamente ogni page_id con un valore non vuoto.")
 
     inputs = {source_manifest: _sha256_bytes(manifest_bytes)}
     artifacts: dict[str, bytes] = {}
@@ -121,6 +126,8 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
             raise ValueError("SHA-256 del testo ProcessedDocumentText divergente.")
         evidence = adapt_tesseract_page_evidence(processed_text=text, primary_evidence=primary,
                                                 original_page=primary["source_page"]["original_page"])
+        if source_document_ids is not None:
+            evidence["source_document_id"] = source_document_ids[page_id]
         evidence.update(diagnostic_only=True, review_status="unreviewed", semantic_accuracy_status="not_attested",
                         machine_pass=False, auto_validation_enabled=False, gold_promotion_allowed=False)
         name = _safe_name(page_id)
@@ -128,6 +135,8 @@ def export_tesseract_from_t36(*, manifest_path: Path, processed_text: Mapping[st
                  "source_image": record(source_path, source_hash),
                  "variant_image": record(variant_path, variant_hash),
                  "processed_text": record(text_path, _sha256_bytes(text_bytes))}
+        if source_document_ids is not None:
+            entry["source_document_id"] = source_document_ids[page_id]
         for role, value in (("primary_evidence", primary), ("evidence", evidence)):
             relative = f"{role}/{name}.json"
             data = _json_bytes(value)

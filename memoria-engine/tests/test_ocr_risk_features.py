@@ -103,6 +103,9 @@ class OcrRiskFeaturesTest(unittest.TestCase):
         self.assertFalse(result["auto_validation_enabled"])
         self.assertEqual(result["candidate_identity"]["page_id"], "synthetic-page")
         self.assertEqual(result["candidate_identity"]["source_document_id"], "synthetic-document")
+        self.assertEqual(result["source_document_binding"]["evidence_role"], "right")
+        self.assertEqual(result["source_document_binding"]["evidence_sha256"], self.digest("right"))
+        self.assertEqual(result["candidate_identity"]["source_document_id"], "synthetic-document")
         self.assertEqual(result["schema_version"], "1.2")
         confidence = result["features"]["confidence_by_evidence"]
         self.assertEqual(confidence["left"]["confidence_scale"], "paddle_native")
@@ -214,20 +217,46 @@ class OcrRiskFeaturesTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exact comparison"):
             self.build()
 
+    def test_source_document_identity_is_inherited_from_hash_bound_right_evidence(self):
+        evidence = json.loads(self.paths["evidence"].read_text(encoding="utf-8"))
+        left = json.loads(self.paths["left"].read_text(encoding="utf-8"))
+        del evidence["source_document_id"]
+        del left["source_document_id"]
+        self.save("evidence", evidence)
+        self.save("left", left)
+        self.left = left
+        self.refresh_comparison()
+        self.refresh_assessment()
+        result = self.build()
+        self.assertEqual(result["candidate_identity"]["source_document_id"], "synthetic-document")
+        self.assertEqual(result["source_document_binding"]["page_id"], "synthetic-page")
+        self.assertEqual(result["source_document_binding"]["source_image_hash"], self.digest("image"))
+
     def test_source_document_identity_missing_or_mismatched_rejected(self):
-        for side in ("evidence", "left", "right"):
-            original = self.paths[side].read_bytes()
-            for value in (None, "", "other-document"):
-                with self.subTest(side=side, value=value):
-                    changed = json.loads(original)
-                    if value is None:
-                        del changed["source_document_id"]
-                    else:
-                        changed["source_document_id"] = value
-                    self.save(side, changed)
-                    with self.assertRaisesRegex(ValueError, "source_document_id"):
-                        self.build()
-                    self.paths[side].write_bytes(original)
+        original_right = self.paths["right"].read_bytes()
+        for value in (None, "", "other-document"):
+            with self.subTest(side="right", value=value):
+                changed = json.loads(original_right)
+                if value is None:
+                    del changed["source_document_id"]
+                else:
+                    changed["source_document_id"] = value
+                self.save("right", changed)
+                with self.assertRaisesRegex(ValueError, "source_document_id"):
+                    self.build()
+                self.paths["right"].write_bytes(original_right)
+        original_evidence = self.paths["evidence"].read_bytes()
+        original_left = self.paths["left"].read_bytes()
+        evidence = json.loads(original_evidence)
+        left = json.loads(original_left)
+        evidence["source_document_id"] = left["source_document_id"] = "other-document"
+        self.save("evidence", evidence)
+        self.save("left", left)
+        self.left = left
+        self.refresh_comparison()
+        with self.assertRaisesRegex(ValueError, "source_document_id"):
+            self.build()
+        self.paths["evidence"].write_bytes(original_evidence)
 
     def test_image_bytes_must_match_declared_evidence_hash(self):
         self.paths["image"].write_bytes(self.paths["image"].read_bytes() + b"tampered")
