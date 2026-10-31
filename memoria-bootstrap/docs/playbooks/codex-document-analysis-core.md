@@ -702,9 +702,20 @@ pari. Se non esiste tale cutoff, chiudere il pilot con esito no-go senza chieder
 altri casi automaticamente. Il risultato e' empirico, circoscritto ai profili
 rappresentati e **non dimostra** il target 5%/95%; non chiamarlo holdout.
 
+Prima del calibratore, `documents ocr-threshold-provisional-dataset` unisce il
+modulo delle dieci conferme al sample frozen e al package review, verificando
+gli hash di immagine, struttura, Markdown, evidence, feature bundle e score.
+Compilare `human_verified=true` solo dopo il controllo visivo completo. Se la
+pagina è verificata ma la reference non consente un conteggio affidabile,
+impostare `accuracy_eligible=false`, spiegare il motivo e lasciare nulli i tre
+campi di conteggio/categorie; il calibratore produce un no-go dopo le dieci
+conferme senza chiedere altri casi. Senza dieci pagine human-verified il dataset
+non viene creato.
+
 Il percorso formale resta separato: solo questo percorso richiede una misura dei
 falsi passaggi sul holdout indipendente prima di dichiarare il target 5%/95%.
-La CLI espone `documents ocr-threshold-provisional-calibrate` e
+La CLI espone `documents ocr-threshold-provisional-dataset`,
+`documents ocr-threshold-provisional-calibrate` e
 `documents ocr-threshold-provisional-evaluate` per congelare e applicare il
 cutoff empirico con scope esatto. La disposition provisional guida il routing
 operativo ma non imposta `machine_pass`, `auto_validation_enabled` o

@@ -23,7 +23,11 @@ Questa modalità non è l'audit statistico formale e non va chiamata holdout. Il
 percorso rigoroso 5%/95% resta disponibile come opzione distinta. La CLI offre
 ora `ocr-threshold-provisional-calibrate` per congelare l'artifact empirico dopo
 esattamente dieci conferme e `ocr-threshold-provisional-evaluate` per emettere
-una disposition scoped da `OcrRiskScore`. La disposition non imposta
+una disposition scoped da `OcrRiskScore`. `ocr-threshold-provisional-dataset`
+converte il modulo compilato in dataset verificando gli hash di sample, package,
+candidata, feature e score. Se una pagina è stata verificata ma non è
+accuracy-eligible, le dieci review si chiudono comunque con no-go e senza
+richiedere altri casi. La disposition non imposta
 `machine_pass`, auto-validazione, `human_verified` o estrazione claim; non prova
 una garanzia 5%/95% e non sostituisce una review umana quando il caso e' fuori
 scope, sopra soglia o non adjudicabile. Il percorso rigoroso resta invariato.
@@ -45,8 +49,9 @@ Sequenza CLI verificata: `ocr-transform-batch` -> `ocr-transform-structure` ->
 con glossario esplicito -> `ocr-visual-review-audit`/`ocr-visual-correct` ->
 `ocr-layout-audit`/`ocr-alert-dispositions-audit` -> `ocr-review` ->
 `ocr-review-batch` -> `ocr-review-finalize`. Il percorso threshold è
-`ocr-risk-features` -> `ocr-risk-score` -> `ocr-threshold-provisional-calibrate`
--> `ocr-threshold-provisional-evaluate`; il gate formale resta nei comandi
+`ocr-risk-features` -> `ocr-risk-score` -> `ocr-threshold-provisional-dataset`
+-> `ocr-threshold-provisional-calibrate` -> `ocr-threshold-provisional-evaluate`;
+il gate formale resta nei comandi
 `ocr-threshold-calibration`/`ocr-threshold-audit`.
 
 La catena già presente copre T36/T37, confronto PP-OCR/Tesseract, crop, struttura

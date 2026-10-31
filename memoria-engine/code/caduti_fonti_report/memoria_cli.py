@@ -43,6 +43,7 @@ from caduti_fonti_report.document_analysis.ocr_candidate_assessment import build
 from caduti_fonti_report.document_analysis.ocr_risk_features import build_ocr_risk_features
 from caduti_fonti_report.document_analysis.ocr_risk_score import build_ocr_risk_score
 from caduti_fonti_report.document_analysis.ocr_provisional_threshold import (
+    build_provisional_threshold_dataset,
     calibrate_provisional_ocr_threshold,
     evaluate_provisional_ocr_threshold,
 )
@@ -2232,6 +2233,35 @@ def _command_documents_ocr_threshold_provisional_calibrate(args: argparse.Namesp
     return 0
 
 
+def _command_documents_ocr_threshold_provisional_dataset(args: argparse.Namespace) -> int:
+    try:
+        confirmations, sample = Path(args.confirmations).resolve(), Path(args.sample_manifest).resolve()
+        target = Path(args.output).resolve()
+        if target in {confirmations, sample}:
+            raise ValueError("Output dataset deve essere distinto da modulo e sample manifest.")
+        report = build_provisional_threshold_dataset(
+            confirmations_path=confirmations, sample_manifest_path=sample)
+        encoded = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+        if args.apply:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                if target.read_text(encoding="utf-8") != encoded:
+                    raise FileExistsError(f"Output dataset gia' esistente e diverso: {target}")
+                report["operation_status"] = "skipped_existing"
+            else:
+                with target.open("x", encoding="utf-8", newline="\n") as stream:
+                    stream.write(encoded)
+                report["operation_status"] = "written"
+        else:
+            report["operation_status"] = "preview"
+        report["output_path"] = str(target)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents ocr-threshold-provisional-dataset: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_ocr_threshold_provisional_evaluate(args: argparse.Namespace) -> int:
     try:
         report = evaluate_provisional_ocr_threshold(
@@ -3522,6 +3552,15 @@ def build_parser() -> argparse.ArgumentParser:
     documents_threshold_audit.add_argument("--output", required=True, help="Nuovo rapporto OcrAutoValidationThresholdAudit.")
     documents_threshold_audit.add_argument("--apply", action="store_true", help="Scrive il rapporto; senza flag stampa la preview.")
     documents_threshold_audit.set_defaults(handler=_command_documents_ocr_threshold_audit)
+    provisional_dataset = documents_subparsers.add_parser(
+        "ocr-threshold-provisional-dataset",
+        help="Collega le dieci conferme manuali ai file hash-bound del package e crea il dataset del calibratore.",
+    )
+    provisional_dataset.add_argument("--confirmations", required=True, help="OcrProvisionalThresholdConfirmationForm completato.")
+    provisional_dataset.add_argument("--sample-manifest", required=True, help="OcrProvisionalThresholdSample frozen prima della review.")
+    provisional_dataset.add_argument("--output", required=True, help="Nuovo OcrProvisionalThresholdDataset JSON.")
+    provisional_dataset.add_argument("--apply", action="store_true", help="Scrive il dataset; senza flag esegue preview read-only.")
+    provisional_dataset.set_defaults(handler=_command_documents_ocr_threshold_provisional_dataset)
     provisional_calibrate = documents_subparsers.add_parser(
         "ocr-threshold-provisional-calibrate",
         help="Congela il cutoff empirico del pilot operativo preregistrato di esattamente dieci pagine; nessuna garanzia statistica.",
