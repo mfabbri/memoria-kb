@@ -90,6 +90,29 @@ prima servono una classificazione riproducibile del frame, reference
 human-verified e score legati agli stessi byte. La singola pagina 00598 non
 stima il rischio di false acceptance e non consente di congelare una soglia.
 
+### Audit readiness soglia T41 - 2026-10-31
+
+Il report calibration-only
+`ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json` conclude
+`no_go_no_supported_cutoff`. La pagina 00598 conta 1 errore materiale su 263
+parole (0,38%), entro il limite pagina dell'1%, ma non ha uno score calibration
+congelabile e non stima il rischio di false acceptance. Il pacchetto 00150 resta
+`diagnostic-only`/`unreviewed`; nei soli input verificati non c'e' un dataset
+`OcrAutoValidationCalibration` completo con score e label accuracy-eligible.
+
+Con i tre strati pre-dichiarati (`deu-prose-medium`, `deu-table-medium`,
+`deu-handwritten-low`), il bound Clopper-Pearson unilaterale al 95% con
+correzione Bonferroni richiede almeno 80 pagine accettate per strato in ciascuna
+partizione: almeno 480 casi accettati complessivi tra calibration e holdout se
+non ci sono breach. Il frame attuale ha 187 prose-medium, 437 table-medium e
+solo 7 handwritten-low; quest'ultimo richiede almeno 153 pagine grezze in piu'
+prima di eventuali rifiuti. I 13.298 file aggiunti sono metadati candidati e il
+campione visuale di 30 pagine e' esplorativo: nessuno dei due fornisce label
+accuracy-eligible. Cutoff null, `machine_pass=false`,
+`auto_validation_enabled=false`; nessun holdout e' stato consultato. Il tuning
+OCR resta aperto finche' non esistono classi/score verificati e reference
+sufficienti in tutti gli strati.
+
 ## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
 
 OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione

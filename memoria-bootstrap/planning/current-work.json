@@ -2,42 +2,45 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-30T20:54:21Z",
-  "updated_at": "2026-10-30T20:58:16Z",
+  "selected_at": "2026-10-31T11:05:45Z",
+  "updated_at": "2026-10-31T11:06:34Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
       "section": "Inventario candidati per estendere il frame T41 - 2026-10-30",
-      "reason": "Il catalogo metadati contiene nuove famiglie non ancora classificate; un campione visuale esplorativo identifica quali fonti sono compatibili con T41."
+      "reason": "Il frame metadata e lo screening esplorativo non bastano a definire reference calibration o score cutoff."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "Gli strati di lingua/layout/leggibilita' vanno dichiarati prima di confronto OCR e partizione di calibrazione/holdout."
+      "reason": "T41 richiede almeno 80 pagine accettate per strato e partizione con rischio false acceptance entro il 5%; holdout solo dopo il cutoff congelato."
     }
   ],
   "increment": {
-    "id": "t41-candidate-family-visual-screen-20261030",
-    "title": "Screening visuale esplorativo delle famiglie immagine candidate",
-    "objective": "Esaminare un campione casuale riproducibile di 30 immagini nuove, cinque per famiglia sorgente candidata, per individuare famiglie visivamente compatibili con il profilo T41 e priorita' di classificazione; nessuna immagine diventa gold o parte di holdout.",
+    "id": "t41-threshold-readiness-audit-20261031",
+    "title": "Audit di readiness calibration e quantificazione del no-go soglia",
+    "objective": "Determinare se gli artifact T41 calibration attualmente verificabili sostengono un cutoff senza aprire l'holdout; calcolare il minimo per il bound binomiale esatto e registrare il gap per strato.",
     "scope": [
-      "Estrarre 5 immagini per ciascuna delle 6 famiglie non-T314 dal catalogo metadati con seed fisso.",
-      "Calcolare SHA-256 delle immagini selezionate e produrre preview/contact sheet separati per famiglia.",
-      "Registrare soltanto una classificazione visuale esplorativa di lingua/layout/leggibilita', con incertezza esplicita e senza trascrivere testo."
+      "Riconciliare readiness dei 995 TIFF, inventario candidati e screening esplorativo con la sola proposta di errore materiale adjudicata per 00598 e il pacchetto diagnostico 00150.",
+      "Calcolare il minimo n a zero breach per il bound one-sided Clopper-Pearson 95% con correzione Bonferroni per 2/3/4 strati.",
+      "Produrre un report preview-only: cutoff resta null, machine_pass/auto-validation false; holdout non consultato."
     ],
     "out_of_scope": [
-      "Usare le immagini selezionate come reference, label human_verified, calibration cases o holdout.",
-      "Eseguire OCR/VLM, Hunspell, calcolare score/cutoff o leggere dati holdout.",
-      "Generalizzare il campione di 30 alla prevalenza o numerosita' degli strati nelle famiglie."
+      "Aprire membership, OCR, score, label o output del holdout.",
+      "Derivare score/cutoff da pagine non accuracy-eligible o da metriche CER/WER aggregate.",
+      "Promuovere gli screening assistant a calibration labels o abilitare auto-validation."
     ],
     "candidate_files": [
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/ocr-stratum-readiness-995-revised.json",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
-      "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto",
-      "memoria-bootstrap/planning/current-work.json",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030/visual-screen-sample.json",
-      "memoria-bootstrap/docs/current-next-increment.md"
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-calibration-20261001/calibration-manifest.json",
+      "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/planning/current-work.json",
+      "D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs\\t41-threshold-readiness-20261031\\threshold-readiness.json"
     ],
-    "stop_condition": "Tutte le 30 immagini campionate hanno identita'/SHA-256 e preview; ogni famiglia ha un esito esplorativo supportato dai pixel o resta esplicitamente incerta; nessuna immagine entra in calibration/holdout e nessun OCR/VLM/reference/score e' consultato."
+    "stop_condition": "Report lega i soli artifact calibration ammessi con SHA-256, il bound esatto e le numerosita' minime per strato/partizione; dichiara no-go se mancano dataset human_verified/accuracy_eligible e score provenance-bound; nessun holdout letto e cutoff/autovalidazione restano null/false."
   },
   "verification": {
     "documentation_touchpoints": [
@@ -46,13 +49,13 @@
     ],
     "result": "partial",
     "tests": [
-      "30 unique pages sampled at 5 per family with seed 20261030; source and preview SHA-256 rechecked with zero mismatches.",
-      "All visual labels are assistant exploratory, explicitly non-gold and holdout-ineligible; no OCR or VLM inference was run.",
-      "Ollama WSL GET preflight succeeded: 0.34.2; qwen3-vl:4b and qwen3-vl:8b are installed with vision capability. No page-classification benchmark was run.",
-      "The visual sample is too small to estimate stratum prevalence; the existing 7-page deu-handwritten-low deficit remains unresolved.",
-      "Planner schema/routing validation and git diff --check passed; no code tests run."
+      "Readiness report and all five input digests revalidated; report payload SHA-256 c7a3a48574d1004cd4ceef637d8f2aed67559ddd085387a04ba252c1a75481ed.",
+      "Exact one-sided Clopper-Pearson minima at zero breaches reproduced: 72/80/86 accepted per stratum for 2/3/4 strata; predeclared 3-stratum design needs 480 accepted across both partitions.",
+      "Tiff frame counts reconcile: prose-medium 187, table-medium 437, handwritten-low 7; at least 153 more raw handwritten-low pages needed even at 100% acceptance.",
+      "00598 is 1/263 = 0.38% within page limit, but no provenance-bound score/eligible complete calibration dataset exists in reviewed inputs; cutoff null and safety flags false.",
+      "No holdout was inspected. Planner validation and git diff --check passed; no code tests run."
     ],
-    "notes": "30-page source-family screen saved under runtime visual-screen-20261030; manifest SHA-256 a22a83247604fd8d2ac820edc453062526aaa449baa2e753d48405185d6670a6. It shows heterogeneous but mostly typed/form/table families, with one short handwritten card and no evidence of a sufficiently sized deu-handwritten-low stratum. No model inference; Qwen page-classification needs a task-matched benchmark. Threshold remains no-go; this increment does not provide accuracy labels.",
+    "notes": "Third increment completed with calibration-only no-go report at D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs\\t41-threshold-readiness-20261031\\threshold-readiness.json. The 1% page criterion is met by one page, but 5% false-accept risk cannot be estimated and no supported cutoff can be frozen. The three-increment batch is complete; OCR tuning remains open pending a classified expanded frame and sufficient verified score/label cases.",
     "task_envelope": {
       "mode": "quality-slice",
       "repositories": [
@@ -60,19 +63,23 @@
         "memoria-workspace-runtime"
       ],
       "read_set": [
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/ocr-stratum-readiness-995-revised.json",
         "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
-        "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto"
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030/visual-screen-sample.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-calibration-20261001/calibration-manifest.json"
       ],
       "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031",
+        "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json",
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
-      "test_command": "Recompute selected source and preview SHA-256, assert 30 unique paths/5 per family, non-gold status, and no OCR/VLM outputs; no code tests.",
+      "test_command": "Recompute input SHA-256, page-error ratio, exact Clopper-Pearson bounds, and explicit fail-closed flags; no holdout/code tests.",
       "stop_conditions": [
-        "Thirty pages have immutable source/preview hashes and repeatable sample membership.",
-        "Exploratory visual classes are explicitly non-gold and excluded from holdout.",
-        "No OCR/VLM inference/reference/score/holdout labels were read; no cutoff is frozen."
+        "Input hashes and exact statistical minima are reproduced for the predeclared three strata.",
+        "No complete eligible calibration dataset means no cutoff artifact is emitted.",
+        "No holdout content is accessed; machine_pass and auto-validation remain false."
       ]
     }
   },
@@ -99,17 +106,35 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Run a calibration readiness increment using only eligible human-verified pages and score artifacts. Do not open holdout; report no-go if the required accepted cases/strata are absent."
+    "description": "Tuning remains open. Next work must classify/hash the expanded frame and acquire at least 80 accepted human_verified calibration cases per predeclared stratum with score provenance; freeze the cutoff before creating/opening an independent holdout."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "runtime_calibration",
-    "agent": "mmr_implementer",
+    "tier": "review",
+    "task_class": "quality",
+    "agent": "mmr_test_reviewer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Runtime artifact increment with deterministic file inventory and provenance; no OCR accuracy adjudication or threshold decision is performed in this step.",
+    "rationale": "Threshold readiness is a quantitative quality gate over provenance-bound calibration artifacts, not a code change.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-31T11:05:45Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Independent quantitative/provenance gate for threshold readiness; holdout stays sealed and no cutoff is inferred from one page."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-31T11:06:34Z",
+        "tier": "review",
+        "agent": "mmr_test_reviewer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Readiness audit confirms no supported cutoff: missing eligible scored calibration data and handwritten-low sample; holdout left sealed."
+      },
       {
         "event": "selected",
         "at": "2026-10-30T20:54:21Z",
