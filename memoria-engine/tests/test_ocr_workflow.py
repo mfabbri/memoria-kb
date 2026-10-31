@@ -496,7 +496,11 @@ class OcrWorkflowV12Tests(unittest.TestCase):
         lexicon.write_text(json.dumps({"@type": "OcrLanguageLexicon", "schema_version": "1.0",
             "@id": "fixture:de", "version": "1", "language": "deu",
             "entries": [{"term": "Synthetic", "category": "word"}]}))
-        self.payload["review"] = {"lexicons": {f"p{i}": self.ref(lexicon) for i in range(2)}}
+        glossary = self.root / "glossary.json"
+        glossary.write_text(json.dumps({"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+            "version": "1", "entries": []}))
+        self.payload["review"] = {"lexicons": {f"p{i}": self.ref(lexicon) for i in range(2)},
+            "glossaries": {f"p{i}": self.ref(glossary) for i in range(2)}}
         self.write_manifest()
 
     def test_preview_apply_resume_without_repeating_inference(self):
@@ -538,7 +542,7 @@ class OcrWorkflowV12Tests(unittest.TestCase):
         original = json.dumps(self.payload)
         lexicon_path = self.root / "lexicon.json"
         resource = lexicon_path.read_bytes()
-        for case in ("missing", "extra", "hash", "path", "resource", "entries", "language", "duplicate", "variant", "preprocess", "regions", "engine_language", "glossary"):
+        for case in ("missing", "extra", "hash", "path", "resource", "entries", "language", "duplicate", "variant", "preprocess", "regions", "engine_language", "glossary", "missing_glossary"):
             with self.subTest(case=case):
                 self.payload = json.loads(original)
                 mapping = self.payload["review"]["lexicons"]
@@ -560,6 +564,7 @@ class OcrWorkflowV12Tests(unittest.TestCase):
                 elif case == "regions": self.payload["tesseract"]["enable_region_ocr"] = True
                 elif case == "engine_language": self.payload["tesseract"]["language"] = "ita"
                 elif case == "glossary": self.payload["review"]["glossaries"] = {}
+                elif case == "missing_glossary": self.payload["review"].pop("glossaries")
                 self.write_manifest()
                 factory, command = Mock(), Mock()
                 try:
@@ -571,7 +576,7 @@ class OcrWorkflowV12Tests(unittest.TestCase):
                 finally:
                     lexicon_path.write_bytes(resource)
 
-    def test_optional_glossaries_are_bound_in_package(self):
+    def test_required_glossaries_are_bound_in_package(self):
         path = self.root / "glossary.json"
         path.write_text(json.dumps({"@type": "MilitaryGlossary", "@id": "fixture:military", "version": "1",
             "entries": [{"@id": "fixture:unit", "term": "Unit", "abbreviations": ["U."]}]}))

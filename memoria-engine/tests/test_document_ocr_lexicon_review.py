@@ -151,7 +151,7 @@ class DocumentOcrLexiconReviewTest(unittest.TestCase):
 
     def test_cli_preview_apply_and_invalid_threshold(self) -> None:
         args = ["documents", "lexicon-review", "--structure", str(self.structure),
-                "--lexicon", str(self.lexicon), "--output", str(self.output)]
+                "--lexicon", str(self.lexicon), "--glossary", str(self.glossary), "--output", str(self.output)]
         stream = io.StringIO()
         with redirect_stdout(stream):
             self.assertEqual(main(args), 0)
@@ -162,6 +162,13 @@ class DocumentOcrLexiconReviewTest(unittest.TestCase):
         self.assertTrue(self.output.exists())
         with redirect_stderr(io.StringIO()):
             self.assertEqual(main(args + ["--max-distance", "-1"]), 1)
+
+    def test_cli_requires_explicit_glossary(self) -> None:
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            main(["documents", "lexicon-review", "--structure", str(self.structure),
+                  "--lexicon", str(self.lexicon), "--output", str(self.output)])
+        self.assertEqual(error.exception.code, 2)
+        self.assertFalse(self.output.exists())
 
 
 if __name__ == "__main__":

@@ -1965,16 +1965,18 @@ indipendente. Congelare prima la lista di dieci pagine, non rimuovere dal campio
 gli esiti oltre il limite e limitare il cutoff a lingue/layout/motori rappresentati.
 Una conferma manuale per pagina basta per questo pilot; dubbi irrisolti o punteggi
 non separabili producono no-go, senza estendere automaticamente il campione.
-Il percorso rigoroso 5%/95% resta separato e invariato. Il CLI attuale ancora
-applica solo il percorso rigoroso; un nuovo artifact/consumer provisional deve
-essere implementato prima di usare il cutoff nelle esecuzioni automatiche.
+Il percorso rigoroso 5%/95% resta separato e invariato. La CLI implementa
+`ocr-threshold-provisional-calibrate` su dieci conferme e
+`ocr-threshold-provisional-evaluate` per produrre una disposition empirica
+scoped; il risultato resta provisional e non attesta accuracy, auto-validation,
+`machine_pass` o `human_verified`.
 
 Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
 candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
 tipizzato e le disposition legate agli stessi digest. Richiede i sidecar
 `OcrDocumentLexiconReview`, `OcrPageLayout`, `OcrVisualReviewLedger` e
 `OcrLexicalDispositionLedger` già preparati; non rilancia OCR, non genera le
-osservazioni o le disposition e non applica correzioni. Un gate fallito blocca
+osservazioni o le disposition. Un gate fallito blocca
 la sequenza; correzioni proposte richiedono rigenerare la candidata e gli
 artefatti dipendenti. Il report distingue `blocked`, `candidate_ready`,
 `needs_review` e `correction_required`, deduplica le azioni manuali per unità e
@@ -1985,9 +1987,15 @@ rischio non è misurata su calibrazione e holdout separati. Il comando non
 promuove reference, claim o fatti storici. `documents structure --apply` salva
 ora il JSON `DocumentStructure` provenance-bound insieme al Markdown derivato;
 `documents ocr-review-scaffold` genera la review lessicale, crop verificabili e
-template incompleti per ledger, layout e disposition. Restano da automatizzare
-la lettura visuale/strutturale dei crop e la rigenerazione controllata della
-candidata dopo eventuali correzioni; la soglia 5% non è attiva.
+template incompleti per ledger, layout e disposition. `documents lexicon-review`,
+`documents ocr-review-scaffold` e `documents ocr-review-package` richiedono un
+`MilitaryGlossary` esplicito e hash-bound; anche un glossario senza voci deve
+essere dichiarato. `documents ocr-visual-correct` applica correzioni esplicite
+legate da hash a osservazioni
+leggibili, scrive una candidata derivata e ri-audita il ledger; `ocr-review-scaffold`
+con `--visual-ledger` conserva le osservazioni complete mentre rigenera i sidecar
+lessicali/layout/disposition dai nuovi digest. Il cutoff empirico provisional
+non attiva la garanzia formale 5%/95%.
 
 `documents ocr-evidence-compare` espone ora in CLI il confronto regionale
 diagnostico tra due `OcrPageEvidence` con stessa identita' pagina, immagine,

@@ -139,8 +139,8 @@ def _review_entries(payload: dict[str, Any], *, glossary: bool) -> list[LexiconE
             raise ValueError("Schema OcrLanguageLexicon non supportato.")
         _required_string(payload, "language")
     raw_entries = payload.get("entries")
-    if not isinstance(raw_entries, list) or not raw_entries:
-        raise ValueError("entries deve essere una lista non vuota.")
+    if not isinstance(raw_entries, list) or (not raw_entries and not glossary):
+        raise ValueError("entries deve essere una lista; il lessico richiede almeno una voce.")
     entries = []
     for raw in raw_entries:
         if not isinstance(raw, dict):

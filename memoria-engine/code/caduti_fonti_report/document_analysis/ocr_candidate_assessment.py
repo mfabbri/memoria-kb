@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from .document_structure import DocumentBlock, DocumentStructure, EvidenceReference, render_document_structure_markdown
+from .ocr_lexicon_candidates import _load_review_resource, _review_entries
 
 
 def build_ocr_candidate_assessment(
@@ -64,6 +65,23 @@ def build_ocr_candidate_assessment(
             raise ValueError("lexicon review deve essere OcrDocumentLexiconReview JSON.")
         if review.get("schema_version") != "1.0":
             raise ValueError("Review lessicale con schema_version non supportata.")
+        resources = review.get("resources")
+        glossaries = [resource for resource in resources if isinstance(resource, dict)
+                      and resource.get("kind") == "military_glossary"] if isinstance(resources, list) else []
+        if review.get("abbreviation_check") != "run_with_explicit_glossary" or len(glossaries) != 1:
+            issues.append({"code": "missing_explicit_glossary_review"})
+        else:
+            reference = glossaries[0]
+            try:
+                if not isinstance(reference.get("path"), str) or not reference["path"].strip():
+                    raise ValueError("Glossary path required")
+                glossary, digest = _load_review_resource(Path(reference["path"]), "MilitaryGlossary")
+                _review_entries(glossary, glossary=True)
+                if any(reference.get(field) != expected for field, expected in (
+                        ("resource_id", glossary["@id"]), ("version", glossary["version"]), ("digest", digest))):
+                    raise ValueError("Glossary provenance mismatch")
+            except (OSError, UnicodeError, ValueError, TypeError, KeyError):
+                issues.append({"code": "invalid_or_stale_glossary_resource"})
 
         source = structure.get("source_evidence")
         if not isinstance(source, dict):

@@ -20,10 +20,42 @@ automaticamente.
 Il cutoff vale soltanto per i profili di lingua, layout e motore rappresentati
 nelle dieci pagine; non generalizzarlo agli strati assenti o sottorappresentati.
 Questa modalità non è l'audit statistico formale e non va chiamata holdout. Il
-percorso rigoroso 5%/95% resta disponibile come opzione distinta. Il codice CLI
-attuale implementa solo quel percorso rigoroso: serve un incremento dedicato
-per accettare e consumare il nuovo artifact provvisorio prima di poter usare il
-cutoff nelle esecuzioni OCR automatiche.
+percorso rigoroso 5%/95% resta disponibile come opzione distinta. La CLI offre
+ora `ocr-threshold-provisional-calibrate` per congelare l'artifact empirico dopo
+esattamente dieci conferme e `ocr-threshold-provisional-evaluate` per emettere
+una disposition scoped da `OcrRiskScore`. La disposition non imposta
+`machine_pass`, auto-validazione, `human_verified` o estrazione claim; non prova
+una garanzia 5%/95% e non sostituisce una review umana quando il caso e' fuori
+scope, sopra soglia o non adjudicabile. Il percorso rigoroso resta invariato.
+
+### Stato copertura protocollo OCR nel CLI - 2026-10-31
+
+Con l'incremento T41, `ocr-lexicon-review`, `ocr-review-scaffold` e
+`ocr-review-package` richiedono ora un `MilitaryGlossary` esplicito, versionato e
+hash-bound; il glossario vuoto va dichiarato come `entries: []`. Il comando
+`ocr-visual-correct` applica soltanto correzioni esplicite legate a osservazioni
+visuali leggibili, produce una nuova struttura e Markdown e ri-audita il ledger.
+`ocr-review-scaffold` accetta `--visual-ledger` per conservare osservazioni
+complete e ri-auditate, mentre ricalcola il lessico e rigenera i template
+layout/disposition legati ai nuovi hash.
+
+Sequenza CLI verificata: `ocr-transform-batch` -> `ocr-transform-structure` ->
+`tesseract-evidence-batch` -> `ocr-evidence-compare` -> `ocr-review-scaffold`
+(include crop e template visuali) -> `hunspell-lexicon`/`lexicon-review`
+con glossario esplicito -> `ocr-visual-review-audit`/`ocr-visual-correct` ->
+`ocr-layout-audit`/`ocr-alert-dispositions-audit` -> `ocr-review` ->
+`ocr-review-batch` -> `ocr-review-finalize`. Il percorso threshold è
+`ocr-risk-features` -> `ocr-risk-score` -> `ocr-threshold-provisional-calibrate`
+-> `ocr-threshold-provisional-evaluate`; il gate formale resta nei comandi
+`ocr-threshold-calibration`/`ocr-threshold-audit`.
+
+La catena già presente copre T36/T37, confronto PP-OCR/Tesseract, crop, struttura
+Markdown, controlli di copertura/ordine/righe/celle, review residua raggruppata,
+finalizer e audit batch. Il gate rigoroso 5%/95% resta separato dal cutoff
+provisional. I test sintetici mirati passano; non sono state raccolte nuove
+conferme reali né generato il package delle dieci pagine. Il prossimo passo è
+preparare la lista preregistrata e una coda di review reale; solo allora chiedere
+le conferme page-level.
 
 ## Aggiornamento policy T41 - 2026-10-31
 

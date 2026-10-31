@@ -155,6 +155,8 @@ def audit_ocr_visual_review_ledger(*, ledger_path: Path, image_path: Path,
                 links = unit.get("source_region_ids")
                 if observation.get("source_region_ids") != links or observation.get("candidate_text") != unit.get("text"):
                     issue("candidate_observation_mismatch", observation_id)
+                if ("value" in unit or "candidate_value" in observation) and observation.get("candidate_value") != unit.get("value"):
+                    issue("candidate_observation_mismatch", observation_id)
                 region_boxes = [regions[r]["geometry"]["bbox"] for r in links
                                 if r in regions and isinstance(regions[r].get("geometry"), dict)
                                 and _bbox(regions[r]["geometry"].get("bbox"), width, height)] if isinstance(links, list) and all(_text(r) for r in links) else []

@@ -661,6 +661,20 @@ gold completa: quest'ultima richiede il livello di conferma previsto dal relativ
 contratto. Una pagina chiusa con riserva resta fuori dalla calibrazione metrica se
 la reference necessaria non e' verificata.
 
+Per applicare una correzione sostenuta da un'osservazione `readable`, produrre un
+`OcrVisualCorrectionSet` legato dagli SHA-256 a immagine, evidence, struttura,
+Markdown e ledger visuale; ogni voce riporta `block_id`, `observation_id`, testo
+candidato atteso, lettura corretta, `reviewer_id` e motivazione. Eseguire
+`memoria documents ocr-visual-correct --image ... --evidence ... --structure ...
+--markdown ... --ledger ... --correction-set ... --output-dir ... --apply`.
+Il comando richiede un audit visuale sorgente completo, crea una nuova candidata
+e ri-audita il ledger; non sovrascrive T36/T37 e non promuove stati di review.
+Rieseguire `ocr-review-scaffold` sulla candidata corretta, passando il ledger
+ri-auditato con `--visual-ledger` per conservare le osservazioni già verificate;
+il comando ricalcola il lessico e rigenera i template layout/disposition prima
+di rieseguire `ocr-review`. Output e sidecar precedenti restano legati ai vecchi
+digest.
+
 #### Gate per una soglia di validazione automatica
 
 Prima di calcolare metriche o soglie, ricostruire l'inventario delle reference dai
@@ -690,9 +704,12 @@ rappresentati e **non dimostra** il target 5%/95%; non chiamarlo holdout.
 
 Il percorso formale resta separato: solo questo percorso richiede una misura dei
 falsi passaggi sul holdout indipendente prima di dichiarare il target 5%/95%.
-Il CLI attuale supporta il percorso formale e non consuma ancora un artifact
-provisional a dieci casi; non attivare il nuovo cutoff in produzione finche' un
-incremento implementativo non aggiunge quel consumer.
+La CLI espone `documents ocr-threshold-provisional-calibrate` e
+`documents ocr-threshold-provisional-evaluate` per congelare e applicare il
+cutoff empirico con scope esatto. La disposition provisional guida il routing
+operativo ma non imposta `machine_pass`, `auto_validation_enabled` o
+`human_verified`, non abilita estrazione claim e non dimostra il target 5%/95%.
+Il gate formale e i suoi comandi restano invariati.
 
 Nel percorso statistico formale dell'attuale calibrazione CLI, i minimi di 80
 (tre strati) o 86 (quattro

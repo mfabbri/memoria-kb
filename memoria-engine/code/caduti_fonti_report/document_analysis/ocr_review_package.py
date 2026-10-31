@@ -46,7 +46,7 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
     for label, mapping in (("tesseract-evidence", tesseract_evidence), ("lexicon", lexicons)):
         if set(mapping) != ids:
             raise ValueError(f"La mappa --{label} deve dichiarare esattamente ogni page_id del manifest.")
-    if glossaries is not None and set(glossaries) != ids:
+    if glossaries is None or set(glossaries) != ids:
         raise ValueError("La mappa --glossary deve dichiarare esattamente ogni page_id del manifest.")
     if variant_id != "raw":
         raise ValueError("Il pacchetto review richiede la variante raw byte_copy.")
@@ -122,7 +122,7 @@ def build_ocr_review_package(*, manifest_path: Path, variant_id: str,
             comparison_path = folder / "comparison.json"
             _write(comparison_path, comparison)
             lexicon = Path(lexicons[page_id]).resolve(strict=True)
-            glossary = Path(glossaries[page_id]).resolve(strict=True) if glossaries is not None else None
+            glossary = Path(glossaries[page_id]).resolve(strict=True)
             scaffold_ocr_review(image_path=Path(page["source_image"]["path"]), evidence_path=evidence_path,
                 structure_path=structure_path, markdown_path=markdown_path, lexicon_path=lexicon,
                 glossary_path=glossary, output_dir=folder / "review", comparison_path=comparison_path,

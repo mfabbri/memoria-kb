@@ -45,6 +45,15 @@ in un unico gruppo soltanto i dubbi ancora irrisolti dopo il confronto visuale
 e lessicale.
 Il numero di regioni o alert non è il numero di azioni manuali. Se ne restano
 molti, rivaluta crop, segmentazione o strumenti prima di chiedere una review.
+Le correzioni leggibili vanno applicate con `memoria documents ocr-visual-correct`
+tramite un `OcrVisualCorrectionSet` hash-bound; il comando produce una candidata
+derivata e ri-audita senza promuovere `human_verified`. Rigenera i sidecar con
+`ocr-review-scaffold --visual-ledger <ledger-ri-auditato>` per conservare le
+osservazioni correnti e aggiornare lessico/layout/disposition prima di `ocr-review`.
+
+Nei comandi `lexicon-review`, `ocr-review-scaffold` e `ocr-review-package`
+passa sempre `--glossary` con una risorsa versionata `MilitaryGlossary`; se non
+ci sono voci note usa un glossario esplicito con `entries: []`.
 
 Nella review OCR costruisci la candidata Markdown dalla mappa di regioni con
 ID, bounding box, tipo e ordine; confronta i riconoscitori per blocco e verifica

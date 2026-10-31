@@ -27,6 +27,9 @@ class OcrRiskFeaturesTest(unittest.TestCase):
         self.paths = {name: self.root / (name + ".json") for name in (
             "assessment", "structure", "markdown", "evidence", "lexicon_review", "comparison", "left", "right", "output")}
         self.paths["image"] = self.root / "synthetic.tif"
+        self.glossary_path = self.root / "military-glossary.json"
+        self.glossary = {"@type": "MilitaryGlossary", "@id": "urn:test:glossary", "version": "1.0", "entries": []}
+        self.glossary_path.write_text(json.dumps(self.glossary), encoding="utf-8")
         Image.new("L", (300, 160), color=255).save(self.paths["image"], format="TIFF")
         image_hash = self.digest("image")
         self.left = {
@@ -53,6 +56,10 @@ class OcrRiskFeaturesTest(unittest.TestCase):
         self.paths["markdown"].write_text(render_document_structure_markdown(structure), encoding="utf-8")
         self.save("lexicon_review", {
             "@type": "OcrDocumentLexiconReview", "schema_version": "1.0",
+            "abbreviation_check": "run_with_explicit_glossary",
+            "resources": [{"kind": "military_glossary", "path": str(self.glossary_path),
+                           "resource_id": self.glossary["@id"], "version": self.glossary["version"],
+                           "digest": "sha256:" + hashlib.sha256(self.glossary_path.read_bytes()).hexdigest()}],
             "source_structure_digest": "sha256:" + self.digest("structure"),
             "blocks": [{"page_id": "synthetic-page", "block_id": block["block_id"],
                         "text": block["text"], "source_region_ids": block["source_region_ids"],
@@ -96,7 +103,7 @@ class OcrRiskFeaturesTest(unittest.TestCase):
         self.assertFalse(result["auto_validation_enabled"])
         self.assertEqual(result["candidate_identity"]["page_id"], "synthetic-page")
         self.assertEqual(result["candidate_identity"]["source_document_id"], "synthetic-document")
-        self.assertEqual(result["schema_version"], "1.1")
+        self.assertEqual(result["schema_version"], "1.2")
         confidence = result["features"]["confidence_by_evidence"]
         self.assertEqual(confidence["left"]["confidence_scale"], "paddle_native")
         self.assertEqual(confidence["left"]["mean"], 0.2)

@@ -43,6 +43,9 @@ class OcrReviewOrchestratorTest(unittest.TestCase):
         self.structure_obj = reconstruct_document_structure(evidence=self.evidence, profile="numbered_report")
         self.structure = self.structure_obj.to_dict()
         self.write("structure.json", self.structure)
+        self.glossary = {"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+                         "version": "1", "entries": []}
+        self.write("glossary.json", self.glossary)
         (self.root / "page.md").write_text(render_document_structure_markdown(self.structure_obj), encoding="utf-8")
         self._make_ledger()
         self.rebuild("visually_confirmed_candidate", "Xyz")
@@ -94,6 +97,10 @@ class OcrReviewOrchestratorTest(unittest.TestCase):
     def rebuild(self, disposition, observed_text, visual_outcome="readable"):
         block = self.structure["blocks"][0]
         review = {"@type": "OcrDocumentLexiconReview", "schema_version": "1.0",
+            "abbreviation_check": "run_with_explicit_glossary",
+            "resources": [{"kind": "military_glossary", "path": str(self.root / "glossary.json"),
+                "resource_id": self.glossary["@id"], "version": self.glossary["version"],
+                "digest": self.digest("glossary.json")}],
             "source_structure_digest": self.digest("structure.json"),
             "blocks": [{"page_id": "p1", "block_id": block["block_id"], "text": block["text"],
                 "source_region_ids": block["source_region_ids"],

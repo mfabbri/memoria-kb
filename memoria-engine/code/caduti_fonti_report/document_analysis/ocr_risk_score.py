@@ -40,13 +40,15 @@ def build_ocr_risk_score(*, bundle_path: Path, output_path: Path, apply: bool = 
     bundle = json.loads(raw.decode("utf-8"))
     if not isinstance(bundle, dict) or bundle.get("@type") != "OcrRiskFeatureBundle":
         raise ValueError("Expected OcrRiskFeatureBundle.")
-    if bundle.get("schema_version") != "1.1" or bundle.get("feature_version") != "1.1":
+    if (bundle.get("schema_version"), bundle.get("feature_version")) not in (("1.1", "1.1"), ("1.2", "1.2")):
         raise ValueError("Unsupported OCR feature bundle version.")
     # Reject nonfinite JSON, even in fields not used by this formula.
     _canonical(bundle)
     identity = bundle.get("candidate_identity")
     if not isinstance(identity, dict):
         raise ValueError("Missing candidate_identity.")
+    if bundle.get("feature_version") == "1.2" and not isinstance(identity.get("profile"), str):
+        raise ValueError("OCR risk feature bundle v1.2 requires candidate profile scope.")
     for key in ("source_document_id", "page_id", "source_image_hash", "transform_id", "engine", "language"):
         if not isinstance(identity.get(key), str) or not identity[key].strip():
             raise ValueError(f"Missing or invalid candidate identity: {key}")

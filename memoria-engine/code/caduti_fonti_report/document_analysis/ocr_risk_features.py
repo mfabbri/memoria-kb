@@ -179,10 +179,11 @@ def build_ocr_risk_features(
         },
     }
     payload = {
-        "@type": "OcrRiskFeatureBundle", "schema_version": "1.1", "feature_version": "1.1",
+        "@type": "OcrRiskFeatureBundle", "schema_version": "1.2", "feature_version": "1.2",
         "inputs": {name: {"path": str(path), "sha256": before[name]} for name, path in paths.items()},
-        "candidate_identity": {key: candidate.get(key) for key in (
-            "source_document_id", "page_id", "source_image_hash", "source_page", "transform_id", "image_transform", "engine", "model", "language")},
+        "candidate_identity": ({key: candidate.get(key) for key in (
+            "source_document_id", "page_id", "source_image_hash", "source_page", "transform_id", "image_transform", "engine", "model", "language")}
+            | {"profile": structure.get("profile")}),
         "left_evidence": recomputed["left_evidence"], "right_evidence": recomputed["right_evidence"],
         "features": features,
         "feature_semantics": {

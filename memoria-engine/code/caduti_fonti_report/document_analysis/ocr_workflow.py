@@ -8,7 +8,7 @@ OcrWorkflow v1.1 additionally requires tesseract {root_dir, language,
 tesseract_path, page_segmentation_mode, engine_mode, dpi, preprocess_before_ocr,
 enable_region_ocr, pages}. Each page binds page_id/source_id/source_document_id
 and sidecar/metadata {path, sha256}; the TIFF binding derives from T36 inputs.
-OcrWorkflow v1.2 adds review {lexicons, glossaries?}, each an exact page_id map
+OcrWorkflow v1.2 adds review {lexicons, glossaries}, each an exact page_id map
 of {path, sha256}. It requires raw single-frame inputs and original-pixel
 Tesseract in the same language. The package builder derives its own T37 copy
 without inference; this is separate from the immutable workflow t37 stage.
@@ -138,8 +138,8 @@ def _prepare(manifest_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
                                 "configuration": {key: section[key] for key in sorted(configuration)}, "pages": bound}
     if version in {"1.2", "1.3"}:
         section = payload["review"]
-        if not isinstance(section, dict) or set(section) not in ({"lexicons"}, {"lexicons", "glossaries"}):
-            raise ValueError("review richiede lexicons e, opzionalmente, glossaries.")
+        if not isinstance(section, dict) or set(section) != {"lexicons", "glossaries"}:
+            raise ValueError("review richiede lexicons e glossaries espliciti per ogni pagina.")
         aliases = {"deu": "de", "ger": "de", "ita": "it", "eng": "en", "fra": "fr", "fre": "fr"}
         if (t37["variant_id"] != "raw" or payload["tesseract"]["preprocess_before_ocr"]
                 or payload["tesseract"]["enable_region_ocr"]
@@ -148,8 +148,6 @@ def _prepare(manifest_path: Path) -> tuple[dict[str, Any], dict[str, Any], dict[
             raise ValueError("Review richiede raw full-page, senza preprocessing/region OCR, e lingua Tesseract uguale a T36.")
         request["review"] = {}
         for role, resource_type in (("lexicons", "OcrLanguageLexicon"), ("glossaries", "MilitaryGlossary")):
-            if role not in section:
-                continue
             mapping = section[role]
             if not isinstance(mapping, dict) or set(mapping) != set(profiles):
                 raise ValueError(f"review.{role} deve dichiarare esattamente ogni page_id.")
@@ -427,8 +425,7 @@ def run_ocr_workflow(*, manifest_path: Path, output_dir: Path, apply: bool = Fal
                 page_profiles=request["t37"]["page_profiles"],
                 tesseract_evidence={page["page_id"]: Path(page["evidence"]["path"]) for page in evidence_report["pages"]},
                 lexicons={page_id: Path(ref["path"]) for page_id, ref in request["review"]["lexicons"].items()},
-                glossaries=({page_id: Path(ref["path"]) for page_id, ref in request["review"]["glossaries"].items()}
-                            if "glossaries" in request["review"] else None),
+                glossaries={page_id: Path(ref["path"]) for page_id, ref in request["review"]["glossaries"].items()},
                 output_dir=destination / "review", apply=True)
             _review_preflight(request, destination)
             state["stages"]["review"] = _checkpoint(destination / "review", request, "completed",

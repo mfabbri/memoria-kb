@@ -44,6 +44,9 @@ class OcrReviewPackageTests(unittest.TestCase):
         self.manifest = self.root / "pilot.json"
         self.right = self.root / "tesseract.json"
         self.lexicon = self.root / "lexicon.json"
+        self.glossary = self.root / "glossary.json"
+        self.write(self.glossary, {"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+            "version": "1", "entries": []})
         self.write(self.lexicon, {"@type": "OcrLanguageLexicon", "schema_version": "1.0", "@id": "fixture:de",
             "version": "1", "language": "deu", "entries": [{"term": "Bekannt", "category": "word",
                 "source_id": "fixture", "version": "1"}]})
@@ -62,7 +65,8 @@ class OcrReviewPackageTests(unittest.TestCase):
 
     def run_package(self, **overrides):
         args = dict(manifest_path=self.manifest, variant_id="raw", page_profiles={"p1": "numbered_report"},
-            tesseract_evidence={"p1": self.right}, lexicons={"p1": self.lexicon}, output_dir=self.output)
+            tesseract_evidence={"p1": self.right}, lexicons={"p1": self.lexicon},
+            glossaries={"p1": self.glossary}, output_dir=self.output)
         args.update(overrides)
         return build_ocr_review_package(**args)
 
@@ -178,6 +182,9 @@ class OcrReviewPackageTests(unittest.TestCase):
         self.assertFalse((self.root / "batch.json").exists())
 
     def test_exact_maps_and_existing_output(self):
+        with self.assertRaises(ValueError):
+            self.run_package(glossaries=None)
+        self.assertFalse(self.output.exists())
         for name in ("page_profiles", "tesseract_evidence", "lexicons", "glossaries"):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 self.run_package(**{name: {}})
@@ -245,13 +252,15 @@ class OcrReviewPackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.run_package(page_profiles={"p1": "numbered_report", "p2": "numbered_report"},
                 tesseract_evidence={"p1": self.right, "p2": right2},
-                lexicons={"p1": self.lexicon, "p2": self.lexicon}, apply=True)
+                lexicons={"p1": self.lexicon, "p2": self.lexicon},
+                glossaries={"p1": self.glossary, "p2": self.glossary}, apply=True)
         self.assertEqual(set(self.root.iterdir()), before)
 
     def test_cli_and_duplicate_map_rejection(self):
         args = ["documents", "ocr-review-package", "--manifest", str(self.manifest), "--variant", "raw",
             "--page-profile", "p1=numbered_report", "--tesseract-evidence", f"p1={self.right}",
-            "--lexicon", f"p1={self.lexicon}", "--output-dir", str(self.output)]
+            "--lexicon", f"p1={self.lexicon}", "--glossary", f"p1={self.glossary}",
+            "--output-dir", str(self.output)]
         output, error = io.StringIO(), io.StringIO()
         with redirect_stdout(output), redirect_stderr(error):
             self.assertEqual(main(args), 0)

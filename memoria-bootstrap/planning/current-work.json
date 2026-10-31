@@ -2,13 +2,13 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "in_progress",
-  "selected_at": "2026-10-31T16:03:26Z",
-  "updated_at": "2026-10-31T16:06:39Z",
+  "selected_at": "2026-10-31T16:12:57Z",
+  "updated_at": "2026-10-31T16:28:53Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Decisione operativa T41: chiusura con 10 conferme - 2026-10-31",
-      "reason": "Nuova decisione esplicita dell'utente: dieci conferme manuali sono sufficienti a chiudere il cutoff operativo e passare ad altri task; documentare il livello di garanzia effettivo e non imporre 80 casi al pilot rapido."
+      "section": "Verifica visuale assistita e richieste di review",
+      "reason": "L'utente chiede di verificare il 100% della procedura OCR definita rispetto alla CLI e di colmare i gap prima di chiedere conferme manuali."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
@@ -17,45 +17,57 @@
     }
   ],
   "increment": {
-    "id": "t41-ten-confirmation-operational-threshold-20261031",
-    "title": "Definire il pilot OCR rapido chiudibile con dieci conferme",
-    "objective": "Registrare la policy utente per scegliere un cutoff operativo dopo dieci conferme manuali totali e mantenere separata la garanzia statistica 5%/95%; preparare l'implementazione/dataset necessari senza inventare conferme o cutoff.",
+    "id": "t41-cli-ocr-process-completion-20261031",
+    "title": "Completare nel CLI il processo OCR definito e il pilot rapido a dieci casi",
+    "objective": "Rendere ogni passaggio richiesto dal protocollo OCR→trascrizione eseguibile e verificato nella CLI, implementare l'artifact/consumer del cutoff empirico a dieci conferme mantenendo distinta la garanzia formale e preparare le review reali senza inventare label.",
     "scope": [
-      "Aggiornare la decisione corrente: dieci conferme manuali totali chiudono il pilot operativo empirico; non si attribuisce il target 5%/95%.",
-      "Allineare playbook e roadmap: sample list fissata prima delle review, casi oltre il 2% conservati, cutoff empirico tie-inclusive e ambito limitato ai profili rappresentati.",
-      "Registrare che il CLI attuale applica ancora il gate rigoroso e che occorre un artifact/consumer provisional prima dell'uso automatico."
+      "Enforzare nel workflow/package CLI un glossario esplicito, versionato e hash-bound prima della review lessicale.",
+      "Implementare un comando CLI per applicare le correzioni visive proposte alla candidata, rigenerare struttura/Markdown e invalidare sidecar derivati obsoleti.",
+      "Implementare artifact e consumer del cutoff empirico dopo esattamente dieci pagine confermate, senza dichiarare il target 5%/95%; conservare il percorso formale separato.",
+      "Allineare prompt/playbook/roadmap alla coverage CLI verificata e fermarsi solo al punto che richiede review umana reale."
     ],
     "out_of_scope": [
-      "Raccogliere o simulare le dieci conferme manuali e calcolare un cutoff senza le relative label/score provenance-bound.",
-      "Dichiarare dimostrato il target formale di false acceptance 5% al 95%.",
-      "Aprire holdout, eseguire nuova inferenza OCR o modificare i byte degli originali."
+      "Inventare o simulare conferme umane, decisioni semantiche, reference o score.",
+      "Dichiarare dimostrato il target formale di false acceptance 5% al 95% dal pilot a dieci casi.",
+      "Aprire holdout, usare VLM senza preflight obbligatorio, o modificare i byte degli originali."
     ],
     "candidate_files": [
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-bootstrap/docs/agent-session-prompt.md",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_alert_dispositions.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_finalizer.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_review_ledger.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_provisional_threshold.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_correction.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
       "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
       "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017/workflow-state.json",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "La policy 10-casi e il percorso formale 5%/95% sono distinti in current-next, playbook e roadmap; il gate CLI rigoroso è dichiarato invariato; planner indica esplicitamente che il cutoff resta da calcolare dopo dieci conferme reali e il successivo artifact/consumer. Nessuna conferma o risultato viene simulato."
+    "stop_condition": "Matrice protocollo→CLI senza gap implementativi: glossario obbligatorio e provenance-bound, correzioni applicabili via CLI con rigenerazione hash-bound, review queue e finalizer; cutoff provisional a 10 casi consumabile dal percorso automatico e formal 5%/95% invariato. Test mirati e quality gate passano; nessuna label manuale viene simulata e il flusso si ferma solo quando la review reale è richiesta."
   },
   "verification": {
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-bootstrap/docs/agent-session-prompt.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "partial",
-    "tests": [],
-    "notes": "Decisione utente accolta: 10 conferme manuali page-level totali saranno sufficienti a chiudere il cutoff operativo empirico; il target formale 5% al 95% è ritirato per questo percorso, non falsamente dichiarato raggiunto. Il cutoff resta limitato ai profili rappresentati, mantiene i casi oltre il 2% e deve includere ties; se non separa, chiudere con no-go senza campioni aggiuntivi. La modalità non esiste ancora nel CLI, che mantiene il gate formale, e non ci sono 10 coppie score/label; una conferma storica (00598) non ha score. Tre incrementi: (1) current-next policy aggiornata; (2) playbook e roadmap allineati; (3) planner riaperto per l'implementazione del consumer/artifact e la raccolta review. Architecture review mmr_architect raccomanda di mantenere distinti i due percorsi e nessun claim 5%/95%. Nessun OCR, immagini, holdout o test eseguiti.",
+    "tests": ["memoria-engine/.venv/Scripts/python.exe -m unittest test_document_ocr_lexicon_review test_ocr_threshold_calibration test_ocr_threshold_audit test_ocr_risk_score test_ocr_risk_features test_ocr_provisional_threshold test_ocr_review_scaffold test_ocr_review_package test_ocr_review_orchestrator test_ocr_review_finalizer test_ocr_review_batch test_ocr_workflow test_ocr_lexicon_candidates test_ocr_candidate_assessment test_ocr_workflow_cli: 195 tests passed."],
+    "notes": "Audit protocollo->CLI: T36/T37, confronto PP-OCR/Tesseract, crop e scaffold, Hunspell/glossario richiesto e hash-bound, layout/region coverage, correzioni visuali versionate, queue residua aggregata, batch/finalizer, score e cutoff provisional a 10 casi sono implementati e verificati. Il cutoff resta empirico/scoped, non statistico; machine_pass/auto-validation/human_verified restano falsi. Quality gate: 195 test mirati passati, routing v3.0 valido, diff check pulito. Non sono state create label reali, eseguite nuove inferenze o aperto holdout. Resta da preparare un campione reale preregistrato di dieci pagine e chiedere le conferme soltanto al punto di review; nessuna label simulata.",
     "task_envelope": {
-      "mode": "architecture-review",
+      "mode": "feature-slice",
       "repositories": [
         "memoria-engine",
         "memoria-bootstrap"
@@ -65,6 +77,12 @@
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_candidate_assessment.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_orchestrator.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_batch.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
         "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
@@ -72,16 +90,29 @@
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
       "write_set": [
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_package.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_lexicon_candidates.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_candidate_assessment.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_review_ledger.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_provisional_threshold.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_correction.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
+        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+        "memoria-engine/tests/",
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/agent-session-prompt.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "Policy/doc consistency and planner validation; no code tests, OCR, image review or holdout access.",
+    "test_command": "$env:PYTHONPATH='code;tests'; .\\.venv\\Scripts\\python.exe -m unittest test_document_ocr_lexicon_review test_ocr_threshold_calibration test_ocr_threshold_audit test_ocr_risk_score test_ocr_risk_features test_ocr_provisional_threshold test_ocr_review_scaffold test_ocr_review_package test_ocr_review_orchestrator test_ocr_review_finalizer test_ocr_review_batch test_ocr_workflow test_ocr_lexicon_candidates test_ocr_candidate_assessment test_ocr_workflow_cli",
       "stop_conditions": [
-        "The 10-case empirical closure makes no unsupported 5%/95% claim and is scoped to represented profiles.",
-        "The strict existing CLI remains clearly identified as unchanged; no cutoff or human confirmation is fabricated.",
-        "No holdout, source image or source byte is accessed or changed."
+        "Every mandatory procedure stage maps to an executable CLI command/gate; no known implementation gap remains before manual review.",
+        "The 10-case empirical cutoff is executable and consumable, without any 5%/95% claim; formal audit path remains intact.",
+        "Only real human review remains outstanding; no label, OCR result or source byte is fabricated/changed; no holdout is accessed."
       ]
     }
   },
@@ -109,25 +140,25 @@
   ],
   "next_action": {
     "mode": "resume",
-    "description": "Implementa un artifact e consumer di cutoff provisional e prepara una coorte hash-bound di dieci pagine; raccogli le conferme manuali, calcola il cutoff empirico con limite materiale 2% e chiudi il pilot senza dichiarare il target formale 5%/95%."
+    "description": "Completa la matrice di conformità CLI, applica i gap tecnici identificati e prepara una review batch hash-bound di dieci pagine; chiedi le conferme solo quando i gate e il package sono pronti, poi congela il cutoff empirico senza dichiarare il target formale 5%/95%."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "high",
-    "task_class": "architecture",
-    "agent": "mmr_architect",
-    "model": "gpt-6-astra",
-    "reasoning_effort": "low",
-    "rationale": "Architecture/contract decision separating the user-authorized 10-confirmation operational pilot from the statistically supported 5%/95% path while preserving provenance and truthful risk claims.",
+    "tier": "medium",
+    "task_class": "implementation",
+    "agent": "mmr_implementer",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "rationale": "Targeted runtime changes to make required OCR review steps executable in the CLI and support the user-authorized 10-confirmation provisional cutoff while keeping strict auditing separate.",
     "trace": [
       {
         "event": "selected",
-        "at": "2026-10-31T16:03:26Z",
-        "tier": "high",
-        "agent": "mmr_architect",
-        "model": "gpt-6-astra",
-        "reasoning_effort": "low",
-        "reason": "Select a policy-compatible architecture for the user-approved 10-confirmation operational cutoff, distinct from the formal 5%/95% audit."
+        "at": "2026-10-31T16:12:57Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implement missing CLI stages for the required OCR-to-transcription flow and the provisional ten-case cutoff consumer."
       },
       {
         "event": "selected",

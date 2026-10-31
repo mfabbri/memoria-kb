@@ -5,10 +5,17 @@ import unittest
 from caduti_fonti_report.document_analysis.ocr_lexicon_candidates import (
     LexiconEntry,
     rank_ocr_candidates,
+    _review_entries,
 )
 
 
 class OcrLexiconCandidatesTest(unittest.TestCase):
+    def test_explicit_empty_glossary_is_valid_but_empty_language_lexicon_is_not(self) -> None:
+        empty = {"@id": "fixture:empty", "version": "1", "entries": []}
+        self.assertEqual(_review_entries(empty, glossary=True), [])
+        with self.assertRaises(ValueError):
+            _review_entries(empty | {"schema_version": "1.0", "language": "deu"}, glossary=False)
+
     def test_ranking_is_deterministic_and_preserves_raw_text(self) -> None:
         raw = "Musterwrot Sig-X"
         lexicon = [

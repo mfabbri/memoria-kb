@@ -16,7 +16,7 @@ from caduti_fonti_report.document_analysis.ocr_alert_dispositions import audit_o
 from caduti_fonti_report.document_analysis.ocr_page_layout import audit_ocr_page_layout
 from caduti_fonti_report.document_analysis.ocr_review_scaffold import scaffold_ocr_review
 from caduti_fonti_report.document_analysis.ocr_visual_review_ledger import audit_ocr_visual_review_ledger
-from caduti_fonti_report.document_analysis.document_structure import reconstruct_document_structure
+from caduti_fonti_report.document_analysis.document_structure import reconstruct_document_structure, render_document_structure_markdown
 from caduti_fonti_report.memoria_cli import main
 
 
@@ -48,6 +48,8 @@ class OcrReviewScaffoldTest(unittest.TestCase):
         self._write("lexicon.json", {"@type": "OcrLanguageLexicon", "schema_version": "1.0",
             "@id": "fixture:de", "version": "1", "language": "deu",
             "entries": [{"term": "Bekannt", "category": "word", "source_id": "fixture", "version": "1"}]})
+        self._write("glossary.json", {"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+            "version": "1", "entries": []})
         (self.root / "page.md").write_text("Unbekannt\n", encoding="utf-8")
         self.output = self.root / "scaffold"
 
@@ -79,6 +81,66 @@ class OcrReviewScaffoldTest(unittest.TestCase):
         self._write("tesseract.json", self.tesseract)
         self._write("structure.json", reconstruct_document_structure(evidence=self.evidence, profile="numbered_report").to_dict())
         self._make_comparison()
+
+    def test_visual_correction_derives_new_candidate_and_reaudits_without_verification_promotion(self):
+        typed_structure = reconstruct_document_structure(evidence=self.evidence, profile="numbered_report")
+        (self.root / "page.md").write_text(render_document_structure_markdown(typed_structure), encoding="utf-8")
+        self._scaffold(apply=True)
+        ledger_path = self.output / "visual-ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["template_status"] = "complete"
+        block = self.structure["blocks"][0]
+        for observation in ledger["observations"]:
+            observation.update(outcome="readable", text=block["text"] if observation["unit_type"] == "block" else "checked",
+                               observer={"observer_id": "reviewer-1", "model": "manual",
+                                         "configuration": "side-by-side-image-crop-ocr", "observed_at": "2026-10-01T10:00:00Z"})
+        block_observation = next(item for item in ledger["observations"] if item["unit_type"] == "block")
+        block_observation["text"] = "1. Berichtigter Eintrag"
+        ledger_path.write_text(json.dumps(ledger, ensure_ascii=False), encoding="utf-8")
+        files = {"image": self.image, "evidence": self.root / "evidence.json",
+                 "structure": self.root / "structure.json", "markdown": self.root / "page.md", "ledger": ledger_path}
+        digest = lambda path: "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+        correction_set = {"@type": "OcrVisualCorrectionSet", "schema_version": "1.0",
+                          "source_digests": {key: digest(path) for key, path in files.items()},
+                          "corrections": [{"block_id": block["block_id"], "observation_id": block_observation["observation_id"],
+                                           "expected_candidate_text": block["text"],
+                                           "corrected_text": block_observation["text"],
+                                           "reviewer_id": "reviewer-1", "reason": "La pagina mostra chiaramente il testo completo."}]}
+        correction_path = self.root / "corrections.json"
+        correction_path.write_text(json.dumps(correction_set, ensure_ascii=False), encoding="utf-8")
+        output = self.root / "corrected"
+        args = ["documents", "ocr-visual-correct", "--image", str(files["image"]),
+                "--evidence", str(files["evidence"]), "--structure", str(files["structure"]),
+                "--markdown", str(files["markdown"]), "--ledger", str(files["ledger"]),
+                "--correction-set", str(correction_path), "--output-dir", str(output)]
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main(args), 0)
+            self.assertFalse(output.exists())
+            self.assertEqual(main(args + ["--apply"]), 0)
+        report = json.loads((output / "correction-report.json").read_text(encoding="utf-8"))
+        self.assertEqual(report["operation_status"], "written")
+        self.assertEqual(report["post_correction_visual_audit"]["checks"]["issue_count"], 0)
+        corrected = json.loads((output / "structure.json").read_text(encoding="utf-8"))
+        self.assertEqual(corrected["blocks"][0]["text"], "1. Berichtigter Eintrag")
+        self.assertFalse(report["human_verified"])
+        self.assertFalse(report["auto_validation_enabled"])
+        self.assertEqual(report["downstream_sidecars"], "stale_and_must_be_regenerated_from_corrected_candidate")
+        refreshed = self.root / "refreshed-scaffold"
+        scaffold_args = ["documents", "ocr-review-scaffold", "--image", str(files["image"]),
+                         "--evidence", str(files["evidence"]), "--tesseract-evidence", str(self.root / "tesseract.json"),
+                         "--comparison", str(self.root / "comparison.json"), "--structure", str(output / "structure.json"),
+                         "--markdown", str(output / "candidate.md"), "--lexicon", str(self.root / "lexicon.json"),
+                         "--glossary", str(self.root / "glossary.json"), "--visual-ledger", str(output / "visual-ledger.json"),
+                         "--output-dir", str(refreshed), "--apply"]
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(main(scaffold_args), 0)
+        refreshed_ledger = json.loads((refreshed / "visual-ledger.json").read_text(encoding="utf-8"))
+        refreshed_audit = audit_ocr_visual_review_ledger(
+            ledger_path=refreshed / "visual-ledger.json", image_path=files["image"],
+            evidence_path=files["evidence"], structure_path=output / "structure.json")
+        self.assertEqual(refreshed_ledger["template_status"], "complete")
+        self.assertEqual(report["post_correction_visual_audit"]["checks"]["issue_count"], 0)
+        self.assertEqual(refreshed_audit["checks"]["issue_count"], 0)
 
     def test_native_jpeg_crops_use_original_pixels_and_truthful_locator(self):
         self.image = self.root / "page.jpg"
@@ -279,6 +341,7 @@ class OcrReviewScaffoldTest(unittest.TestCase):
         base = ["documents", "ocr-review-scaffold", "--image", str(self.image),
                 "--evidence", str(self.root / "evidence.json"), "--structure", str(self.root / "structure.json"),
                 "--markdown", str(self.root / "page.md"), "--lexicon", str(self.root / "lexicon.json"),
+                "--glossary", str(self.root / "glossary.json"),
                 "--output-dir", str(self.output)]
         for flag, name in (("--comparison", "comparison.json"), ("--tesseract-evidence", "tesseract.json")):
             with self.subTest(missing=flag), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:

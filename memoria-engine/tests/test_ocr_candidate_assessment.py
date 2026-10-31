@@ -23,6 +23,9 @@ class OcrCandidateAssessmentTest(unittest.TestCase):
         self.markdown_path = self.root / "page.md"
         self.lexicon_path = self.root / "lexicon-review.json"
         self.output_path = self.root / "assessment.json"
+        self.glossary_path = self.root / "glossary.json"
+        self.write(self.glossary_path, {"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+            "version": "1", "entries": []})
         self.evidence = {
             "@type": "OcrPageEvidence", "page_id": "page-1", "source_document_id": "doc-1",
             "source_image_hash": "image-sha", "transform_id": "identity", "engine": "ppocr",
@@ -41,6 +44,10 @@ class OcrCandidateAssessmentTest(unittest.TestCase):
         block = self.structure["blocks"][0]
         self.lexicon = {
             "@type": "OcrDocumentLexiconReview", "schema_version": "1.0",
+            "abbreviation_check": "run_with_explicit_glossary",
+            "resources": [{"kind": "military_glossary", "path": str(self.glossary_path),
+                "resource_id": "fixture:empty-glossary", "version": "1",
+                "digest": "sha256:" + hashlib.sha256(self.glossary_path.read_bytes()).hexdigest()}],
             "source_structure_digest": "sha256:" + hashlib.sha256(structure_bytes).hexdigest(),
             "blocks": [{"page_id": "page-1", "block_id": block["block_id"], "text": block["text"],
                         "source_region_ids": block["source_region_ids"],
@@ -165,6 +172,18 @@ class OcrCandidateAssessmentTest(unittest.TestCase):
         report = self.assess()
         self.assertEqual(report["processability_status"], "blocked")
         self.assertIn("missing_input", {i["code"] for i in report["checks"]["issues"]})
+
+    def test_complete_gate_requires_current_explicit_glossary(self) -> None:
+        for change in ({"abbreviation_check": "not_run"}, {"resources": []}):
+            with self.subTest(change=change):
+                self.write(self.lexicon_path, self.lexicon | change)
+                self.assertIn("missing_explicit_glossary_review",
+                    {issue["code"] for issue in self.assess()["checks"]["issues"]})
+        self.write(self.lexicon_path, self.lexicon)
+        self.write(self.glossary_path, {"@type": "MilitaryGlossary", "@id": "fixture:empty-glossary",
+            "version": "2", "entries": []})
+        self.assertIn("invalid_or_stale_glossary_resource",
+            {issue["code"] for issue in self.assess()["checks"]["issues"]})
 
     def test_changed_candidate_cannot_use_review_from_previous_structure(self) -> None:
         self.write(self.structure_path, self.structure | {"profile": "changed"})

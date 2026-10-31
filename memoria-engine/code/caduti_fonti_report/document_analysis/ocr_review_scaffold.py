@@ -11,7 +11,9 @@ from typing import Any
 
 from .ocr_lexicon_candidates import build_document_lexicon_review
 from .ocr_review_orchestrator import _validate_evidence_comparison
-from .ocr_visual_review_ledger import _bbox, _digest, _invalid_constant, _unique_object
+from .ocr_visual_review_ledger import (
+    _bbox, _digest, _invalid_constant, _unique_object, audit_ocr_visual_review_ledger,
+)
 
 
 def _read_object(path: Path, label: str) -> tuple[dict[str, Any], str]:
@@ -71,6 +73,7 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                         comparison_path: Path, tesseract_evidence_path: Path,
                         glossary_path: Path | None = None, apply: bool = False,
                         variant_image_path: Path | None = None,
+                        visual_ledger_path: Path | None = None,
                         tile_size: int = 1200) -> dict[str, Any]:
     """Build deterministic sidecar templates; never fill visual judgments or layout."""
     image_path, evidence_path, structure_path = map(Path, (image_path, evidence_path, structure_path))
@@ -194,6 +197,19 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
     if not output_dir.name:
         raise ValueError("Directory di output non valida.")
 
+    prior_visual_ledger = None
+    prior_visual_digest = None
+    if visual_ledger_path is not None:
+        visual_ledger_path = Path(visual_ledger_path)
+        prior_visual_ledger, prior_visual_digest = _read_object(visual_ledger_path, "visual ledger")
+        prior_visual_audit = audit_ocr_visual_review_ledger(
+            ledger_path=visual_ledger_path, image_path=image_path,
+            evidence_path=evidence_path, structure_path=structure_path)
+        if (prior_visual_ledger.get("template_status") != "complete"
+                or prior_visual_audit.get("processability_status") != "diagnostic_only"
+                or prior_visual_audit.get("checks", {}).get("issues")):
+            raise ValueError("Il ledger visuale da riusare deve essere completo e passare l'audit corrente.")
+
     lexicon_preview_path = output_dir / "lexicon-review.json"
     lexicon_report = build_document_lexicon_review(
         structure_path=structure_path, lexicon_path=lexicon_path,
@@ -221,8 +237,21 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                 observation["candidate_text"] = unit.get("text", "")
             if kind == "block":
                 observation["source_region_ids"] = unit["source_region_ids"]
+                if "value" in unit:
+                    observation["candidate_value"] = unit.get("value")
             observations.append((observation, box, crop_name))
     visual_ledger["observations"] = [x[0] for x in observations]
+    if prior_visual_ledger is not None:
+        prior_observations = {item["observation_id"]: item for item in prior_visual_ledger["observations"]}
+        for observation in visual_ledger["observations"]:
+            prior = prior_observations.get(observation["observation_id"])
+            if prior is None:
+                raise ValueError("Il ledger visuale da riusare non copre tutti gli stessi observation_id.")
+            for field in ("outcome", "text", "observer", "candidate_text_before_correction",
+                          "candidate_value_before_correction", "correction_set_digest"):
+                if field in prior:
+                    observation[field] = prior[field]
+        visual_ledger["template_status"] = "complete"
     layout = {"@type": "OcrPageLayout", "schema_version": "1.0", "template_status": "incomplete",
               "page_id": evidence["page_id"], "source_image_hash": evidence["source_image_hash"],
               "source_page": evidence["source_page"], "source_evidence_digest": evidence_digest,
@@ -250,15 +279,20 @@ def scaffold_ocr_review(*, image_path: Path, evidence_path: Path, structure_path
                            "lexicon_path": str(lexicon_path)},
                 "outputs": ["lexicon-review.json", "visual-ledger.json", "layout.json",
                             "dispositions.json", "crops/"],
-                "required_manual_fields": ["visual observation text/outcome and observer provenance",
-                                           "semantic columns, rows and cell-to-region order",
-                                           "each not-found token disposition, reason and linked visual observation"],
+                "required_manual_fields": (["semantic columns, rows and cell-to-region order",
+                                            "each not-found token disposition, reason and linked visual observation"]
+                                           if prior_visual_ledger is not None else
+                                           ["visual observation text/outcome and observer provenance",
+                                            "semantic columns, rows and cell-to-region order",
+                                            "each not-found token disposition, reason and linked visual observation"]),
+                "reused_visual_ledger_digest": prior_visual_digest,
                 "authorizations": {"human_review_request_allowed": False, "machine_pass": False,
                                    "auto_validation_enabled": False, "gold_promotion_allowed": False}}
     report = {"@type": "OcrReviewScaffoldReport", "schema_version": "1.0", "status": "template_incomplete",
               "review_status": "unreviewed", "diagnostic_only": True, "frame_locator": frame_locator,
               "operation_status": "preview", "output_dir": str(output_dir), "tile_count": len(tiles),
               "observation_count": len(observations), "crop_count": len(observations),
+              "visual_observations_reused": len(observations) if prior_visual_ledger is not None else 0,
               "lexical_disposition_count": len(not_found), "outputs": manifest["outputs"],
               "authorizations": manifest["authorizations"]}
     if not apply:

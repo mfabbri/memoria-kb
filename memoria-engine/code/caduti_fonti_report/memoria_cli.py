@@ -42,8 +42,13 @@ from caduti_fonti_report.document_analysis.ocr_lexicon_candidates import build_d
 from caduti_fonti_report.document_analysis.ocr_candidate_assessment import build_ocr_candidate_assessment
 from caduti_fonti_report.document_analysis.ocr_risk_features import build_ocr_risk_features
 from caduti_fonti_report.document_analysis.ocr_risk_score import build_ocr_risk_score
+from caduti_fonti_report.document_analysis.ocr_provisional_threshold import (
+    calibrate_provisional_ocr_threshold,
+    evaluate_provisional_ocr_threshold,
+)
 from caduti_fonti_report.document_analysis.ocr_material_error_draft import build_ocr_material_error_draft
 from caduti_fonti_report.document_analysis.ocr_visual_review_ledger import audit_ocr_visual_review_ledger
+from caduti_fonti_report.document_analysis.ocr_visual_correction import apply_ocr_visual_corrections
 from caduti_fonti_report.document_analysis.ocr_page_layout import audit_ocr_page_layout
 from caduti_fonti_report.document_analysis.ocr_alert_dispositions import audit_ocr_alert_dispositions
 from caduti_fonti_report.document_analysis.ocr_review_orchestrator import run_ocr_review
@@ -1963,6 +1968,20 @@ def _command_documents_ocr_visual_review_audit(args: argparse.Namespace) -> int:
     return 1 if report["processability_status"] == "blocked" else 0
 
 
+def _command_documents_ocr_visual_correction(args: argparse.Namespace) -> int:
+    try:
+        report = apply_ocr_visual_corrections(
+            image_path=Path(args.image), evidence_path=Path(args.evidence),
+            structure_path=Path(args.structure), markdown_path=Path(args.markdown),
+            ledger_path=Path(args.ledger), correction_set_path=Path(args.correction_set),
+            output_dir=Path(args.output_dir), apply=args.apply)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"Errore documents ocr-visual-correct: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_ocr_layout_audit(args: argparse.Namespace) -> int:
     report = audit_ocr_page_layout(
         layout_path=Path(args.layout), evidence_path=Path(args.evidence),
@@ -2010,6 +2029,7 @@ def _command_documents_ocr_review_scaffold(args: argparse.Namespace) -> int:
             structure_path=Path(args.structure), markdown_path=Path(args.markdown),
             lexicon_path=Path(args.lexicon), glossary_path=Path(args.glossary) if args.glossary else None,
             output_dir=Path(args.output_dir), apply=args.apply, tile_size=args.tile_size,
+            visual_ledger_path=Path(args.visual_ledger) if args.visual_ledger else None,
         )
     except (OSError, ValueError, TypeError, KeyError) as exc:
         print(f"Errore documents ocr-review-scaffold: {exc}", file=sys.stderr)
@@ -2186,6 +2206,39 @@ def _command_documents_ocr_evidence_compare(args: argparse.Namespace) -> int:
             report["output_path"] = str(target)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError, TypeError) as exc:
         print(f"Errore documents ocr-evidence-compare: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_threshold_provisional_calibrate(args: argparse.Namespace) -> int:
+    try:
+        report = calibrate_provisional_ocr_threshold(
+            dataset_path=Path(args.dataset), sample_manifest_path=Path(args.sample_manifest))
+        target = Path(args.output)
+        if args.apply:
+            encoded = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("x", encoding="utf-8", newline="\n") as stream:
+                stream.write(encoded)
+            report["operation_status"] = "written"
+        else:
+            report["operation_status"] = "preview"
+            report["output_path"] = str(target.resolve())
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-threshold-provisional-calibrate: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_ocr_threshold_provisional_evaluate(args: argparse.Namespace) -> int:
+    try:
+        report = evaluate_provisional_ocr_threshold(
+            threshold_path=Path(args.threshold), score_path=Path(args.score),
+            output_path=Path(args.output), apply=args.apply)
+    except (OSError, ValueError) as exc:
+        print(f"Errore documents ocr-threshold-provisional-evaluate: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
@@ -3258,7 +3311,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_package.add_argument("--variant", required=True, choices=["raw"], help="Variante raw byte-identica al TIFF; le altre trasformazioni non sono coordinate compatibili con lo scaffold.")
     for option in ("page-profile", "tesseract-evidence", "lexicon"):
         documents_package.add_argument("--" + option, action="append", required=True, help="Mappa esplicita page_id=valore per ogni pagina.")
-    documents_package.add_argument("--glossary", action="append", help="Mappa opzionale page_id=path per ogni pagina.")
+    documents_package.add_argument("--glossary", action="append", required=True, help="Mappa esplicita page_id=path MilitaryGlossary per ogni pagina; entries può essere vuoto.")
     documents_package.add_argument("--output-dir", required=True, help="Directory nuova esterna al repository.")
     documents_package.add_argument("--apply", action="store_true", help="Scrive atomicamente il pacchetto; senza flag esegue preview.")
     documents_package.set_defaults(handler=_command_documents_ocr_review_package)
@@ -3312,7 +3365,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     documents_lexicon.add_argument("--structure", required=True, help="DocumentStructure JSON da controllare.")
     documents_lexicon.add_argument("--lexicon", required=True, help="OcrLanguageLexicon JSON esplicito e versionato.")
-    documents_lexicon.add_argument("--glossary", help="MilitaryGlossary JSON-LD opzionale per le sigle.")
+    documents_lexicon.add_argument("--glossary", required=True, help="MilitaryGlossary JSON-LD esplicito per le sigle; entries può essere vuoto.")
     documents_lexicon.add_argument("--output", required=True, help="Nuovo sidecar JSON-LD diagnostico.")
     documents_lexicon.add_argument("--max-distance", type=int, default=2)
     documents_lexicon.add_argument("--max-suggestions", type=int, default=5)
@@ -3326,6 +3379,19 @@ def build_parser() -> argparse.ArgumentParser:
     documents_visual_audit.add_argument("--evidence", required=True, help="OcrPageEvidence JSON originale.")
     documents_visual_audit.add_argument("--structure", required=True, help="DocumentStructure JSON candidato.")
     documents_visual_audit.set_defaults(handler=_command_documents_ocr_visual_review_audit)
+    documents_visual_correct = documents_subparsers.add_parser(
+        "ocr-visual-correct",
+        help="Applica correzioni esplicite legate a osservazioni visuali leggibili e produce una candidata versionata; sidecar dipendenti da rigenerare.",
+    )
+    documents_visual_correct.add_argument("--image", required=True, help="Immagine originale verificata dal ledger visuale.")
+    documents_visual_correct.add_argument("--evidence", required=True, help="OcrPageEvidence sorgente.")
+    documents_visual_correct.add_argument("--structure", required=True, help="DocumentStructure candidata sorgente.")
+    documents_visual_correct.add_argument("--markdown", required=True, help="Markdown deterministico della struttura sorgente.")
+    documents_visual_correct.add_argument("--ledger", required=True, help="OcrVisualReviewLedger completo e image-bound.")
+    documents_visual_correct.add_argument("--correction-set", required=True, help="OcrVisualCorrectionSet JSON v1.0 esplicito.")
+    documents_visual_correct.add_argument("--output-dir", required=True, help="Nuova directory per la candidata corretta e il ledger ri-auditato.")
+    documents_visual_correct.add_argument("--apply", action="store_true", help="Scrive solo in una directory nuova; senza flag mostra preview.")
+    documents_visual_correct.set_defaults(handler=_command_documents_ocr_visual_correction)
     documents_layout_audit = documents_subparsers.add_parser(
         "ocr-layout-audit", help="Audita righe/celle OCR in sola lettura; nessuna attestazione semantica.",
     )
@@ -3367,7 +3433,8 @@ def build_parser() -> argparse.ArgumentParser:
     documents_ocr_scaffold.add_argument("--structure", required=True, help="DocumentStructure JSON candidata.")
     documents_ocr_scaffold.add_argument("--markdown", required=True, help="Markdown candidato, incluso nel manifest tramite hash.")
     documents_ocr_scaffold.add_argument("--lexicon", required=True, help="OcrLanguageLexicon JSON esplicito.")
-    documents_ocr_scaffold.add_argument("--glossary", help="MilitaryGlossary JSON-LD opzionale.")
+    documents_ocr_scaffold.add_argument("--glossary", required=True, help="MilitaryGlossary JSON-LD esplicito; entries può essere vuoto.")
+    documents_ocr_scaffold.add_argument("--visual-ledger", help="Ledger completo da riusare dopo una correzione; deve passare l'audit sulla candidata corrente.")
     documents_ocr_scaffold.add_argument("--output-dir", required=True, help="Directory nuova per i sidecar e crop.")
     documents_ocr_scaffold.add_argument("--tile-size", type=int, default=1200, help="Lato massimo dei tile TIFF (128..4096).")
     documents_ocr_scaffold.add_argument("--apply", action="store_true", help="Scrive atomicamente; senza flag esegue solo preview.")
@@ -3437,7 +3504,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_calibration.set_defaults(handler=_command_documents_ocr_threshold_calibration)
     documents_threshold_audit = documents_subparsers.add_parser(
         "ocr-threshold-audit",
-        help="Audita errori materiali <=1% delle parole reference per pagina e rischio di falsa accettazione <=5%; non abilita machine_pass.",
+        help="Audita errori materiali <=2% delle parole reference per pagina e rischio di falsa accettazione <=5%; non abilita machine_pass.",
     )
     documents_threshold_audit.add_argument("--dataset", required=True, help="OcrAutoValidationHoldout JSON v1.2.")
     documents_threshold_audit.add_argument(
@@ -3447,6 +3514,24 @@ def build_parser() -> argparse.ArgumentParser:
     documents_threshold_audit.add_argument("--output", required=True, help="Nuovo rapporto OcrAutoValidationThresholdAudit.")
     documents_threshold_audit.add_argument("--apply", action="store_true", help="Scrive il rapporto; senza flag stampa la preview.")
     documents_threshold_audit.set_defaults(handler=_command_documents_ocr_threshold_audit)
+    provisional_calibrate = documents_subparsers.add_parser(
+        "ocr-threshold-provisional-calibrate",
+        help="Congela il cutoff empirico del pilot operativo preregistrato di esattamente dieci pagine; nessuna garanzia statistica.",
+    )
+    provisional_calibrate.add_argument("--dataset", required=True, help="OcrProvisionalThresholdDataset JSON v1.0 con dieci verifiche umane.")
+    provisional_calibrate.add_argument("--sample-manifest", required=True, help="OcrProvisionalThresholdSample JSON v1.0 congelato prima delle review.")
+    provisional_calibrate.add_argument("--output", required=True, help="Nuovo OcrProvisionalThresholdArtifact JSON.")
+    provisional_calibrate.add_argument("--apply", action="store_true", help="Scrive l'artifact; senza flag stampa la preview.")
+    provisional_calibrate.set_defaults(handler=_command_documents_ocr_threshold_provisional_calibrate)
+    provisional_evaluate = documents_subparsers.add_parser(
+        "ocr-threshold-provisional-evaluate",
+        help="Valuta uno score diagnostico contro cutoff empirico e scope esatto; non attesta accuratezza o review umana.",
+    )
+    provisional_evaluate.add_argument("--threshold", required=True, help="OcrProvisionalThresholdArtifact JSON v1.0.")
+    provisional_evaluate.add_argument("--score", required=True, help="OcrRiskScore JSON v1.0 prodotto dal CLI.")
+    provisional_evaluate.add_argument("--output", required=True, help="Nuovo OcrProvisionalThresholdDecision JSON.")
+    provisional_evaluate.add_argument("--apply", action="store_true", help="Scrive la decisione; senza flag stampa la preview.")
+    provisional_evaluate.set_defaults(handler=_command_documents_ocr_threshold_provisional_evaluate)
     documents_evidence_compare = documents_subparsers.add_parser(
         "ocr-evidence-compare",
         help="Confronta due evidence OCR compatibili; report diagnostic-only, nessuna correzione o validazione.",
