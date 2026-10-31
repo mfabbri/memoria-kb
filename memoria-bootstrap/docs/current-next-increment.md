@@ -76,6 +76,58 @@ Nessun holdout è stato letto in questa fase.
 Il readiness di base è `t41-threshold-readiness-20261031/threshold-readiness.json`
 (SHA-256 `b51c2fae20eb90abb759206e0c8baed304a63598d4dd1c300a020d18fb8cc97c`).
 
+## Audit del percorso OCR-to-transcription - 2026-10-31
+
+**Non posso attestare che il protocollo OCR→trascrizione sia stato completato
+sulla pagina 00598.** Il run T41
+`t41-real-cli-inference-00598-20261018` ha completato T36, T37, Tesseract e la
+costruzione del review package, ma si ferma a `awaiting_review`. In
+`ocr_workflow.py` lo stage `review=completed` indica che il builder ha creato il
+package; non indica che la revisione sia terminata. Il package T41 è
+`template_incomplete`/`unreviewed` e lascia aperte le verifiche lessicali,
+visuali e di layout.
+
+La revisione più completa trovata è il batch T40
+`ocr-review-batch-00598-20261017-final.json`, che lega una candidata corretta
+distinta dagli output grezzi. Il batch passa gli 8 stage, riporta 46 alert
+confermati visualmente, zero irrisolti e zero azioni manuali; il controllo
+visuale è `complete_for_declared_units` e layout/dispositions sono
+`complete_model_assisted`. Questo attesta una candidata pronta (`candidate_ready`),
+non una trascrizione validata dall'utente: `human_verified=false`,
+`review_status=unreviewed` e `semantic_accuracy_status=not_attested`.
+Il report lessicale elenca 166 match esatti, 49 `not_found` e 20 fuzzy dal
+lexicon Hunspell precedente; questi sono alert da verificare, non correzioni
+automatiche né prova di copertura del dizionario completo.
+
+| Passaggio definito | Evidenza T40/T41 | Stato audit |
+|---|---|---|
+| T36 PP-OCR → T37 evidence, struttura e Markdown | Eseguiti; gli hash grezzi T37 e le evidence di pagina coincidono tra i run | completato per generazione, non per accuratezza |
+| Tesseract diagnostico e confronto | Evidence Tesseract presente e con hash coincidente | completato come seconda lettura |
+| Package, crop/regioni e review visuale/layout | T40 lega una candidata corretta; batch visuale completo per le unità dichiarate, layout assistito dal modello | candidato pronto; manca attestazione umana dell'intera candidata |
+| Hunspell, glossario e abbreviazioni | Lexicon Hunspell precedente; nessun glossario dichiarato; `abbreviation_check=not_run` | incompleto |
+| Gate finale | Batch gate presente; nessun report `OcrReviewFinalization` trovato | finalizzazione non attestata |
+
+La candidata T40 ha `candidate-structure.json` SHA-256
+`60134c34f3a3e51bbbb7420b7b5704277c28a344809e51f74556612071df5b65` e
+`candidate.md` SHA-256
+`234ed17fb2cb33970dcef0fe49d25c6ec825a32771ea1b691c3d75effd1dfaea`.
+Questi non sono gli hash della struttura e del Markdown grezzi T41. Le evidence
+di input corrispondono, quindi si può ripartire dalla candidata T40 solo
+ricollegando esplicitamente package e gate a questi hash; non si può trasferire
+il suo esito agli output grezzi T41. Il manifest del package conserva
+`template_incomplete` e va letto insieme al batch report, che lega gli input di
+review completati.
+
+**Conclusione operativa:** il flusso è stato eseguito fino a una candidata
+corretta e a un batch gate, ma non fino a una trascrizione finale con verifica
+lessicale completa, attestazione umana hash-bound e finalizer. Questo audit non
+ha eseguito OCR, aperto immagini o consultato il holdout. I gap da chiudere per
+00598 sono il controllo lessicale secondo la procedura corrente (inclusi
+glossario/abbreviazioni), l'attestazione umana della candidata esatta e il
+finalizer. Gli 80 casi restano il minimo statistico per strato in calibration
+e, separatamente, nel nuovo holdout; non sostituiscono nessuno di questi
+passaggi né attivano da soli l'auto-validazione.
+
 ## Direzione confermata nella sessione - 2026-10-25
 
 Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua
