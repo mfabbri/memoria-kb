@@ -9,6 +9,32 @@ Il report readiness dello stesso giorno conserva i calcoli del rischio di
 sistema, ma il suo giudizio di breach per pagina va ricalcolato con il nuovo
 limite. Questa tolleranza non e' un cutoff OCR e non abilita l'auto-validazione.
 
+## Numeri riconciliati dagli artifact esistenti - 2026-10-31
+
+| Pagina/configurazione | Reference e metriche esistenti | Conteggio materiale adjudicato | Score T41 legato ai byte |
+|---|---|---:|---|
+| `00598` PP-OCRv5 | Reference verificata; 263 parole | 1/263 = **0,38%**, entro il 2% (massimo 5 parole intere) | assente (`risk_score: null`) |
+| `00150` PP-OCRv5 | Reference verificata; 50 edit WER su 394 parole (**12,69%**) | non adjudicato materialmente | assente |
+| `00150` Tesseract | Stessa pagina/reference; 152 edit WER su 394 (**38,58%**) | non adjudicato materialmente | assente |
+| `00415` PP-OCRv5 | Reference verificata; 9 edit WER su 381 parole (**2,36%**) | non adjudicato materialmente | assente |
+| `00007` PP-OCRv5 | Reference verificata; 31 edit WER su 341 parole (**9,09%**) | non adjudicato materialmente | assente |
+
+WER/CER sono metriche descrittive e non sostituiscono il conteggio di errori
+materiali. Le due configurazioni di `00150` sono una pagina/un documento, non
+due osservazioni indipendenti. Il risultato verificabile è **1 pagina con
+conteggio materiale adjudicato e 0 casi con score di rischio T41 associato**;
+non esiste quindi alcuna coppia score/label eleggibile per selezionare un
+cutoff. `00312` e `01000` hanno review parziali, `00750` è un candidato non
+verificato, e non entrano nel conteggio. Il precedente artifact readiness resta
+valido per i requisiti statistici e per il gap di frame, ma il suo giudizio per
+pagina è basato sull'1% allora in vigore.
+
+SHA-256 dei report letti: proposal `00598`
+`2861fe2b996af81bebb83c8cd2c65d876aa8f164ba952ff84cf6b6e80d78a80f`;
+comparison `00150` `30e3a6a909decd17dd8bc1f3415af22048f379882ed0e8354265a35710e9b7e1`;
+evaluation `00415` `e57e152bd15b462263e3e2f41bce5265e20c3bdbf1bc0d7d5f737e1bae9b4878`;
+evaluation `00007` `80164b3a1723776c9863fc14348a95a17c060d7c9d8215d97c9a39c2923d0b6c`.
+
 ## Direzione confermata nella sessione - 2026-10-25
 
 Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua

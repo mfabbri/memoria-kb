@@ -17,71 +17,60 @@
     }
   ],
   "increment": {
-    "id": "t41-page-error-limit-two-percent-20261031",
-    "title": "Aggiornare il limite materiale per pagina T41 al 2%",
-    "objective": "Applicare il limite per-page material word error rate del 2% al gate di calibrazione/audit e ai contratti operativi, mantenendo il rischio di false acceptance al 5% e la confidenza al 95%.",
+    "id": "t41-reconcile-existing-material-error-cases-20261031",
+    "title": "Riconciliare errori materiali e score OCR già disponibili",
+    "objective": "Determinare quanti casi T41 esistenti accoppiano una reference verificata, un conteggio di errori materiali e uno score OCR con provenienza valida sotto il limite pagina del 2%.",
     "scope": [
-      "Cambiare la costante condivisa di limite pagina da 0.01 a 0.02 e applicarla sia alla selezione calibration sia all'audit holdout.",
-      "Aggiornare le fixture/aspettative test esistenti per la policy del 2% e per il nuovo confine di breach.",
-      "Aggiornare la policy attiva in roadmap, playbook e current-next con data e motivazione dell'utente; preservare le note storiche del limite 1%."
+      "Riconciliare solo gli artifact calibration già esistenti per 00598, 00150, 00415 e 00007.",
+      "Separare il WER/CER descrittivo dal conteggio materiale adjudicato; non contare due engine sulla stessa pagina come unità indipendenti.",
+      "Registrare score disponibili e assenti, riferimenti/hash e impedimenti, senza modificare reference o aprire holdout."
     ],
     "out_of_scope": [
-      "Cambiare target false-accept 0.05, confidenza 0.95, formula score o strata pre-dichiarati.",
+      "Cambiare la policy 2%/5%/95%, score o strata pre-dichiarati.",
       "Calibrare o congelare un cutoff, attivare machine_pass/auto-validation o aprire holdout.",
       "Eseguire OCR o cambiare reference/label storiche."
     ],
     "candidate_files": [
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
-      "memoria-engine/tests/test_ocr_threshold_audit.py",
-      "memoria-engine/tests/test_ocr_threshold_calibration.py",
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/ocr-page-reference-evaluation-00415-20261011.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/ocr-page-reference-evaluation.json",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "L'implementazione rifiuta policy diverse da 2%/5%/95%; boundary e fixture riflettono 2%; la documentazione attiva distingue 2% per pagina da 5% rischio sistema; nessun holdout, cutoff o auto-accept cambia."
+    "stop_condition": "La tabella riconcilia gli artifact leggibili e stabilisce il conteggio di casi con reference verificata + material count adjudicato + score provenance-bound; nessun holdout è consultato."
   },
   "verification": {
     "documentation_touchpoints": [
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "partial",
+    "result": "pending",
     "tests": [],
-    "notes": "Incremento 1/3 completato: limite 2% applicato alla selezione calibration e all'audit holdout; review indipendente ha trovato e fatto correggere il confronto hard-coded all'1%. Il target 5% false acceptance e la confidenza 95% restano invariati. Planner validation e git diff --check passati; nessun test codice eseguito. Nel 2/3 si riconciliano i soli casi material-error già adjudicati e gli score disponibili; il 3/3 ricalcola readiness con 2%, senza holdout finché il cutoff non è congelato.",
+    "notes": "Incremento 1/3 completato e inviato in 236466d: limite 2% applicato alla selezione calibration e all'audit holdout; review indipendente ha rilevato e fatto correggere il confronto hard-coded all'1%. Il target 5% false acceptance e la confidenza 95% restano invariati. Planner validation e git diff --check passati; nessun test codice eseguito. Il 2/3 riconcilia i casi già esistenti; il 3/3 ricalcola readiness al 2% e conclude se esiste un cutoff sostenibile, senza holdout finché non congelato.",
     "task_envelope": {
-      "mode": "scoped-fix",
+      "mode": "quality-slice",
       "repositories": [
-        "memoria-engine",
+        "memoria-workspace-runtime",
         "memoria-bootstrap"
       ],
       "read_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
-        "memoria-engine/tests/test_ocr_threshold_audit.py",
-        "memoria-engine/tests/test_ocr_threshold_calibration.py",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/ocr-page-reference-evaluation-00415-20261011.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/ocr-page-reference-evaluation.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json",
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
-        "memoria-engine/tests/test_ocr_threshold_audit.py",
-        "memoria-engine/tests/test_ocr_threshold_calibration.py",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/current-next-increment.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "No code tests run per instruction; inspect targeted diff, policy references, planner validation, and git diff --check.",
+      "test_command": "Reconcile targeted JSON metadata and reported counts; no code tests, OCR, or holdout access.",
       "stop_conditions": [
-      "Production constant, calibration breach classification and validator message use 0.02; false-accept and confidence constants remain 0.05/0.95.",
-      "Existing fixtures and breach boundary align to 2%; a calibration fixture with 4/300 errors distinguishes the 2% rule from the former 1% rule.",
-        "Active docs record the policy change; historical 1% results remain clearly historical."
+        "Material-error labels are counted separately from descriptive WER/CER.",
+        "Only score provenance-bound to the exact OCR bytes is counted as calibration score.",
+        "No holdout or user-confirmed reference is changed."
       ]
     }
   },
@@ -108,17 +97,26 @@
   ],
   "next_action": {
     "mode": "resume",
-    "description": "Collect and reconcile the existing user-adjudicated material-error counts and provenance-bound OCR scores; do not inspect holdout data."
+    "description": "Recompute T41 readiness at the adopted 2% page limit and state whether any cutoff is supported; do not inspect holdout data."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "implementation",
-    "agent": "mmr_implementer",
-    "model": "gpt-6.1-sol",
-    "reasoning_effort": "medium",
-    "rationale": "A shared threshold constant controls both calibration selection and holdout breach classification; update it with the active contract in one bounded increment.",
+    "tier": "low",
+    "task_class": "discovery",
+    "agent": "mmr_scanner",
+    "model": "gpt-6-luna",
+    "reasoning_effort": "low",
+    "rationale": "Read-only reconciliation of a small, known set of runtime artifacts; distinguish material labels from descriptive OCR metrics without changing thresholds or accessing holdout.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-31T11:44:54Z",
+        "tier": "low",
+        "agent": "mmr_scanner",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Reconcile existing verified-page metrics and material adjudications; no holdout access or OCR run."
+      },
       {
         "event": "selected",
         "at": "2026-10-31T11:44:54Z",
