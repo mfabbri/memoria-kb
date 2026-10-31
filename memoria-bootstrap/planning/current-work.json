@@ -2,55 +2,57 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-30T20:46:40Z",
-  "updated_at": "2026-10-30T20:47:51Z",
+  "selected_at": "2026-10-30T20:54:21Z",
+  "updated_at": "2026-10-30T20:58:16Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Esito review esplorativa JPG e gate soglia - 2026-10-30",
-      "reason": "Il frame corrente non supporta ancora il target per strato; ampliare e fissare un inventario prima di campionare e calibrare."
+      "section": "Inventario candidati per estendere il frame T41 - 2026-10-30",
+      "reason": "Il catalogo metadati contiene nuove famiglie non ancora classificate; un campione visuale esplorativo identifica quali fonti sono compatibili con T41."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "La soglia richiede reference adjudicate, partizioni indipendenti e audit del limite per pagina/strato."
+      "reason": "Gli strati di lingua/layout/leggibilita' vanno dichiarati prima di confronto OCR e partizione di calibrazione/holdout."
     }
   ],
   "increment": {
-    "id": "t41-candidate-frame-inventory-20261030",
-    "title": "Inventario hash delle collezioni immagine candidate per estendere T41",
-    "objective": "Produrre un inventario riproducibile di percorsi e metadati delle collezioni immagine locali candidate a estendere il frame T41, mantenendo distinte le famiglie sorgente e senza eseguire OCR.",
+    "id": "t41-candidate-family-visual-screen-20261030",
+    "title": "Screening visuale esplorativo delle famiglie immagine candidate",
+    "objective": "Esaminare un campione casuale riproducibile di 30 immagini nuove, cinque per famiglia sorgente candidata, per individuare famiglie visivamente compatibili con il profilo T41 e priorita' di classificazione; nessuna immagine diventa gold o parte di holdout.",
     "scope": [
-      "Inventariare immagini JPG/JPEG/PNG/TIFF nelle directory di documenti_da_processare/foto, conservando famiglia, percorso relativo, estensione, dimensione e mtime_ns.",
-      "Riutilizzare il catalogo visuale TIFF esistente senza riclassificare o ricalcolare il frame 995.",
-      "Registrare conteggi, byte, errori e duplicati di percorso per famiglia e un digest canonico dell'inventario; gli SHA-256 dei byte immagine saranno calcolati solo per i candidati selezionati nel passo successivo."
+      "Estrarre 5 immagini per ciascuna delle 6 famiglie non-T314 dal catalogo metadati con seed fisso.",
+      "Calcolare SHA-256 delle immagini selezionate e produrre preview/contact sheet separati per famiglia.",
+      "Registrare soltanto una classificazione visuale esplorativa di lingua/layout/leggibilita', con incertezza esplicita e senza trascrivere testo."
     ],
     "out_of_scope": [
-      "Eseguire OCR, inferenza VLM, scrivere o correggere trascrizioni/reference o leggere artefatti holdout.",
-      "Promuovere immagini esplorative a calibration/gold, scegliere cutoff o abilitare auto-validation.",
-      "Fondere famiglie sorgente o modificare immagini originali."
+      "Usare le immagini selezionate come reference, label human_verified, calibration cases o holdout.",
+      "Eseguire OCR/VLM, Hunspell, calcolare score/cutoff o leggere dati holdout.",
+      "Generalizzare il campione di 30 alla prevalenza o numerosita' degli strati nelle famiglie."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
       "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto",
       "memoria-bootstrap/planning/current-work.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030/visual-screen-sample.json",
       "memoria-bootstrap/docs/current-next-increment.md"
     ],
-    "stop_condition": "Inventario completo per le famiglie immagine candidate con digest canonico riproducibile, zero duplicati di percorso e zero errori di metadati; frame TIFF esistente invariato e nessun OCR, reference, score o holdout consultato."
+    "stop_condition": "Tutte le 30 immagini campionate hanno identita'/SHA-256 e preview; ogni famiglia ha un esito esplorativo supportato dai pixel o resta esplicitamente incerta; nessuna immagine entra in calibration/holdout e nessun OCR/VLM/reference/score e' consultato."
   },
   "verification": {
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "passed",
+    "result": "partial",
     "tests": [
-      "Metadata inventory contains 13,298 unique relative paths across seven source families, with zero metadata read errors.",
-      "Canonical inventory SHA-256 recomputed and matched: 0008db13fc61b5062c9c39e2954e850f7bbb5b0a8227b6d18b8b4bd47ce6e77e.",
-      "Existing 995-page visual TIFF catalog was reused; inventory did not read image bytes, OCR, references, labels, scores, or holdout content.",
+      "30 unique pages sampled at 5 per family with seed 20261030; source and preview SHA-256 rechecked with zero mismatches.",
+      "All visual labels are assistant exploratory, explicitly non-gold and holdout-ineligible; no OCR or VLM inference was run.",
+      "Ollama WSL GET preflight succeeded: 0.34.2; qwen3-vl:4b and qwen3-vl:8b are installed with vision capability. No page-classification benchmark was run.",
+      "The visual sample is too small to estimate stratum prevalence; the existing 7-page deu-handwritten-low deficit remains unresolved.",
       "Planner schema/routing validation and git diff --check passed; no code tests run."
     ],
-    "notes": "Candidate metadata inventory saved to runtime D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json. It is not a classified frame or calibration cohort; selected pages need byte SHA-256 and visual/lexical classification before cohort freeze. No threshold found or holdout read.",
+    "notes": "30-page source-family screen saved under runtime visual-screen-20261030; manifest SHA-256 a22a83247604fd8d2ac820edc453062526aaa449baa2e753d48405185d6670a6. It shows heterogeneous but mostly typed/form/table families, with one short handwritten card and no evidence of a sufficiently sized deu-handwritten-low stratum. No model inference; Qwen page-classification needs a task-matched benchmark. Threshold remains no-go; this increment does not provide accuracy labels.",
     "task_envelope": {
       "mode": "quality-slice",
       "repositories": [
@@ -58,19 +60,19 @@
         "memoria-workspace-runtime"
       ],
       "read_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/tiff-visual-classification-catalog-995.json",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
         "P:/Comune/Me.Mo.Ri.a/documenti_da_processare/foto"
       ],
       "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030",
+        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030",
         "memoria-bootstrap/planning/current-work.json",
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
-      "test_command": "Recompute canonical metadata inventory digest and assert file counts/unique paths, source-family separation, and zero metadata errors; no OCR or code tests.",
+      "test_command": "Recompute selected source and preview SHA-256, assert 30 unique paths/5 per family, non-gold status, and no OCR/VLM outputs; no code tests.",
       "stop_conditions": [
-        "Metadata inventory covers candidate image files with canonical digest, unique paths, and zero read errors.",
-        "Existing 995-page TIFF catalog and source files are unchanged; content SHA-256 is deferred to selected candidates.",
-        "No OCR/reference/label/score/holdout content is read and no threshold is frozen."
+        "Thirty pages have immutable source/preview hashes and repeatable sample membership.",
+        "Exploratory visual classes are explicitly non-gold and excluded from holdout.",
+        "No OCR/VLM inference/reference/score/holdout labels were read; no cutoff is frozen."
       ]
     }
   },
@@ -97,7 +99,7 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Select the second of the user's three T41 increments: classify and hash candidate pages, then freeze a disjoint calibration/holdout design only if the expanded frame supports the predeclared strata."
+    "description": "Run a calibration readiness increment using only eligible human-verified pages and score artifacts. Do not open holdout; report no-go if the required accepted cases/strata are absent."
   },
   "routing": {
     "policy_version": "3.0",
@@ -108,6 +110,24 @@
     "reasoning_effort": "medium",
     "rationale": "Runtime artifact increment with deterministic file inventory and provenance; no OCR accuracy adjudication or threshold decision is performed in this step.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-30T20:54:21Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Generate deterministic, hash-bound visual screening artifact for candidate T41 source families without OCR or holdout access."
+      },
+      {
+        "event": "completed",
+        "at": "2026-10-30T20:58:16Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Thirty candidate pages screened visually with source/preview hashes; observations are non-gold and insufficient to expand the handwritten-low stratum."
+      },
       {
         "event": "selected",
         "at": "2026-10-30T20:46:40Z",

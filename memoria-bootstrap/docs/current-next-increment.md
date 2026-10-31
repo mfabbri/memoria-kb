@@ -68,6 +68,28 @@ eseguiti OCR, consultate reference/holdout o create label: questi file sono
 candidati, non ancora un frame classificato o una coorte. Gli SHA-256 dei byte
 verranno fissati soltanto per i candidati selezionati prima della review.
 
+### Screening visuale delle famiglie candidate - 2026-10-30
+
+Un campione casuale con seed `20261030` ha esaminato 5 immagini per ciascuna
+delle 6 famiglie non-T314 (30 in totale), legate a sorgente e preview con
+SHA-256. I contact sheet mostrano famiglie eterogenee e perlopiù dattiloscritte,
+con moduli, tabelle, pagine a basso contrasto e annotazioni; compare una scheda
+breve manoscritta, ma nessuna evidenza sufficiente di uno strato
+`deu-handwritten-low` rappresentativo. Le osservazioni sono screening
+esplorativo dell'assistente, non label gold e non stime di prevalenza. Non sono
+stati eseguiti OCR o inferenza Qwen, né consultati reference o holdout. Il
+preflight Ollama WSL ha restituito `0.34.2` e i tag vision Qwen3-VL 4B/8B; non
+esiste ancora un benchmark page-classification task-matched per usare il modello
+come triage affidabile.
+
+Il cutoff resta **no-go**: i 13.298 candidati non sono classificati né
+accuracy-eligible, mentre il frame visuale corrente ha solo 7 pagine
+`deu-handwritten-low`. Per sostenere il gate statistico servono almeno 80
+pagine accettate per strato nella calibration e 80 nell'holdout indipendente;
+prima servono una classificazione riproducibile del frame, reference
+human-verified e score legati agli stessi byte. La singola pagina 00598 non
+stima il rischio di false acceptance e non consente di congelare una soglia.
+
 ## Orchestrazione OCR nativa TIFF/JPEG v1.3 - 2026-10-22
 
 OcrWorkflow v1.3 compone T36/T37, Tesseract raw-native v1.1 e preparazione
