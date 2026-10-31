@@ -35,7 +35,7 @@ class OcrThresholdCalibrationTest(unittest.TestCase):
         return {"page_id": f"page-{i}", "source_document_id": f"doc-{i}",
                 "source_image_sha256": f"{i:064x}", "stratum": "deu-prose",
                 "partition": "calibration", "review_status": "human_verified", "accuracy_eligible": True,
-                "score": 0.1, "material_word_error_count": 1, "reference_word_count": 300,
+                "score": 0.1, "material_word_error_count": 4, "reference_word_count": 300,
                 "material_error_categories": ["text"], "reference_id": f"ref-{i}",
                 "reference_evaluation_sha256": "a" * 64, "score_source_sha256": "b" * 64}
 
@@ -57,7 +57,7 @@ class OcrThresholdCalibrationTest(unittest.TestCase):
         digest = payload.pop("artifact_payload_sha256")
         self.assertEqual(digest, hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()).hexdigest())
         holdout = {"@type": "OcrAutoValidationHoldout", "schema_version": "1.2",
-                   "policy": {"max_page_material_word_error_rate": 0.01, "target_false_accept_page_rate": 0.05, "confidence_level": 0.95},
+                   "policy": {"max_page_material_word_error_rate": 0.02, "target_false_accept_page_rate": 0.05, "confidence_level": 0.95},
                    "threshold": report["threshold"], "cohort_id": "synthetic", "cohort_manifest_sha256": "c" * 64,
                    "required_strata": ["deu-prose"], "cases": [dict(self.case(999), partition="holdout")]}
         _validate_dataset(holdout)

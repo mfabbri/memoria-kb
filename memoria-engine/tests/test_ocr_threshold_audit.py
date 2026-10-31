@@ -66,7 +66,7 @@ class OcrThresholdAuditTest(unittest.TestCase):
             "cohort_id": "synthetic-holdout-v1",
             "cohort_manifest_sha256": "0" * 64,
             "policy": {
-                "max_page_material_word_error_rate": 0.01,
+                "max_page_material_word_error_rate": 0.02,
                 "target_false_accept_page_rate": 0.05,
                 "confidence_level": 0.95,
             },
@@ -188,13 +188,13 @@ class OcrThresholdAuditTest(unittest.TestCase):
 
         report = self.audit()
 
-        self.assertEqual(report["policy"]["max_page_material_word_error_rate"], 0.01)
+        self.assertEqual(report["policy"]["max_page_material_word_error_rate"], 0.02)
         self.assertEqual(report["holdout"]["pages_over_page_word_error_limit"], 0)
         self.assertEqual(report["holdout"]["observed_false_accept_page_rate"], 0.0)
         self.assertTrue(report["pilot_activation_eligible"])
 
-    def test_more_than_one_percent_material_word_errors_breaches_page_limit(self) -> None:
-        self.write_dataset(self.dataset(word_errors={0: 4}))
+    def test_more_than_two_percent_material_word_errors_breaches_page_limit(self) -> None:
+        self.write_dataset(self.dataset(word_errors={0: 7}))
 
         report = self.audit()
 

@@ -202,7 +202,8 @@ La trascrizione OCR conserva il testo nella lingua sorgente; una traduzione è u
 artefatto distinto e va dichiarata solo se generata, con stato di review
 esplicito. La conferma umana di una reference o di un fatto archivistico resta
 distinta dalla validità operativa della candidata OCR. Il pilot misura gli errori
-materiali come quota di parole per pagina (soglia iniziale 1%) e il rischio di
+materiali come quota di parole per pagina (limite 2% dal 2026-10-31) e il rischio
+di
 false accettazioni con limite superiore unilaterale al 95% (massimo 5%). Un
 singolo errore sotto la soglia percentuale non invalida automaticamente la
 pagina. Finché score e cutoff non sono sostenuti da calibration e holdout
@@ -692,10 +693,11 @@ in review manuale, oppure ampliare il frame prima del campionamento.
 
 La qualità della pagina non è binaria: si misura il rapporto
 `material_word_error_count / reference_word_count`. Il limite iniziale del pilot
-è `1%`: una discrepanza su una pagina di 300 parole vale circa `0,33%` e non
+è `2%` dal 2026-10-31: una discrepanza su una pagina di 300 parole vale circa
+`0,33%` e non
 blocca da sola la validità della trascrizione. La soglia di sistema è separata:
 tra le pagine che il punteggio auto-accetterebbe, il limite superiore unilaterale
-al 95% della quota di pagine che superano l'1% deve essere al massimo `5%`, sia
+al 95% della quota di pagine che superano il 2% deve essere al massimo `5%`, sia
 nel totale sia negli strati richiesti.
 
 Confrontare la candidata OCR esatta con la reference `human_verified/verified` e
@@ -823,8 +825,8 @@ non riprendere il workflow originale.
 La coorte holdout non si usa per scegliere score, cutoff, feature o strata. Il
 controllo statistico riguarda le sole pagine che il cutoff congelato avrebbe
 auto-accettato, ma tutte le pagine preregistrate devono essere riconciliate con
-il dataset. Una pagina oltre l'1% è un falso passaggio per il secondo target;
-una pagina con errori che resta entro l'1% non conta come falsa accettazione.
+il dataset. Una pagina oltre il 2% è un falso passaggio per il secondo target;
+una pagina con errori che resta entro il 2% non conta come falsa accettazione.
 Con zero pagine oltre soglia il limite aggregato unilaterale al 95% richiede
 almeno 59 pagine auto-accettate; i controlli per strato possono richiederne di
 piu'. Nessun esito abilita `auto_validation_enabled` o `machine_pass` finché il

@@ -1,85 +1,87 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "completed",
-  "selected_at": "2026-10-31T11:05:45Z",
-  "updated_at": "2026-10-31T11:06:34Z",
+  "status": "in_progress",
+  "selected_at": "2026-10-31T11:44:54Z",
+  "updated_at": "2026-10-31T11:44:54Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Inventario candidati per estendere il frame T41 - 2026-10-30",
-      "reason": "Il frame metadata e lo screening esplorativo non bastano a definire reference calibration o score cutoff."
+      "section": "Aggiornamento policy T41 - 2026-10-31",
+      "reason": "L'utente autorizza ad alzare il limite pagina se l'1% impedisce un OCR affidabile; si adotta 2% per la raccolta calibration, mantenendo 5% di false-accept risk."
     },
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "T41 richiede almeno 80 pagine accettate per strato e partizione con rischio false acceptance entro il 5%; holdout solo dopo il cutoff congelato."
+      "reason": "Il limite pagina e il limite di rischio di sistema sono distinti e vanno mantenuti coerenti nell'implementazione e nel contratto."
     }
   ],
   "increment": {
-    "id": "t41-threshold-readiness-audit-20261031",
-    "title": "Audit di readiness calibration e quantificazione del no-go soglia",
-    "objective": "Determinare se gli artifact T41 calibration attualmente verificabili sostengono un cutoff senza aprire l'holdout; calcolare il minimo per il bound binomiale esatto e registrare il gap per strato.",
+    "id": "t41-page-error-limit-two-percent-20261031",
+    "title": "Aggiornare il limite materiale per pagina T41 al 2%",
+    "objective": "Applicare il limite per-page material word error rate del 2% al gate di calibrazione/audit e ai contratti operativi, mantenendo il rischio di false acceptance al 5% e la confidenza al 95%.",
     "scope": [
-      "Riconciliare readiness dei 995 TIFF, inventario candidati e screening esplorativo con la sola proposta di errore materiale adjudicata per 00598 e il pacchetto diagnostico 00150.",
-      "Calcolare il minimo n a zero breach per il bound one-sided Clopper-Pearson 95% con correzione Bonferroni per 2/3/4 strati.",
-      "Produrre un report preview-only: cutoff resta null, machine_pass/auto-validation false; holdout non consultato."
+      "Cambiare la costante condivisa di limite pagina da 0.01 a 0.02 e applicarla sia alla selezione calibration sia all'audit holdout.",
+      "Aggiornare le fixture/aspettative test esistenti per la policy del 2% e per il nuovo confine di breach.",
+      "Aggiornare la policy attiva in roadmap, playbook e current-next con data e motivazione dell'utente; preservare le note storiche del limite 1%."
     ],
     "out_of_scope": [
-      "Aprire membership, OCR, score, label o output del holdout.",
-      "Derivare score/cutoff da pagine non accuracy-eligible o da metriche CER/WER aggregate.",
-      "Promuovere gli screening assistant a calibration labels o abilitare auto-validation."
+      "Cambiare target false-accept 0.05, confidenza 0.95, formula score o strata pre-dichiarati.",
+      "Calibrare o congelare un cutoff, attivare machine_pass/auto-validation o aprire holdout.",
+      "Eseguire OCR o cambiare reference/label storiche."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/ocr-stratum-readiness-995-revised.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030/visual-screen-sample.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-calibration-20261001/calibration-manifest.json",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
+      "memoria-engine/tests/test_ocr_threshold_audit.py",
+      "memoria-engine/tests/test_ocr_threshold_calibration.py",
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/planning/current-work.json",
-      "D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs\\t41-threshold-readiness-20261031\\threshold-readiness.json"
+      "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Report lega i soli artifact calibration ammessi con SHA-256, il bound esatto e le numerosita' minime per strato/partizione; dichiara no-go se mancano dataset human_verified/accuracy_eligible e score provenance-bound; nessun holdout letto e cutoff/autovalidazione restano null/false."
+    "stop_condition": "L'implementazione rifiuta policy diverse da 2%/5%/95%; boundary e fixture riflettono 2%; la documentazione attiva distingue 2% per pagina da 5% rischio sistema; nessun holdout, cutoff o auto-accept cambia."
   },
   "verification": {
     "documentation_touchpoints": [
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "partial",
-    "tests": [
-      "Readiness report and all five input digests revalidated; report payload SHA-256 c7a3a48574d1004cd4ceef637d8f2aed67559ddd085387a04ba252c1a75481ed.",
-      "Exact one-sided Clopper-Pearson minima at zero breaches reproduced: 72/80/86 accepted per stratum for 2/3/4 strata; predeclared 3-stratum design needs 480 accepted across both partitions.",
-      "Tiff frame counts reconcile: prose-medium 187, table-medium 437, handwritten-low 7; at least 153 more raw handwritten-low pages needed even at 100% acceptance.",
-      "00598 is 1/263 = 0.38% within page limit, but no provenance-bound score/eligible complete calibration dataset exists in reviewed inputs; cutoff null and safety flags false.",
-      "No holdout was inspected. Planner validation and git diff --check passed; no code tests run."
-    ],
-    "notes": "Third increment completed with calibration-only no-go report at D:\\CaDiMalanca\\me.mo.ri.a-kb-runtime\\ocr-runs\\t41-threshold-readiness-20261031\\threshold-readiness.json. The 1% page criterion is met by one page, but 5% false-accept risk cannot be estimated and no supported cutoff can be frozen. The three-increment batch is complete; OCR tuning remains open pending a classified expanded frame and sufficient verified score/label cases.",
+    "tests": [],
+    "notes": "Incremento 1/3 completato: limite 2% applicato alla selezione calibration e all'audit holdout; review indipendente ha trovato e fatto correggere il confronto hard-coded all'1%. Il target 5% false acceptance e la confidenza 95% restano invariati. Planner validation e git diff --check passati; nessun test codice eseguito. Nel 2/3 si riconciliano i soli casi material-error già adjudicati e gli score disponibili; il 3/3 ricalcola readiness con 2%, senza holdout finché il cutoff non è congelato.",
     "task_envelope": {
-      "mode": "quality-slice",
+      "mode": "scoped-fix",
       "repositories": [
-        "memoria-bootstrap",
-        "memoria-workspace-runtime"
+        "memoria-engine",
+        "memoria-bootstrap"
       ],
       "read_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-visual-classification-20261020/ocr-stratum-readiness-995-revised.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/candidate-image-inventory.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-candidate-frame-inventory-20261030/visual-screen-20261030/visual-screen-sample.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-calibration-20261001/calibration-manifest.json"
-      ],
-      "write_set": [
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/planning/current-work.json",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
+        "memoria-engine/tests/test_ocr_threshold_audit.py",
+        "memoria-engine/tests/test_ocr_threshold_calibration.py",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/current-next-increment.md"
       ],
-      "test_command": "Recompute input SHA-256, page-error ratio, exact Clopper-Pearson bounds, and explicit fail-closed flags; no holdout/code tests.",
+      "write_set": [
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
+        "memoria-engine/tests/test_ocr_threshold_audit.py",
+        "memoria-engine/tests/test_ocr_threshold_calibration.py",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/planning/current-work.json"
+      ],
+      "test_command": "No code tests run per instruction; inspect targeted diff, policy references, planner validation, and git diff --check.",
       "stop_conditions": [
-        "Input hashes and exact statistical minima are reproduced for the predeclared three strata.",
-        "No complete eligible calibration dataset means no cutoff artifact is emitted.",
-        "No holdout content is accessed; machine_pass and auto-validation remain false."
+      "Production constant, calibration breach classification and validator message use 0.02; false-accept and confidence constants remain 0.05/0.95.",
+      "Existing fixtures and breach boundary align to 2%; a calibration fixture with 4/300 errors distinguishes the 2% rule from the former 1% rule.",
+        "Active docs record the policy change; historical 1% results remain clearly historical."
       ]
     }
   },
@@ -95,7 +97,7 @@
     "2026-10-18: il playbook distingue prova di inferenza e riuso: per provare OCR reale usare --apply su output dir nuova e verificare chiamate runner/zero riusi; output persistiti servono a testare resume e provenienza, non una nuova inferenza. Chiarito inoltre il gate statistico: 80/86 casi accettati per strato e per partizione con zero falsi passaggi sono minimi della calibrazione corrente, non conteggi grezzi; strati non supportati restano fuori dall'auto-accept con fallback review.",
     "2026-10-18: la preregistrazione richiede unita' di indipendenza dichiarata esplicitamente; non raggruppare o separare documenti per somiglianza dei nomi e non trasferire retroattivamente identita' user-attestate a evidence storiche.",
     "2026-10-18: risk-features CLI aveva rifiutato le tre evidence storiche 00598 prive di source_document_id concorde. La successiva attestazione utente del singolo TIFF=documento riguarda la coorte selezionata; non retrodata o modifica automaticamente l'identità delle evidence storiche 00598.",
-    "L'utente richiede minimizzare l'intervento umano: una singola discrepanza su 300 parole vale circa 0,33% e non deve invalidare automaticamente la pagina; target per pagina 1%, target di false accettazioni 5% con limite superiore unilaterale al 95% su holdout indipendente.",
+    "L'utente richiede minimizzare l'intervento umano: una singola discrepanza su 300 parole vale circa 0,33% e non deve invalidare automaticamente la pagina; dal 2026-10-31 il limite per pagina è 2%, target di false accettazioni 5% con limite superiore unilaterale al 95% su holdout indipendente.",
     "Il run OCR reale T314-1275-00598 e' completed_unreviewed; il finalizer CLI post-review e' stato implementato e verificato con 20 test mirati nella sessione precedente.",
     "Cinque reference T41 confermate non equivalgono a label di parole materialmente errate; il report 2026-10-16 dichiara che nessuna delle cinque ha adjudication page-level degli errori materiali. Solo 00007 ha strato documentato come preregistrato.",
     "OcrRiskFeatureBundle v1.1 contiene feature descrittive, risk_score/cutoff null e non legge reference/label. Il CLI separato produce ora un indice diagnostico non calibrato; l'audit holdout richiede ancora score/cutoff congelato. Holdout 00072/00900 restano esclusi dal tuning.",
@@ -105,18 +107,27 @@
     "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "recalculate",
-    "description": "Tuning remains open. Next work must classify/hash the expanded frame and acquire at least 80 accepted human_verified calibration cases per predeclared stratum with score provenance; freeze the cutoff before creating/opening an independent holdout."
+    "mode": "resume",
+    "description": "Collect and reconcile the existing user-adjudicated material-error counts and provenance-bound OCR scores; do not inspect holdout data."
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "review",
-    "task_class": "quality",
-    "agent": "mmr_test_reviewer",
+    "tier": "medium",
+    "task_class": "implementation",
+    "agent": "mmr_implementer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "Threshold readiness is a quantitative quality gate over provenance-bound calibration artifacts, not a code change.",
+    "rationale": "A shared threshold constant controls both calibration selection and holdout breach classification; update it with the active contract in one bounded increment.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-10-31T11:44:54Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Scoped runtime policy change across the threshold contract and its existing boundary expectations; preserve the 5% system risk gate."
+      },
       {
         "event": "selected",
         "at": "2026-10-31T11:05:45Z",

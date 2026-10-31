@@ -1,5 +1,14 @@
 # Current Next Increment
 
+## Aggiornamento policy T41 - 2026-10-31
+
+Su richiesta dell'utente, il limite di errore materiale per pagina passa dall'1%
+al **2%**: `material_word_error_count / reference_word_count <= 0.02`. Il
+limite del rischio di false acceptance resta 5% con confidenza unilaterale 95%.
+Il report readiness dello stesso giorno conserva i calcoli del rischio di
+sistema, ma il suo giudizio di breach per pagina va ricalcolato con il nuovo
+limite. Questa tolleranza non e' un cutoff OCR e non abilita l'auto-validazione.
+
 ## Direzione confermata nella sessione - 2026-10-25
 
 Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua
@@ -12,7 +21,7 @@ giustifica, senza renderlo prerequisito del flusso.
 L'obiettivo di ridurre a zero la revisione manuale resta condizionato a una
 soglia dimostrata su reference adjudicate e holdout indipendente. Non è ancora
 raggiunto: gli output reali disponibili restano esplorativi/unreviewed e la
-soglia 1%/5% non è calibrata. I pochi token del precedente Tesseract grezzo non
+soglia 2%/5% non è calibrata. I pochi token del precedente Tesseract grezzo non
 sono un motivo per ricominciare il tuning: nel pilot JPG documentato T36
 PP-OCRv5 ha riconosciuto 98 e 343 token sulle stesse due pagine che Tesseract
 grezzo aveva reso con 3 e 8; il confronto è diagnostico e non prova accuratezza.
@@ -50,7 +59,8 @@ originari sono stati riconciliati con immagine, struttura revisionata e Tesserac
 la verifica ha inoltre rilevato una possibile discrepanza condivisa tra immagine,
 PP-OCR e reference umana. Dopo l'adjudication dell'utente, la proposta registra
 un errore materiale: 1/263 = 0,38%, entro il limite per-pagina dell'1%. La
-reference originale resta invariata. Il risultato riguarda una sola pagina e
+reference originale resta invariata. Il risultato rispetta anche il limite
+aggiornato al 2%. Riguarda una sola pagina e
 non calibra score/cutoff né abilita l'autovalidazione; il holdout non e' stato
 consultato.
 
@@ -94,8 +104,9 @@ stima il rischio di false acceptance e non consente di congelare una soglia.
 
 Il report calibration-only
 `ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json` conclude
-`no_go_no_supported_cutoff`. La pagina 00598 conta 1 errore materiale su 263
-parole (0,38%), entro il limite pagina dell'1%, ma non ha uno score calibration
+`no_go_no_supported_cutoff` usando la policy allora vigente dell'1% per pagina.
+La pagina 00598 conta 1 errore materiale su 263 parole (0,38%), entro anche il
+limite aggiornato al 2%, ma non ha uno score calibration
 congelabile e non stima il rischio di false acceptance. Il pacchetto 00150 resta
 `diagnostic-only`/`unreviewed`; nei soli input verificati non c'e' un dataset
 `OcrAutoValidationCalibration` completo con score e label accuracy-eligible.

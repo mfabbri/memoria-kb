@@ -35,8 +35,11 @@ def calibrate_ocr_threshold(*, dataset_path: Path) -> dict[str, Any]:
         summaries = {}
         for stratum in strata:
             accepted = [case for case in cases if case["stratum"] == stratum and case["score"] <= cutoff]
-            errors = sum(100 * case["material_word_error_count"] > case["reference_word_count"]
-                         for case in accepted)
+            errors = sum(
+                case["material_word_error_count"] / case["reference_word_count"]
+                > MAX_PAGE_MATERIAL_WORD_ERROR_RATE
+                for case in accepted
+            )
             upper = _clopper_pearson_upper(errors, len(accepted), alpha) if accepted else 1.0
             summaries[stratum] = {"accepted_page_count": len(accepted), "page_limit_breaches": errors,
                                   "selection_upper_bound": upper}

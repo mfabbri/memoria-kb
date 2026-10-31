@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 
-MAX_PAGE_MATERIAL_WORD_ERROR_RATE = 0.01
+MAX_PAGE_MATERIAL_WORD_ERROR_RATE = 0.02
 TARGET_FALSE_ACCEPT_PAGE_RATE = 0.05
 CONFIDENCE_LEVEL = 0.95
 MATERIAL_ERROR_CATEGORIES = {"text", "omission", "number_or_name", "structure"}
@@ -140,7 +140,7 @@ def _validate_dataset(dataset: Any) -> None:
     if not isinstance(policy, dict):
         raise ValueError("policy holdout non valida.")
     if policy.get("max_page_material_word_error_rate") != MAX_PAGE_MATERIAL_WORD_ERROR_RATE:
-        raise ValueError("Il limite per pagina deve essere 0.01 (1% delle parole reference).")
+        raise ValueError("Il limite per pagina deve essere 0.02 (2% delle parole reference).")
     if policy.get("target_false_accept_page_rate") != TARGET_FALSE_ACCEPT_PAGE_RATE:
         raise ValueError("Il target di false accettazioni deve essere 0.05 (5% delle pagine).")
     if policy.get("confidence_level") != CONFIDENCE_LEVEL:

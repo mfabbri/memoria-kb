@@ -1896,10 +1896,10 @@ Protocollo minimo:
   lettura e latenza, con risultati disaggregati per strato e configurazione;
 - separare il sottoinsieme di calibrazione dall'holdout prima del campione
   esplorativo e controllare anche output non segnalati dai gate di triage.
-- il limite di qualità per pagina e' `material_word_error_count / reference_word_count <= 0.01`;
+- dal 2026-10-31 il limite di qualità per pagina è `material_word_error_count / reference_word_count <= 0.02`;
   un singolo errore su 300 parole vale 0,33% e non blocca da solo la pagina;
 - il rischio per l'eventuale auto-validazione e' la quota di pagine auto-
-  accettate che superano il limite di qualità dell'1%; il limite superiore
+  accettate che superano il limite di qualità del 2%; il limite superiore
   unilaterale al 95% deve essere al massimo 5% sul holdout indipendente e negli
   strati pre-dichiarati.
 
@@ -1943,13 +1943,14 @@ la griglia e resta diagnostica. Sono risultati page/configuration-scoped: quattr
 pagine non bastano per le 8-10 iniziali né per definire una soglia. Holdout e
 decisioni archivistiche restano separati.
 
-La policy del pilot usa un limite di qualità per pagina dell'1% di parole con
-errore materiale rispetto alle parole della reference e un limite di rischio del
-5% sulle pagine auto-accettate che superano l'1%. `documents ocr-threshold-audit`
+La policy del pilot, aggiornata il 2026-10-31 su richiesta dell'utente, usa un
+limite di qualità per pagina del 2% di parole con errore materiale rispetto alle
+parole della reference e un limite di rischio del
+5% sulle pagine auto-accettate che superano il 2%. `documents ocr-threshold-audit`
 verifica il cutoff di score congelato prima dell'holdout usando solo casi
 `human_verified` e `accuracy_eligible`; calcola il limite superiore binomiale
 esatto unilaterale al 95% sul totale e limiti per strato con correzione Bonferroni
-per copertura simultanea al 95%. Con zero pagine oltre l'1% servono almeno 59
+per copertura simultanea al 95%. Con zero pagine oltre il 2% servono almeno 59
 pagine auto-accettate per sostenere il limite aggregato del 5%; il requisito per
 strato può essere maggiore. Il report lascia sempre `auto_validation_enabled=false`
 e `machine_pass=false` finché il pilot non è sostenuto da holdout sufficiente.
