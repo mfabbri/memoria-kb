@@ -35,6 +35,35 @@ comparison `00150` `30e3a6a909decd17dd8bc1f3415af22048f379882ed0e8354265a35710e9
 evaluation `00415` `e57e152bd15b462263e3e2f41bce5265e20c3bdbf1bc0d7d5f737e1bae9b4878`;
 evaluation `00007` `80164b3a1723776c9863fc14348a95a17c060d7c9d8215d97c9a39c2923d0b6c`.
 
+## Esito del gate readiness aggiornato al 2% - 2026-10-31
+
+| Gate | Dato attuale | Requisito | Esito |
+|---|---:|---:|---|
+| Pagine con conteggio materiale adjudicato | 1 (`00598`), 0 sopra il 2% | Etichette verificate accoppiate a score per calibration | insufficiente |
+| Casi calibration con score T41 provenance-bound | 0 | 80 accettati per ciascuno dei 3 strati | no-go |
+| Holdout indipendente | non consultato | 80 accettati per strato dopo freeze del cutoff | da tenere chiuso |
+| Accettati complessivi a zero breach | 0 eleggibili con score | 480 (80 x 3 strati x 2 partizioni) | gap 480 |
+| Frame TIFF classificato corrente | prose 187; tabella 437; manoscritto-low 7 | almeno 160 raw per strato solo assumendo 100% acceptance | gap di 153 raw handwritten-low |
+| Nuovi candidati immagine | 13.298 metadati; 0 accuracy-eligible | classificazione e reference verificata | non utilizzabili ancora |
+
+Conclusione: il **limite di qualità per pagina è fissato al 2%**, ma i dati non
+supportano alcun cutoff di score. Il ricalcolo documentato qui lascia
+`score_cutoff: null`, `machine_pass: false` e `auto_validation_enabled: false`;
+il JSON sorgente resta il report storico con la policy dell'1%. L'1/1
+page-label osservata entro il 2% non
+stima il rischio di false acceptance. Il gate 5% con confidenza 95% resta
+invariato; il minimo 80 per strato/partizione non cambia alzando il limite di
+errore della singola pagina.
+
+**Decisione:** chiusa la scelta del limite pagina; tuning del cutoff e
+auto-accettazione restano no-go. Per riaprire il gate servono reference
+`human_verified`/`accuracy_eligible`, material-error adjudication e score
+legati agli stessi byte per almeno 80 pagine accettate in ognuno dei tre strati
+calibration; soltanto dopo un cutoff congelato si raccoglie l'holdout separato
+di almeno 80 accettate per strato. Nessun holdout è stato letto in questa fase.
+Il readiness di base è `t41-threshold-readiness-20261031/threshold-readiness.json`
+(SHA-256 `b51c2fae20eb90abb759206e0c8baed304a63598d4dd1c300a020d18fb8cc97c`).
+
 ## Direzione confermata nella sessione - 2026-10-25
 
 Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua

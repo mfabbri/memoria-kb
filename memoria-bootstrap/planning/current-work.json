@@ -1,9 +1,9 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "in_progress",
+  "status": "completed",
   "selected_at": "2026-10-31T11:44:54Z",
-  "updated_at": "2026-10-31T11:44:54Z",
+  "updated_at": "2026-10-31T12:13:11Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -17,37 +17,34 @@
     }
   ],
   "increment": {
-    "id": "t41-reconcile-existing-material-error-cases-20261031",
-    "title": "Riconciliare errori materiali e score OCR già disponibili",
-    "objective": "Determinare quanti casi T41 esistenti accoppiano una reference verificata, un conteggio di errori materiali e uno score OCR con provenienza valida sotto il limite pagina del 2%.",
+    "id": "t41-readiness-recalc-two-percent-20261031",
+    "title": "Ricalcolare readiness T41 con limite pagina al 2%",
+    "objective": "Ricalcolare il gate T41 usando il limite materiale per pagina del 2% e chiudere la decisione sul cutoff supportabile dai dati esistenti, senza aprire holdout.",
     "scope": [
-      "Riconciliare solo gli artifact calibration già esistenti per 00598, 00150, 00415 e 00007.",
-      "Separare il WER/CER descrittivo dal conteggio materiale adjudicato; non contare due engine sulla stessa pagina come unità indipendenti.",
-      "Registrare score disponibili e assenti, riferimenti/hash e impedimenti, senza modificare reference o aprire holdout."
+      "Applicare il limite 2% ai soli errori materiali adjudicati e ricontrollare eleggibilità dei case score-label.",
+      "Mantenere 5% false-accept risk, confidenza 95% e tre strati pre-dichiarati; riportare il requisito n esatto per strato/partizione.",
+      "Registrare un no-go esplicito se non esistono score provenance-bound, cutoff o holdout utilizzati."
     ],
     "out_of_scope": [
       "Cambiare la policy 2%/5%/95%, score o strata pre-dichiarati.",
-      "Calibrare o congelare un cutoff, attivare machine_pass/auto-validation o aprire holdout.",
+      "Calibrare/congelare un cutoff, attivare machine_pass/auto-validation o aprire holdout.",
       "Eseguire OCR o cambiare reference/label storiche."
     ],
     "candidate_files": [
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00598-material-error-review-20261030/material-error-adjudication-proposal.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00150-engine-reference-comparison-20261001/ocr-comparison-report-recalculated-20261015.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00415-ocr-structure-20261003/ocr-page-reference-evaluation-00415-20261011.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-00007-visual-review-20261015/ocr-page-reference-evaluation.json",
+      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-threshold-readiness-20261031/threshold-readiness.json",
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "La tabella riconcilia gli artifact leggibili e stabilisce il conteggio di casi con reference verificata + material count adjudicato + score provenance-bound; nessun holdout è consultato."
+    "stop_condition": "Il readiness aggiornato distingue limite pagina e rischio sistema, espone i conteggi richiesti e motiva con numeri espliciti un cutoff valido o no-go; holdout resta chiuso."
   },
   "verification": {
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "pending",
+    "result": "passed",
     "tests": [],
-    "notes": "Incremento 1/3 completato e inviato in 236466d: limite 2% applicato alla selezione calibration e all'audit holdout; review indipendente ha rilevato e fatto correggere il confronto hard-coded all'1%. Il target 5% false acceptance e la confidenza 95% restano invariati. Planner validation e git diff --check passati; nessun test codice eseguito. Il 2/3 riconcilia i casi già esistenti; il 3/3 ricalcola readiness al 2% e conclude se esiste un cutoff sostenibile, senza holdout finché non congelato.",
+    "notes": "Batch di tre incrementi completato: (1) policy pagina 2% applicata in audit/calibration e push 236466d; (2) artifact riconciliati e push 4d46d12: 1 pagina con materiale adjudicato (00598, 1/263=0,38%), 0 score/label eleggibili. (3) readiness 2%: no-go cutoff; 80 accettate per ciascuno dei 3 strati e partizione, 480 totali a zero breach; handwritten-low frame 7, gap teorico 153 raw; 13.298 nuovi candidati non classificati, 0 accuracy-eligible. Holdout non letto, cutoff null e flag machine/auto false. Planner validation e git diff --check passati; nessun test codice eseguito.",
     "task_envelope": {
       "mode": "quality-slice",
       "repositories": [
@@ -96,8 +93,8 @@
     "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "resume",
-    "description": "Recompute T41 readiness at the adopted 2% page limit and state whether any cutoff is supported; do not inspect holdout data."
+    "mode": "recalculate",
+    "description": "Per riaprire il tuning: ampliare il frame per handwritten-low, creare casi calibration human_verified con adjudication materiale e score legato agli stessi byte; raggiungere 80 pagine accettate per ciascuno dei 3 strati prima di congelare un cutoff. Il nuovo holdout resta successivo al freeze."
   },
   "routing": {
     "policy_version": "3.0",
