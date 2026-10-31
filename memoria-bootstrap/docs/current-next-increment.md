@@ -1,5 +1,30 @@
 # Current Next Increment
 
+## Decisione operativa T41: chiusura con 10 conferme - 2026-10-31
+
+Su indicazione esplicita dell'utente, il tuning operativo potrà chiudersi dopo
+**10 conferme manuali page-level totali**; non sono richieste 80 conferme per
+strato né un holdout per questo percorso rapido. Questa è una policy pragmatica
+per scegliere un cutoff empirico e non dimostra il precedente target del 5% di
+false acceptance al 95%. Non riportare quel target come soddisfatto.
+
+Le dieci pagine devono essere distinte, con immagine, candidata OCR/struttura,
+reference, evaluation materiale e score legati ai rispettivi hash. Congelare la
+lista prima delle conferme; mantenere nel conteggio anche gli esiti oltre il
+limite. Il limite per singola pagina resta il 2%. Il cutoff provvisorio è il
+più alto score che non accetta nessun caso sopra quel limite, includendo tutti
+i casi a pari score. Se nessun cutoff separa gli esiti, il campione di dieci
+chiude comunque la decisione con esito no-go, senza raccogliere casi aggiuntivi
+automaticamente.
+
+Il cutoff vale soltanto per i profili di lingua, layout e motore rappresentati
+nelle dieci pagine; non generalizzarlo agli strati assenti o sottorappresentati.
+Questa modalità non è l'audit statistico formale e non va chiamata holdout. Il
+percorso rigoroso 5%/95% resta disponibile come opzione distinta. Il codice CLI
+attuale implementa solo quel percorso rigoroso: serve un incremento dedicato
+per accettare e consumare il nuovo artifact provvisorio prima di poter usare il
+cutoff nelle esecuzioni OCR automatiche.
+
 ## Aggiornamento policy T41 - 2026-10-31
 
 Su richiesta dell'utente, il limite di errore materiale per pagina passa dall'1%
@@ -130,23 +155,17 @@ passaggi né attivano da soli l'auto-validazione.
 
 ### Regola di chiusura
 
-Non chiudere la calibrazione dopo 80 casi complessivi. Il minimo è 80 pagine
-accettate **per ciascuno dei tre strati nella calibration**, poi cutoff
-congelato, e 80 per strato in un **nuovo holdout indipendente**. Con zero
-breach sono 480 accettate complessive; con breach il campione deve crescere
-finché il limite superiore unilaterale al 95% resta entro il 5% per ogni strato
-e sul totale. Il limite del 2% è la tolleranza degli errori materiali nella
-singola pagina, non il criterio statistico di rischio di sistema.
+Per il pilot rapido scelto dall'utente, fermarsi a dieci conferme manuali e
+congelare il cutoff empirico (o registrare no-go se i punteggi non separano i
+casi oltre il 2%). Non presentare questo risultato come garanzia di rischio.
+Il limite del 2% resta la tolleranza materiale per pagina.
 
-Questa soglia di arresto chiude la prova statistica solo dopo l'esito positivo
-del nuovo holdout. Non completa la trascrizione 00598 descritta sopra e non
-abilita da sola l'auto-validazione: per quella pagina restano i controlli
-lessicali, l'attestazione umana legata agli hash della candidata e il
-finalizer; per l'attivazione automatica resta un successivo passaggio
-implementativo/operativo. Il prossimo lavoro deve prima completare la review
-della candidata 00598, quindi raccogliere reference materialmente adjudicate e
-score provenance-bound in una calibration sufficiente, congelare il cutoff e
-solo dopo valutare il nuovo holdout.
+La chiusura statistica formale è distinta: il precedente gate richiede 80
+pagine accettate per strato in calibration, cutoff congelato, poi 80 per strato
+in un nuovo holdout indipendente, con zero breach per il minimo di 480 e limite
+superiore unilaterale al 95% non oltre il 5%. Questo percorso non è necessario
+per chiudere il pilot operativo a dieci casi, ma nessuna sua garanzia si
+trasferisce al pilot rapido.
 
 ## Direzione confermata nella sessione - 2026-10-25
 
