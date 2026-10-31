@@ -1,9 +1,9 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "in_progress",
+  "status": "completed",
   "selected_at": "2026-10-31T12:17:52Z",
-  "updated_at": "2026-10-31T12:17:52Z",
+  "updated_at": "2026-10-31T12:44:58Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -49,13 +49,13 @@
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "partial",
+    "result": "passed",
     "tests": [],
-    "notes": "Incremento 1/3 completato: chiarito che 80 per ciascuno dei 3 strati servono in calibration e poi in un holdout indipendente separato, solo con zero breach; 480 accettate complessive. L'audit attuale non attiva machine_pass/auto-validation nemmeno con esito statistico positivo. Planner validation e git diff --check da completare prima del commit. Incremento 2/3: audit con evidenza della catena OCR→trascrizione e run reali. Incremento 3/3: aggiornare conclusione e gap residui. Nessun holdout aperto.",
+    "notes": "Batch di tre incrementi completato. (1) Chiusura statistica: non bastano 80 casi complessivi; minimo teorico 80 accettati per ciascuno dei tre strati in calibration e 80 per strato in un nuovo holdout indipendente, solo con zero breach, 480 totali. Una o piu' breach richiedono piu' casi se il bound superiore unilaterale 95% non rientra entro il 5%. L'audit non attiva machine_pass/auto-validation. (2) Audit T36→T37→Tesseract→review package→review/finalizer: T41 si ferma a awaiting_review; T40 ha batch candidate_ready ma non human_verified, lexicon Hunspell con 166 match, 49 not_found e 20 fuzzy, glossario/abbreviazioni non attestati e nessun OcrReviewFinalization trovato. Candidata T40 e output grezzi T41 hanno hash diversi e l'esito non si trasferisce implicitamente. (3) Regola di chiusura e prossimo passo documentati in current-next-increment.md. Nessun test, OCR, accesso a immagini o holdout in questa sessione. Qualificata la validazione planner e git diff --check; nessun rischio risolto per il cutoff o l'attivazione automatica.",
     "task_envelope": {
       "mode": "architecture-review",
       "repositories": [
-        "memoria-workspace-runtime",
+        "memoria-engine",
         "memoria-bootstrap"
       ],
       "read_set": [
@@ -102,7 +102,7 @@
   ],
   "next_action": {
     "mode": "resume",
-    "description": "Complete the three-step calibration closure and end-to-end OCR-to-transcription audit, then update the current-next decision with evidence and remaining gaps."
+    "description": "Completa il controllo lessicale/glossario e l'attestazione umana hash-bound con finalizer per la candidata 00598; poi acquisisci coppie reference/score eleggibili per calibration, congela il cutoff e usa un nuovo holdout indipendente solo dopo il freeze."
   },
   "routing": {
     "policy_version": "3.0",

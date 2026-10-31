@@ -128,6 +128,26 @@ finalizer. Gli 80 casi restano il minimo statistico per strato in calibration
 e, separatamente, nel nuovo holdout; non sostituiscono nessuno di questi
 passaggi né attivano da soli l'auto-validazione.
 
+### Regola di chiusura
+
+Non chiudere la calibrazione dopo 80 casi complessivi. Il minimo è 80 pagine
+accettate **per ciascuno dei tre strati nella calibration**, poi cutoff
+congelato, e 80 per strato in un **nuovo holdout indipendente**. Con zero
+breach sono 480 accettate complessive; con breach il campione deve crescere
+finché il limite superiore unilaterale al 95% resta entro il 5% per ogni strato
+e sul totale. Il limite del 2% è la tolleranza degli errori materiali nella
+singola pagina, non il criterio statistico di rischio di sistema.
+
+Questa soglia di arresto chiude la prova statistica solo dopo l'esito positivo
+del nuovo holdout. Non completa la trascrizione 00598 descritta sopra e non
+abilita da sola l'auto-validazione: per quella pagina restano i controlli
+lessicali, l'attestazione umana legata agli hash della candidata e il
+finalizer; per l'attivazione automatica resta un successivo passaggio
+implementativo/operativo. Il prossimo lavoro deve prima completare la review
+della candidata 00598, quindi raccogliere reference materialmente adjudicate e
+score provenance-bound in una calibration sufficiente, congelare il cutoff e
+solo dopo valutare il nuovo holdout.
+
 ## Direzione confermata nella sessione - 2026-10-25
 
 Il risultato OCR richiesto per ogni pagina è la trascrizione nella lingua
