@@ -71,9 +71,11 @@ pagina assessment, feature bundle, score e decisione hash-bound in
 restano in review manuale. Se tutte le pagine sono accepted il workflow termina
 `completed_provisional_auto_validated`; altrimenti termina `awaiting_review` e
 riporta gli ID ancora da rivedere. `machine_pass`, `human_verified` e claim
-restano false. Il cutoff T42 ricalcolato è `0.8333`: 6/10 score del pilot sono
-accepted; il punteggio massimo `1.0` resta sempre in review manuale perché non
-può fungere da soglia discriminante.
+restano false. Per rispettare il limite utente di review manuale (massimo 3%),
+T42 usa cutoff `1.0`: tutti i 10 score validi osservati in scope sono accepted.
+Questo cutoff non discrimina il dominio. Il workflow calcola il tasso manuale;
+se i casi non scorable/fuori scope superano il 3%, termina
+`manual_review_cap_exceeded` senza autorizzare una review oltre il limite.
 
 Esempio dell'estensione v1.4 al manifest v1.3:
 
@@ -81,7 +83,7 @@ Esempio dell'estensione v1.4 al manifest v1.3:
 {
   "schema_version": "1.4",
   "provisional_threshold": {
-    "path": "provisional-threshold-artifact-auto-validation-v2.json",
+    "path": "provisional-threshold-artifact-auto-validation-v3.json",
     "sha256": "<sha256 dell'artifact>"
   }
 }
@@ -746,9 +748,11 @@ cutoff empirico con scope esatto. La disposition provisional abilita
 `auto_validation_enabled` solo quando il consumer emette
 `provisional_auto_accept` per cutoff e scope esatti. Non imposta `machine_pass`
 formale o `human_verified`, non abilita estrazione claim e non dimostra il
-target 5%/95%. Nel pilot T42 il cutoff operativo è `0.8333`; score `1.0` resta
-manuale per evitare che il cutoff copra l'intero dominio. Il gate formale e i
-suoi comandi restano invariati.
+target 5%/95%. Nel pilot T42 il cutoff operativo è `1.0` per mantenere la
+review manuale a 0/10; di conseguenza non discrimina gli score in scope. Se il
+tasso di casi non scorable o fuori scope supera il 3%, il workflow blocca la
+richiesta di review invece di superare il limite. Il gate formale e i suoi
+comandi restano invariati.
 
 Nel percorso statistico formale dell'attuale calibrazione CLI, i minimi di 80
 (tre strati) o 86 (quattro

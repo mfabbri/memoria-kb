@@ -1795,7 +1795,7 @@ def _command_documents_process(args: argparse.Namespace) -> int:
             print(f"Errore documents process: {exc}", file=sys.stderr)
             return 1
         print(json.dumps(report, ensure_ascii=False, indent=2))
-        return 1 if report["status"] == "partial_unreviewed" else 0
+        return 1 if report["status"] in {"partial_unreviewed", "manual_review_cap_exceeded"} else 0
     if args.resume:
         print("Errore documents process: --resume richiede --workflow-manifest.", file=sys.stderr)
         return 1

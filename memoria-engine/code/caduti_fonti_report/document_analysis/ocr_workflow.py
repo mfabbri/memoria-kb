@@ -44,6 +44,8 @@ from . import ocr_risk_score as risk_score
 from . import ocr_provisional_threshold as provisional_threshold
 from .ocr_tesseract import CommandRunner
 
+MAX_MANUAL_REVIEW_RATE = 0.03
+
 
 def _read(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=structure._unique_object,
@@ -351,13 +353,20 @@ def _provisional_validation_stage(*, request: dict[str, Any], package_manifest_p
             "review_required": not accepted,
         })
     accepted = sum(page["auto_validation_enabled"] for page in page_results)
+    manual_count = len(page_results) - accepted
+    manual_rate = manual_count / len(page_results) if page_results else 0.0
+    manual_cap_exceeded = manual_rate > MAX_MANUAL_REVIEW_RATE
     report = {
         "@type": "OcrWorkflowProvisionalValidation", "schema_version": "1.0",
         "threshold": {"path": str(threshold_path), "sha256": threshold_ref["sha256"]},
         "review_package": {"path": str(package_manifest_path), "sha256": package_digest},
         "page_count": len(page_results), "auto_validated_page_count": accepted,
+        "manual_review_page_count": manual_count, "manual_review_rate": manual_rate,
+        "manual_review_rate_limit": MAX_MANUAL_REVIEW_RATE,
+        "manual_review_cap_exceeded": manual_cap_exceeded,
         "manual_review_page_ids": [page["page_id"] for page in page_results if page["review_required"]],
         "pages": page_results, "auto_validation_enabled": accepted > 0,
+        "manual_review_request_allowed": bool(manual_count) and not manual_cap_exceeded,
         "auto_validation_mode": "provisional_empirical_scoped",
         "machine_pass": False, "human_verified": False,
         "semantic_accuracy_status": "not_attested", "claim_extraction_allowed": False,
@@ -618,9 +627,14 @@ def run_ocr_workflow(*, manifest_path: Path, output_dir: Path, apply: bool = Fal
                 "page_count": validation["page_count"],
                 "auto_validated_page_count": accepted,
                 "manual_review_page_ids": manual,
+                "manual_review_page_count": validation["manual_review_page_count"],
+                "manual_review_rate": validation["manual_review_rate"],
+                "manual_review_rate_limit": validation["manual_review_rate_limit"],
+                "manual_review_cap_exceeded": validation["manual_review_cap_exceeded"],
                 "pages": validation["pages"],
                 "auto_validation_enabled": validation["auto_validation_enabled"],
                 "auto_validation_mode": validation["auto_validation_mode"],
+                "manual_review_request_allowed": validation["manual_review_request_allowed"],
             }
             report.update(auto_validation_enabled=validation["auto_validation_enabled"],
                           auto_validation_mode=validation["auto_validation_mode"])
@@ -630,8 +644,17 @@ def run_ocr_workflow(*, manifest_path: Path, output_dir: Path, apply: bool = Fal
                               review_status="unreviewed",
                               state_path=str(destination / "workflow-state.json"))
                 return report
+            if validation["manual_review_cap_exceeded"]:
+                report["review"].update(status="manual_review_cap_exceeded",
+                                        manual_review_page_ids=manual,
+                                        manual_review_request_allowed=False)
+                report.update(status="manual_review_cap_exceeded",
+                              manual_review_request_allowed=False,
+                              state_path=str(destination / "workflow-state.json"))
+                return report
             report["review"].update(awaiting="manual_review_for_nonaccepted_pages",
-                                    manual_review_page_ids=manual)
+                                    manual_review_page_ids=manual,
+                                    manual_review_request_allowed=True)
         else:
             report["review"]["awaiting"] = "visual_and_lexical_review"
         report.update(status="awaiting_review", state_path=str(destination / "workflow-state.json"))

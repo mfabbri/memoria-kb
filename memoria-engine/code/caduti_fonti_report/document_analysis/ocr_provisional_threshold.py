@@ -243,8 +243,7 @@ def calibrate_provisional_ocr_threshold(*, dataset_path: Path,
                                 <= MAX_PAGE_MATERIAL_WORD_ERROR_RATE})
     safe_cutoffs = [cutoff for cutoff in candidate_cutoffs
                     if not any(score <= cutoff for score in bad_scores)]
-    discriminating_cutoffs = [value for value in safe_cutoffs if value < 1.0]
-    cutoff = max(discriminating_cutoffs) if len(eligible_cases) == CONFIRMATION_COUNT and discriminating_cutoffs else None
+    cutoff = max(safe_cutoffs) if len(eligible_cases) == CONFIRMATION_COUNT and safe_cutoffs else None
     accepted = [case for case in eligible_cases if cutoff is not None and case["score"] <= cutoff]
     breaches = [case for case in accepted
                 if case["material_word_error_count"] / case["reference_word_count"]
@@ -255,9 +254,7 @@ def calibrate_provisional_ocr_threshold(*, dataset_path: Path,
         value["language"], value["engine"], _canonical(value["model"]), value["profile"]))
     no_go_reason = ("insufficient_accuracy_eligible_confirmations"
                     if len(eligible_cases) != CONFIRMATION_COUNT else
-                    ("no_discriminating_cutoff_below_max_score" if cutoff is None and safe_cutoffs
-                     and all(value >= 1.0 for value in safe_cutoffs) else
-                     ("no_cutoff_separates_page_limit_breaches" if cutoff is None else None)))
+                    ("no_cutoff_separates_page_limit_breaches" if cutoff is None else None))
     report: dict[str, Any] = {
         "@type": "OcrProvisionalThresholdArtifact", "schema_version": "1.0",
         "policy": "user_authorized_ten_case_empirical_pilot",
@@ -276,7 +273,7 @@ def calibrate_provisional_ocr_threshold(*, dataset_path: Path,
                          case["material_word_error_count"] / case["reference_word_count"]
                          > MAX_PAGE_MATERIAL_WORD_ERROR_RATE for case in eligible_cases),
                      "accepted_page_limit_breach_count": len(breaches),
-                     "cutoff_selection": "largest_safe_observed_score_below_1.0; score_1.0_always_requires_manual_review"},
+                     "cutoff_selection": "largest_observed_score_with_no_accepted_page_over_2_percent_including_ties"},
         "no_go_reason": no_go_reason,
         "status": "provisional_cutoff_frozen" if cutoff is not None else "no_go_no_supported_provisional_cutoff",
         "provisional_auto_acceptance_enabled": cutoff is not None,
@@ -286,7 +283,7 @@ def calibrate_provisional_ocr_threshold(*, dataset_path: Path,
         "semantic_accuracy_status": "not_attested", "claim_extraction_allowed": False,
         "limitations": [
             "Empirical cutoff selected on ten tuning cases; no formal false-acceptance rate or 5%/95% guarantee is established.",
-            "The maximum diagnostic score 1.0 is never auto-accepted because it cannot define a discriminating cutoff.",
+            "If the frozen cutoff is 1.0, every valid score in [0,1] in exact scope is auto-accepted; this is an operational coverage choice, not a discriminating risk boundary.",
             "Scope is limited to the exact language, engine, model and structure profiles represented by the ten cases.",
             "This artifact never marks future pages human_verified and never promotes archival claims.",
         ],
@@ -498,7 +495,7 @@ def _validate_threshold_artifact(payload: dict[str, Any]) -> None:
                            or not payload["no_go_reason"].strip()))
             or not (frozen or no_go)):
         raise ValueError("Artifact cutoff provisional senza decisione valida.")
-    if ((frozen and (not math.isfinite(cutoff) or cutoff < 0 or cutoff >= 1.0))
+    if ((frozen and (not math.isfinite(cutoff) or cutoff < 0 or cutoff > 1.0))
             or threshold.get("direction") != "lower_is_safer"
             or threshold.get("max_page_material_word_error_rate") != MAX_PAGE_MATERIAL_WORD_ERROR_RATE
             or threshold.get("score_spec") != SCORE_SPEC):

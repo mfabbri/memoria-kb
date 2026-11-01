@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "completed",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-11-01T13:45:13Z",
+  "updated_at": "2026-11-01T14:40:32Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -17,15 +17,15 @@
     }
   ],
   "increment": {
-    "id": "t41-discriminating-provisional-cutoff-20261101",
-    "title": "Escludere il punteggio massimo dal cutoff auto OCR",
-    "objective": "Rifiutare un cutoff provisional non discriminante pari a 1.0, ricalcolare l'artifact T42 e fare accettare automaticamente al workflow solo gli score sotto il massimo, lasciando i massimi in review manuale.",
+    "id": "t41-manual-review-cap-3-percent-20261101",
+    "title": "Chiudere la soglia empirica OCR T42 e applicarla nel workflow CLI",
+    "objective": "Quantificare le correzioni delle dieci pagine, selezionare il cutoff operativo dai dati e limitare al 3% le review richieste dal workflow.",
     "scope": [
-      "Enforzare nel workflow/package CLI un glossario esplicito, versionato e hash-bound prima della review lessicale.",
-      "Implementare un comando CLI per applicare le correzioni visive proposte alla candidata, rigenerare struttura/Markdown e invalidare sidecar derivati obsoleti.",
-      "Escludere score 1.0 dal cutoff auto; ricalcolare il cutoff massimo discriminante del dataset T42 e rigenerare l'artifact operativo.",
-      "Lasciare machine_pass formale, human_verified, claim extraction e percorso di pubblicazione invariati; conservare il gate 5%/95% separato.",
-      "Allineare prompt/playbook/roadmap alla coverage CLI verificata e fermarsi solo al punto che richiede review umana reale."
+      "Quantificare eventi di correzione e parole candidate stimate sulle dieci conferme T42.",
+      "Selezionare il massimo cutoff osservato senza accettare casi oltre il limite operativo pagina del 2%.",
+      "Consumare l'artifact hash-bound nel workflow CLI e impedire richieste manuali oltre il 3% del batch.",
+      "Mantenere separati l'esito provisional, machine_pass formale, human_verified, claim extraction e il gate 5%/95%.",
+      "Allineare la documentazione operativa all'esito misurato e alla sua portata."
     ],
     "out_of_scope": [
       "Inventare o simulare conferme umane, decisioni semantiche, reference o score.",
@@ -75,9 +75,11 @@
       "Rettifica: lo smoke 10/10 e l'artifact con cutoff 1.0 sono superseded e il validator ora li rifiuta.",
       "Ricalibrazione T42: cutoff 0.8333333333333334; 6/10 casi accepted; score 1.0 sempre manuale; zero breach tra gli accepted.",
       "Smoke workflow corretto: 6 auto_validated, review manuale per T314-1275-00594/00595/00596/00600; nessun OCR rilanciato.",
-      "Non eseguiti test automatici in questo incremento; py_compile, CLI help, git diff --check e validatore planner passati."
+      "Incremento finale: cutoff selezionato dai dieci casi come massimo score senza breach del 2%; 63/11.616 eventi/parole candidate stimati (~0,54%), worst page 10/1.117 (~0,90%), 10/10 accepted, 0/10 manual nel pilot.",
+      "Smoke workflow v3 su package T42 già esistenti: 10 provisional_auto_validated, 0 manual, cap 3% non superato; machine_pass=false, human_verified=false e claim_extraction_allowed=false. Nessun OCR rilanciato.",
+      "Verifiche finali: 55 test mirati passati (calibratore provisional, workflow e CLI); py_compile dei moduli modificati, validatore planner e git diff --check passati."
     ],
-    "notes": "OcrWorkflow v1.4 consuma l'artifact T42. Rettificato il cutoff non discriminante 1.0: il massimo score ora resta manuale, il cutoff ricalcolato è 0.8333333333333334, 6/10 pagine sono accepted e quattro restano manual review. Smoke con package T42 già esistenti, senza rilanciare OCR. Nessuna garanzia 5%/95%, machine_pass, human_verified o approvazione claim.",
+    "notes": "OcrWorkflow v1.4 consuma l'artifact T42 hash-bound. La regola empirica seleziona il massimo score osservato che non accetta alcun caso oltre il limite pagina del 2%; sui dieci casi questo produce cutoff 1.0, 10/10 accepted e 0/10 manual. Correzioni osservate: 63/11.616 parole candidate stimate (~0,54% aggregato), worst page 10/1.117 (~0,90%). Il cutoff 1.0 copre tutti gli score validi [0,1] nello scope, quindi non discrimina e non offre garanzia di errore futura o 5%/95%. Cap workflow review manuale: 3%; oltre il cap la richiesta viene bloccata. Smoke v3 passato; machine_pass, human_verified e claim extraction restano false.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -130,6 +132,8 @@
     }
   },
   "session_notes": [
+    "2026-11-01: chiusura empirica finale T42. Le dieci pagine hanno 63 eventi di correzione su 11.616 parole candidate stimate (~0,54%); worst page 10/1.117 (~0,90%). Tutte sotto il 2%; il massimo cutoff compatibile è 1.0, dunque 10/10 provisional accepted e 0% manual nel pilot. Questo non è una garanzia statistica futura. Il workflow applica cap review 3%; 55 test mirati passati oltre a py_compile, validatore planner, diff check e smoke runtime v3. Stato chiuso; prossimo passo da selezionare dalla roadmap.",
+    "2026-11-01: l'utente impone che la review manuale non superi il 2-3%. Il cutoff 0.8333 mandava 4/10 pagine in review, quindi è inaccettabile. Ripristinare cutoff 1.0 per pagine scoreable nell'esatto scope (pilot: 0/10 manuale) e hard-fail delle richieste manuali oltre 3% nel workflow; out-of-scope non vengono auto-validated.",
     "2026-11-01: l'utente rileva che cutoff 1.0 rende tautologica l'auto-accettazione. Correzione: il punteggio massimo diagnostico 1.0 resta manuale; scegliere il massimo cutoff osservato sotto 1.0 privo di breach, oppure no-go se non ne esiste. Rigenerare artifact e workflow report T42.",
     "2026-11-01: integrazione workflow end-to-end completata in OcrWorkflow v1.4. Con provisional_threshold hash-bound il workflow genera assessment/feature/score/decision per ogni pagina, espone le decisioni nel report, termina completed_provisional_auto_validated se tutte passano e mantiene manual_review_page_ids per i non accettati. Smoke sul package T42 esistente: 10/10 accepted, senza rilanciare OCR; machine_pass, human_verified e claim restano false. Test automatici non eseguiti.",
     "2026-11-01: incremento attivo su richiesta utente: OcrWorkflow deve consumare automaticamente l'artifact T42 hash-bound dopo T36/T37 e il confronto, calcolare feature/score/decisione per ogni pagina e instradare accepted vs manual review. Il workflow standard v1.0-v1.3 resta invariato; nuovo v1.4 non promuove machine_pass, human_verified o claim.",
@@ -160,7 +164,7 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap dopo la correzione del cutoff T42 non discriminante."
+    "description": "Selezionare il prossimo incremento dalla roadmap nella prossima sessione."
   },
   "routing": {
     "policy_version": "3.0",
@@ -171,6 +175,15 @@
     "reasoning_effort": "medium",
     "rationale": "Runtime micro-increment scoped to the user-authorized T42 cutoff: enable provisional auto-validation only for accepted in-scope decisions while preserving formal audit and archival claim gates.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-01T13:47:53Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Restore T42 coverage to meet the user-specified manual review cap and enforce a 3% request limit for manual routing."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T13:43:48Z",

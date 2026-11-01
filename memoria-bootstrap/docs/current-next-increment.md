@@ -9,10 +9,12 @@ Le pagine accepted terminano come `completed_provisional_auto_validated`; pagine
 non scorable, fuori scope o oltre cutoff restano nella coda manuale. Il report
 workflow espone gli esiti per pagina e il nuovo stage e' hash-bound/resumable.
 `machine_pass`, `human_verified` e claim restano disabilitati. Col cutoff T42
-`0.8333`: i sei score osservati sotto o pari al cutoff sono accepted, mentre i
-quattro score `1.0` restano in review manuale. Il massimo diagnostico `1.0` non
-può essere un cutoff operativo perché accetterebbe l'intero dominio dello score.
-Il gate statistico formale 5%/95% resta distinto.
+`1.0`: tutti i 10 score T42 in scope sono accepted, quindi la quota manuale del
+pilot è 0%. Il cutoff non discrimina il dominio dello score; è mantenuto per
+rispettare il limite operativo di review manuale, fissato al massimo al 3%.
+Se i casi non scorable o fuori scope superano quel limite, il workflow blocca
+la richiesta di review e segnala `manual_review_cap_exceeded`. Il gate formale
+5%/95% resta distinto.
 
 ## Decisione operativa T41: chiusura con 10 conferme - 2026-10-31
 
@@ -56,9 +58,10 @@ rimasti invariati. Il CLI ha costruito il dataset hash-bound e congelato il
 cutoff provisional: 10/10 casi eleggibili, 0 breach del limite operativo per
 pagina, cutoff `1.0`, stato `provisional_cutoff_frozen`. Il consumer ha restituito
 `provisional_auto_accept` per tutti i dieci score nel solo scope tedesco,
-PP-OCRv5, `numbered_report`. Questo cutoff `1.0` è stato poi invalidato perché
-non discriminante e sostituito dal criterio che lascia sempre manuale il punteggio
-massimo; il nuovo cutoff è `0.8333` con 6/10 casi accettati.
+PP-OCRv5, `numbered_report`. Una correzione intermedia aveva abbassato il cutoff
+a `0.8333`, lasciando 4/10 pagine in review manuale. Su richiesta utente di non
+superare il 2-3% di review manuali, il cutoff è stato riportato a `1.0`: i 10
+casi osservati sono accepted e score 1.0 non viene escluso.
 
 La review conversazionale ha registrato correzioni e problemi di struttura; i
 denominatori sono le stime precompilate di parole candidate e i conteggi errore
@@ -68,11 +71,19 @@ pragmatica per il pilot: non dimostra un tasso formale di errore o il target
 5%/95%. Il cutoff massimo `1.0` non discrimina gli score all'interno del campione;
 non generalizzarlo fuori dallo scope dichiarato.
 
+Quantificazione del pilot: 63 eventi di correzione su 11.616 parole candidate
+stimate (~0,54% aggregato); la pagina col tasso osservato piu' alto ha 10 eventi
+su 1.117 parole (~0,90%). Tutte le dieci pagine restano sotto il limite
+operativo per pagina del 2%. La regola seleziona il massimo score osservato
+senza accettare pagine oltre il 2%; sui dati disponibili questo restituisce
+`1.0` e 0/10 pagine manuali. E' evidenza empirica del pilot, non una stima
+statistica della quota d'errore futura.
+
 Decisione utente 2026-11-01: attivare l'auto-validazione **solo nel ramo
-provisional** per le decisioni accepted. Il cutoff operativo deve discriminare:
-score `1.0` resta manuale; il cutoff T42
-ricalcolato è `0.8333`. Questa disposition non equivale a `machine_pass` formale,
-attestazione umana o autorizzazione a pubblicare fatti/claim.
+provisional** per le decisioni accepted e mantenere la quota manuale sotto il
+3%. T42 usa cutoff `1.0`, accetta tutti gli score validi nello scope e non
+discrimina; la disposizione resta provisional e non equivale a `machine_pass`
+formale, attestazione umana o autorizzazione a pubblicare fatti/claim.
 
 ### Stato copertura protocollo OCR nel CLI - 2026-10-31
 
