@@ -1,6 +1,6 @@
 # Me.Mo.Ri.A Codex model routing.
-# GPT-6 family policy v3.0 (2026-10-02).
-# Keep the parent inexpensive; delegate substantive work to explicit specialists.
+# GPT-6 family policy v3.1 (2026-11-01).
+# Parent direct for small tasks; delegate only substantive, separable work.
 
 model = "gpt-6-luna"
 model_reasoning_effort = "low"

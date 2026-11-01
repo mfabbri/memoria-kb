@@ -1,45 +1,16 @@
-# Daily Agent Procedure
+# Daily Agent Procedure — post-MVP (2026-11-01)
 
-Data aggiornamento: 2026-10-02
+1. `AGENTS.md` e stato di `memoria-bootstrap/planning/current-work.json`.
+2. Se `completed`, selezionare con `$memoria-roadmap-selector` uno dei nuovi
+   incrementi T45-T49; se `selected/in_progress`, verificarne solo le dipendenze.
+3. Task envelope minimo: obiettivo, write set, test, stop condition e
+   documentazione coinvolta. Nessuna lettura automatica di roadmap complete.
+4. Parent diretto per task brevi. Router solo per cambio modello, delega
+   sostanziale o review indipendente motivata. Un solo subagent per default.
+5. Implementare una slice, eseguire i test mirati e il diff. Allargare solo se
+   fallimento o rischio dimostrabile.
+6. Aggiornare planner e soli documenti impattati. Report breve con il prossimo
+   candidato, senza promozioni storiche automatiche.
 
-## Scopo
-
-Permettere all'agent di riprendere o selezionare un micro-incremento senza
-caricare contesto non necessario.
-
-## Avvio
-
-1. Applicare `AGENTS.md`.
-2. Leggere `memoria-bootstrap/planning/current-work.json`.
-3. Se lo stato e `selected`/`in_progress`, verificare solo i file e i riferimenti
-   necessari a capire se il lavoro e ancora valido.
-4. Se serve ricalcolare, usare `$memoria-roadmap-selector`: cercare intestazioni
-   e dipendenze con `rg`, poi aprire solo le sezioni pertinenti.
-5. Caricare al massimo una skill verticale per il task corrente.
-
-Roadmap e decision log restano autoritativi, ma non sono letture obbligatorie
-integrali a ogni sessione.
-
-## Ciclo operativo
-
-1. Delimitare objective, read/write set, test minimo e stop condition.
-2. Se c'e delega o write sostanziale, eseguire `$memoria-model-router` una volta.
-3. Registrare il routing nel planner.
-4. Eseguire un solo micro-incremento.
-5. Validare prima con il test piu mirato; ampliare solo per rischio/failure.
-6. Aggiornare planner e documentazione realmente impattata.
-
-## Guardrail
-
-- niente dati reali nei repository Git;
-- niente OCR/pipeline fuori dallo scope autorizzato;
-- niente patch canoniche o `verified_facts` senza incremento, review e audit;
-- niente risoluzione automatica di conflitti storici;
-- niente refactor ampi o nuove fonti per semplice opportunismo;
-- un solo subagent per default.
-
-## Chiusura
-
-Dichiarare file modificati, test eseguiti/non eseguiti, risultato, rischi residui
-e prossimo candidato. Non rileggere roadmap complete solo per formulare il
-messaggio finale.
+Per OCR usare il playbook verticale, non incorporarne le procedure nel prompt
+quotidiano. T42 provisional non equivale a validazione formale.

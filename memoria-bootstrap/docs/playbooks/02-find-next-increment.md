@@ -1,17 +1,13 @@
-# 02 Find Next Increment
+# 02 Find Next Increment — post-MVP
 
-## Regola
+1. Controllare `memoria-bootstrap/planning/current-work.json` e il sommario
+   iniziale di `docs/current-next-increment.md`.
+2. Se lo stato e' `selected/in_progress`, continuare dopo verifica di validita'.
+3. Se chiuso, cercare T45-T49 nella roadmap tecnica e selezionare la minima
+   slice integrata verificabile.
+4. Aprire soltanto le sezioni pertinenti e i test collegati.
+5. Registrare il nuovo task nel planner **all'avvio**, non aggiornare
+   retroattivamente gli stati storici.
 
-1. Leggere `current-next-increment.md`.
-2. Se l'incremento e' aperto, continuare quello.
-3. Se e' chiuso, leggere la relativa sequenza nella roadmap tecnica.
-4. Fino a T33, scegliere T29, T30, T31, T32 e T33 in ordine.
-5. T26-T28 e Q2 sono candidati solo su richiesta esplicita o per un blocco
-   diretto documentato della golden run.
-
-## Output della scelta
-
-Dichiarare ID, scope minimo, criteri di uscita, test/verifica, documenti toccati
-e impatto su merge multi-fonte o feedback loop.
-
-Aggiornare `current-next-increment.md` prima di implementare nuovo lavoro.
+Output: ID, obiettivo, write set, test, criterio di uscita, touchpoint
+operativo, limiti su dati reali e review umana.

@@ -1,38 +1,18 @@
-# Manifest playbooks
+# Manifest playbooks attivi — 2026-11-01
 
-## File essenziali
+## Entrypoint
 
-- `README.md`
-- `codex-session-contract.md`
-- `codex-task-router.md`
-- `codex-context-budget.md`
-- `codex-roadmap-task-selector.md`
+- `README.md` — orientamento e progressive disclosure;
+- `01-start-session.md`, `02-find-next-increment.md` — quick entry;
+- `codex-session-contract.md` — vincoli storici, CLI e review;
+- `codex-task-router.md`, `codex-context-budget.md`,
+  `codex-roadmap-task-selector.md` — routing, costo e priorita' post-MVP.
 
-## Playbook verticali core
+## Verticali disponibili (non autocaricati)
 
-- `codex-document-analysis-core.md`
-- `codex-source-registry-four-levels-core.md`
-- `codex-person-profile-feedback-loop-core.md`
-- `codex-obsidian-export-core.md`
-- `codex-playwright-dynamic-source-core.md`
-- `codex-quality-gate-core.md`
+- `codex-document-analysis-core.md` — OCR, review, claim, struttura;
+- `codex-person-profile-feedback-loop-core.md` — memoria di ricerca e feedback.
 
-## Procedura dettagliata
-
-- `01-start-session.md`
-- `02-find-next-increment.md`
-- `03-implement.md`
-- `04-testing.md`
-- `05-documentation.md`
-- `06-release.md`
-- `07-knowledge-update.md`
-- `08-migration.md`
-- `09-continuous-refactor.md`
-
-## Contesto obbligatorio T29-T33
-
-Il contratto della demo non vive nei playbook ma in:
-
-```text
-memoria-bootstrap/docs/funding-demo-golden-path.md
-```
+Le vecchie liste T29-T33 e i playbook inesistenti non sono piu' elencati come
+file obbligatori. I contratti di funding demo restano documentazione storica,
+non priorita' corrente.

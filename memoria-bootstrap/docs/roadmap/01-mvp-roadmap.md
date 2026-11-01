@@ -1,6 +1,17 @@
 # MVP Roadmap
 
-Data: 2026-07-18
+Data di impianto: 2026-07-18; aggiornamento stato: 2026-11-01
+
+## Stato formale — 2026-11-01
+
+**MVP finanziatori completato** secondo T29-T33, con run canonica, tre casi,
+cinque documenti, riconciliazione multi-fonte, review, patch preview e ciclo
+feedback documentati. La prova reale dipende dagli artifact nel data root
+esterno, non ricostruibili dal solo repository. Le sezioni sotto costituiscono
+**criteri storici di accettazione**, non backlog da riaprire. La direzione
+post-MVP e' T45-T49 nella roadmap tecnica: collegare fonti online e offline al
+medesimo percorso SourceDocument/EvidenceClaim e ampliare la riconciliazione a
+persone, luoghi ed eventi, sempre con review umana.
 
 ## Definizione MVP
 
@@ -170,7 +181,7 @@ Scopo:
 - mostrare problema, valore, prova tecnica, ruolo dello storico e uso dei fondi;
 - distinguere MVP attuale, sviluppo finanziato e visione di piattaforma.
 
-## Regola di priorita'
+## Regola di priorita' (storica, valida prima della chiusura T33)
 
 Fino alla chiusura di T33:
 

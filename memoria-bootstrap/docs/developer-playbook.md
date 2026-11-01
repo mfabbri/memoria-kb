@@ -2,6 +2,9 @@
 
 Entry point di sviluppo assistito per la workspace multi-repo Me.Mo.Ri.A.
 
+**Stato 2026-11-01:** MVP chiuso; priorita' T45-T49. Per i task brevi il
+parent Luna/low procede direttamente, senza obbligo di delega. Vedi policy v3.1.
+
 ## Repository map
 
 - `memoria-bootstrap`: roadmap, decisioni, procedure e agent workflow;
@@ -64,7 +67,9 @@ quality review     GPT-6.1 Sol / medium
 architecture       GPT-6 Astra / low
 ```
 
-Non aumentare reasoning preventivamente. Se un task diventa ambiguo o
+Gli agent sono opzionali: per discovery, docs o micro-fix non delegare per
+principio. Nuovi route nel planner usano policy 3.1, lasciando intatto lo
+storico. Non aumentare reasoning preventivamente. Se un task diventa ambiguo o
 architetturale, fai escalation di tier invece di trasformare ogni review in una
 sessione high-reasoning.
 

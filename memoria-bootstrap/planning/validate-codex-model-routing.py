@@ -39,7 +39,8 @@ ROUTES_V30 = {
     "review": {("mmr_test_reviewer", "gpt-6.1-sol", "medium")},
     "high": {("mmr_architect", "gpt-6-astra", "low")},
 }
-ROUTES_BY_POLICY = {"2.0": ROUTES_V20, "2.1": ROUTES_V21, "3.0": ROUTES_V30}
+ROUTES_V31 = {**ROUTES_V30, "low": ROUTES_V30["low"] | {("parent", "gpt-6-luna", "low")}}
+ROUTES_BY_POLICY = {"2.0": ROUTES_V20, "2.1": ROUTES_V21, "3.0": ROUTES_V30, "3.1": ROUTES_V31}
 
 
 def fail(msg: str) -> None:
@@ -94,8 +95,8 @@ def main() -> int:
         fail("active planner has no routing block")
     if route:
         policy_version = route.get("policy_version", "2.0")
-        if active and policy_version != "3.0":
-            fail("active planner must be re-routed with policy_version 3.0")
+        if active and policy_version != "3.1":
+            fail("new active planner must be routed with policy_version 3.1")
         routes = ROUTES_BY_POLICY.get(policy_version)
         if routes is None:
             fail(f"unknown routing policy: {policy_version}")
@@ -129,7 +130,7 @@ def main() -> int:
     if not (ROOT / ".codex/hooks/model-routing-audit.py").is_file():
         fail("runtime audit hook script missing")
 
-    print("OK: Codex model routing v3.0 is structurally coherent")
+    print("OK: Codex model routing v3.1 is structurally coherent")
     if route:
         print(
             f"planner: policy={route.get('policy_version')} tier={route['tier']} "

@@ -1,5 +1,29 @@
 # Decision Log
 
+## 2026-11-01 - Direzione post-MVP e routing Codex 3.1
+
+Decisione: non riaprire T29-T34b (MVP finanziatori e migrazione profili chiusi).
+T41 resta aperta solo per il gate OCR statistico; il pilot provisional di dieci
+pagine con cutoff 1.0 non discriminante non prova accuratezza futura. La corsia
+post-MVP primaria e' T45-T49: sicurezza e contratti, OCR revisionabile verso
+`SourceDocument`, prima run online+offline, entita' luogo/evento e feedback.
+Ogni risultato di ricerca resta candidato; documenti e claim conservano
+provenance e stato di review; le scritture canoniche restano vietate senza
+specifica decisione umana auditata.
+
+Decisione di costo/qualita': policy di routing 3.1. Il parent Luna/low lavora
+direttamente sui task brevi; Sol/medium per implementazioni sostanziali e
+review indipendente motivata; Astra/low per trade-off architetturali complessi.
+Le skill e i playbook verticali sono caricati su richiesta. Nuovi record del
+planner usano 3.1; non correggere retroattivamente le route 2.x/3.0. Valutare
+costo totale, retry e qualita', non dichiarare risparmi senza baseline.
+
+Applicazione documentale/configurativa soltanto: nessun OCR rilanciato,
+nessun profilo canonico modificato, nessuna migrazione dello storage. L'accesso
+alle credenziali reali e la loro eventuale rotazione richiedono gestione
+separata; `.gitignore` protegge solo le future aggiunte, non ripulisce la storia.
+
+
 ## 2026-09-26 - Root project-local obbligatoria per OCR
 
 Decisione: tutte le installazioni e configurazioni OCR operative devono essere

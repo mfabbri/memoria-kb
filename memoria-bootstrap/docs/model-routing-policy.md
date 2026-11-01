@@ -1,107 +1,77 @@
-# Model routing policy v3.0
+# Model routing e context efficiency — policy v3.1
 
-Data: 2026-10-02
+Aggiornamento: 2026-11-01. Sostituisce v3.0 **per nuove sessioni** senza
+riscrivere route o audit di sessioni precedenti.
 
-## Obiettivo
+## Criterio principale: costo per task concluso, non costo per singolo token
 
-Usare il modello meno costoso che soddisfa il rischio del task, mantenendo
-routing verificabile e contesto minimo. La policy separa decisione intenzionale
-(planner) e modello realmente eseguito (hook runtime).
+La scelta del modello e del numero di agent dipende da rischio, ambiguita',
+qualita' misurata e costo complessivo (input/output/reasoning, retry e subagent).
+Per task semplici non delegare: il parent evita un secondo prompt, ripetizioni
+di contesto e overhead di coordinamento.
 
-## Routing canonico
+| Lavoro | Default | Quando delegare |
+|---|---|---|
+| Discovery, typo, docs mirate, aggiornamento planner | parent `gpt-6-luna`, low | Solo se un confronto indipendente ha valore |
+| Fix meccanico isolato con test immediato | parent Luna/low; verificare risultato | Se cambia comportamento/contratto, passare a Sol |
+| Implementazione, parser, CLI, provenance, test | `mmr_implementer`, `gpt-6.1-sol`, medium | Se il task e' sostanziale e delegabile; altrimenti cambiare modello in sessione |
+| Review di regressioni/contratti | `mmr_test_reviewer`, Sol/medium | Solo per rischio reale e revisione indipendente |
+| Architettura, migrazione con trade-off ambigui | `mmr_architect`, `gpt-6-astra`, low | Solo se il problema richiede una valutazione dedicata |
 
-| Tier | Agent | Modello | Reasoning | Responsabilita |
-|---|---|---|---|---|
-| router | parent | GPT-6 Luna | low | classificare, delegare, sintetizzare |
-| low | mmr_scanner | GPT-6 Luna | low | discovery read-only |
-| low | mmr_docs_reviewer | GPT-6 Luna | low | review documentale mirata |
-| low | mmr_docs_editor | GPT-6 Luna | low | docs/planner/config agent |
-| medium | mmr_implementer | GPT-6.1 Sol | medium | codice e micro-feature |
-| review | mmr_test_reviewer | GPT-6.1 Sol | medium | quality/regressioni/provenance |
-| high | mmr_architect | GPT-6 Astra | low | architettura/migrazioni/trade-off |
+Gli agent specializzati docs/scanner sono **opzionali** e non obbligatori in
+ogni sessione. Non eseguire una review LLM indipendente quando test automatici
+mirati e diff sono sufficienti. `high` reasoning non e' un sostituto di dati o
+accessi mancanti. Modifiche ai modelli sono subordinate a disponibilita'
+verificata in `/model`; in caso contrario rendere esplicito il fallback,
+l'eventuale cambio di tier e il modello realmente usato.
 
-## Motivazione
+## Contesto e prompt
 
-OpenAI indica GPT-6 Luna come modello piu efficiente per workload mirati e ad
-alto volume, GPT-6.1 Sol come scelta vicina ad Astra per lavoro complesso a costo
-inferiore, e Astra come modello piu capace per problemi ambigui e impegnativi.
-La guida corrente associa inoltre Luna/low a edit circoscritti e Sol/medium al
-lavoro tecnico complesso.
+- `AGENTS.md` solo invarianti; prompt quotidiano breve, senza procedure OCR
+  incorporate. Skill con descrizioni specifiche e dettagli *on-demand*.
+- Leggi interfacce, contratti e test pertinenti (ricerca per path/simbolo), non
+  dump di interi file/roadmap, ZIP di run o report di migliaia di righe.
+- Usa output delle CLI concisi, `rg -n`, `git diff --stat` e sezioni mirate;
+  conserva nei handoff: obiettivo, path, vincoli, evidenza e stop condition.
+- Un solo subagent di default, nessuno per task brevi. Parallelismo soltanto
+  per analisi veramente indipendenti; non far editare gli stessi file a due agent.
+- Evita di rilanciare una suite gia' verde e invariata; espandi i test soltanto
+  per rischio residuo documentato.
+- Dopo una lunga sessione compatta solo quando utile al costo totale e conserva
+  un breve checkpoint: obiettivo, modifiche, test, stato e questioni aperte.
 
-Per Me.Mo.Ri.A questo sostituisce il routing v2.1:
+## Prompt caching: distinzione fra API e Codex
 
-```text
-GPT-5.6 Luna -> GPT-6 Luna
-GPT-5.6 Terra/medium -> GPT-6.1 Sol/medium
-GPT-5.6 Terra/high review -> GPT-6.1 Sol/medium
-Astra/low -> invariato
-```
+Per integrazioni **Responses API**: preservare il prefisso stabile (istruzioni,
+schemi, strumenti ordinati), aggiungere dettagli dinamici in coda, mantenere
+cronologia append-only; misurare `cached input tokens`, output e costo totale.
+Con GPT-5.6+ le opzioni `prompt_cache_options`, breakpoint e
+`configuration_update` dipendono dal modello/API scelti. Non aggiungere
+padding privo di valore per inseguire la soglia cache. Compaction puo' ridurre
+hit-rate ma anche costo totale; testare su trace reali. Queste opzioni **non**
+sono chiavi trasferibili a `.codex/config.toml` e la cache non e' garantita per
+la sola permanenza della sessione Codex.
 
-La review scende da high a medium perche reasoning maggiore usa piu quota e non
-garantisce un risultato migliore. Se la review trova un problema realmente
-ambiguo o architetturale, si fa escalation di tier, non si alza il reasoning in
-modo automatico.
+## Evidenza e versioni
 
-## Availability gate
+- `current-work.json` registra la decisione intenzionale: nuove route attive
+  `policy_version: "3.1"`; il validatore accetta le route storiche 2.0/2.1/3.0.
+- `.codex/hooks.json` registra eventi runtime in
+  `memoria-bootstrap/planning/.runtime/model-routing.ndjson` (se gli hook sono
+  stati trusted nel client). I log possono non fornire sempre il model id;
+  non inventare quel dato.
+- Verifica `codex --version`, `/model`, `/hooks` e i limiti del workspace prima
+  di assumere compatibilita'; gli ID API non garantiscono accesso Codex.
+- Metriche di valutazione: task corretti al primo tentativo, retry, durata,
+  token input non cached / cached / output quando disponibili, costo totale,
+  subagent avviati, esiti dei test e patch non richieste. Registrare baseline
+  e confronto su task equivalenti prima di affermare risparmi percentuali.
 
-GPT-6.1 Sol puo dipendere da piano, client, workspace e rollout. `/model` e la
-fonte operativa per i modelli realmente disponibili alla sessione. Un modello
-non disponibile non viene sostituito silenziosamente: il planner registra un
-`fallback` o un `escalated` prima di eseguire con un modello diverso.
+## Fonti OpenAI consultate il 2026-11-01
 
-Per la policy v3.0 e consigliato Codex CLI `0.159.2` o successivo.
-
-## Context engineering
-
-Le istruzioni persistenti devono essere piccole:
-
-- `AGENTS.md`: solo regole sempre valide;
-- skill: un job riconoscibile, descrizione corta e specifica;
-- progressive disclosure: caricare `SKILL.md` e riferimenti solo quando scelti;
-- niente stack fisso di documenti da leggere prima di ogni edit;
-- niente duplicazione di roadmap/file nei messaggi inter-agent.
-
-## Subagent e token
-
-- un subagent e il default;
-- parallelizzare solo workstream indipendenti;
-- passare task envelope, path, simboli e acceptance criteria;
-- non rileggere file invariati dopo handoff salvo conflitto o diff inatteso;
-- eseguire il test piu piccolo significativo; ampliare dopo failure o rischio;
-- reasoning maggiore non sostituisce accessi, fonti o requisiti mancanti.
-
-## Audit runtime
-
-Gli hook `SessionStart`, `SubagentStart` e `SubagentStop` registrano modello,
-agente ed evento in:
-
-```text
-memoria-bootstrap/planning/.runtime/model-routing.ndjson
-```
-
-Il file non viene versionato.
-
-## Compatibilita planner
-
-- nuovi record: `policy_version: 3.0`;
-- schema e validator continuano a leggere `2.0` e `2.1` come storia;
-- i nuovi route attivi devono rispettare la tabella v3.0;
-- gli eventi storici GPT-5.6 non vengono riscritti.
-
-## Guardrail
-
-- nessun `[profiles.*]` project-local;
-- nessuna escalation dovuta alla sola dimensione del repository;
-- nessun fan-out automatico;
-- ogni fallback e esplicito;
-- niente chain-of-thought nel planner o nei log;
-- disponibilita del modello verificata dalla sessione, non presunta.
-
-## Riferimenti OpenAI verificati il 2026-10-02
-
-- https://learn.chatgpt.com/docs/models
-- https://learn.chatgpt.com/docs/agent-configuration/subagents
-- https://learn.chatgpt.com/docs/build-skills
-- https://learn.chatgpt.com/docs/changelog
-- https://developers.openai.com/api/docs/guides/model-selection
 - https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
+- https://developers.openai.com/api/docs/guides/model-selection
+- https://developers.openai.com/api/docs/guides/prompt-caching
+- https://developers.openai.com/api/docs/guides/agents-api/observability
+- https://developers.openai.com/api/docs/guides/agents-api/multi-agent
+- https://learn.chatgpt.com/docs/hooks

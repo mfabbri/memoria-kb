@@ -1,28 +1,26 @@
 ---
 name: memoria-model-router
-description: Route a Me.Mo.Ri.A task to the smallest sufficient Codex agent/model.
+description: Choose a model or specialist only for a nontrivial Me.Mo.Ri.A task with known scope and risk.
 ---
 
-# Me.Mo.Ri.A model router
+# Routing v3.1
 
-Use once after scope/risk are clear and before delegation or substantive write.
+Prima chiediti se serve delegare: per typo, discovery, documentazione limitata
+e fix meccanici il parent puo' procedere da solo senza duplicare il contesto.
 
-| tier | task | agent | model | effort |
-|---|---|---|---|---|
-| low | discovery | mmr_scanner | gpt-6-luna | low |
-| low | docs review | mmr_docs_reviewer | gpt-6-luna | low |
-| low | docs/planner/agent config edit | mmr_docs_editor | gpt-6-luna | low |
-| medium | runtime micro-increment | mmr_implementer | gpt-6.1-sol | medium |
-| review | regression/provenance quality gate | mmr_test_reviewer | gpt-6.1-sol | medium |
-| high | architecture/migration/contract conflict | mmr_architect | gpt-6-astra | low |
+| Task | Route preferita | Effort iniziale |
+|---|---|---|
+| Discovery, docs, modifica meccanica limitata | parent GPT-6 Luna | low |
+| Codice che modifica comportamento, regole o CLI | mmr_implementer GPT-6.1 Sol | medium |
+| Review indipendente per rischio concreto | mmr_test_reviewer GPT-6.1 Sol | medium |
+| Migrazione/architettura multi-repo ambigua | mmr_architect GPT-6 Astra | low |
 
-Decision order: architecture/migration -> high; independent quality review ->
-review; runtime write -> medium; docs-only write/review -> low; otherwise scan
-with low. Repository size alone never escalates a task.
+Gli agent read-only/docs restano disponibili solo quando l'indipendenza porta
+valore. Un solo subagent alla volta di norma; non forzare la separazione di task
+brevi. Registra nel planner `policy_version: "3.1"` per **nuovi** record di routing
+attivi; lo storico 2.x/3.0 non si riscrive. `/model` e' il gate di disponibilita':
+se il modello non e' accessibile, registra un fallback concordante e non
+attribuire al modello richiesto un lavoro eseguito altrove.
 
-Write `policy_version: 3.0` in new routing records. Record escalation/fallback
-before changing tier/model. `/model` is authoritative for account availability;
-do not silently replace an unavailable model.
-
-Token discipline: one subagent by default, no duplicated file bodies, targeted
-reads/tests, and no reasoning increase to compensate for missing access/context.
+Escalation solo davanti a un blocco verificabile, contratti in conflitto o
+rischio nuovo. Ridurre prima scope, tool output e materiale duplicato.

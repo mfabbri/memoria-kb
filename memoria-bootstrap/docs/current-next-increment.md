@@ -1,5 +1,26 @@
 # Current Next Increment
 
+## Stato corrente e prossimo candidato — 2026-11-01
+
+**Post-MVP aperto, nessun incremento in esecuzione nel planner:**
+`planning/current-work.json` e' `completed` e contiene la chiusura del pilot
+OCR; non modificarne retroattivamente la cronologia. MVP finanziatori T29-T33 e
+migrazione T34/T34b completati. Primo candidato T45 (P0 segreti/test/contratto
+OCR->SourceDocument), poi T46/47 per integrare effettivamente una fonte online
+e una offline; T48 estende a luogo/evento, T49 chiude il feedback.
+
+Il pilot OCR provisional T42 e' **chiuso nel suo scope**, ma cutoff 1.0 e'
+non discriminante e non prova accuratezza o gate formale T41 (5%/95%). Non
+bloccare il nuovo percorso storico in attesa del gate statistico; non usare
+provisional come approvazione di claim. La storia OCR sotto resta archivio di
+decisioni, non istruzioni correnti da rileggere integralmente.
+
+Per nuove sessioni Codex, routing v3.1, parent diretto per task brevi, skill OCR
+solo su richiesta e scelta del prossimo task dalla roadmap; non riaprire T29-T34.
+
+---
+
+
 ## Consumo end-to-end della soglia T42 - 2026-11-01
 
 **Stato: tuning provisional chiuso** per il solo scope tedesco/PP-OCRv5/

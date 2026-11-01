@@ -1,43 +1,19 @@
-# Playbook e skill Codex per Me.Mo.Ri.A
+# Playbook e skill Codex — post-MVP
 
-La procedura ordinaria usa contesto minimo e progressive disclosure.
+Entrypoint unico: `AGENTS.md` → stato `planning/current-work.json` → skill
+selezionata. Il prompt quotidiano e' `docs/agent-session-prompt.md`.
 
-## Entrypoint
+- `$memoria-roadmap-selector`: se l'incremento e' chiuso, T45-T49.
+- `$memoria-session`: task sostanziale multi-step, non typo.
+- `$memoria-model-router`: solo se delega/cambio modello richiede routing.
+- `$memoria-planner`: per creare/riprendere/chiudere lavoro persistente.
+- Skill verticale (ad es. quality gate) e sezioni del playbook core solo quando
+  il task ne dipende.
 
-Codex legge `AGENTS.md`. Non caricare automaticamente tutti i playbook o tutte
-le skill.
+Parent Luna/low per task brevi, Sol/medium per code slice e review significativa,
+Astra/low per architettura difficile. Nessun subagent obbligatorio. Non
+precaricare storico, roadmap integrali o il lungo playbook OCR.
 
-Usa on-demand:
-
-- `$memoria-session` per un write task o una sessione multi-step;
-- `$memoria-planner` quando devi aprire/chiudere lavoro persistente;
-- `$memoria-model-router` prima di una delega o di un cambio modello;
-- una sola skill verticale pertinente (`$memoria-source-registry`,
-  `$memoria-profile-feedback`, `$memoria-quality-gate`, ...).
-
-## Routing corrente
-
-```text
-focused/docs       GPT-6 Luna / low
-implementation     GPT-6.1 Sol / medium
-quality review     GPT-6.1 Sol / medium
-architecture       GPT-6 Astra / low
-```
-
-Non usare `[profiles.*]` nel `.codex/config.toml` del progetto. I profili Codex
-moderni sono file separati sotto `CODEX_HOME`; Me.Mo.Ri.A usa custom agent.
-
-## Playbook legacy
-
-I playbook dettagliati restano compatibili ma non sono letture iniziali. Le
-regole attive devono convergere in `AGENTS.md`, skill focalizzate e contratti di
-repository.
-
-## Regola sintetica
-
-```text
-1 sessione di modifica = 1 micro-obiettivo
-1 micro-obiettivo = 1 skill verticale massimo
-1 implementazione = 1 test mirato prima della suite ampia
-1 fatto storico = 1 fonte tracciabile + revisione umana
-```
+Le pagine `codex-*` sono riferimenti selettivi, non una checklist iniziale.
+La procedura OCR dettagliata vive soltanto in
+`codex-document-analysis-core.md`.

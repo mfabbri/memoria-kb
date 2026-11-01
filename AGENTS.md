@@ -1,103 +1,53 @@
 # AGENTS.md — Me.Mo.Ri.A
 
-Entry point operativo per Codex. Mantieni qui solo regole valide per quasi ogni
-task; dettagli e workflow verticali vivono nelle skill e nei contratti dedicati.
+Regole persistenti (valgono per ogni task). Il resto si carica **solo quando
+serve**: `memoria-bootstrap/docs/model-routing-policy.md`, skill mirate,
+contratti e sezioni di roadmap pertinenti.
 
-## Bootstrap minimo
+## Dominio e limiti
 
-1. Leggi questo file.
-2. Leggi `memoria-bootstrap/planning/current-work.json` solo per capire se esiste
-   lavoro persistente da riprendere.
-3. Carica documenti e skill in modo contestuale, non preventivo.
-4. Per un write task o una delega usa `$memoria-session`; usa
-   `$memoria-model-router` una sola volta dopo che scope e rischio sono chiari.
-5. Usa `$memoria-planner` solo quando devi aprire, aggiornare o chiudere lavoro
-   persistente. Carica al massimo una skill verticale pertinente.
-6. Per ogni task OCR, leggi il preflight obbligatorio Ollama WSL in
-   `memoria-bootstrap/docs/agent-session-prompt.md` prima di valutare un VLM o
-   dichiarare runtime/modello non disponibile. Un `E_ACCESSDENIED` del sandbox
-   non prova che WSL sia assente; non usare Ollama Windows come fallback.
+`fonti -> documenti -> evidenze -> riconciliazione -> revisione umana -> feedback -> nuova ricerca`.
+Un risultato di ricerca non e' un fatto. Ogni `EvidenceClaim` richiede un
+`SourceDocument` identificabile, provenance e `review_status`; le patch canoniche,
+le decisioni storiche e la pubblicazione non sono automatizzate.
+Dati reali, credenziali, corpus OCR e run pesanti restano fuori da Git.
+Il registry `memoria-sources/registry/camalanca_fonti.yaml` e' la fonte di verita'
+per i quattro livelli dichiarativi delle fonti.
 
-Non leggere automaticamente tutte le roadmap, tutti i playbook o le run reali.
+## Incrementi
 
-## Routing Codex
+- Leggi `memoria-bootstrap/planning/current-work.json` per scoprire eventuale
+  lavoro persistente; se concluso, usa `$memoria-roadmap-selector` per scegliere
+  dalle sezioni post-MVP delle roadmap, senza leggere tutta la cronologia.
+- Un micro-incremento verificabile alla volta: obiettivo, write set, prova
+  mirata e stop condition. `memoria-engine` contiene runtime e test;
+  `memoria-bootstrap` pianificazione; `memoria-sources` registry;
+  `memoria-rules` regole; `memoria-knowledge` dominio;
+  `memoria-workspace` descriptor, non dati reali.
+- Usa `$memoria-session` per lavori sostanziali multi-step; non per typo o
+  review read-only. Una skill verticale alla volta, quando pertinente.
+- Preferisci fixture offline, preview prima di apply, idempotenza, audit,
+  provenance e test che falsifichino il cambiamento. Non avviare grandi
+  scansioni, refactor estesi o nuovi scraping senza scope esplicito.
 
-Policy canonica: `memoria-bootstrap/docs/model-routing-policy.md`.
+## Modelli, delega e token
 
-```text
-focused/read-only/docs -> GPT-6 Luna / low
-implementation        -> GPT-6.1 Sol / medium
-quality review         -> GPT-6.1 Sol / medium
-architecture/migration -> GPT-6 Astra / low
-```
+Policy: `memoria-bootstrap/docs/model-routing-policy.md` (v3.1).
+Parent `gpt-6-luna/low`; lavora direttamente per discovery, documentazione e
+fix minimi ben circoscritti. Sol/medium per implementazioni sostanziali o
+review indipendenti necessarie; Astra/low per trade-off architetturali complessi.
+**Non creare subagent per principio**: delega solo per lavoro separabile,
+review indipendente ad alto rischio o contesto che giustifica l'overhead.
+Registra disponibilita' e fallback espliciti; i nomi del config non garantiscono
+l'accesso al modello. Passa riferimenti a file e risultati, non dump integrali.
 
-Il parent usa `gpt-6-luna` / `low` come controller. Delega lavoro sostanziale al
-custom agent appropriato. Non aumentare reasoning per compensare file, permessi
-o requisiti mancanti. Se un modello non e disponibile, registra il fallback
-prima dell'esecuzione; non sostituirlo silenziosamente.
-
-Token/context: un solo subagent per default, messaggi inter-agent compatti,
-path/simboli al posto di file copiati, letture e test mirati prima di scansioni o
-suite ampie.
-
-## Principio archivistico
-
-```text
-fonti -> documenti -> evidenze -> riconciliazione -> schede
-       -> revisione umana -> pubblicazione
-```
-
-Una pagina risultati produce candidati, non fatti. Solo un documento o record
-identificabile puo sostenere un `EvidenceClaim`; la pubblicazione richiede
-provenance e decisione umana.
-
-## Confini repository
-
-- `memoria-engine`: codice, CLI, test e migrazioni.
-- `memoria-workspace`: configurazione/manifest, niente logica di dominio.
-- `memoria-knowledge`: conoscenza documentata e contratti semantici.
-- `memoria-rules`: regole deterministiche e contratti LLM.
-- `memoria-sources`: registry e definizioni delle fonti.
-- `memoria-bootstrap`: roadmap, decisioni, procedure e configurazione agent.
-
-I dati storici reali restano nel workspace esterno configurato dall'utente, non
-nel codice o nelle fixture Git.
-
-## Regole operative
-
-- Un solo micro-incremento verificabile per sessione di modifica.
-- Prima del write: scope, write_set, test minimo e stop condition chiari.
-- Preferire fixture offline e parsing deterministico.
-- Non fare scraping aggressivo; non salvare credenziali, cookie o token.
-- Non approvare claim, risolvere conflitti storici o pubblicare schede.
-- Le patch ai profili restano preview-only fino a review e audit.
-- Non fare refactor ampi senza decisione esplicita.
-- Aggiornare solo la documentazione direttamente impattata.
-
-## Windows sandbox
-
-Per validare `current-work.json` e il routing su Windows, usa sempre
-`memoria-engine/.venv/Scripts/python.exe` per eseguire
-`memoria-bootstrap/planning/validate-codex-model-routing.py`. `jsonschema` 4.26.0
-e' installato in quel virtualenv; il Python globale puo' non averlo e non deve
-essere usato per concludere che il pacchetto manchi. Dettagli in
-`memoria-bootstrap/planning/README.md`.
-
-Usa `apply_patch` quando la sandbox Codex e operativa. Se fallisce solo
-`apply_patch` per un errore infrastrutturale, e ammesso un solo fallback
-riproducibile via Python o `git apply`, limitato al repository, seguito da diff
-e test pertinenti. Non usare riserializzazioni distruttive come fallback.
+Per task OCR apri soltanto la sezione pertinente di
+`memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md`;
+preflight Ollama WSL solo se e' prevista inferenza VLM. La soglia T42
+provisional `1.0` non e' discriminante, non abilita `machine_pass`, claim o
+pubblicazione. Il gate formale OCR resta separato.
 
 ## Chiusura
 
-Riporta in forma concisa:
-
-```text
-micro-incremento:
-file modificati:
-test eseguiti:
-risultato:
-rischi residui:
-documentazione verificata/aggiornata:
-prossimo passo candidato:
-```
+Riporta: incremento, file cambiati, test fatti/non fatti, risultati, limiti e
+prossimo candidato. Aggiorna solo i documenti direttamente impattati.

@@ -1,6 +1,6 @@
 # Roadmap Master Post-Migrazione
 
-Data: 2026-07-18
+Data di impianto: 2026-07-18; stato aggiornato al 2026-11-01
 
 Scope: architettura multi-repo Me.Mo.Ri.A in `D:\CaDiMalanca\me.mo.ri.a-kb`.
 
@@ -74,7 +74,27 @@ gap o conflitto
   -> aggiornamento della memoria di ricerca del profilo
 ```
 
-## Sequenza roadmap aggiornata
+## Decisione di direzione post-MVP — 2026-11-01
+
+**Funding MVP concluso**: T29-T33 (golden run e pacchetto finanziatori) e
+T34/T34b (migrazione profili) sono chiusi. T35-T40, T42, T43 e T44 forniscono
+la base OCR/review; T41 resta distinto tra pilot empirico chiuso e gate
+statistico formale non dimostrato. Le righe storiche sotto descrivono le
+priorita' al tempo delle decisioni e non riaprono la golden run.
+
+La corsia primaria ora e' **T45-T49** (roadmap tecnica): hardening minimo e
+contratto documentale; OCR revisionabile -> `SourceDocument`; prima run
+online+offline con `EvidenceClaim` candidati; estensione controllata al linking
+di luoghi/eventi; feedback verificabile ed evaluation. Ogni modifica ai profili
+canonici resta soggetta a preview, review e audit. La calibrazione statistica
+OCR e Q2 continuano come corsie indipendenti, senza bloccare la conoscenza
+multi-fonte salvo rischi reali.
+
+Non confondere `provisional_auto_validated` con `human_verified` o un fatto
+storico. Il cutoff T42 1.0 e' non discriminante; nessuna inferenza sul tasso
+futuro di errori. Il data root reale e' esterno a Git.
+
+## Sequenza roadmap aggiornata (storico fino al 2026-09)
 
 1. Stabilizzare il perimetro post-migrazione. **Completato**.
 2. Rendere `memoria-engine` installabile, testabile e diagnosticabile.
@@ -153,59 +173,19 @@ metriche con reference umana. PP-StructureV3 e Docling restano fuori dal
 critical path. Il documento autorevole e'
 `memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`; la sequenza tecnica e' T35-T42.
 
-## Stato corrente
+## Stato corrente al 2026-11-01
 
-Focus successivo: **T41 - Calibrazione OCR su campione reale stratificato**.
-T35-T40 e T42 sono completate; T41 ha reference verificata e confronto engine
-page-scoped per `T314-1275-00150`, ma resta bloccata finche' non sono disponibili
-reference verificabili per le altre pagine del campione iniziale da 8-10.
-La calibrazione resta diagnostica e non dichiara accuratezza generale. T34b non
-e' piu' un blocker e l'apertura post-MVP procede secondo la selezione roadmap.
-
-Completato:
-
-- struttura multi-repo;
-- data root esterno;
-- package installabile e suite test ampia;
-- CLI `memoria` con diagnostica e bridge read-only;
-- catalogo fonti in `memoria-sources`;
-- knowledge in `memoria-knowledge`;
-- prompt e contratti LLM in `memoria-rules`;
-- evidence/review store e output preview gia' presenti;
-- interfaccia `WorkspaceStorage` e driver locale;
-- manifest provider-aware.
-
-Capacita' gia' osservabili ma non ancora confezionate in una golden run unica:
-
-- documenti e claim candidati;
-- decisioni di review;
-- verified facts preview;
-- profile patch preview;
-- piani di feedback;
-- dossier e report MVP distribuiti fra run differenti.
-
-## Focus immediato
-
-T34 preview e' chiusa e T34b e' completata. I set `block5e` e `block5f`
-hanno registrato le decisioni umane sui 7 residui: 4 sono `accepted` e 3 sono
-`rejected`. Le registrazioni restano preview-only e non modificano profili
-canonici.
-
-- T26-T28 cloud restano in hold;
-- Q2 e l'apertura post-MVP possono riprendere secondo la selezione roadmap;
-- i futuri interventi sui dati canonici richiedono un incremento separato e
-  una decisione esplicita.
-
-Decisione T33 del 2026-07-18: il caso principale e' stato dimostrato nella
-golden run T30-T32. E' quindi autorizzata un'espansione controllata a tre casi,
-purche' produca una sola nuova golden run canonica e tutti gli artefatti tecnici
-e di presentazione puntino al medesimo `run_id`.
-
-Documento operativo di riferimento:
-
-```text
-memoria-bootstrap/docs/funding-demo-golden-path.md
-```
+- MVP finanziatori T29-T33 e migrazione legacy T34/T34b chiusi secondo gli
+  artifact e il planner; la run canonica reale va comunque verificata sul data
+  root esterno quando la si riesegue.
+- OCR T35-T40, T42-T44: capacità implementate; T41 pilot provisional chiuso,
+  gate formale 5%/95% aperto con campioni e holdout insufficienti.
+- Prossimo incremento **candidato**: T45 (P0 sicurezza, test gate e contratto
+  di raccordo); successivamente T46/T47 per la prima integrazione dati utile.
+- I 18 profili fonte nel registry sono configurazioni: non equivalgono a 18
+  fonti live verificate. Evitare ulteriori adapter legacy.
+- pCloud T27/T28 e refactor Q2 differiti salvo necessità concreta. Per i nuovi
+  task usare la policy Codex 3.1 e il planner `current-work.json`.
 
 ## Fuori scope per la golden run
 

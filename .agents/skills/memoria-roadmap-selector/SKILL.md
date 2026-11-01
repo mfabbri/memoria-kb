@@ -1,34 +1,23 @@
 ---
 name: memoria-roadmap-selector
-description: Choose the next roadmap micro-increment when current work is closed or invalid.
+description: Select a verifiable post-MVP increment when current-work is completed or invalid.
 ---
 
-# Roadmap Selector
+# Roadmap selector post-MVP
 
-1. Cerca nelle roadmap con `rg` intestazioni, priorità, gap, milestone, criteri
-   di ingresso/uscita e riferimenti a CLI, review store, merge multi-fonte e
-   feedback loop.
-2. Apri solo le sezioni pertinenti alla fase corrente.
-3. Estrai 2-4 candidati.
-4. Scegli quello che massimizza: sblocco MVP, provenance/audit, testabilità
-   offline, riduzione del rischio, avanzamento reale della roadmap e minimo
-   numero di file.
-5. Evita nuove fonti live, pubblicazione, merge automatici e decisioni storiche.
-6. Non selezionare un incremento test-only se i test sono soltanto prerequisiti
-   per un'implementazione già delimitata e non esiste un blocco reale. In quel
-   caso accorpa test e implementazione nello stesso micro-incremento. Se il
-   test-only è necessario, registra il blocco o il valore indipendente nel
-   task envelope.
+1. Controlla solo lo stato in `memoria-bootstrap/planning/current-work.json` e
+   il sommario iniziale di `docs/current-next-increment.md`.
+2. Se il lavoro e' ancora valido e aperto, riprendilo. Altrimenti cerca con `rg`
+   le sezioni T45-T49 e le dipendenze in `docs/roadmap/02-technical-roadmap.md`;
+   consulta il master solo per i vincoli strategici interessati.
+3. Proponi 2-3 micro-incrementi con output falsificabile, scegli il piu'
+   piccolo che sblocca il **percorso integrato** (fonte offline/online -> documento
+   -> claim candidato -> entity linking -> review -> feedback).
+4. Non fare nuovi scraping estesi o variazioni ai canonici; distinguere
+   ingestion OCR e revisione dalla validazione storica. Q2 e OCR formale
+   proseguono come workstream secondari motivati dal rischio.
+5. Registra il nuovo task envelope nel planner solo quando effettivamente avvii
+   l'incremento; non falsificare la chiusura dello storico.
 
-Output:
-
-```text
-micro-incremento scelto:
-sezioni roadmap:
-motivazione:
-scope:
-file candidati:
-test:
-documentazione/CLI touchpoint:
-stop condition:
-```
+Output: ID, scope, file, evidenza di partenza, test, stop condition e decisioni
+che richiedono lo storico.

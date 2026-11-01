@@ -8,6 +8,70 @@ Rendere l'architettura multi-repo stabile, installabile e verificabile prima di
 aggiungere nuova logica applicativa. Ogni milestone deve essere piccola,
 verificabile e allineata alla roadmap MVP.
 
+
+## Sequenza post-MVP attiva — decisione del 2026-11-01
+
+Le milestone T29-T33 e T34/T34b sono chiuse. La direzione primaria e' T45-T49:
+consolidare l'interfaccia fra OCR, documenti, evidenze, entita' e feedback; non
+proseguire indefinitamente il solo tuning OCR. T41 mantiene il gate statistico
+separato (reference adjudicate e holdout indipendente); il pilot provisional
+T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. I test
+preesistenti hanno alcuni problemi legacy/cross-platform da classificare.
+
+### T45 - Quality gate post-MVP e contratto di integrazione (P0, prossimo candidato)
+
+**Obiettivo:** rendere riproducibili i test di base e definire un unico contratto
+tra OCR revisionabile e registrazione di documenti, senza cambiare la semantica
+archivistica.
+
+- Rimuovere rischi di distribuzione credenziali (`.env` fuori da Git/ZIP; se
+  accidentalmente esposte, valutare rotazione). Classificare test T31 non
+  collezionabile, regressioni batch OCR legacy e dipendenze separatori Windows.
+- Mappare il percorso esistente `OcrPageEvidence` / `DocumentStructure` /
+  Markdown -> `SourceDocument` e ledger/evidence store; precisare gli ID, URI,
+  digest, source definition, access timestamp, review status e idempotenza.
+- Dimostrare con fixture offline e test mirato che un artifact OCR provisional
+  **non** produce `human_verified` o un claim approvato.
+- **Uscita:** un contratto implementabile, baseline test documentata e nessun
+  secret nel change set; niente refactor generalizzato.
+
+### T46 - Bridge OCR revisionabile -> SourceDocument (P1)
+
+Dipendenza: T45. Se disponibile un documento OCR approvato dall'operatore,
+registrarlo tramite lo store esistente, preservando raw URI, hash, fonte,
+accesso, versione struttura, testo derivato e stato di review. L'esito
+`provisional_auto_validated` deve restare candidato/non verificato; la sola
+accettazione OCR non abilita claim storici approvati. Preview/apply, idempotenza
+e provenance hanno test offline.
+
+### T47 - Prima run online+offline su un profilo esistente (P1)
+
+Dipendenza: T46 per il ramo OCR (o un documento offline gia' registrato e
+revisionabile); riusare una fonte online gia' nel registry e un documento offline
+identificabile. Eseguire prima fixture/parser offline, poi una singola ricerca
+live controllata se autorizzata. Due `SourceDocument` identificabili, claim
+candidati collegati allo stesso `PersonResearchProfile`, compatibilita'/conflitti
+visibili e feedback `no_results`/candidate documentati. Una pagina risultati
+non diventa documento o fatto. La canonizzazione resta preview-only.
+
+### T48 - Ricerca e linking su Place / HistoricalEvent (P1)
+
+Dipendenza: T47. Verificare contratti/identita' di `Place` e `HistoricalEvent`
+senza inventare equivalenze: alias, provenance, relazioni e conflitti. Applicare
+lo stesso ciclo fonte -> documento -> claim -> candidate entity update ->
+review, con fixture di un luogo o evento storico e test di regressione su persone.
+
+### T49 - Review-feedback end-to-end ed evaluation (P2)
+
+Dipendenze: T47, T48. La decisione dello storico puo' richiedere nuove fonti;
+tracciare strategia, run, documento nuovo oppure `no_results`, e riconciliare
+la memoria di ricerca senza approvazione automatica. KPI: copertura delle fonti,
+claim attribuibili, conflitti preservati, tempo di review, failure di retrieval,
+confronto costi/token delle sessioni Codex senza inventare risparmi.
+
+**Priorita' parallele:** Q2 solo come micro-refactor giustificato; T41 gate
+statistico OCR separato; T27/T28 cloud solo se necessario al percorso.
+
 ## Confini repository
 
 - `memoria-bootstrap`: documentazione operativa e decisioni.
@@ -2243,7 +2307,7 @@ Stato: chiusa il 2026-09-02.
 
 ## Criteri tecnici generali
 
-- Prima leggere roadmap e stato corrente.
+- Prima controllare lo stato del planner e soltanto le sezioni roadmap pertinenti.
 - Poi documentare il confine dell'incremento.
 - Poi aggiungere test mirati se si modifica codice.
 - Poi modificare il minimo necessario.
@@ -2258,8 +2322,6 @@ Stato: chiusa il 2026-09-02.
 
 - Refactor ampi.
 - Nuovi framework CLI.
-- OCR orchestration.
-- Extraction.
-- JSON-LD writer.
-- Pipeline end-to-end.
+- Nuovi sottosistemi OCR/extraction senza collegamento alla pipeline esistente.
+- Scritture canoniche o API generiche non richieste dal micro-incremento.
 - Generazione di schede definitive.

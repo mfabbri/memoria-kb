@@ -37,3 +37,9 @@ memoria-engine/tools/pwsh/
 memoria-engine/ricerche/person_profiles/
 memoria-engine/ricerche/caduti_purocielo.csv
 memoria-engine/ricerche/mvp/
+
+# Private local credentials and patch rollback backups
+.env
+.env.*
+!.env.example
+.memoria-patch-backups/

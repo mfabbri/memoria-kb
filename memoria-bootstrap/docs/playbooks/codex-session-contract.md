@@ -1,5 +1,11 @@
 # Codex Session Contract
 
+> Stato 2026-11-01: le sezioni qui sotto che chiamano T29-T33 priorita'
+> corrente sono storico del funding MVP, completato. Per la selezione
+> operativa usare T45-T49 in `docs/roadmap/02-technical-roadmap.md` e il
+> sommario di `docs/current-next-increment.md`. Routing secondo policy 3.1,
+> nessun subagent obbligatorio per task brevi.
+
 ## Scopo
 
 Contratto minimo per ogni sessione Codex su Me.Mo.Ri.A.
