@@ -2,6 +2,10 @@
 
 ## Consumo end-to-end della soglia T42 - 2026-11-01
 
+**Stato: tuning provisional chiuso** per il solo scope tedesco/PP-OCRv5/
+`numbered_report`, dopo dieci review manuali. Riaprire il tuning soltanto se
+cambia lo scope o se una decisione utente richiede di sostituire la policy.
+
 OcrWorkflow v1.4 accetta `provisional_threshold: {path, sha256}` nel manifest.
 Dopo T36/T37, Tesseract e la composizione del package, calcola per ogni pagina
 candidate assessment, risk features, score e decisione contro l'artifact congelato.
@@ -84,6 +88,12 @@ provisional** per le decisioni accepted e mantenere la quota manuale sotto il
 3%. T42 usa cutoff `1.0`, accetta tutti gli score validi nello scope e non
 discrimina; la disposizione resta provisional e non equivale a `machine_pass`
 formale, attestazione umana o autorizzazione a pubblicare fatti/claim.
+
+Chiusura: il pilot è concluso con 63 eventi di correzione su 11.616 parole
+candidate stimate (~0,54%) e massimo page-level 10/1.117 (~0,90%). Il CLI
+consuma l'artifact in `documents process`; se la quota non accettata supera il
+3%, blocca il batch invece di proseguire con una quota manuale oltre il limite.
+Non sono richieste altre review per chiudere questo tuning operativo.
 
 ### Stato copertura protocollo OCR nel CLI - 2026-10-31
 

@@ -76,6 +76,11 @@ T42 usa cutoff `1.0`: tutti i 10 score validi osservati in scope sono accepted.
 Questo cutoff non discrimina il dominio. Il workflow calcola il tasso manuale;
 se i casi non scorable/fuori scope superano il 3%, termina
 `manual_review_cap_exceeded` senza autorizzare una review oltre il limite.
+Il tuning T42 è chiuso per questo scope: 63 eventi di correzione su 11.616
+parole candidate stimate (~0,54%), pagina peggiore 10/1.117 (~0,90%), 10/10
+accepted provisionalmente. Il cap è fail-closed: se viene superato il batch si
+ferma e non va riportato come completato entro il 3%. Non estendere cutoff o
+chiusura ad altri profili.
 
 Esempio dell'estensione v1.4 al manifest v1.3:
 

@@ -87,8 +87,27 @@ OCR manualmente per compensare un limite di accesso del sandbox.
 Deduplica e classifica gli alert lessicali per forma e posizione prima di
 contarli come dubbi. Non trasformare `not_found` o fuzzy in correzioni. Chiedi
 all'utente una sola review page-level soltanto per le decisioni ancora
-irrisolte dopo i controlli automatici. Non fissare auto-accettazione finche' la
-soglia non e' misurata per lingua/tipo su reference gold e holdout separati.
+irrisolte dopo i controlli automatici.
+
+**Chiusura tuning provisional T42 (2026-11-01).** L'utente ha autorizzato la
+chiusura operativa dopo dieci review page-level. Il pilot ha registrato 63
+eventi di correzione su 11.616 parole candidate stimate (~0,54% aggregato); la
+pagina peggiore ha 10/1.117 (~0,90%). Tutte le dieci pagine sono sotto il limite
+operativo per pagina del 2%. La regola empirica seleziona il massimo score
+osservato senza breach: cutoff `1.0`, 10/10 accettate provisionalmente e 0/10
+manuali nel pilot. Il cutoff `1.0` accetta tutti gli score validi [0,1] nello
+scope tedesco/PP-OCRv5/`numbered_report`; non discrimina e non prova una
+prestazione futura. I conteggi sono correzioni operative, non WER gold.
+
+Il workflow CLI applica questa decisione solo come
+`provisional_auto_validated`: non impostare `machine_pass`, `human_verified`,
+estrazione claim o pubblicazione. Il gate formale di false acceptance 5% con
+limite superiore unilaterale al 95% resta distinto e richiede reference
+adjudicate, calibrazione e holdout indipendente. Per il ramo provisional, se
+le pagine che richiedono review superano il 3% del batch, il workflow termina
+`manual_review_cap_exceeded` e blocca la richiesta: non descriverlo come batch
+completato con review sotto soglia. Non estendere il cutoff T42 ad altri
+motori, lingue o profili.
 
 Non approvare claim, non fondere profili, non promuovere verified facts e non
 pubblicare schede senza review/autorizzazione esplicita.

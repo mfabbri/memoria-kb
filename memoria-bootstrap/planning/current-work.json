@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "completed",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-11-01T14:40:32Z",
+  "updated_at": "2026-11-01T15:30:06Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -63,6 +63,8 @@
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
       "memoria-bootstrap/docs/agent-session-prompt.md",
+      ".agents/skills/memoria-session/SKILL.md",
+      ".agents/skills/memoria-quality-gate/SKILL.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "passed",
@@ -77,7 +79,8 @@
       "Smoke workflow corretto: 6 auto_validated, review manuale per T314-1275-00594/00595/00596/00600; nessun OCR rilanciato.",
       "Incremento finale: cutoff selezionato dai dieci casi come massimo score senza breach del 2%; 63/11.616 eventi/parole candidate stimati (~0,54%), worst page 10/1.117 (~0,90%), 10/10 accepted, 0/10 manual nel pilot.",
       "Smoke workflow v3 su package T42 già esistenti: 10 provisional_auto_validated, 0 manual, cap 3% non superato; machine_pass=false, human_verified=false e claim_extraction_allowed=false. Nessun OCR rilanciato.",
-      "Verifiche finali: 55 test mirati passati (calibratore provisional, workflow e CLI); py_compile dei moduli modificati, validatore planner e git diff --check passati."
+      "Verifiche codice OCR precedenti: 55 test mirati passati (calibratore provisional, workflow e CLI), py_compile e smoke runtime v3.",
+      "Follow-up documentale: prompt, playbook, roadmap, current-next e skill di sessione/quality gate coerenti sulla chiusura T42 provisional; validatore planner e git diff --check passati; nessun test OCR rilanciato perché non è cambiato codice."
     ],
     "notes": "OcrWorkflow v1.4 consuma l'artifact T42 hash-bound. La regola empirica seleziona il massimo score osservato che non accetta alcun caso oltre il limite pagina del 2%; sui dieci casi questo produce cutoff 1.0, 10/10 accepted e 0/10 manual. Correzioni osservate: 63/11.616 parole candidate stimate (~0,54% aggregato), worst page 10/1.117 (~0,90%). Il cutoff 1.0 copre tutti gli score validi [0,1] nello scope, quindi non discrimina e non offre garanzia di errore futura o 5%/95%. Cap workflow review manuale: 3%; oltre il cap la richiesta viene bloccata. Smoke v3 passato; machine_pass, human_verified e claim extraction restano false.",
     "task_envelope": {
@@ -132,7 +135,8 @@
     }
   },
   "session_notes": [
-    "2026-11-01: chiusura empirica finale T42. Le dieci pagine hanno 63 eventi di correzione su 11.616 parole candidate stimate (~0,54%); worst page 10/1.117 (~0,90%). Tutte sotto il 2%; il massimo cutoff compatibile è 1.0, dunque 10/10 provisional accepted e 0% manual nel pilot. Questo non è una garanzia statistica futura. Il workflow applica cap review 3%; 55 test mirati passati oltre a py_compile, validatore planner, diff check e smoke runtime v3. Stato chiuso; prossimo passo da selezionare dalla roadmap.",
+    "2026-11-01: tuning provisional OCR T42 chiuso nello scope tedesco/PP-OCRv5/numbered_report. 63/11.616 eventi/parole candidate stimate (~0,54%), worst page 10/1.117 (~0,90%), cutoff 1.0, 10/10 provisional accepted e 0/10 manual nel pilot. Il cutoff non discrimina e non garantisce accuratezza futura; machine_pass, human_verified e claim restano falsi. OcrWorkflow blocca il batch se la review supera il 3%.",
+    "2026-11-01: allineati agent-session-prompt, playbook, current-next, roadmap e skill memoria-session/memoria-quality-gate per distinguere la chiusura provisional T42 dal gate formale 5%/95%. Validazione documentale e planner eseguita; nessun codice OCR modificato.",
     "2026-11-01: l'utente impone che la review manuale non superi il 2-3%. Il cutoff 0.8333 mandava 4/10 pagine in review, quindi è inaccettabile. Ripristinare cutoff 1.0 per pagine scoreable nell'esatto scope (pilot: 0/10 manuale) e hard-fail delle richieste manuali oltre 3% nel workflow; out-of-scope non vengono auto-validated.",
     "2026-11-01: l'utente rileva che cutoff 1.0 rende tautologica l'auto-accettazione. Correzione: il punteggio massimo diagnostico 1.0 resta manuale; scegliere il massimo cutoff osservato sotto 1.0 privo di breach, oppure no-go se non ne esiste. Rigenerare artifact e workflow report T42.",
     "2026-11-01: integrazione workflow end-to-end completata in OcrWorkflow v1.4. Con provisional_threshold hash-bound il workflow genera assessment/feature/score/decision per ogni pagina, espone le decisioni nel report, termina completed_provisional_auto_validated se tutte passano e mantiene manual_review_page_ids per i non accettati. Smoke sul package T42 esistente: 10/10 accepted, senza rilanciare OCR; machine_pass, human_verified e claim restano false. Test automatici non eseguiti.",
@@ -168,13 +172,31 @@
   },
   "routing": {
     "policy_version": "3.0",
-    "tier": "medium",
-    "task_class": "implementation",
-    "agent": "mmr_implementer",
-    "model": "gpt-6.1-sol",
-    "reasoning_effort": "medium",
-    "rationale": "Runtime micro-increment scoped to the user-authorized T42 cutoff: enable provisional auto-validation only for accepted in-scope decisions while preserving formal audit and archival claim gates.",
+    "tier": "low",
+    "task_class": "documentation",
+    "agent": "mmr_docs_editor",
+    "model": "gpt-6-luna",
+    "reasoning_effort": "low",
+    "rationale": "Documentation and skill alignment to close the already-completed T42 provisional tuning without changing the formal gate.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-01T15:30:06Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Align OCR procedure, current work and relevant skills with the scoped T42 closure."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-01T15:30:06Z",
+        "tier": "low",
+        "agent": "mmr_docs_editor",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Updated and verified the OCR closure guidance, skill checks and persistent work record."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T13:47:53Z",

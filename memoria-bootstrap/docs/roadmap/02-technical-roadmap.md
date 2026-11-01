@@ -1952,8 +1952,10 @@ verifica il cutoff di score congelato prima dell'holdout usando solo casi
 esatto unilaterale al 95% sul totale e limiti per strato con correzione Bonferroni
 per copertura simultanea al 95%. Con zero pagine oltre il 2% servono almeno 59
 pagine auto-accettate per sostenere il limite aggregato del 5%; il requisito per
-strato può essere maggiore. Il report lascia sempre `auto_validation_enabled=false`
-e `machine_pass=false` finché il pilot non è sostenuto da holdout sufficiente.
+strato può essere maggiore. Il gate formale lascia sempre
+`auto_validation_enabled=false` e `machine_pass=false` finché non è sostenuto da
+holdout sufficiente; questa regola non disabilita il consumer provisional T42
+descritto sotto.
 L'audit rifiuta dati incompleti o non verificati e non deduce correttezza da
 confidence OCR o alert lessicali.
 
@@ -1986,6 +1988,13 @@ quindi `1.0`: tutti i dieci casi in scope sono accettati, con quota manuale
 né una garanzia statistica. Il workflow blocca la richiesta di review se i casi
 non scorable/fuori scope superano il 3% del batch.
 
+Chiusura tuning provisional 2026-11-01: 63 eventi di correzione su 11.616
+parole candidate stimate (~0,54%); pagina peggiore 10/1.117 (~0,90%). Il cutoff
+`1.0` è consumato dal workflow CLI nello scope dichiarato e completa il pilot
+con 10/10 provisional accepted. Il tuning è chiuso per questo scope; un cambio
+di lingua, motore o profilo richiede una decisione di scope e non eredita questa
+disposizione. Il target formale 5%/95% non è dimostrato dal pilot.
+
 Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
 candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
 tipizzato e le disposition legate agli stessi digest. Richiede i sidecar
@@ -1996,10 +2005,11 @@ la sequenza; correzioni proposte richiedono rigenerare la candidata e gli
 artefatti dipendenti. Il report distingue `blocked`, `candidate_ready`,
 `needs_review` e `correction_required`, deduplica le azioni manuali per unità e
 consente di preparare la richiesta soltanto dopo tutti i gate. Questo soddisfa
-il preflight necessario prima della review manuale anche mentre la calibrazione
-prosegue. La validazione automatica resta disabilitata finché la soglia di
-rischio non è misurata su calibrazione e holdout separati. Il comando non
-promuove reference, claim o fatti storici. `documents structure --apply` salva
+il preflight necessario prima della review manuale. Il comando non promuove
+reference, claim o fatti storici. Nel gate formale `machine_pass` resta
+disabilitato finché cutoff e holdout non soddisfano il target statistico; la
+disposition provisional T42 è l'eccezione operativa scoped descritta sopra e non
+equivale a quel gate. `documents structure --apply` salva
 ora il JSON `DocumentStructure` provenance-bound insieme al Markdown derivato;
 `documents ocr-review-scaffold` genera la review lessicale, crop verificabili e
 template incompleti per ledger, layout e disposition. `documents lexicon-review`,
