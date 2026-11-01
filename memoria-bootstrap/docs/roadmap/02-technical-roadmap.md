@@ -1971,6 +1971,14 @@ Il percorso rigoroso 5%/95% resta separato e invariato. La CLI implementa
 scoped; il risultato resta provisional e non attesta accuracy, auto-validation,
 `machine_pass` o `human_verified`.
 
+Decisione utente successiva, 2026-11-01: dopo il pilot manuale a dieci pagine,
+abilitare `auto_validation_enabled` nel solo consumer provisional quando lo
+score è entro cutoff e scope congelati. Questo override operativo non attiva il
+gate formale `machine_pass`, non marca `human_verified`, non autorizza claim o
+pubblicazione e non sostituisce il target statistico 5%/95%. Per T42 il cutoff
+è `1.0` (massimo score): l'auto-accettazione copre quindi tutti gli score validi
+nello scope tedesco/PP-OCRv5/`numbered_report` e non discrimina il campione.
+
 Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
 candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
 tipizzato e le disposition legate agli stessi digest. Richiede i sidecar

@@ -90,7 +90,8 @@ class ProvisionalThresholdTests(unittest.TestCase):
         self.assertEqual(report["observed"]["page_limit_breach_count"], 2)
         self.assertTrue(report["provisional_auto_acceptance_enabled"])
         self.assertFalse(report["machine_pass"])
-        self.assertFalse(report["auto_validation_enabled"])
+        self.assertTrue(report["auto_validation_enabled"])
+        self.assertEqual(report["auto_validation_mode"], "provisional_empirical_scoped")
         self.assertFalse(report["human_verified"])
         self.assertFalse(report["claim_extraction_allowed"])
 
@@ -161,14 +162,17 @@ class ProvisionalThresholdTests(unittest.TestCase):
             output_path=self.decision_path)
         self.assertEqual(decision["operational_disposition"], "provisional_auto_accept")
         self.assertTrue(decision["provisional_auto_acceptance"])
+        self.assertTrue(decision["auto_validation_enabled"])
+        self.assertEqual(decision["transcription_validation_status"], "provisional_auto_validated")
+        self.assertFalse(decision["machine_pass"])
         self.assertFalse(decision["human_verified"])
-        self.assertFalse(decision["auto_validation_enabled"])
         score["candidate_identity"]["profile"] = "leader_list_report"
         self._write_json(self.score_path, score)
         decision = evaluate_provisional_ocr_threshold(
             threshold_path=self.artifact_path, score_path=self.score_path,
             output_path=self.root / "out-of-scope.json")
         self.assertEqual(decision["operational_disposition"], "manual_review_required")
+        self.assertFalse(decision["auto_validation_enabled"])
 
     def test_cli_evaluates_and_writes_scoped_provisional_disposition(self):
         self._write_json(self.artifact_path, calibrate_provisional_ocr_threshold(

@@ -277,7 +277,8 @@ def calibrate_provisional_ocr_threshold(*, dataset_path: Path,
         "no_go_reason": no_go_reason,
         "status": "provisional_cutoff_frozen" if cutoff is not None else "no_go_no_supported_provisional_cutoff",
         "provisional_auto_acceptance_enabled": cutoff is not None,
-        "machine_pass": False, "auto_validation_enabled": False,
+        "machine_pass": False, "auto_validation_enabled": cutoff is not None,
+        "auto_validation_mode": "provisional_empirical_scoped" if cutoff is not None else None,
         "human_verified": False, "review_status": "unreviewed",
         "semantic_accuracy_status": "not_attested", "claim_extraction_allowed": False,
         "limitations": [
@@ -330,7 +331,10 @@ def evaluate_provisional_ocr_threshold(*, threshold_path: Path, score_path: Path
                    ("no_supported_provisional_cutoff" if threshold["status"] != "provisional_cutoff_frozen" else
                     ("outside_supported_scope" if not in_scope else "score_above_cutoff"))),
         "provisional_auto_acceptance": accepted,
-        "machine_pass": False, "auto_validation_enabled": False,
+        "transcription_validation_status": "provisional_auto_validated" if accepted else "manual_review_required",
+        "auto_validation_scope": scope if accepted else None,
+        "machine_pass": False, "auto_validation_enabled": accepted,
+        "auto_validation_mode": "provisional_empirical_scoped" if accepted else None,
         "human_verified": False, "review_status": "unreviewed",
         "semantic_accuracy_status": "not_attested", "claim_extraction_allowed": False,
     }
@@ -479,9 +483,13 @@ def _validate_threshold_artifact(payload: dict[str, Any]) -> None:
     frozen = status == "provisional_cutoff_frozen"
     no_go = status == "no_go_no_supported_provisional_cutoff"
     if ((frozen and (payload.get("provisional_auto_acceptance_enabled") is not True
+                     or payload.get("auto_validation_enabled") is not True
+                     or payload.get("auto_validation_mode") != "provisional_empirical_scoped"
                      or isinstance(cutoff, bool) or not isinstance(cutoff, (int, float))
                      or payload.get("no_go_reason") is not None))
-            or (no_go and (payload.get("provisional_auto_acceptance_enabled") is not False or cutoff is not None))
+            or (no_go and (payload.get("provisional_auto_acceptance_enabled") is not False
+                           or payload.get("auto_validation_enabled") is not False
+                           or payload.get("auto_validation_mode") is not None or cutoff is not None))
             or (no_go and (not isinstance(payload.get("no_go_reason"), str)
                            or not payload["no_go_reason"].strip()))
             or not (frozen or no_go)):

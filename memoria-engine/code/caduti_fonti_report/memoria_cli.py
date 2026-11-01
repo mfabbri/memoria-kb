@@ -3572,7 +3572,7 @@ def build_parser() -> argparse.ArgumentParser:
     provisional_calibrate.set_defaults(handler=_command_documents_ocr_threshold_provisional_calibrate)
     provisional_evaluate = documents_subparsers.add_parser(
         "ocr-threshold-provisional-evaluate",
-        help="Valuta uno score diagnostico contro cutoff empirico e scope esatto; non attesta accuratezza o review umana.",
+        help="Applica il cutoff empirico scoped; abilita solo auto-validation provisional accepted, senza attestare review umana o fatti archivistici.",
     )
     provisional_evaluate.add_argument("--threshold", required=True, help="OcrProvisionalThresholdArtifact JSON v1.0.")
     provisional_evaluate.add_argument("--score", required=True, help="OcrRiskScore JSON v1.0 prodotto dal CLI.")

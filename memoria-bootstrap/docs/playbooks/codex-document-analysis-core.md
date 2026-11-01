@@ -717,10 +717,13 @@ falsi passaggi sul holdout indipendente prima di dichiarare il target 5%/95%.
 La CLI espone `documents ocr-threshold-provisional-dataset`,
 `documents ocr-threshold-provisional-calibrate` e
 `documents ocr-threshold-provisional-evaluate` per congelare e applicare il
-cutoff empirico con scope esatto. La disposition provisional guida il routing
-operativo ma non imposta `machine_pass`, `auto_validation_enabled` o
-`human_verified`, non abilita estrazione claim e non dimostra il target 5%/95%.
-Il gate formale e i suoi comandi restano invariati.
+cutoff empirico con scope esatto. La disposition provisional abilita
+`auto_validation_enabled` solo quando il consumer emette
+`provisional_auto_accept` per cutoff e scope esatti. Non imposta `machine_pass`
+formale o `human_verified`, non abilita estrazione claim e non dimostra il
+target 5%/95%. Con il pilot T42 il cutoff è `1.0`, quindi ogni score valido
+nello scope tedesco/PP-OCRv5/`numbered_report` passa; la decisione è operativa e
+non discriminante. Il gate formale e i suoi comandi restano invariati.
 
 Nel percorso statistico formale dell'attuale calibrazione CLI, i minimi di 80
 (tre strati) o 86 (quattro
@@ -872,8 +875,10 @@ il dataset. Una pagina oltre il 2% è un falso passaggio per il secondo target;
 una pagina con errori che resta entro il 2% non conta come falsa accettazione.
 Con zero pagine oltre soglia il limite aggregato unilaterale al 95% richiede
 almeno 59 pagine auto-accettate; i controlli per strato possono richiederne di
-piu'. Nessun esito abilita `auto_validation_enabled` o `machine_pass` finché il
-campione indipendente non sostiene entrambi i limiti.
+piu'. Nel percorso statistico formale, nessun esito abilita
+`auto_validation_enabled` o `machine_pass` finché il campione indipendente non
+sostiene entrambi i limiti. Il pilot provisional T42 segue invece la decisione
+utente del 2026-11-01 documentata sopra; non equivale al gate statistico.
 
 Caso T41 00598 (2026-10-14): 35 forme lessicali uniche, 42 occorrenze, tre
 correzioni visivamente confermate e zero decisioni manuali residue. La candidata

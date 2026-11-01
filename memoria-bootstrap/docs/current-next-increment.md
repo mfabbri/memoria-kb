@@ -27,10 +27,11 @@ una disposition scoped da `OcrRiskScore`. `ocr-threshold-provisional-dataset`
 converte il modulo compilato in dataset verificando gli hash di sample, package,
 candidata, feature e score. Se una pagina è stata verificata ma non è
 accuracy-eligible, le dieci review si chiudono comunque con no-go e senza
-richiedere altri casi. La disposition non imposta
-`machine_pass`, auto-validazione, `human_verified` o estrazione claim; non prova
-una garanzia 5%/95% e non sostituisce una review umana quando il caso e' fuori
-scope, sopra soglia o non adjudicabile. Il percorso rigoroso resta invariato.
+richiedere altri casi. La disposition abilita `auto_validation_enabled` solo
+per `provisional_auto_accept` nel cutoff e scope congelati. Non imposta
+`machine_pass`, `human_verified` o estrazione claim; non prova una garanzia
+5%/95% e lascia in review manuale i casi fuori scope, sopra cutoff o non
+adjudicabili. Il percorso rigoroso resta invariato.
 
 ### Esito del pilot T42 a dieci review - 2026-11-01
 
@@ -50,6 +51,13 @@ reference gold parola per parola. Il risultato e' quindi una decisione
 pragmatica per il pilot: non dimostra un tasso formale di errore o il target
 5%/95%. Il cutoff massimo `1.0` non discrimina gli score all'interno del campione;
 non generalizzarlo fuori dallo scope dichiarato.
+
+Decisione utente 2026-11-01: attivare l'auto-validazione **solo nel ramo
+provisional** per le decisioni accepted. Poiché il cutoff congelato è `1.0`,
+ogni score valido fra 0 e 1 nello scope tedesco/PP-OCRv5/`numbered_report` sarà
+auto-accettato; non esiste una separazione per score nel campione. Questa
+disposition non equivale a `machine_pass` formale, attestazione umana o
+autorizzazione a pubblicare fatti/claim.
 
 ### Stato copertura protocollo OCR nel CLI - 2026-10-31
 
