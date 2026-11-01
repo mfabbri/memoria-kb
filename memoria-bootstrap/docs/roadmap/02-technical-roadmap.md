@@ -2013,6 +2013,13 @@ destinazioni nuove. Il comando non produce correzioni, osservazioni visuali o
 auto-validazione. T39 resta condizionale a un vantaggio VLM misurato su
 reference; il target pilot 5% resta disattivato.
 
+Aggiornamento 2026-11-01: OcrWorkflow v1.4 consuma l'artifact T42 hash-bound
+dopo la produzione delle evidence e del package. Calcola feature e score per
+pagina, poi instrada i casi provisional_auto_accept al risultato
+`completed_provisional_auto_validated`; i casi non scorable o fuori scope
+restano in `awaiting_review`. Il percorso non attiva machine_pass,
+human_verified, claim o pubblicazione e non dimostra il gate formale 5%/95%.
+
 ### T42 - Ricalcolo CLI delle traduzioni con glossario versionato
 
 Dipendenze: T40, T41 e risorsa JSON-LD del glossario militare.

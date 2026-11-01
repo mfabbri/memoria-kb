@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "completed",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-11-01T11:28:51Z",
+  "updated_at": "2026-11-01T13:38:32Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -17,13 +17,13 @@
     }
   ],
   "increment": {
-    "id": "t41-provisional-auto-validation-activation-20261101",
-    "title": "Attivare l'auto-validazione provisional scoped dal cutoff T42",
-    "objective": "Attivare nel consumer CLI l'auto-validazione provisional per le candidate entro il cutoff T42 nello scope congelato, senza abilitare machine_pass, human_verified o claim.",
+    "id": "t41-workflow-provisional-threshold-consumption-20261101",
+    "title": "Integrare il cutoff provisional nel workflow OCR",
+    "objective": "Fare consumare al workflow OCR l'artifact threshold congelato, calcolare e registrare una decisione provisional per ogni pagina, e instradare gli esiti non accettati alla review manuale.",
     "scope": [
       "Enforzare nel workflow/package CLI un glossario esplicito, versionato e hash-bound prima della review lessicale.",
       "Implementare un comando CLI per applicare le correzioni visive proposte alla candidata, rigenerare struttura/Markdown e invalidare sidecar derivati obsoleti.",
-      "Attivare auto_validation_enabled nel consumer provisional solo per score entro cutoff e scope esatto; rigenerare l'artifact operativo da dataset T42.",
+      "Integrare nel workflow l'estrazione feature, il calcolo score e la decisione provisional hash-bound per ogni pagina usando l'artifact T42 esplicito.",
       "Lasciare machine_pass formale, human_verified, claim extraction e percorso di pubblicazione invariati; conservare il gate 5%/95% separato.",
       "Allineare prompt/playbook/roadmap alla coverage CLI verificata e fermarsi solo al punto che richiede review umana reale."
     ],
@@ -71,9 +71,11 @@
       "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_provisional_threshold.py; test_ocr_threshold_calibration.py; test_ocr_threshold_audit.py; test_ocr_risk_features.py; test_ocr_risk_score.py; test_ocr_tesseract_from_t36.py; test_ocr_workflow.py; test_ocr_workflow_cli.py; test_ocr_review_package.py: 139 test passati.",
       "CLI runtime: preview calibratore T42 mostra auto_validation_enabled=true con cutoff 1.0; --apply genera provisional-threshold-artifact-auto-validation-v1.json con auto_validation_mode provisional_empirical_scoped.",
       "CLI runtime: evaluate preview su T314-1275-00590 mostra provisional_auto_validated e auto_validation_enabled=true; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
+      "Runtime smoke del nuovo stage OcrWorkflow sui 10 package T42 esistenti, senza rilanciare OCR: 10 provisional_auto_validated, zero manual_review_page_ids; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
+      "Non eseguiti test automatici per questo incremento; py_compile, CLI help, git diff --check e validatore planner passati.",
       "Non eseguiti test automatici in questo incremento."
     ],
-    "notes": "Gap chiuso: il consumer marca provisional_auto_validated e auto_validation_enabled=true solo per provisional_auto_accept con cutoff e scope esatti; gli altri restano manual review. Artifact T42 operativo generato da dieci review. Il cutoff 1.0 è il massimo e accetta ogni score valido nello scope tedesco/PP-OCRv5/numbered_report, quindi non discrimina. I conteggi operativi e denominatori restano approssimati; nessuna garanzia 5%/95%, machine_pass, human_verified o approvazione di claim.",
+    "notes": "Gap end-to-end chiuso: OcrWorkflow v1.4 consuma l'artifact T42, calcola assessment, feature, score e decisione per pagina e la include nel report workflow. Smoke sui package T42 esistenti: 10/10 provisional_auto_validated. Le altre versioni del workflow restano invariate. Il cutoff 1.0 accetta ogni score valido nello scope tedesco/PP-OCRv5/numbered_report e non discrimina; nessuna garanzia 5%/95%, machine_pass, human_verified o approvazione claim.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -126,6 +128,8 @@
     }
   },
   "session_notes": [
+    "2026-11-01: integrazione workflow end-to-end completata in OcrWorkflow v1.4. Con provisional_threshold hash-bound il workflow genera assessment/feature/score/decision per ogni pagina, espone le decisioni nel report, termina completed_provisional_auto_validated se tutte passano e mantiene manual_review_page_ids per i non accettati. Smoke sul package T42 esistente: 10/10 accepted, senza rilanciare OCR; machine_pass, human_verified e claim restano false. Test automatici non eseguiti.",
+    "2026-11-01: incremento attivo su richiesta utente: OcrWorkflow deve consumare automaticamente l'artifact T42 hash-bound dopo T36/T37 e il confronto, calcolare feature/score/decisione per ogni pagina e instradare accepted vs manual review. Il workflow standard v1.0-v1.3 resta invariato; nuovo v1.4 non promuove machine_pass, human_verified o claim.",
     "2026-11-01: incremento auto-validation provisional completato: calibratore e consumer attivi per cutoff/scope T42; evaluate preview conferma provisional_auto_validated=true e mantiene machine_pass, human_verified e claim extraction disabilitati. Artifact scritto nel runtime esterno. Il cutoff 1.0 accetta tutti gli score validi nello scope e non discrimina.",
     "2026-11-01: l'utente chiarisce che la soglia T42 deve attivare l'auto-validazione provisional. Il cutoff 1.0 accetta tutti gli score validi nello scope; l'implementazione deve dichiarare questa portata, attivare auto_validation_enabled solo per decisioni accepted e lasciare machine_pass formale/human_verified/claim extraction invariati.",
     "2026-10-31: nuova decisione esplicita dell'utente: dieci conferme manuali totali devono bastare per chiudere il cutoff operativo e passare ad altri task. Aggiornati current-next, playbook e roadmap distinguendo il pilot empirico dal target formale 5%/95%; il CLI rigoroso resta invariato. Una conferma manuale non equivale a garanzia statistica, e nessuna delle dieci è stata inventata o raccolta in questa sessione. Prossimo passo: implementare un artifact/consumer provisional e preparare dieci pagine provenance-bound per review raggruppata.",
@@ -153,7 +157,7 @@
   ],
   "next_action": {
     "mode": "recalculate",
-      "description": "Ricalcolare il prossimo micro-incremento OCR dalla roadmap, verificando prima se proseguire oltre la soglia provisional T42."
+    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap dopo la chiusura dell'auto-validazione provisional OCR end-to-end."
   },
   "routing": {
     "policy_version": "3.0",
@@ -164,6 +168,15 @@
     "reasoning_effort": "medium",
     "rationale": "Runtime micro-increment scoped to the user-authorized T42 cutoff: enable provisional auto-validation only for accepted in-scope decisions while preserving formal audit and archival claim gates.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-01T11:47:22Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Integrate the frozen provisional threshold into the end-to-end OCR workflow, producing page-bound decisions and routing unaccepted pages to manual review."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T11:26:04Z",

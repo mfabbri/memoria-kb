@@ -3253,7 +3253,7 @@ def build_parser() -> argparse.ArgumentParser:
     documents_process = documents_subparsers.add_parser("process", help="Mostra il batch OCR; esegue e scrive output solo con --apply.")
     documents_process_input = documents_process.add_mutually_exclusive_group(required=True)
     documents_process_input.add_argument("--root", help="Directory radice delle immagini gia' registrate.")
-    documents_process_input.add_argument("--workflow-manifest", help="OcrWorkflow v1.0 (T36/T37), v1.1 (Tesseract diagnostico), v1.2 (package review TIFF), v1.3 (package review TIFF/JPEG nativo con lessici espliciti).")
+    documents_process_input.add_argument("--workflow-manifest", help="OcrWorkflow v1.0-v1.4; v1.4 consuma un artifact threshold provisional hash-bound nel flusso OCR.")
     documents_process.add_argument("--resume", action="store_true", help="Riprende esclusivamente il workflow con checkpoint verificati.")
     documents_process.add_argument("--output-dir", required=True, help="Directory esplicita per gli output del processo OCR.")
     documents_process.add_argument("--language", default="ita", help="Lingua OCR Tesseract.")

@@ -62,6 +62,30 @@ package incompleto e termina `awaiting_review`. Il resume verifica request,
 checkpoint e inventari hash, riusa gli stage immutabili e non ripete inferenza.
 I risultati restano `unreviewed`, `machine_pass=false` e auto-validazione false.
 
+OcrWorkflow v1.4 mantiene v1.3 e accetta in aggiunta un riferimento
+`provisional_threshold` con `path` e `sha256` dell'artifact congelato. Con
+`--apply`, dopo aver prodotto package ed evidence, il workflow genera per ogni
+pagina assessment, feature bundle, score e decisione hash-bound in
+`provisional-validation/`. Le pagine entro cutoff e scope esatti risultano
+`provisional_auto_validated`; score non scorable, fuori scope o oltre cutoff
+restano in review manuale. Se tutte le pagine sono accepted il workflow termina
+`completed_provisional_auto_validated`; altrimenti termina `awaiting_review` e
+riporta gli ID ancora da rivedere. `machine_pass`, `human_verified` e claim
+restano false. Il cutoff T42 `1.0` accetta tutti gli score validi nello scope
+tedesco/PP-OCRv5/`numbered_report`, senza discriminare tra score.
+
+Esempio dell'estensione v1.4 al manifest v1.3:
+
+```json
+{
+  "schema_version": "1.4",
+  "provisional_threshold": {
+    "path": "provisional-threshold-artifact-auto-validation-v1.json",
+    "sha256": "<sha256 dell'artifact>"
+  }
+}
+```
+
 OcrWorkflow v1.1 mantiene gli stessi campi T36/T37 e aggiunge `tesseract` con
 `root_dir`, `language`, `tesseract_path`, `page_segmentation_mode`,
 `engine_mode`, `dpi`, `preprocess_before_ocr`, `enable_region_ocr` e `pages`.

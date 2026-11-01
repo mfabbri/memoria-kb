@@ -1,5 +1,18 @@
 # Current Next Increment
 
+## Consumo end-to-end della soglia T42 - 2026-11-01
+
+OcrWorkflow v1.4 accetta `provisional_threshold: {path, sha256}` nel manifest.
+Dopo T36/T37, Tesseract e la composizione del package, calcola per ogni pagina
+candidate assessment, risk features, score e decisione contro l'artifact congelato.
+Le pagine accepted terminano come `completed_provisional_auto_validated`; pagine
+non scorable, fuori scope o oltre cutoff restano nella coda manuale. Il report
+workflow espone gli esiti per pagina e il nuovo stage e' hash-bound/resumable.
+`machine_pass`, `human_verified` e claim restano disabilitati. Col cutoff T42
+`1.0`, tutti gli score validi nello scope tedesco/PP-OCRv5/`numbered_report`
+sono accepted; questo chiude l'automazione provisional, non il gate statistico
+formale 5%/95%.
+
 ## Decisione operativa T41: chiusura con 10 conferme - 2026-10-31
 
 Su indicazione esplicita dell'utente, il tuning operativo potrà chiudersi dopo
