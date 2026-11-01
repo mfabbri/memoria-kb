@@ -1,9 +1,9 @@
 {
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
-  "status": "in_progress",
+  "status": "completed",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-10-31T22:43:29Z",
+  "updated_at": "2026-11-01T11:18:07Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -64,12 +64,13 @@
       "memoria-bootstrap/docs/agent-session-prompt.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "result": "partial",
+    "result": "passed",
     "tests": [
       "195 test mirati passati per i precedenti incrementi CLI.",
-      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_provisional_threshold.py; test_ocr_threshold_calibration.py; test_ocr_threshold_audit.py; test_ocr_risk_features.py; test_ocr_risk_score.py; test_ocr_tesseract_from_t36.py; test_ocr_workflow.py; test_ocr_workflow_cli.py; test_ocr_review_package.py: 139 test passati."
+      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_provisional_threshold.py; test_ocr_threshold_calibration.py; test_ocr_threshold_audit.py; test_ocr_risk_features.py; test_ocr_risk_score.py; test_ocr_tesseract_from_t36.py; test_ocr_workflow.py; test_ocr_workflow_cli.py; test_ocr_review_package.py: 139 test passati.",
+      "CLI runtime: ocr-threshold-provisional-dataset --apply + ocr-threshold-provisional-calibrate --apply su dieci review; consumer preview 10/10 provisional_auto_accept."
     ],
-    "notes": "Audit protocollo->CLI completato: T36/T37, Tesseract con identita' d'archivio hash-bound, confronto, crop/scaffold, glossario e Hunspell, review visuale/lessicale/layout, correzioni versionate, queue/batch/finalizer e cutoff provisional dopo 10 conferme hanno comandi e gate. Corretti due gap: propagazione di source_document_id nell'evidence Tesseract con ereditarieta' solo su page_id/hash coincidenti; nuovo CLI ocr-threshold-provisional-dataset lega modulo, sample, package, evidence, feature e score hash-bound. Il calibratore accetta 10 pagine human-verified ma, se una non e' accuracy-eligible, emette no-go e il consumer richiede review manuale senza altri casi. Il run reale ha 10/10 PP-OCR e Tesseract, package incompleto solo per le review umane, score diagnostici pronti e nessuna label compilata. Nove suite mirate (139 test) passano oltre ai 195 test degli incrementi precedenti. Nessuna correzione OCR, label, holdout o promozione automatica e' stata fatta. Restano solo le 10 review page-level, poi calibratore provisional o no-go.",
+    "notes": "Audit protocollo->CLI completato; dieci review page-level raccolte interattivamente senza richiesta di editing JSON all'utente. Il dataset builder e il calibratore CLI hanno prodotto l'artifact provisional: 10/10 casi accuracy-eligible, nessun superamento del limite stimato del 2%, cutoff 1.0, scope limitato a tedesco/PP-OCRv5/numbered_report. Il consumer restituisce provisional_auto_accept per tutti i dieci score di calibrazione; machine_pass e auto_validation_enabled restano false. Denominatori tratti dalle stime di parole candidate e conteggi errori dagli eventi di correzione registrati; il risultato e' operativo e approssimato, non una reference gold né una garanzia formale 5%/95%. Nessun holdout aperto e nessun originale modificato. Incremento OCR T41 concluso; prossimo passo da ricalcolare dalla roadmap.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -146,8 +147,8 @@
     "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
   ],
   "next_action": {
-    "mode": "review",
-    "description": "Richiedi la review manuale delle 10 pagine nel package hash-bound t42; con le conferme, esegui il calibratore provisional a 2% per pagina e chiudi con cutoff scoped o no-go, senza dichiarare il target formale 5%/95%."
+    "mode": "recalculate",
+    "description": "Incremento OCR T41 concluso con cutoff provisional empirico; selezionare il prossimo micro-incremento dalla roadmap senza riaprire questo ciclo, salvo nuove evidenze o richiesta esplicita."
   },
   "routing": {
     "policy_version": "3.0",

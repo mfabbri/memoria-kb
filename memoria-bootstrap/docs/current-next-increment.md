@@ -32,6 +32,25 @@ richiedere altri casi. La disposition non imposta
 una garanzia 5%/95% e non sostituisce una review umana quando il caso e' fuori
 scope, sopra soglia o non adjudicabile. Il percorso rigoroso resta invariato.
 
+### Esito del pilot T42 a dieci review - 2026-11-01
+
+Le dieci pagine sono state revisionate una per volta in conversazione, senza
+richiedere all'utente di compilare il modulo JSON. Le correzioni e le note sono
+state legate alla scheda di conferma; TIFF e candidata OCR originale sono
+rimasti invariati. Il CLI ha costruito il dataset hash-bound e congelato il
+cutoff provisional: 10/10 casi eleggibili, 0 breach del limite operativo per
+pagina, cutoff `1.0`, stato `provisional_cutoff_frozen`. Il consumer ha restituito
+`provisional_auto_accept` per tutti i dieci score nel solo scope tedesco,
+PP-OCRv5, `numbered_report`.
+
+La review conversazionale ha registrato correzioni e problemi di struttura; i
+denominatori sono le stime precompilate di parole candidate e i conteggi errore
+sono conteggi operativi degli eventi di correzione, non un confronto con una
+reference gold parola per parola. Il risultato e' quindi una decisione
+pragmatica per il pilot: non dimostra un tasso formale di errore o il target
+5%/95%. Il cutoff massimo `1.0` non discrimina gli score all'interno del campione;
+non generalizzarlo fuori dallo scope dichiarato.
+
 ### Stato copertura protocollo OCR nel CLI - 2026-10-31
 
 Con l'incremento T41, `ocr-lexicon-review`, `ocr-review-scaffold` e
@@ -60,8 +79,9 @@ finalizer e audit batch. Il gate rigoroso 5%/95% resta separato dal cutoff
 provisional. Il run reale T314 R1275 ha completato PP-OCRv5, Tesseract,
 lessico/Hunspell, confronto e score CLI per 10 pagine. Il package hash-bound è
 in `ocr-runs/t42-provisional-threshold-ten-pages-3800px-20261031/output/review-final`;
-le 10 conferme umane sono ancora vuote. Il prossimo passo è la review manuale di
-questo package, poi il congelamento del cutoff o l'esito no-go.
+le 10 conferme umane sono state raccolte interattivamente e il cutoff è stato
+calcolato. Il ciclo manuale e la calibrazione provisional sono conclusi; nessun
+ulteriore campione è richiesto per questa decisione operativa.
 
 ## Aggiornamento policy T41 - 2026-10-31
 
