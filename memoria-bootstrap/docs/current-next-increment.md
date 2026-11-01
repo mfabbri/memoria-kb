@@ -9,9 +9,10 @@ Le pagine accepted terminano come `completed_provisional_auto_validated`; pagine
 non scorable, fuori scope o oltre cutoff restano nella coda manuale. Il report
 workflow espone gli esiti per pagina e il nuovo stage e' hash-bound/resumable.
 `machine_pass`, `human_verified` e claim restano disabilitati. Col cutoff T42
-`1.0`, tutti gli score validi nello scope tedesco/PP-OCRv5/`numbered_report`
-sono accepted; questo chiude l'automazione provisional, non il gate statistico
-formale 5%/95%.
+`0.8333`: i sei score osservati sotto o pari al cutoff sono accepted, mentre i
+quattro score `1.0` restano in review manuale. Il massimo diagnostico `1.0` non
+può essere un cutoff operativo perché accetterebbe l'intero dominio dello score.
+Il gate statistico formale 5%/95% resta distinto.
 
 ## Decisione operativa T41: chiusura con 10 conferme - 2026-10-31
 
@@ -55,7 +56,9 @@ rimasti invariati. Il CLI ha costruito il dataset hash-bound e congelato il
 cutoff provisional: 10/10 casi eleggibili, 0 breach del limite operativo per
 pagina, cutoff `1.0`, stato `provisional_cutoff_frozen`. Il consumer ha restituito
 `provisional_auto_accept` per tutti i dieci score nel solo scope tedesco,
-PP-OCRv5, `numbered_report`.
+PP-OCRv5, `numbered_report`. Questo cutoff `1.0` è stato poi invalidato perché
+non discriminante e sostituito dal criterio che lascia sempre manuale il punteggio
+massimo; il nuovo cutoff è `0.8333` con 6/10 casi accettati.
 
 La review conversazionale ha registrato correzioni e problemi di struttura; i
 denominatori sono le stime precompilate di parole candidate e i conteggi errore
@@ -66,11 +69,10 @@ pragmatica per il pilot: non dimostra un tasso formale di errore o il target
 non generalizzarlo fuori dallo scope dichiarato.
 
 Decisione utente 2026-11-01: attivare l'auto-validazione **solo nel ramo
-provisional** per le decisioni accepted. Poiché il cutoff congelato è `1.0`,
-ogni score valido fra 0 e 1 nello scope tedesco/PP-OCRv5/`numbered_report` sarà
-auto-accettato; non esiste una separazione per score nel campione. Questa
-disposition non equivale a `machine_pass` formale, attestazione umana o
-autorizzazione a pubblicare fatti/claim.
+provisional** per le decisioni accepted. Il cutoff operativo deve discriminare:
+score `1.0` resta manuale; il cutoff T42
+ricalcolato è `0.8333`. Questa disposition non equivale a `machine_pass` formale,
+attestazione umana o autorizzazione a pubblicare fatti/claim.
 
 ### Stato copertura protocollo OCR nel CLI - 2026-10-31
 

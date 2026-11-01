@@ -1979,6 +1979,12 @@ pubblicazione e non sostituisce il target statistico 5%/95%. Per T42 il cutoff
 è `1.0` (massimo score): l'auto-accettazione copre quindi tutti gli score validi
 nello scope tedesco/PP-OCRv5/`numbered_report` e non discrimina il campione.
 
+Rettifica operativa 2026-11-01: il cutoff `1.0` è stato rifiutato perché
+avrebbe accettato ogni score valido. La calibrazione provisional ora esclude il
+punteggio massimo dal cutoff automatico: T42 usa `0.8333`, accetta 6/10 casi
+osservati e lascia manuali i quattro casi a `1.0`. Ciò produce una distinzione
+operativa, ma non una garanzia statistica.
+
 Preflight CLI page-level implementato: `memoria documents ocr-review` ricalcola
 candidate assessment e audit visuale dal TIFF/frame/crop, poi rivalida il layout
 tipizzato e le disposition legate agli stessi digest. Richiede i sidecar

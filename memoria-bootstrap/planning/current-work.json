@@ -3,7 +3,7 @@
   "schema_version": "1.0",
   "status": "completed",
   "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-11-01T13:38:32Z",
+  "updated_at": "2026-11-01T13:45:13Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
@@ -17,13 +17,13 @@
     }
   ],
   "increment": {
-    "id": "t41-workflow-provisional-threshold-consumption-20261101",
-    "title": "Integrare il cutoff provisional nel workflow OCR",
-    "objective": "Fare consumare al workflow OCR l'artifact threshold congelato, calcolare e registrare una decisione provisional per ogni pagina, e instradare gli esiti non accettati alla review manuale.",
+    "id": "t41-discriminating-provisional-cutoff-20261101",
+    "title": "Escludere il punteggio massimo dal cutoff auto OCR",
+    "objective": "Rifiutare un cutoff provisional non discriminante pari a 1.0, ricalcolare l'artifact T42 e fare accettare automaticamente al workflow solo gli score sotto il massimo, lasciando i massimi in review manuale.",
     "scope": [
       "Enforzare nel workflow/package CLI un glossario esplicito, versionato e hash-bound prima della review lessicale.",
       "Implementare un comando CLI per applicare le correzioni visive proposte alla candidata, rigenerare struttura/Markdown e invalidare sidecar derivati obsoleti.",
-      "Integrare nel workflow l'estrazione feature, il calcolo score e la decisione provisional hash-bound per ogni pagina usando l'artifact T42 esplicito.",
+      "Escludere score 1.0 dal cutoff auto; ricalcolare il cutoff massimo discriminante del dataset T42 e rigenerare l'artifact operativo.",
       "Lasciare machine_pass formale, human_verified, claim extraction e percorso di pubblicazione invariati; conservare il gate 5%/95% separato.",
       "Allineare prompt/playbook/roadmap alla coverage CLI verificata e fermarsi solo al punto che richiede review umana reale."
     ],
@@ -72,10 +72,12 @@
       "CLI runtime: preview calibratore T42 mostra auto_validation_enabled=true con cutoff 1.0; --apply genera provisional-threshold-artifact-auto-validation-v1.json con auto_validation_mode provisional_empirical_scoped.",
       "CLI runtime: evaluate preview su T314-1275-00590 mostra provisional_auto_validated e auto_validation_enabled=true; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
       "Runtime smoke del nuovo stage OcrWorkflow sui 10 package T42 esistenti, senza rilanciare OCR: 10 provisional_auto_validated, zero manual_review_page_ids; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
-      "Non eseguiti test automatici per questo incremento; py_compile, CLI help, git diff --check e validatore planner passati.",
-      "Non eseguiti test automatici in questo incremento."
+      "Rettifica: lo smoke 10/10 e l'artifact con cutoff 1.0 sono superseded e il validator ora li rifiuta.",
+      "Ricalibrazione T42: cutoff 0.8333333333333334; 6/10 casi accepted; score 1.0 sempre manuale; zero breach tra gli accepted.",
+      "Smoke workflow corretto: 6 auto_validated, review manuale per T314-1275-00594/00595/00596/00600; nessun OCR rilanciato.",
+      "Non eseguiti test automatici in questo incremento; py_compile, CLI help, git diff --check e validatore planner passati."
     ],
-    "notes": "Gap end-to-end chiuso: OcrWorkflow v1.4 consuma l'artifact T42, calcola assessment, feature, score e decisione per pagina e la include nel report workflow. Smoke sui package T42 esistenti: 10/10 provisional_auto_validated. Le altre versioni del workflow restano invariate. Il cutoff 1.0 accetta ogni score valido nello scope tedesco/PP-OCRv5/numbered_report e non discrimina; nessuna garanzia 5%/95%, machine_pass, human_verified o approvazione claim.",
+    "notes": "OcrWorkflow v1.4 consuma l'artifact T42. Rettificato il cutoff non discriminante 1.0: il massimo score ora resta manuale, il cutoff ricalcolato è 0.8333333333333334, 6/10 pagine sono accepted e quattro restano manual review. Smoke con package T42 già esistenti, senza rilanciare OCR. Nessuna garanzia 5%/95%, machine_pass, human_verified o approvazione claim.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -128,6 +130,7 @@
     }
   },
   "session_notes": [
+    "2026-11-01: l'utente rileva che cutoff 1.0 rende tautologica l'auto-accettazione. Correzione: il punteggio massimo diagnostico 1.0 resta manuale; scegliere il massimo cutoff osservato sotto 1.0 privo di breach, oppure no-go se non ne esiste. Rigenerare artifact e workflow report T42.",
     "2026-11-01: integrazione workflow end-to-end completata in OcrWorkflow v1.4. Con provisional_threshold hash-bound il workflow genera assessment/feature/score/decision per ogni pagina, espone le decisioni nel report, termina completed_provisional_auto_validated se tutte passano e mantiene manual_review_page_ids per i non accettati. Smoke sul package T42 esistente: 10/10 accepted, senza rilanciare OCR; machine_pass, human_verified e claim restano false. Test automatici non eseguiti.",
     "2026-11-01: incremento attivo su richiesta utente: OcrWorkflow deve consumare automaticamente l'artifact T42 hash-bound dopo T36/T37 e il confronto, calcolare feature/score/decisione per ogni pagina e instradare accepted vs manual review. Il workflow standard v1.0-v1.3 resta invariato; nuovo v1.4 non promuove machine_pass, human_verified o claim.",
     "2026-11-01: incremento auto-validation provisional completato: calibratore e consumer attivi per cutoff/scope T42; evaluate preview conferma provisional_auto_validated=true e mantiene machine_pass, human_verified e claim extraction disabilitati. Artifact scritto nel runtime esterno. Il cutoff 1.0 accetta tutti gli score validi nello scope e non discrimina.",
@@ -157,7 +160,7 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap dopo la chiusura dell'auto-validazione provisional OCR end-to-end."
+    "description": "Ricalcolare il prossimo micro-incremento dalla roadmap dopo la correzione del cutoff T42 non discriminante."
   },
   "routing": {
     "policy_version": "3.0",
@@ -168,6 +171,15 @@
     "reasoning_effort": "medium",
     "rationale": "Runtime micro-increment scoped to the user-authorized T42 cutoff: enable provisional auto-validation only for accepted in-scope decisions while preserving formal audit and archival claim gates.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-01T13:43:48Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Correct the non-discriminating maximum cutoff and verify the threshold consumer routes score 1.0 to manual review."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T11:47:22Z",
