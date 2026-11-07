@@ -2,79 +2,62 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-11-01T17:36:41Z",
-  "updated_at": "2026-11-07T00:00:00Z",
+  "selected_at": "2026-11-07T13:23:31Z",
+  "updated_at": "2026-11-07T13:28:27Z",
   "roadmap_basis": [
     {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T46 - Bridge OCR revisionabile -> SourceDocument",
-      "reason": "T45 è completato; T46 è stato selezionato come incremento post-MVP e ora è completato."
+      "section": "T48 - Ricerca e linking su Place / HistoricalEvent",
+      "reason": "T48f-h hanno generato artifact preview standalone; il passo minimo successivo e un runner CLI offline che li componga con input espliciti."
     },
     {
       "path": "memoria-bootstrap/docs/current-next-increment.md",
       "section": "Stato corrente e prossimo candidato",
-      "reason": "Il contratto T45 definisce i confini del bridge e i gate di provenance/idempotenza."
+      "reason": "La priorita e rendere eseguibile il percorso HistoricalEvent su fixture senza dati reali o scritture canoniche."
     }
   ],
   "increment": {
-    "id": "t46-ocr-source-document-bridge-20261101",
-    "title": "Registrare OCR revisionabile come SourceDocument via store esistente",
-    "objective": "Implementare un comando preview/apply che valida originali e artefatti OCR hash-bound, registra un SourceDocument idempotente nello store esistente e mantiene gli esiti provisional non verificati e separati dai claim.",
+    "id": "t48i-historical-event-preview-runner-20261107",
+    "title": "Runner CLI offline per preview HistoricalEvent end-to-end",
+    "objective": "Comporre menzioni, link evento e CandidateEventUpdate in un singolo comando offline da segmenti, indice eventi, evento JSON-LD e CandidateEvidenceClaim espliciti.",
     "scope": [
-      "Accettare solo un manifest esplicito che lega documento originale, source_id e artefatti pagina/evidence/structure/Markdown con SHA-256.",
-      "Validare contenuti, digest e binding source_document_id/page_id senza rete e senza eseguire OCR.",
-      "Costruire un SourceDocument con identità deterministica da source_id, URI locale canonico e hash dei byte originali.",
-      "Registrare via SQLiteEvidenceStore con --apply, run auditabile e conflitti divergenti fail-closed; preview non scrive.",
-      "Preservare manifest, URI/hash originali, timestamp, struttura/versione e review status; T42 provisional non promuove human_verified, machine_pass o claim."
+      "Aggiungere runner con CLI per chiamare T48f, T48g e T48h in sequenza su un singolo HistoricalEvent.",
+      "Validare gli input espliciti e impedire che output_dir sovrascriva input o canonici.",
+      "Scrivere manifest preview con conteggi, percorsi e hash degli artifact; nessuna rete o canonical write.",
+      "Testare il comando su fixture e segmenti sintetici, verificando provenance e input byte-identici.",
+      "Rimuovere la dichiarazione duplicata jsonschema dal gruppo dev dopo installazione nella .venv locale."
     ],
     "out_of_scope": [
-      "Eseguire rete, OCR/VLM, estrazione di claim o modifiche a fatti/profili canonici.",
-      "Trattare provisional_auto_validated come human_verified o machine_pass.",
-      "Sovrascrivere un SourceDocument esistente con payload divergente o modificare i byte originali."
+      "Registrazione nel comando root memoria o nel pipeline runner generale.",
+      "Estrazione automatica di CandidateEvidenceClaim e lookup SourceDocument nel catalogo.",
+      "Ricerca live, partecipazioni personali, approvazione claim o scrittura canonica."
     ],
     "candidate_files": [
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-engine/code/caduti_fonti_report/models.py",
-      "memoria-engine/code/caduti_fonti_report/sqlite_store.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_source_document_registration.py",
-      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-      "memoria-engine/tests/test_ocr_source_document_registration.py",
-      "memoria-engine/tests/test_memoria_cli.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/event_preview_pipeline.py",
+      "memoria-engine/tests/test_event_preview_pipeline.py",
+      "memoria-engine/pyproject.toml",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Preview non modifica lo store; --apply registra esattamente un SourceDocument con binding verificati e retry idempotente; payload divergente rifiutato; provisional resta unverified e non crea claim; test offline mirati PASS."
+    "stop_condition": "Un comando offline compone i tre artifact T48f-h da input espliciti e registra hash/provenance; test dimostrano output review-only, output separato dagli input e nessun byte canonico modificato; i test mirati e il validator con jsonschema installato passano."
   },
   "verification": {
     "documentation_touchpoints": [
+      "memoria-bootstrap/planning/current-work.json",
       "memoria-bootstrap/docs/current-next-increment.md",
-      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-bootstrap/planning/current-work.json"
+      "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md"
+    ],
+    "tests": [
+      "python -m unittest discover -s memoria-engine/tests -p test_event_preview_pipeline.py: 8 PASS",
+      "python -m unittest discover -s memoria-engine/tests -p test_candidate_event_updates.py: 9 PASS",
+      "python -m unittest discover -s memoria-engine/tests -p test_document_event_linking.py: 8 PASS",
+      "python -m unittest discover -s memoria-engine/tests -p test_document_mention_extraction.py: 14 PASS",
+      "py_compile event_preview_pipeline.py, candidate_event_updates.py, event_linking.py, mention_extraction.py: PASS",
+      "memoria-engine/.venv/Scripts/python.exe memoria-bootstrap/planning/validate-codex-model-routing.py: PASS con jsonschema 4.26.0 e JSON Schema attivo",
+      "pyproject TOML parse: PASS",
+      "python -m caduti_fonti_report.document_analysis.event_preview_pipeline --help (PYTHONPATH=code da memoria-engine): PASS"
     ],
     "result": "passed",
-    "tests": [
-      "T46 verificato in questa sessione: unittest test_ocr_source_document_registration.py 9 PASS; test_memoria_cli.py 27 PASS; test_sqlite_store.py 5 PASS.",
-      "T45 PASS: test_ocr_candidate_assessment.py 21; test_ocr_provisional_threshold.py 9; test_document_analysis_evidence_store_import.py 2; test_register_t31_demo_feedback_loop_tool.py 2; test_document_ocr_batch.py 7; test_ocr_transform_batch.py 9; test_ocr_tesseract_batch.py 11.",
-      "T45 PASS: pytest memoria-engine/tests/test_cli_paths.py -q: 1 passed. unittest discover sullo stesso file raccoglie 0 test; è un test pytest, non un test T31.",
-      "T45 PASS: pytest memoria-engine/tests/test_register_t31_demo_feedback_loop_tool.py -q: 2 passed; il test T31 è collezionabile con unittest e pytest.",
-      "T45 classificazione/fix fixture: test_document_ocr_batch.py inizialmente 2/7 failure per JPEG fittizi non decodificabili e solo un token OCR; aggiornati i fixture, poi 7/7 PASS. Nessun codice di produzione modificato.",
-      "T45 security: .env è ignored/non tracked, nessuna entry nella cronologia Git esaminata e nessun archivio ZIP/7z/RAR nel worktree; contenuto .env non letto.",
-      "CLI runtime: preview calibratore T42 mostra auto_validation_enabled=true con cutoff 1.0; --apply genera provisional-threshold-artifact-auto-validation-v1.json con auto_validation_mode provisional_empirical_scoped.",
-      "CLI runtime: evaluate preview su T314-1275-00590 mostra provisional_auto_validated e auto_validation_enabled=true; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
-      "Runtime smoke del nuovo stage OcrWorkflow sui 10 package T42 esistenti, senza rilanciare OCR: 10 provisional_auto_validated, zero manual_review_page_ids; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
-      "Rettifica: lo smoke 10/10 e l'artifact con cutoff 1.0 sono superseded e il validator ora li rifiuta.",
-      "Ricalibrazione T42: cutoff 0.8333333333333334; 6/10 casi accepted; score 1.0 sempre manuale; zero breach tra gli accepted.",
-      "Smoke workflow corretto: 6 auto_validated, review manuale per T314-1275-00594/00595/00596/00600; nessun OCR rilanciato.",
-      "Incremento finale: cutoff selezionato dai dieci casi come massimo score senza breach del 2%; 63/11.616 eventi/parole candidate stimati (~0,54%), worst page 10/1.117 (~0,90%), 10/10 accepted, 0/10 manual nel pilot.",
-      "Smoke workflow v3 su package T42 già esistenti: 10 provisional_auto_validated, 0 manual, cap 3% non superato; machine_pass=false, human_verified=false e claim_extraction_allowed=false. Nessun OCR rilanciato.",
-      "Verifiche codice OCR precedenti: 55 test mirati passati (calibratore provisional, workflow e CLI), py_compile e smoke runtime v3.",
-      "Follow-up documentale: prompt, playbook, roadmap, current-next e skill di sessione/quality gate coerenti sulla chiusura T42 provisional; validatore planner e git diff --check passati; nessun test OCR rilanciato perché non è cambiato codice."
-    ],
-    "notes": "T46 completato; verifiche offline eseguite il 2026-11-07 con fixture sintetiche. Nessuna inferenza OCR/VLM o accesso a dati reali.",
+    "notes": "T48i runner CLI offline compone T48f-h da segmenti, indice, HistoricalEvent e claim espliciti. Manifest hash-bound, output separato, retry identico verificato; no network, no claim extraction, apply/merge/write disabled. Test totali 39 PASS. jsonschema 4.26.0 installato nella .venv locale ignorata da Git; dichiarazione duplicata rimossa dal gruppo dev. Limiti: singolo evento, claim preesistenti, nessun catalog lookup o integrazione nel comando root memoria.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -82,30 +65,24 @@
         "memoria-bootstrap"
       ],
       "read_set": [
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
-        "memoria-engine/code/caduti_fonti_report/models.py",
-        "memoria-engine/code/caduti_fonti_report/sqlite_store.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/tests/test_memoria_cli.py"
+        "memoria-engine/code/caduti_fonti_report/document_analysis/mention_extraction.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/event_linking.py",
+        "memoria-engine/code/caduti_fonti_report/candidate_event_updates.py",
+        "memoria-engine/tests/test_candidate_event_updates.py",
+        "memoria-engine/tests/fixtures/events/battaglia-purocielo.jsonld",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md#T48"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_source_document_registration.py",
-        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/tests/test_ocr_source_document_registration.py",
-        "memoria-engine/tests/test_memoria_cli.py",
-        "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/event_preview_pipeline.py",
+        "memoria-engine/tests/test_event_preview_pipeline.py",
+        "memoria-engine/pyproject.toml",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": ".\\memoria-engine\\.venv\\Scripts\\python.exe -m unittest discover -s memoria-engine\\tests -p test_ocr_source_document_registration.py; targeted test_memoria_cli.py and test_sqlite_store.py",
+      "test_command": "python -m unittest discover -s memoria-engine/tests -p test_event_preview_pipeline.py",
       "stop_conditions": [
-        "Preview is read-only; apply writes one idempotent SourceDocument to the existing store.",
-        "Original URI/hash and derivative manifest/artifact hashes round-trip; divergent bindings fail closed.",
-        "Provisional status never sets human_verified/machine_pass or creates approved claims; targeted offline tests pass."
+        "CLI richiede tutti i path input e processa un solo evento esplicito.",
+        "Manifest hash-bound include mention/link/update e lascia review pending/unreviewed con write disabilitati.",
+        "output_dir non coincide con input o fixture canoniche e i test mirati passano."
       ]
     }
   },
@@ -141,11 +118,33 @@
     "2026-10-20: ripresa procedura: lette le istruzioni di sessione e verificate le anteprime TIFF-only del frame (995/995, nessuna inferenza OCR). Il validatore di preregistrazione e' stato eseguito in preview e ha letto i metadati aggregati delle due partizioni, inclusi i conteggi del holdout; nessun OCR, reference, score o label e' stato letto e il risultato non e' stato usato per selezione. Correzione rispetto alla nota storica 'nessun holdout aperto': il precedente holdout non va riutilizzato; estrarre un nuovo holdout casuale dopo avere registrato il catalogo TIFF-only. Manifest invariato, stato prepared, digest d8d3571c727511348b3ac4aeda13c89e737697e1ce3cb1adf7bafdfbad29ae06; nessun report persistito e nessun batch OCR avviato. Il minimo per tre strati supportati e' 80 pagine accettate x 3 strati x 2 partizioni = 480 accettate; il numero grezzo di TIFF da processare non e' stimabile senza un tasso di accettazione. Serve catalogo visivo riproducibile per strato e piano di oversampling prima di preregistrare/fissare una nuova coorte.",
     "2026-10-20: per indicazione esplicita dell'utente, questo task procede in batch sequenziali di tre incrementi con gate separato per ciascuno. Ollama WSL verificato via GET read-only: versione 0.34.2; qwen3-vl:4b disponibile con capability vision, SHA-256 digest 1343d82ebee38e26a4dd6b0180b915eb91550184e67c505dea97509571c8f683. Nessuna inferenza lanciata: i contact sheet a 10x10 non bastano per classificare layout/leggibilita' in modo auditabile e il modello non ha ancora un benchmark task-matched su label gold di classificazione. Prima di catalogo e sampling occorre una valutazione controllata del classificatore e anteprime individuali adatte; non consultare il vecchio holdout, OCR o reference per questo passaggio.",
     "2026-10-20: corretto il percorso: nessun benchmark LLM e' richiesto. L'utente conferma che la classificazione visiva dei 995 TIFF e' gia' completata; non ripeterla. La ricognizione read-only ha trovato l'inventario TIFF e la vecchia coorte, ma non un catalogo machine-readable delle etichette pagina-per-pagina nei percorsi runtime/Temp/repository verificati. L'utente ha indicato P:\\Comune\\Me.Mo.Ri.a\\documenti_da_processare\\foto\\T314 R1275: la cartella contiene il corpus TIFF e directory di prova, nessun sidecar CSV/JSON/TSV/XLSX/MD/TXT; nessuna immagine aperta in questa verifica. Il vecchio holdout resta inutilizzabile e non va consultato. Prossimi tre incrementi: (1) riusare l'artefatto di classificazione esistente, senza rifarla; (2) selezionare con seed una nuova coorte calibration e un holdout indipendente; (3) validare e congelare la preregistrazione prima di qualsiasi OCR.",
-    "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run."
+    "2026-10-21: pilot esplorativo sui JPG di T311 R8 e RH 26-305_28_305 div_5-12-44_8-4-45, con attestazione utente di un documento autonomo per JPG. Al primo conteggio risultavano 143 (35+108); campione di 10 scelto con seed 20261021 e risultati salvati in runtime esterno ocr-runs/t42-jpg-exploratory-pilot-20261021. Limite: non e' stato conservato l'inventario completo e ordinato dei 143 candidati, quindi il seed da solo non rende riproducibile l'estrazione e il freeze della membership non e' dimostrato. Il frame live e' ora 145 (T311 37, RH 108); non reinterpretare retroattivamente il campione. Tesseract deu/PSM 3: una pagina bianca, tre pagine con sole 2-8 parole riconosciute pur contenendo testo leggibile; le altre sei hanno output variabile. Nessuna reference gold, adjudication materiale, secondo motore o holdout: nessun cutoff stimato, auto-validation resta disabilitata. Review indipendente: hash, TSV, conteggi e confidence 10/10 riconciliati; tutti i 10 file restano exploratory/unreviewed e non possono entrare nel futuro holdout cieco. Le immagini sorgenti non sono state modificate o copiate nel run.",
+    "2026-11-07: avviato T47 per person:purocielo:bendini-ateo. Fixture offline 21/21 PASS. Il descriptor attivo collega un SourceDocument local_docx e claim candidati al profilo; il DB SQLite attivo non contiene quel documento. Una ricerca web limitata ha trovato un record PDF discrepante, ancora candidato. Nessun canonical/descriptor modificato.",
+    "2026-11-07: T47 completato su person:purocielo:bendini-ateo. Audit esterno con CSV/DOCX hash-bound, online SourceDocument preesistente e una query registrata a storiaememoriadibologna.it; PDF trovato resta risultato candidato non acquisito. Feedback needs_manual_review, 4 righe di riconciliazione candidate, tutte unreviewed. evidence.sqlite non contiene questi ID; descriptor attivo invariato. Test offline 21/21 e validazione artifact passano.",
+    "2026-11-07: avviato T48 con micro-incremento provenance guard per CandidateDocumentPlaceLink. Baseline: place_linking 7 PASS, model core 9 PASS. Identificato il caso privo di source_document_id/source_id che oggi puo' produrre link.",
+    "2026-11-07: micro-incremento T48 provenance guard completato: source_id e source_document_id obbligatori per candidate place link; 9 test Place e 11 test pipeline persone PASS. Avvio ora CandidatePlaceUpdate preview per il ramo Place.",
+    "2026-11-07: T48 completato sul ramo Place: provenance guard e preview CandidatePlaceUpdate; gate mirato 37/37 PASS e git diff --check PASS. Preview standalone, senza catalog lookup o stage CLI/pipeline; HistoricalEvent resta follow-up. Nessun canonical write o dato reale.",
+    "2026-11-07: avviato T49a per binding fail-closed del feedback outcome a piano/azione/fonte/strategia/run; nessuna scrittura canonica. T49b sara evaluation aggregata dopo il gate separato.",
+    "2026-11-07: T49a completato, 14 test mirati PASS; feedback outcome fail-closed e memory preview append-only con provenance strategy/run. Avvio separato T49b per KPI evaluation, senza inferire dati mancanti.",
+    "2026-11-07: avviato T49b dopo gate T49a: evaluation offline di outcome e copertura; claim/conflict/review latency/token/cost solo da input espliciti, altrimenti unavailable.",
+    "2026-11-07: T49b completato, 8 test evaluation, 11 outcome, 3 T31 PASS e py_compile PASS. T49 avanza con preview feedback e framework KPI; costi/tempi reali restano unavailable finche mancano misure confrontabili. Planner T49b chiuso, T49 roadmap non dichiarato completato.",
+    "2026-11-07: avviato T49c per reviewer/review_started_at/reviewed_at nel triage; compatibilita legacy senza timestamp, nessuna misura inferita.",
+    "2026-11-07: T49c completato: 7 test triage, 3 regressioni T31 e 8 evaluation PASS. Timestamp espliciti misurabili, assenti non inferiti, invalidi segnalati senza cambiare la decisione.",
+    "2026-11-07: avviato T49d per comparabilita sessioni; definisce input espliciti prima del calcolo dei delta, senza usare telemetry reale.",
+    "2026-11-07: T49d completed: 13 evaluation, 7 triage, 3 T31 tests PASS. Session comparability requires group/hash/model/passed gate/role; human review summary binds by action_id; missing timing remains unavailable.",
+    "2026-11-07: avviato T49e per delta appaiati baseline/candidate; solo confronti dichiarati con stesso task fingerprint e quality gate passed, nessuna inferenza di saving.",
+    "2026-11-07: T49e completed; final gate 16 evaluation, 7 triage, 3 T31 tests PASS, py_compile and diff check PASS. T49c-e add review timing capture, session readiness/binding and paired observed deltas. T49 roadmap remains open pending real comparable measurements; no real telemetry or data used.",
+    "2026-11-07: avviato T48f event branch dopo i tre slice T49. Runtime routing log locale riporta 16 session references e solo eventi/model/agent/timestamp, senza token/costi; selezionato il ramo HistoricalEvent supportato da fixture.",
+    "2026-11-07: T48f completato; 14 mention extraction tests PASS. HistoricalEvent label mention resta unresolved e index hash-bound.",
+    "2026-11-07: avviato T48g per linking HistoricalEvent su label univoca e provenance obbligatoria.",
+    "2026-11-07: T48g completato: 8 test event linking e 14 mention extraction PASS, py_compile e diff check PASS. Link esatto e univoco con provenance/hash, unreviewed; nessun fatto o scrittura canonica. Avvio T48h preview CandidateEventUpdate con chain fixture integrata.",
+    "2026-11-07: T48h completato; 9 update, 8 event linking e 14 mention extraction tests PASS; py_compile e diff check PASS. CandidateEventUpdate preview composta e hash-bound, nessun write canonico. T48f-h completano il prototipo HistoricalEvent su fixture; T48 resta aperto per integrazione CLI/pipeline e catalog lookup. T49 resta aperto per misure reali comparabili.",
+    "2026-11-07: jsonschema 4.26.0 installato/riparato nella memoria-engine/.venv ignorata; validazione planner/schema attiva PASS. Rimosso duplicato jsonschema>=4.20 in pyproject. Avviato T48i: runner CLI offline per comporre T48f-h da input espliciti e fixture.",
+    "2026-11-07: T48i completato; runner CLI python -m compone menzioni, link e update da input espliciti, con hash manifest, overlap guard e retry immutabile. Gate 8 runner, 9 update, 8 link, 14 mention PASS; py_compile, validator con jsonschema reale e TOML PASS. T48 resta aperto: nessuna registrazione nel comando root/pipeline, claim extraction o catalog lookup."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Selezionare T47 dalla roadmap post-MVP nella prossima sessione."
+    "description": "Ricalcolare il prossimo incremento dalla roadmap T48/T49; non precaricare una nuova implementazione."
   },
   "routing": {
     "policy_version": "3.1",
@@ -154,8 +153,161 @@
     "agent": "mmr_implementer",
     "model": "gpt-6.1-sol",
     "reasoning_effort": "medium",
-    "rationale": "T46 aggiunge un comportamento CLI e storage cross-component; implementazione specialistica circoscritta con review/gate del parent.",
+    "rationale": "Comporre moduli evento gia esistenti in CLI offline, con hashing degli artifact e no-write fail-closed.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-07T12:58:15Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Creare CandidateDocumentEventLink per match univoco; evitare equivalenze e fatti automatici."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T12:58:15Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Mention extraction event index-driven implementata con identity unresolved; 14 test PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T12:54:22Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Aggiungere mention candidates event da label espliciti di indice senza identity assignment."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T12:40:35Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Delta assoluti session usage appaiati implementati solo con baseline unico, task hash uguale e quality gate passato; 16 test evaluation PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T12:36:44Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Calcolare delta assoluti token/costi solo su sessioni con task hash e quality gate identici e baseline univoco."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T12:36:44Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Session comparison readiness and review-summary binding implemented; 13 evaluation, 7 triage and 3 T31 tests PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T12:30:31Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Aggiungere task fingerprint e quality gate al record usage per sbloccare confronti sessione validi."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T12:30:31Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Review metadata e timing opzionale acquisiti con validazione esplicita; 7 test triage e regressioni PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T10:20:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Preservare tempi e reviewer espliciti nel ciclo feedback, senza generare temporalita mancanti."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T10:12:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "FeedbackLoopEvaluation audit-only implementata; 8 evaluation, 11 outcome e 3 regression T31 test PASS; metriche assenti esposte unavailable."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T09:49:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implementare evaluation offline del feedback loop: source coverage, outcome distribution e KPI opzionali senza inferire usage assente."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T09:48:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "T49a binding fail-closed e preview memoria append-only implementati; 11 test outcome e 3 regression T31 PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T09:34:00Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Rendere il binding piano/azione/fonte/strategia/run del FeedbackLoopOutcome fail-closed e preservarlo nella search memory preview."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T09:27:57Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Place provenance guard e CandidatePlaceUpdate preview implementati; 37 test mirati passano. HistoricalEvent e pipeline/catalog integration rinviati esplicitamente."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T09:20:30Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implementare preview CandidatePlaceUpdate da claim hash/provenance-bound, senza apply canonico, e testarne conflitti/review."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T09:16:52Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Fail closed sui CandidateDocumentPlaceLink senza source/document provenance, mantenendo link candidati preview-only."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T06:45:56Z",
+        "tier": "low",
+        "agent": "parent",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Eseguire T47 su un solo profilo confermato dall'utente, con una query online e riuso documenti offline identificabili."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T17:36:41Z",
@@ -416,6 +568,42 @@
         "model": "gpt-6.1-sol",
         "reasoning_effort": "medium",
         "reason": "Hash, TSV, conteggi e confidence riconciliati; no-go confermato. Membership completa del frame non riproducibile e 10 sorgenti esposte escluse da futuro holdout."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T12:58:15Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Comporre preview CandidateEventUpdate da claim/link con provenance e fixture offline."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T13:06:38Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "CandidateEventUpdate preview e2e da link+claim implementata; 9 update, 8 link e 14 mention tests PASS."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-07T13:23:31Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Comporre T48f-h in un runner CLI offline su fixture, mantenendo input espliciti e no-write."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-07T13:28:27Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Runner CLI T48i compone i tre artifact HistoricalEvent su fixture; 39 test PASS, schema e pyproject validati."
       }
     ]
   }

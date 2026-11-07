@@ -15,8 +15,9 @@ Le milestone T29-T33 e T34/T34b sono chiuse. La direzione primaria e' T45-T49:
 consolidare l'interfaccia fra OCR, documenti, evidenze, entita' e feedback; non
 proseguire indefinitamente il solo tuning OCR. T41 mantiene il gate statistico
 separato (reference adjudicate e holdout indipendente); il pilot provisional
-T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. Il quality
-gate T45 e il bridge T46 sono chiusi; T47 è il prossimo incremento.
+T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. I gate
+T45/T46 e la prima run T47 sono chiusi; T48 prosegue con preview Place e
+HistoricalEvent, mentre T49 resta aperto per misure reali.
 
 ### T45 - Quality gate post-MVP e contratto di integrazione (P0, completato 2026-11-01)
 
@@ -76,7 +77,7 @@ Gate 2026-11-01: 9 test di registrazione, 27 test CLI e 5 test SQLite passano;
 `git diff --check` e validatore routing/planner passano. Fixture sintetiche,
 nessuna inferenza OCR/VLM o accesso a documenti reali.
 
-### T47 - Prima run online+offline su un profilo esistente (P1)
+### T47 - Prima run online+offline su un profilo esistente (P1, completato 2026-11-07)
 
 Dipendenza: T46 per il ramo OCR (o un documento offline gia' registrato e
 revisionabile); riusare una fonte online gia' nel registry e un documento offline
@@ -86,12 +87,55 @@ candidati collegati allo stesso `PersonResearchProfile`, compatibilita'/conflitt
 visibili e feedback `no_results`/candidate documentati. Una pagina risultati
 non diventa documento o fatto. La canonizzazione resta preview-only.
 
+Esito 2026-11-07: run `t47-bendini-online-offline-20261107` sul profilo
+`person:purocielo:bendini-ateo`, salvata nel workspace esterno. CSV e DOCX locali
+sono stati identificati con hash SHA-256 corrispondenti agli ID nel descriptor;
+una pagina online `storia_memoria_bo` preesistente e' legata allo stesso profilo.
+Una ricerca singola, limitata al dominio registrato, ha trovato un PDF candidato
+che riporta date di nascita/morte divergenti dalla pagina online acquisita.
+Riconciliazione e feedback `needs_manual_review`; claim e risultato nuovo restano
+`unreviewed`. Il PDF non e' stato acquisito come SourceDocument, gli ID non sono
+righe dell'attuale `evidence.sqlite` e il descriptor attivo/profilo canonico non
+sono stati modificati. Test mirati offline 21/21 PASS; artifact JSON e hash del
+descriptor verificati.
+
 ### T48 - Ricerca e linking su Place / HistoricalEvent (P1)
 
 Dipendenza: T47. Verificare contratti/identita' di `Place` e `HistoricalEvent`
 senza inventare equivalenze: alias, provenance, relazioni e conflitti. Applicare
 lo stesso ciclo fonte -> documento -> claim -> candidate entity update ->
 review, con fixture di un luogo o evento storico e test di regressione su persone.
+
+Esito 2026-11-07: incrementato il ramo Place con guard fail-closed su
+`source_document_id` e `source_id` nei link candidati e builder
+`CandidatePlaceUpdate` preview-only da claim `unreviewed`. I claim conservano
+documento, fonte, URL, evidence span e confidence; valori esistenti/nuovi e
+conflitti restano distinguibili, alias e `same_as` richiedono review umana e non
+viene scritto il Place canonico. Fixture `places/purocielo.jsonld`; test mirati
+37/37 PASS (preview 8, linking 9, modelli 9, pipeline persone 11) e
+`git diff --check` PASS. Il builder consuma artifact CandidateEvidenceClaim gia'
+prodotto: non aggiunge uno stage CLI/pipeline o una verifica di esistenza del
+SourceDocument nel catalogo.
+
+Ulteriore avanzamento 2026-11-07: T48f-h aggiungono il ramo HistoricalEvent su
+fixture offline. T48f estrae menzioni da un indice esplicito con label esatta e
+indice hash-bound; T48g emette CandidateDocumentEventLink solo per match unico,
+con provenance document/segment e stato unreviewed; T48h compone claim e link in
+CandidateEventUpdate preview, con allowlist, provenance e revisione umana
+obbligatoria. Nessuna scrittura canonica, partecipazione personale o fatto
+verificato. Gate: 14 test menzioni, 8 linking e 9 update PASS; py_compile e
+`git diff --check` PASS. Il ramo resta callable su artifact ma senza stage
+CLI/pipeline o lookup SourceDocument nel catalogo: T48 non e' chiuso a livello
+roadmap.
+Ulteriore avanzamento 2026-11-07: T48i aggiunge il runner invocabile con
+`python -m caduti_fonti_report.document_analysis.event_preview_pipeline`.
+Su segmenti, indice evento, HistoricalEvent e CandidateEvidenceClaim espliciti,
+compone menzioni, link e CandidateEventUpdate in artifact hash-bound e review-only.
+Il retry e' accettato solo se input e artifact sono identici; gli input restano
+immutati. Gate: 8 runner, 9 update, 8 linking e 14 mention test PASS; py_compile,
+validator JSON Schema e parse TOML PASS. Non estrae claim, non verifica il
+catalogo SourceDocument e non e' registrato nel comando root `memoria` o nel
+pipeline runner generale; T48 resta aperto.
 
 ### T49 - Review-feedback end-to-end ed evaluation (P2)
 
@@ -100,6 +144,37 @@ tracciare strategia, run, documento nuovo oppure `no_results`, e riconciliare
 la memoria di ricerca senza approvazione automatica. KPI: copertura delle fonti,
 claim attribuibili, conflitti preservati, tempo di review, failure di retrieval,
 confronto costi/token delle sessioni Codex senza inventare risparmi.
+
+Avanzamento 2026-11-07: completate due slice offline. T49a lega l'esito a un
+piano, azione, fonte, strategia e run univoci; ambiguita' e provenance mancanti
+restano non chiuse. La memoria di ricerca e' una preview append-only, senza write
+al profilo. T49b aggiunge un artifact audit-only con coverage per coppia
+piano/fonte, distribuzione degli esiti, attribuzione dei claim e metriche
+opzionali di conflitti, latenza review e session usage. Gli input sono hash-bound;
+gli eventi duplicati o discordanti sono esclusi con motivo. Gate: 22 test
+mirati PASS (11 outcome, 3 caller T31, 8 evaluation), `py_compile` e
+`git diff --check` PASS.
+
+T49 resta aperto per misure alimentate da sessioni e review effettivamente
+registrate: in assenza di tali artifact latenza, conflitti, token e costi sono
+`unavailable`. I totali per sessione non dimostrano risparmi o equivalenza dei
+task. Gli ID di SourceDocument sono riferimenti dichiarati, non verifiche di
+esistenza nel catalogo; non e' avvenuto alcun write canonico. La procedura
+operativa per raccogliere outcome, tempi, conflitti e session usage e' in
+`memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md`,
+sezione "Raccolta delle misure T49".
+
+Ulteriore avanzamento 2026-11-07: T49c aggiunge reviewer e timestamp opzionali
+alle tabelle di triage, preserva la compatibilita' legacy e calcola latenza solo
+da una coppia timezone-aware valida. T49d collega i tempi di review a un solo
+outcome per `action_id` e marca la comparabilita' delle sessioni solo con gruppo,
+task hash, modello, ruolo e quality gate espliciti; i record legacy restano utili
+per i totali, non per il confronto. T49e produce delta assoluti candidate meno
+baseline solo per gruppi con un unico baseline, fingerprint identico e gate
+passato; misure mancanti restano `unavailable`, senza claim di risparmio.
+Gate finale delle tre slice: 16 test evaluation, 7 test triage, 3 regressioni
+T31, `py_compile` e `git diff --check` PASS. Nessuna sessione reale e' stata
+misurata in questa sequenza: il completamento roadmap T49 resta aperto.
 
 **Priorita' parallele:** Q2 solo come micro-refactor giustificato; T41 gate
 statistico OCR separato; T27/T28 cloud solo se necessario al percorso.

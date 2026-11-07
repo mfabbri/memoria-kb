@@ -18,6 +18,11 @@ $memoria-model-router soltanto se serve cambiare modello o assegnare un task
 sostanziale a uno specialista. Registra in planner il routing dei nuovi task
 (policy 3.1) e verifica la disponibilita' effettiva del modello.
 
+Se l'utente chiede N incrementi, eseguili in sequenza, ciascuno con planner e
+quality gate separati; dopo l'N-esimo, riporta in breve lo stato rispetto alla
+roadmap. Non interrompere la sequenza per chiedere scelte gia' deducibili dal
+planner o dalla roadmap.
+
 Preserva provenance, review umana, preview/apply e audit. Non generare fatti
 storici da risultati di ricerca o da OCR provisional. Per task OCR consulta
 soltanto le sezioni pertinenti del playbook codex-document-analysis-core.md;
@@ -25,6 +30,17 @@ preflight Ollama WSL solo per inferenza VLM. Non riaprire il pilot T42 chiuso;
 la validazione statistica formale resta separata.
 
 Concludi con diff, test e risultato, limiti, planner aggiornato e prossimo passo.
+
+Per modifiche a `current-work.json`, esegui
+`memoria-bootstrap/planning/validate-codex-model-routing.py` nell'ambiente
+Python di sviluppo che contiene `jsonschema` (dipendenza dev di
+`memoria-engine`). Se compare `schema validation skipped`, il controllo
+strutturale del routing non equivale alla validazione JSON Schema: installa
+`jsonschema>=4.20` nell'ambiente attivo e ripeti il comando.
+
+Per T49 carica la sezione "Raccolta delle misure T49" del playbook
+`memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md`;
+non inferire timestamp, claim, token o costi mancanti.
 ```
 
 Il testo operativo OCR completo, inclusi review visiva, Hunspell, glossario,

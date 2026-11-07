@@ -3,11 +3,12 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 ALLOWED_DECISIONS = {"BUONA", "DUBBIA", "INUTILE"}
-TABLE_COLUMNS = [
+LEGACY_TABLE_COLUMNS = [
     "decisione",
     "valore",
     "action_id",
@@ -17,6 +18,7 @@ TABLE_COLUMNS = [
     "contesto",
     "note_storico",
 ]
+TABLE_COLUMNS = [*LEGACY_TABLE_COLUMNS, "reviewer", "review_started_at", "reviewed_at"]
 
 
 def build_research_feedback_actions_review_table(
@@ -61,6 +63,7 @@ def summarize_research_feedback_actions_review_table(
     table_rows = _parse_review_table(review_table_md)
     decisions: list[dict[str, Any]] = []
     validation_errors: list[dict[str, str]] = []
+    timing_validation_errors: list[dict[str, str]] = []
     seen_action_ids: set[str] = set()
     counts_by_decision: Counter[str] = Counter()
     accepted_by_decision: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -115,6 +118,12 @@ def summarize_research_feedback_actions_review_table(
             "notes": str(row.get("note_storico", "")),
             "review_status": "unreviewed",
         }
+        timing, timing_errors = _review_timing(row)
+        decision_record.update(timing)
+        timing_validation_errors.extend(
+            {"row": str(index), "action_id": action_id, "error_type": error}
+            for error in timing_errors
+        )
         if action is not None:
             decision_record.update(
                 {
@@ -145,12 +154,16 @@ def summarize_research_feedback_actions_review_table(
         "validation_error_count": len(validation_errors),
         "counts_by_decision": dict(sorted(counts_by_decision.items())),
         "validation_errors": validation_errors,
+        "review_timing_counts": dict(sorted(Counter(item["review_timing_status"] for item in decisions).items())),
+        "review_timing_validation_error_count": len(timing_validation_errors),
+        "review_timing_validation_errors": timing_validation_errors,
         "decisions": decisions,
         "accepted_by_decision": {key: value for key, value in sorted(accepted_by_decision.items())},
         "warnings": [
             "research_feedback_triage_summary_is_audit_only",
             "decisions_do_not_create_verified_facts",
             "decisions_do_not_modify_profiles",
+            "review_timestamps_are_operator_supplied_not_inferred",
         ],
     }
     if output_json is not None:
@@ -166,7 +179,8 @@ def render_research_feedback_actions_review_table(table: dict[str, Any]) -> str:
     lines = [
         "# ResearchFeedbackAction triage table",
         "",
-        "Compilare solo `decisione` e `note_storico`.",
+        "Compilare `decisione`, `note_storico` e, facoltativamente, `reviewer`, `review_started_at`, `reviewed_at`.",
+        "I timestamp devono essere ISO 8601 con timezone; i valori mancanti non vengono stimati.",
         "",
         "Decisioni ammesse: `BUONA`, `DUBBIA`, `INUTILE`.",
         "",
@@ -194,6 +208,7 @@ def render_research_feedback_actions_review_summary(summary: dict[str, Any]) -> 
         f"- Decisioni accettate: `{summary.get('accepted_count', 0)}`",
         f"- Pending: `{summary.get('pending_count', 0)}`",
         f"- Invalide: `{summary.get('invalid_count', 0)}`",
+        f"- Tempi review: `{summary.get('review_timing_counts', {})}`",
         "",
         "Nessuna decisione crea fatti verificati, patch profilo o claim validati.",
         "",
@@ -233,6 +248,12 @@ def render_research_feedback_actions_review_summary(summary: dict[str, Any]) -> 
                 f"- Riga `{error.get('row', '')}` action `{error.get('action_id', '')}`: "
                 f"`{error.get('error_type', '')}`"
             )
+        lines.append("")
+    timing_errors = summary.get("review_timing_validation_errors", [])
+    if isinstance(timing_errors, list) and timing_errors:
+        lines.extend(["## Errori timestamp review", ""])
+        for error in timing_errors:
+            lines.append(f"- Riga `{error.get('row', '')}` action `{error.get('action_id', '')}`: `{error.get('error_type', '')}`")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
@@ -281,7 +302,37 @@ def _table_row(action: dict[str, Any]) -> dict[str, str]:
         "indizi": _shorten("; ".join(hints), 140),
         "contesto": _shorten(quote, 180),
         "note_storico": "",
+        "reviewer": "",
+        "review_started_at": "",
+        "reviewed_at": "",
     }
+
+
+def _review_timing(row: dict[str, str]) -> tuple[dict[str, Any], list[str]]:
+    timing: dict[str, Any] = {
+        field: str(row.get(field, "")).strip()
+        for field in ("reviewer", "review_started_at", "reviewed_at")
+    }
+    parsed: dict[str, datetime] = {}
+    errors = []
+    for field in ("review_started_at", "reviewed_at"):
+        if not timing[field]:
+            continue
+        try:
+            timestamp = datetime.fromisoformat(timing[field])
+            if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+                raise ValueError("Timezone missing")
+            parsed[field] = timestamp
+        except ValueError:
+            errors.append(f"invalid_{field}")
+    if len(parsed) == 2 and parsed["reviewed_at"] < parsed["review_started_at"]:
+        errors.append("reviewed_at_before_review_started_at")
+    timing["review_timing_status"] = "invalid" if errors else ("measured" if len(parsed) == 2 else "unavailable")
+    timing["review_duration_seconds"] = (
+        (parsed["reviewed_at"] - parsed["review_started_at"]).total_seconds()
+        if timing["review_timing_status"] == "measured" else None
+    )
+    return timing, errors
 
 
 def _parse_review_table(path: Path) -> list[dict[str, str]]:
@@ -291,14 +342,15 @@ def _parse_review_table(path: Path) -> list[dict[str, str]]:
         if not stripped.startswith("|") or not stripped.endswith("|"):
             continue
         cells = [_unescape_cell(cell.strip()) for cell in stripped.strip("|").split("|")]
-        if len(cells) != len(TABLE_COLUMNS):
+        columns = TABLE_COLUMNS if len(cells) == len(TABLE_COLUMNS) else LEGACY_TABLE_COLUMNS
+        if len(cells) != len(columns):
             continue
         normalized = [cell.strip().casefold() for cell in cells]
-        if normalized == TABLE_COLUMNS:
+        if normalized == columns:
             continue
         if all(set(cell) <= {"-", ":"} for cell in cells):
             continue
-        rows.append(dict(zip(TABLE_COLUMNS, cells)))
+        rows.append(dict(zip(columns, cells)))
     return rows
 
 

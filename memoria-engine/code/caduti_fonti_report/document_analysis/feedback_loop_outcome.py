@@ -24,6 +24,7 @@ def build_feedback_loop_outcome(
     action_id: str = "",
     plan_id: str = "",
     source_id: str = "",
+    strategy_ids: list[str] | None = None,
     outcome_status: str,
     execution_mode: str = "manual_review_session",
     query: str = "",
@@ -35,38 +36,50 @@ def build_feedback_loop_outcome(
     output_md: Path | None = None,
 ) -> dict[str, Any]:
     plan_payload = _load_json_object(feedback_plan_json)
+    if plan_payload.get("@type") != "FeedbackSearchPlanSet":
+        raise ValueError("Expected a FeedbackSearchPlanSet.")
     review_summary = _load_json_object(review_summary_json) if review_summary_json is not None else {}
     plans = [plan for plan in _list_dicts(plan_payload.get("plans"))]
     selected_plan = _select_plan(plans=plans, action_id=action_id, plan_id=plan_id)
-    selected_action_id = str(action_id or selected_plan.get("action_id", "")).strip()
-    selected_plan_id = str(plan_id or selected_plan.get("feedback_search_plan_id", "") or selected_plan.get("@id", "")).strip()
-    selected_source_id = str(source_id or _first_planned_source_id(selected_plan)).strip()
+    selected_action_id = str(selected_plan["action_id"]).strip()
+    selected_plan_id = _plan_identifier(selected_plan)
+    source_plan = _select_source_plan(selected_plan, source_id=source_id)
+    selected_source_id = str(source_plan["source_id"]).strip()
+    selected_strategies, planned_strategies, strategy_attribution = _strategy_attribution(source_plan, strategy_ids)
     status = str(outcome_status).strip()
-    result_documents = _string_list(result_source_document_ids or [])
-    approved_decision = _approved_decision(review_summary, selected_action_id)
+    result_documents = sorted(set(_string_list(result_source_document_ids or [])))
+    if status == "no_results" and result_documents:
+        raise ValueError("A no_results outcome cannot include result SourceDocument IDs.")
+    approved_decision = _approved_decision(review_summary, selected_plan)
     approved_for_demo = bool(approved_decision)
 
+    now = _execution_time(executed_at)
+    selected_run_id = str(run_id or "").strip()
     outcome_id = _outcome_id(
         action_id=selected_action_id,
         plan_id=selected_plan_id,
         source_id=selected_source_id,
         outcome_status=status,
         query=query,
+        strategy_ids=selected_strategies,
+        run_id=selected_run_id,
+        executed_at=now,
     )
     loop_status = _loop_status(
         approved_for_demo=approved_for_demo,
         outcome_status=status,
         result_source_document_ids=result_documents,
+        strategy_attribution=strategy_attribution,
+        run_id=selected_run_id,
     )
     profile_id = str(selected_plan.get("profile_id", "")).strip()
-    now = executed_at or datetime.now(UTC).isoformat()
     payload = {
         "@type": "FeedbackLoopOutcome",
         "@id": outcome_id,
         "feedback_loop_outcome_id": outcome_id,
         "generated_at": datetime.now(UTC).isoformat(),
         "executed_at": now,
-        "run_id": run_id,
+        "run_id": selected_run_id,
         "source_feedback_plan_json": str(feedback_plan_json),
         "source_review_summary_json": str(review_summary_json or ""),
         "feedback_search_plan_id": selected_plan_id,
@@ -74,6 +87,10 @@ def build_feedback_loop_outcome(
         "profile_id": profile_id,
         "source_document_id": str(selected_plan.get("source_document_id", "")).strip(),
         "source_id": selected_source_id,
+        "strategy_ids": selected_strategies,
+        "planned_strategy_ids": planned_strategies,
+        "strategy_attribution_status": strategy_attribution,
+        "selected_source_plan": source_plan,
         "execution_mode": execution_mode,
         "query": query,
         "outcome_status": status,
@@ -92,6 +109,11 @@ def build_feedback_loop_outcome(
             plan_id=selected_plan_id,
             profile_id=profile_id,
             source_id=selected_source_id,
+            source_document_id=str(selected_plan.get("source_document_id", "")).strip(),
+            strategy_ids=selected_strategies,
+            planned_strategy_ids=planned_strategies,
+            strategy_attribution_status=strategy_attribution,
+            run_id=selected_run_id,
             outcome_status=status,
             query=query,
             result_source_document_ids=result_documents,
@@ -102,6 +124,8 @@ def build_feedback_loop_outcome(
             approved_for_demo=approved_for_demo,
             outcome_status=status,
             result_source_document_ids=result_documents,
+            strategy_attribution=strategy_attribution,
+            run_id=selected_run_id,
         ),
     }
     if output_json is not None:
@@ -123,6 +147,9 @@ def render_feedback_loop_outcome_markdown(payload: dict[str, Any]) -> str:
         f"- Piano: `{payload.get('feedback_search_plan_id', '')}`",
         f"- Profilo: `{payload.get('profile_id', '')}`",
         f"- Fonte: `{payload.get('source_id', '')}`",
+        f"- Strategie: `{', '.join(payload.get('strategy_ids', []))}` ({payload.get('strategy_attribution_status', '')})",
+        f"- Run: `{payload.get('run_id', '')}`",
+        f"- Esecuzione: `{payload.get('executed_at', '')}`",
         f"- Query/sessione: `{payload.get('query', '')}`",
         f"- Approvata per demo: `{payload.get('approved_for_demo', False)}`",
         "",
@@ -158,6 +185,11 @@ def _search_memory_update_preview(
     plan_id: str,
     profile_id: str,
     source_id: str,
+    source_document_id: str,
+    strategy_ids: list[str],
+    planned_strategy_ids: list[str],
+    strategy_attribution_status: str,
+    run_id: str,
     outcome_status: str,
     query: str,
     result_source_document_ids: list[str],
@@ -171,12 +203,18 @@ def _search_memory_update_preview(
         "research_feedback_action_id": action_id,
         "feedback_search_plan_id": plan_id,
         "source_id": source_id,
+        "source_document_id": source_document_id,
+        "strategy_ids": strategy_ids,
+        "planned_strategy_ids": planned_strategy_ids,
+        "strategy_attribution_status": strategy_attribution_status,
+        "run_id": run_id,
         "outcome_status": outcome_status,
         "query": query,
         "result_source_document_ids": result_source_document_ids,
         "summary": notes or _default_summary(outcome_status),
         "executed_at": executed_at,
         "profile_write_allowed": False,
+        "merge_policy": "append_execution_event_preview_only",
         "requires_human_review_before_claim_promotion": True,
     }
 
@@ -184,38 +222,92 @@ def _search_memory_update_preview(
 def _select_plan(*, plans: list[dict[str, Any]], action_id: str, plan_id: str) -> dict[str, Any]:
     action_id = action_id.strip()
     plan_id = plan_id.strip()
-    for plan in plans:
-        if action_id and str(plan.get("action_id", "")).strip() == action_id:
-            return plan
-        if plan_id and str(plan.get("feedback_search_plan_id", "") or plan.get("@id", "")).strip() == plan_id:
-            return plan
-    return {}
+    if not action_id and not plan_id:
+        raise ValueError("An action_id or plan_id is required to select a feedback plan.")
+    matches = [
+        plan for plan in plans
+        if (not action_id or str(plan.get("action_id") or "").strip() == action_id)
+        and (not plan_id or _plan_identifier(plan) == plan_id)
+    ]
+    if len(matches) != 1:
+        raise ValueError("Feedback plan selection must match exactly one plan and action.")
+    selected = matches[0]
+    if not str(selected.get("action_id") or "").strip() or not _plan_identifier(selected):
+        raise ValueError("The selected feedback plan requires plan and action identifiers.")
+    if any(not str(selected.get(field) or "").strip() for field in ("profile_id", "source_document_id")):
+        raise ValueError("The selected feedback plan requires profile and source document identifiers.")
+    return selected
 
 
-def _approved_decision(review_summary: dict[str, Any], action_id: str) -> dict[str, Any]:
-    if not action_id:
-        return {}
+def _plan_identifier(plan: dict[str, Any]) -> str:
+    identifiers = {str(plan.get(key) or "").strip() for key in ("feedback_search_plan_id", "@id")}
+    identifiers.discard("")
+    if len(identifiers) > 1:
+        raise ValueError("Feedback plan identifiers are divergent.")
+    return next(iter(identifiers), "")
+
+
+def _select_source_plan(plan: dict[str, Any], *, source_id: str) -> dict[str, Any]:
+    selected_id = source_id.strip()
+    matches = [
+        item for item in _list_dicts(plan.get("source_plans"))
+        if item.get("status") == "planned" and str(item.get("source_id") or "").strip()
+        and (not selected_id or str(item["source_id"]).strip() == selected_id)
+    ]
+    if len(matches) != 1:
+        raise ValueError("Source selection must match exactly one planned source.")
+    return matches[0]
+
+
+def _strategy_attribution(source_plan: dict[str, Any], strategy_ids: list[str] | None) -> tuple[list[str], list[str], str]:
+    planned = sorted({
+        str(attempt.get("strategy_id") or attempt.get("attempt_id") or "").strip()
+        for attempt in _list_dicts(source_plan.get("planned_attempts"))
+        if not attempt.get("skip_reason")
+    } - {""})
+    selected = sorted(set(_string_list(strategy_ids or [])))
+    if selected:
+        if not set(selected).issubset(planned):
+            raise ValueError("Every selected strategy must belong to the selected planned source.")
+        return selected, planned, "explicit"
+    if len(planned) == 1:
+        return planned, planned, "inferred_unique"
+    return [], planned, "ambiguous" if planned else "unavailable"
+
+
+def _approved_decision(review_summary: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
+    action_id = str(plan["action_id"]).strip()
+    matches = []
     for decision in _list_dicts(review_summary.get("decisions")):
         if str(decision.get("action_id", "")).strip() != action_id:
             continue
         if str(decision.get("decision_status", "")).strip() != "accepted":
             continue
+        if any(
+            str(decision.get(key) or "").strip() not in ("", str(plan[field]).strip())
+            for key, field in (("person_id", "profile_id"), ("profile_id", "profile_id"), ("source_document_id", "source_document_id"))
+        ):
+            continue
         if str(decision.get("decision", "")).strip().upper() in APPROVING_TRIAGE_DECISIONS:
-            return decision
-    return {}
+            matches.append(decision)
+    return matches[0] if len(matches) == 1 else {}
 
 
-def _loop_status(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str]) -> str:
+def _loop_status(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str], strategy_attribution: str, run_id: str) -> str:
     if outcome_status not in AUDITABLE_OUTCOME_STATUSES:
         return "invalid_outcome_status"
     if not approved_for_demo:
         return "pending_historian_approval"
     if outcome_status == "candidate_results" and not result_source_document_ids:
         return "missing_candidate_result_document"
+    if strategy_attribution in {"ambiguous", "unavailable"}:
+        return "missing_strategy_attribution"
+    if not run_id:
+        return "missing_run_id"
     return "closed_with_auditable_outcome"
 
 
-def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str]) -> list[str]:
+def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str], strategy_attribution: str, run_id: str) -> list[str]:
     warnings = [
         "feedback_loop_outcome_preview_only",
         "outcome_does_not_create_verified_facts",
@@ -229,15 +321,20 @@ def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_doc
         warnings.append("no_results_is_search_memory_not_historical_absence_proof")
     if outcome_status not in AUDITABLE_OUTCOME_STATUSES:
         warnings.append("outcome_status_not_allowed")
+    if strategy_attribution in {"ambiguous", "unavailable"}:
+        warnings.append("executed_strategy_attribution_missing")
+    if not run_id:
+        warnings.append("execution_run_id_missing")
     return warnings
 
 
-def _first_planned_source_id(plan: dict[str, Any]) -> str:
-    for source_plan in _list_dicts(plan.get("source_plans")):
-        source_id = str(source_plan.get("source_id", "")).strip()
-        if source_id:
-            return source_id
-    return ""
+def _execution_time(value: str | None) -> str:
+    if not value:
+        return datetime.now(UTC).isoformat()
+    timestamp = datetime.fromisoformat(value)
+    if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+        raise ValueError("executed_at requires a timezone-aware ISO timestamp.")
+    return timestamp.isoformat()
 
 
 def _default_summary(outcome_status: str) -> str:
@@ -252,8 +349,9 @@ def _default_summary(outcome_status: str) -> str:
     return ""
 
 
-def _outcome_id(*, action_id: str, plan_id: str, source_id: str, outcome_status: str, query: str) -> str:
-    digest = hashlib.sha256(f"{action_id}|{plan_id}|{source_id}|{outcome_status}|{query}".encode("utf-8")).hexdigest()[:16]
+def _outcome_id(*, action_id: str, plan_id: str, source_id: str, outcome_status: str, query: str, strategy_ids: list[str], run_id: str, executed_at: str) -> str:
+    identity = [action_id, plan_id, source_id, strategy_ids, run_id, executed_at, outcome_status, query]
+    digest = hashlib.sha256(json.dumps(identity, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
     return f"feedback-loop-outcome:{digest}"
 
 
@@ -273,7 +371,7 @@ def _string_list(value: Any) -> list[str]:
         return [item.strip() for item in value.split(",") if item.strip()]
     if not isinstance(value, list):
         return []
-    return [str(item).strip() for item in value if str(item).strip()]
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
 
 
 def main() -> int:
@@ -283,6 +381,7 @@ def main() -> int:
     parser.add_argument("--action-id", default="")
     parser.add_argument("--plan-id", default="")
     parser.add_argument("--source-id", default="")
+    parser.add_argument("--strategy-id", action="append", default=[])
     parser.add_argument("--outcome-status", required=True, choices=sorted(AUDITABLE_OUTCOME_STATUSES))
     parser.add_argument("--execution-mode", default="manual_review_session")
     parser.add_argument("--query", default="")
@@ -300,6 +399,7 @@ def main() -> int:
         action_id=args.action_id,
         plan_id=args.plan_id,
         source_id=args.source_id,
+        strategy_ids=args.strategy_id,
         outcome_status=args.outcome_status,
         execution_mode=args.execution_mode,
         query=args.query,

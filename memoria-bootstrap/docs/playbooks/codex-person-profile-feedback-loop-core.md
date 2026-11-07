@@ -56,6 +56,53 @@ Un feedback loop e' chiuso solo quando:
 
 La sola generazione di molte query candidate non completa il ciclo.
 
+## Raccolta delle misure T49
+
+Le metriche T49 si alimentano con artifact di una ricerca e di una review
+effettivamente avvenute. Registrare gli ID e i timestamp durante il lavoro;
+non ricostruire tempi, token o costi a posteriori. Conservare run e dati reali
+fuori da Git.
+
+1. Parti da un `FeedbackSearchPlanSet` e registra ogni tentativo con il suo
+   `feedback_search_plan_id`, `action_id`, `source_id`, strategia, `run_id`,
+   query ed `executed_at` timezone-aware. `feedback_loop_outcome.py` produce
+   un `FeedbackLoopOutcome` per l'esito reale (`candidate_results`,
+   `no_results`, `needs_manual_review` o `blocked_or_dynamic`). Un risultato
+   candidato non e' un documento acquisito; associa `result_source_document_ids`
+   solo a documenti identificabili. `no_results` non prova assenza storica.
+2. Per attribuzione claim, passa al valutatore un `CandidateEvidenceClaimSet`
+   reale con ID univoco, `source_id` e `source_document_id`. La metrica misura
+   la presenza di questi riferimenti, non verifica che il documento esista nel
+   catalogo.
+3. Durante il triage, compila `reviewer`, `review_started_at` e `reviewed_at`
+   in ISO 8601 con timezone. L'evaluation calcola la latenza solo quando la
+   decisione e' legata senza ambiguita' a un singolo outcome. Timestamp assenti
+   o non validi restano `unavailable`.
+4. Se la riconciliazione incontra un conflitto reale, registra in
+   `FeedbackLoopEvaluationMeasurements.conflicts` `conflict_id`, `outcome_id`,
+   `before_claim_ids` e `after_claim_ids`. Non creare record di conflitto per
+   simulare una misura.
+5. Per l'uso sessione registra in `sessions` `session_id`, `run_id` e i valori
+   realmente disponibili: `input_tokens`, `cached_input_tokens`,
+   `output_tokens`, `cost_usd`. Per confrontare baseline e candidate aggiungi
+   `comparison_group_id`, `task_contract_sha256`, `quality_gate_status`,
+   `model_id` e `comparison_role`. Il gruppo richiede un solo baseline e almeno
+   un candidate, fingerprint del task identico e quality gate `passed`; i delta
+   descrivono osservazioni e non dimostrano risparmi o causalita'.
+
+L'evaluation accetta questi artifact con:
+
+```text
+python -m caduti_fonti_report.document_analysis.feedback_loop_evaluation --feedback-plan-json <plan.json> --outcome-json <outcome.json> --candidate-claims-json <claims.json> --measurements-json <measurements.json> --review-summary-json <review-summary.json> --output-json <evaluation.json>
+```
+
+Ripetere `--outcome-json` per ogni outcome. Claims, measurements e review
+summary sono input opzionali: ometterli lascia le metriche corrispondenti
+`unavailable`, senza stime. Gli input sono hash-bound nell'evaluation. Il log
+locale di routing esaminato nella sessione T48i conteneva eventi, modello,
+agente e orario, ma non token o costi; quei valori richiedono una fonte di
+telemetria esplicita. Se il provider non espone la misura, lasciarla assente.
+
 ## File tipici
 
 ```text

@@ -1,12 +1,32 @@
 # Current Next Increment
 
-## Stato corrente e prossimo candidato — 2026-11-01
+## Stato corrente e prossimo candidato - 2026-11-07
 
-**Post-MVP aperto; T45 e T46 completati il 2026-11-01.**
-Il bridge `documents register-ocr-source` registra artifact OCR hash-bound
-nello store SQLite con preview/apply, provenance e retry idempotente. T29-T34b
-sono chiusi. Prossimo candidato T47: integrare una fonte online e una offline;
-T48 estende a luogo/evento, T49 chiude il feedback.
+**Post-MVP aperto; T45-T47 completati; T48 e T49 ancora aperti.**
+T48 ha il ramo Place con link a provenance obbligatoria e CandidatePlaceUpdate
+preview; il ramo HistoricalEvent ora compone menzione, link univoco e
+CandidateEventUpdate su fixture; il runner offline e' ora invocabile con
+`python -m caduti_fonti_report.document_analysis.event_preview_pipeline` da
+input espliciti. Gate T48i e regressioni: 8 runner, 9 update, 8 linking e 14
+mention test PASS; schema JSON valido con jsonschema 4.26.0. Tutti gli artifact
+restano unreviewed/pending e non modificano entita' canoniche. Il runner non e'
+registrato nel comando root `memoria` o nel pipeline generale, i claim sono
+input preesistenti e il SourceDocument non e' verificato nel catalogo.
+
+T49a-e coprono outcome tracciati, tempi di review dichiarati, readiness delle
+sessioni e delta assoluti candidate-baseline su task hash uguali con quality gate
+passato. Il gate recente passa 16 evaluation, 7 triage e 3 test T31; T49 resta
+aperto finche' non sono disponibili misure reali comparabili. Latenza, conflitti,
+token e costi assenti restano `unavailable`; i delta di fixture non attestano
+risparmi.
+
+La run T47 `t47-bendini-online-offline-20261107` e' auditata nel workspace
+esterno. CSV e DOCX locali sono hash-bound ai rispettivi ID; una pagina
+`storia_memoria_bo` gia' acquisita e' collegata allo stesso profilo. Una ricerca
+limitata al dominio ha trovato un PDF candidato con date divergenti: il PDF non
+e' stato acquisito come SourceDocument e tutte le letture restano `unreviewed`.
+Feedback `needs_manual_review`; nessuna modifica al profilo canonico o al
+descriptor attivo. Gli ID citati non sono righe dell'attuale `evidence.sqlite`.
 
 Il contratto e l'esito T46 v1.1 sono in
 `docs/ocr-source-document-integration-contract.md`. Il gate mirato passa: 9

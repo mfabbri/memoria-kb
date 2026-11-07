@@ -170,6 +170,8 @@ class DocumentPlaceLinkingTests(unittest.TestCase):
         self.assertEqual(link["@type"], "CandidateDocumentPlaceLink")
         self.assertEqual(link["place_id"], "place:camalanca:purocielo")
         self.assertEqual(link["mention_id"], "document-mention-candidate:place")
+        self.assertEqual(link["source_document_id"], "doc-1")
+        self.assertEqual(link["source_id"], "manual")
         self.assertEqual(link["review_status"], "unreviewed")
         self.assertIn("place_link_not_verified_fact", link["warnings"])
         self.assertIn("place_link_not_person_presence", link["warnings"])
@@ -187,6 +189,61 @@ class DocumentPlaceLinkingTests(unittest.TestCase):
         self.assertEqual(link["place_id"], "place:camalanca:purocielo")
         self.assertEqual(link["match_kind"], "alternate_label")
         self.assertEqual(link["score"], 0.9)
+        self.assertEqual(link["source_document_id"], "doc-1")
+        self.assertEqual(link["source_id"], "manual")
+        self.assertEqual(link["review_status"], "unreviewed")
+
+    def test_mentions_without_source_document_id_are_skipped_for_audit(self) -> None:
+        for value in ("absent", None, "", " \t"):
+            with self.subTest(value=value), workspace_temp_dir() as tmp_dir:
+                mention = place_mention(
+                    "mention:missing-document",
+                    "Purocielo",
+                    weak_segment_id="segment:1",
+                    context="Una menzione di Purocielo.",
+                )
+                if value == "absent":
+                    mention.pop("source_document_id")
+                else:
+                    mention["source_document_id"] = value
+                mentions_dir = write_mentions_payload(tmp_dir, [mention])
+                mentions_path = mentions_dir / "manual" / "doc-1.mentions.json"
+                original_bytes = mentions_path.read_bytes()
+
+                payload = build_candidate_document_place_links(
+                    mentions_dir=mentions_dir,
+                    places_index=write_places_index(tmp_dir),
+                )
+
+                self.assertEqual(payload["link_count"], 0)
+                self.assertEqual(payload["skipped_mention_count"], 1)
+                self.assertEqual(payload["skipped_mentions"][0]["reason"], "missing_source_document_id")
+                self.assertEqual(payload["skipped_mentions"][0]["mention_id"], "mention:missing-document")
+                self.assertEqual(mentions_path.read_bytes(), original_bytes)
+
+    def test_mentions_without_source_id_are_skipped_for_audit(self) -> None:
+        for value in ("absent", None, "", " \t"):
+            with self.subTest(value=value), workspace_temp_dir() as tmp_dir:
+                mention = place_mention(
+                    "mention:missing-source",
+                    "Puro Cielo",
+                    weak_segment_id="segment:1",
+                    context="Una menzione di Puro Cielo.",
+                )
+                if value == "absent":
+                    mention.pop("source_id")
+                else:
+                    mention["source_id"] = value
+
+                payload = build_candidate_document_place_links(
+                    mentions_dir=write_mentions_payload(tmp_dir, [mention]),
+                    places_index=write_places_index(tmp_dir),
+                )
+
+                self.assertEqual(payload["link_count"], 0)
+                self.assertEqual(payload["skipped_mention_count"], 1)
+                self.assertEqual(payload["skipped_mentions"][0]["reason"], "missing_source_id")
+                self.assertEqual(payload["skipped_mentions"][0]["source_document_id"], "doc-1")
 
     def test_unknown_place_mentions_are_skipped_for_review(self) -> None:
         with workspace_temp_dir() as tmp_dir:

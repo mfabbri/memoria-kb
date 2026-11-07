@@ -157,6 +157,16 @@ Sorgenti canoniche:
 - Non fare refactor ampi.
 - Riportare file, test, rischi e impatto sulla golden run.
 
+### Validazione del planner
+
+Quando si modifica `memoria-bootstrap/planning/current-work.json`, eseguire
+`memoria-bootstrap/planning/validate-codex-model-routing.py` con l'interprete
+dell'ambiente di sviluppo del repository. `jsonschema>=4.20` e' una dipendenza
+dev di `memoria-engine`; se l'ambiente non la contiene, installarla nell'ambiente
+attivo (`python -m pip install "jsonschema>=4.20"`) e rieseguire il validator.
+Il messaggio `schema validation skipped` indica che il controllo dello schema
+non e' stato eseguito e non va registrato come gate superato.
+
 ## Checklist di applicazione canonica
 
 Quando un incremento autorizzato deve trasformare un artefatto preview in una

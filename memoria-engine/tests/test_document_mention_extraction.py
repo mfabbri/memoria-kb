@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import sys
@@ -7,11 +8,13 @@ import unittest
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.mention_extraction import (  # noqa: E402
     extract_document_mentions,
+    main,
     render_document_mentions_markdown,
 )
 
@@ -69,7 +72,125 @@ def segment(*, segment_id: str, segment_type: str, text: str) -> dict[str, objec
     }
 
 
+def write_event_index(root_dir: Path, *, events: list[dict[str, object]] | None = None) -> Path:
+    fixture = Path(__file__).resolve().parent / "fixtures" / "events" / "battaglia-purocielo.jsonld"
+    event = json.loads(fixture.read_text(encoding="utf-8"))
+    path = root_dir / "events.index.jsonld"
+    path.write_text(json.dumps({
+        "@type": "HistoricalEventIndex",
+        "events": events if events is not None else [{"event_id": event["event_id"], "label": event["label"]}],
+    }), encoding="utf-8")
+    return path
+
+
 class DocumentMentionExtractionTests(unittest.TestCase):
+    def test_event_label_mentions_preserve_source_span_and_unresolved_identity(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            segments_dir, output_dir = tmp_dir / "segments", tmp_dir / "mentions"
+            text = "La BATTAGLIA DI PUROCIELO compare nella relazione."
+            source = write_segments_payload(segments_dir, source_document_id="doc:event", segments=[
+                segment(segment_id="segment:event", segment_type="archival_reference_context", text=text),
+            ])
+            index = write_event_index(tmp_dir)
+            original = {path: path.read_bytes() for path in (source, index)}
+            payload = extract_document_mentions(segments_dir=segments_dir, output_dir=output_dir, events_index_json=index)
+            repeated = extract_document_mentions(segments_dir=segments_dir, output_dir=output_dir, events_index_json=index)
+            events = [item for item in payload["documents"][0]["mentions"] if item["mention_kind"] == "event"]
+            self.assertEqual(payload, repeated)
+            self.assertEqual(len(events), 1)
+            event = events[0]
+            self.assertEqual(event["@type"], "EventMentionCandidate")
+            self.assertEqual(event["value"], "BATTAGLIA DI PUROCIELO")
+            self.assertEqual(text[event["segment_char_start"]:event["segment_char_end"]], event["value"])
+            self.assertEqual(event["source_id"], "manual_uploads")
+            self.assertEqual(event["source_document_id"], "doc:event")
+            self.assertEqual(event["weak_segment_id"], "segment:event")
+            self.assertEqual(event["chunk_id"], "physical-document-chunk:test")
+            self.assertIn(event["value"], event["context"])
+            self.assertEqual(event["event_label_index"], {"path": str(index), "sha256": hashlib.sha256(original[index]).hexdigest()})
+            self.assertEqual(event["candidate_event_id"], "")
+            self.assertNotIn("event_id", event)
+            self.assertEqual(event["review_status"], "unreviewed")
+            self.assertFalse(event["claim_extraction_allowed"])
+            self.assertIn("mention_candidate_not_identity_resolution", event["warnings"])
+            self.assertIn("event_mention_not_event_link", event["warnings"])
+            self.assertIn("mention_candidate_not_verified_fact", event["warnings"])
+            self.assertEqual({path: path.read_bytes() for path in original}, original)
+            persisted = json.loads((output_dir / "manual_uploads" / "doc-event.mentions.json").read_text(encoding="utf-8"))
+            self.assertEqual(persisted, payload["documents"][0])
+
+    def test_event_extraction_requires_whole_explicit_label_and_allowed_segment(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            segments_dir = tmp_dir / "segments"
+            write_segments_payload(segments_dir, segments=[
+                segment(segment_id="segment:partial", segment_type="person_mention_context", text="Battaglia di PurocieloNord; Battaglia di un altro luogo."),
+                segment(segment_id="segment:unsupported", segment_type="generic_text", text="Battaglia di Purocielo"),
+            ])
+            payload = extract_document_mentions(segments_dir=segments_dir, events_index_json=write_event_index(tmp_dir))
+        self.assertEqual([item for item in payload["documents"][0]["mentions"] if item["mention_kind"] == "event"], [])
+
+    def test_event_label_punctuation_is_literal_and_span_preserves_the_full_label(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            segments_dir = tmp_dir / "segments"
+            text = "Citata Operazione (A). nella relazione; Operazione A non coincide."
+            write_segments_payload(segments_dir, segments=[segment(
+                segment_id="segment:event", segment_type="archival_reference_context", text=text,
+            )])
+            index = write_event_index(tmp_dir, events=[{"event_id": "event:operation", "label": "Operazione (A)."}])
+            payload = extract_document_mentions(segments_dir=segments_dir, events_index_json=index)
+        events = [item for item in payload["documents"][0]["mentions"] if item["mention_kind"] == "event"]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["value"], "Operazione (A).")
+        self.assertEqual(text[events[0]["segment_char_start"]:events[0]["segment_char_end"]], events[0]["value"])
+
+    def test_no_event_index_keeps_legacy_output_and_shared_labels_do_not_assign_identity(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            segments_dir = tmp_dir / "segments"
+            write_segments_payload(segments_dir, segments=[
+                segment(segment_id="segment:event", segment_type="formation_context", text="Battaglia di Purocielo"),
+            ])
+            legacy = extract_document_mentions(segments_dir=segments_dir)
+            self.assertEqual(legacy, extract_document_mentions(segments_dir=segments_dir, events_index_json=None))
+            self.assertNotIn("event_label_index", legacy)
+            self.assertFalse(any(item["mention_kind"] == "event" for item in legacy["documents"][0]["mentions"]))
+            index = write_event_index(tmp_dir, events=[
+                {"event_id": "event:one", "label": "Battaglia di Purocielo"},
+                {"event_id": "event:two", "label": "Battaglia di Purocielo"},
+            ])
+            payload = extract_document_mentions(segments_dir=segments_dir, events_index_json=index)
+        events = [item for item in payload["documents"][0]["mentions"] if item["mention_kind"] == "event"]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["candidate_event_id"], "")
+
+    def test_malformed_event_indices_fail_before_outputs_are_written(self) -> None:
+        cases = [
+            {"@type": "Other", "events": []},
+            {"@type": "HistoricalEventIndex", "events": {}},
+            {"@type": "HistoricalEventIndex", "events": [{"event_id": "event:one", "label": " "}]},
+            {"@type": "HistoricalEventIndex", "events": [{"event_id": 42, "label": "Label"}]},
+            {"@type": "HistoricalEventIndex", "events": [{"event_id": "event:one", "label": "Label"}, {"event_id": "event:one", "label": "Other"}]},
+            {"@type": "HistoricalEventIndex", "events": [{"event_id": "event:one", "@id": "event:other", "label": "Label"}]},
+        ]
+        for index_payload in cases:
+            with self.subTest(index=index_payload), workspace_temp_dir() as tmp_dir:
+                index, output = tmp_dir / "events.json", tmp_dir / "result.json"
+                index.write_text(json.dumps(index_payload), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    extract_document_mentions(segments_dir=tmp_dir, events_index_json=index, output_json=output)
+                self.assertFalse(output.exists())
+
+    def test_cli_accepts_explicit_event_index(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            segments_dir, output_dir = tmp_dir / "segments", tmp_dir / "mentions"
+            write_segments_payload(segments_dir, segments=[segment(segment_id="segment:event", segment_type="person_mention_context", text="Battaglia di Purocielo")])
+            index, output_json, output_md = write_event_index(tmp_dir), tmp_dir / "result.json", tmp_dir / "result.md"
+            arguments = ["mention_extraction", "--segments-dir", str(segments_dir), "--output-dir", str(output_dir),
+                         "--events-index-json", str(index), "--output-json", str(output_json), "--output-md", str(output_md)]
+            with patch("sys.argv", arguments), patch("builtins.print"):
+                self.assertEqual(main(), 0)
+            payload = json.loads(output_json.read_text(encoding="utf-8"))
+            self.assertTrue(any(item["mention_kind"] == "event" for item in payload["documents"][0]["mentions"]))
+
     def test_extracts_candidate_mentions_with_provenance_and_no_claims(self) -> None:
         segments = [
             segment(

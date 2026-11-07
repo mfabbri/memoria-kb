@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.research_feedback_triage import (  # noqa: E402
     build_research_feedback_actions_review_table,
+    render_research_feedback_actions_review_table,
     summarize_research_feedback_actions_review_table,
 )
 
@@ -98,6 +99,7 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
         self.assertIn("research-feedback-action:buona", markdown)
         self.assertIn("Andreoli Dino", markdown)
         self.assertIn("note_storico", markdown)
+        self.assertIn("reviewer | review_started_at | reviewed_at", markdown)
         self.assertIn("decisions_do_not_create_verified_facts", json.dumps(table))
 
     def test_summarizes_compiled_table_as_audit_only_decisions(self) -> None:
@@ -166,6 +168,92 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
         self.assertEqual(summary["validation_error_count"], 2)
         error_types = {error["error_type"] for error in summary["validation_errors"]}
         self.assertEqual(error_types, {"decision_not_allowed", "unknown_action_id"})
+
+    def test_explicit_review_metadata_round_trips_with_timezone_aware_duration(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json, table_md = tmp_dir / "actions.json", tmp_dir / "review.md"
+            write_actions_json(actions_json)
+            table = build_research_feedback_actions_review_table(actions_json=actions_json)
+            table["rows"][0].update({
+                "decisione": "BUONA", "reviewer": "fixture-reviewer",
+                "review_started_at": "2026-11-07T10:00:00+01:00",
+                "reviewed_at": "2026-11-07T09:01:30Z",
+            })
+            table_md.write_text(render_research_feedback_actions_review_table(table), encoding="utf-8")
+            before = table_md.read_bytes()
+
+            summary = summarize_research_feedback_actions_review_table(actions_json=actions_json, review_table_md=table_md)
+
+            self.assertEqual(table_md.read_bytes(), before)
+        decision = summary["decisions"][0]
+        self.assertEqual(decision["reviewer"], "fixture-reviewer")
+        self.assertEqual(decision["review_started_at"], "2026-11-07T10:00:00+01:00")
+        self.assertEqual(decision["reviewed_at"], "2026-11-07T09:01:30Z")
+        self.assertEqual(decision["review_duration_seconds"], 90.0)
+        self.assertEqual(decision["review_timing_status"], "measured")
+        self.assertEqual(decision["decision_status"], "accepted")
+        self.assertEqual(decision["source_document_id"], "doc:signals")
+        self.assertEqual(summary["review_timing_counts"], {"measured": 1, "unavailable": 1})
+        self.assertEqual(summary["review_timing_validation_errors"], [])
+
+    def test_legacy_eight_column_table_remains_accepted_without_timing(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json, table_md = tmp_dir / "actions.json", tmp_dir / "review.md"
+            write_actions_json(actions_json)
+            table_md.write_text(
+                "| decisione | valore | action_id | documento | fonti_suggerite | indizi | contesto | note_storico |\n"
+                "| --- | --- | --- | --- | --- | --- | --- | --- |\n"
+                "| BUONA | Andreoli Dino | research-feedback-action:buona | doc:signals | storia_memoria_bo | | | Legacy review |\n",
+                encoding="utf-8",
+            )
+            summary = summarize_research_feedback_actions_review_table(actions_json=actions_json, review_table_md=table_md)
+        decision = summary["decisions"][0]
+        self.assertEqual(summary["accepted_count"], 1)
+        self.assertEqual(summary["review_status"], "reviewed")
+        self.assertEqual(decision["reviewer"], "")
+        self.assertEqual(decision["review_started_at"], "")
+        self.assertEqual(decision["reviewed_at"], "")
+        self.assertEqual(decision["review_timing_status"], "unavailable")
+        self.assertIsNone(decision["review_duration_seconds"])
+        self.assertEqual(summary["review_timing_validation_error_count"], 0)
+
+    def test_invalid_or_reversed_timestamps_are_reported_without_changing_decisions(self) -> None:
+        for start, end, error in (
+            ("not-a-timestamp", "2026-11-07T09:01:00Z", "invalid_review_started_at"),
+            ("2026-11-07T09:00:00", "2026-11-07T09:01:00Z", "invalid_review_started_at"),
+            ("2026-11-07T09:00:00Z", "2026-11-07T09:01:00", "invalid_reviewed_at"),
+            ("2026-11-07T09:02:00Z", "2026-11-07T09:01:00Z", "reviewed_at_before_review_started_at"),
+        ):
+            with self.subTest(start=start, end=end), workspace_temp_dir() as tmp_dir:
+                actions_json, table_md = tmp_dir / "actions.json", tmp_dir / "review.md"
+                write_actions_json(actions_json)
+                table = build_research_feedback_actions_review_table(actions_json=actions_json)
+                table["rows"][0].update({"decisione": "BUONA", "review_started_at": start, "reviewed_at": end})
+                table_md.write_text(render_research_feedback_actions_review_table(table), encoding="utf-8")
+                summary = summarize_research_feedback_actions_review_table(actions_json=actions_json, review_table_md=table_md)
+            decision = summary["decisions"][0]
+            self.assertEqual(decision["decision_status"], "accepted")
+            self.assertEqual(decision["review_started_at"], start)
+            self.assertEqual(decision["reviewed_at"], end)
+            self.assertEqual(decision["review_timing_status"], "invalid")
+            self.assertIsNone(decision["review_duration_seconds"])
+            self.assertEqual(summary["validation_error_count"], 0)
+            self.assertEqual(summary["review_timing_validation_error_count"], 1)
+            self.assertEqual(summary["review_timing_validation_errors"][0]["error_type"], error)
+
+    def test_single_valid_timestamp_does_not_infer_missing_endpoint(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json, table_md = tmp_dir / "actions.json", tmp_dir / "review.md"
+            write_actions_json(actions_json)
+            table = build_research_feedback_actions_review_table(actions_json=actions_json)
+            table["rows"][0].update({"decisione": "DUBBIA", "review_started_at": "2026-11-07T09:00:00Z"})
+            table_md.write_text(render_research_feedback_actions_review_table(table), encoding="utf-8")
+            summary = summarize_research_feedback_actions_review_table(actions_json=actions_json, review_table_md=table_md)
+        decision = summary["decisions"][0]
+        self.assertEqual(decision["reviewed_at"], "")
+        self.assertEqual(decision["review_timing_status"], "unavailable")
+        self.assertIsNone(decision["review_duration_seconds"])
+        self.assertEqual(summary["review_timing_validation_errors"], [])
 
 
 if __name__ == "__main__":

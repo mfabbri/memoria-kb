@@ -86,6 +86,24 @@ def write_review_summary(path: Path, *, decision: str = "BUONA", status: str = "
 
 
 class FeedbackLoopOutcomeTests(unittest.TestCase):
+    def build_outcome(self, root: Path, **overrides: object) -> dict:
+        arguments = {
+            "feedback_plan_json": root / "plan.json",
+            "review_summary_json": root / "review.json",
+            "action_id": "research-feedback-action:7bdbb2060d955baa",
+            "outcome_status": "no_results",
+            "run_id": "run:fixture",
+            "executed_at": "2026-07-15T10:00:00+00:00",
+            "query": "Andreoli Dino",
+        }
+        arguments.update(overrides)
+        return build_feedback_loop_outcome(**arguments)
+
+    def write_inputs(self, root: Path) -> dict:
+        write_feedback_plan(root / "plan.json")
+        write_review_summary(root / "review.json")
+        return json.loads((root / "plan.json").read_text(encoding="utf-8"))
+
     def test_builds_closed_no_results_outcome_without_promoting_facts(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             feedback_plan_json = tmp_dir / "feedback_search_plan.json"
@@ -190,6 +208,126 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
 
         self.assertIn("source:test-doc", markdown)
         self.assertIn("Documento candidato da rivedere.", markdown)
+
+    def test_provenance_is_preserved_in_append_only_memory_preview(self) -> None:
+        with workspace_temp_dir() as root:
+            plan = self.write_inputs(root)
+            attempt = plan["plans"][0]["source_plans"][0]["planned_attempts"][0]
+            attempt["attempt_id"] = attempt.pop("strategy_id")
+            (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+            original_plan = (root / "plan.json").read_bytes()
+            original_review = (root / "review.json").read_bytes()
+            payload = self.build_outcome(root, outcome_status="candidate_results", result_source_document_ids=["doc:new"])
+            memory = payload["search_memory_update_preview"]
+            repeated = self.build_outcome(root, outcome_status="candidate_results", result_source_document_ids=["doc:new"])
+            other_run = self.build_outcome(root, run_id="run:second", outcome_status="candidate_results", result_source_document_ids=["doc:new"])
+
+            self.assertEqual(payload["loop_status"], "closed_with_auditable_outcome")
+            self.assertEqual(payload["strategy_ids"], ["testo-libero-nome-completo"])
+            self.assertEqual(payload["strategy_attribution_status"], "inferred_unique")
+            self.assertEqual(payload["selected_source_plan"]["planned_attempts"], [attempt])
+            for field in ("run_id", "source_document_id", "source_id", "strategy_ids", "planned_strategy_ids", "strategy_attribution_status", "executed_at", "query", "result_source_document_ids"):
+                self.assertEqual(memory[field], payload[field])
+            self.assertEqual(memory["merge_policy"], "append_execution_event_preview_only")
+            self.assertFalse(memory["profile_write_allowed"])
+            self.assertEqual(payload["@id"], repeated["@id"])
+            self.assertNotEqual(payload["@id"], other_run["@id"])
+            self.assertEqual((root / "plan.json").read_bytes(), original_plan)
+            self.assertEqual((root / "review.json").read_bytes(), original_review)
+
+    def test_missing_discordant_and_ambiguous_plan_selectors_fail_before_output(self) -> None:
+        for scenario in ("missing", "discordant", "unknown", "duplicate", "divergent_ids"):
+            with self.subTest(scenario=scenario), workspace_temp_dir() as root:
+                plan = self.write_inputs(root)
+                arguments = {}
+                if scenario == "missing":
+                    arguments["action_id"] = ""
+                elif scenario == "discordant":
+                    arguments["plan_id"] = "plan:other"
+                elif scenario == "unknown":
+                    arguments["action_id"] = "action:unknown"
+                elif scenario == "duplicate":
+                    plan["plans"].append(dict(plan["plans"][0]))
+                else:
+                    plan["plans"][0]["@id"] = "plan:divergent"
+                (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+                output = root / "must-not-exist.json"
+                with self.assertRaises(ValueError):
+                    self.build_outcome(root, output_json=output, **arguments)
+                self.assertFalse(output.exists())
+
+    def test_source_must_be_unambiguously_planned(self) -> None:
+        for scenario in ("unknown", "skipped", "multiple"):
+            with self.subTest(scenario=scenario), workspace_temp_dir() as root:
+                plan = self.write_inputs(root)
+                arguments = {}
+                if scenario == "unknown":
+                    arguments["source_id"] = "source:not-planned"
+                elif scenario == "skipped":
+                    plan["plans"][0]["source_plans"][0]["status"] = "skipped"
+                else:
+                    second = dict(plan["plans"][0]["source_plans"][0])
+                    second["source_id"] = "source:second"
+                    plan["plans"][0]["source_plans"].append(second)
+                (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "planned source"):
+                    self.build_outcome(root, **arguments)
+
+    def test_multiple_executed_strategies_require_explicit_attribution(self) -> None:
+        with workspace_temp_dir() as root:
+            plan = self.write_inputs(root)
+            source = plan["plans"][0]["source_plans"][0]
+            source["planned_attempts"].append({"attempt_id": "nome-cognome", "query_fields": {"nom": "Dino", "cog": "Andreoli"}})
+            (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+            ambiguous = self.build_outcome(root)
+            explicit = self.build_outcome(root, strategy_ids=["testo-libero-nome-completo", "nome-cognome"])
+            self.assertEqual(ambiguous["loop_status"], "missing_strategy_attribution")
+            self.assertEqual(ambiguous["strategy_ids"], [])
+            self.assertEqual(ambiguous["strategy_attribution_status"], "ambiguous")
+            self.assertEqual(ambiguous["planned_strategy_ids"], ["nome-cognome", "testo-libero-nome-completo"])
+            self.assertEqual(explicit["loop_status"], "closed_with_auditable_outcome")
+            self.assertEqual(explicit["strategy_ids"], ["nome-cognome", "testo-libero-nome-completo"])
+            self.assertEqual(explicit["strategy_attribution_status"], "explicit")
+            self.assertEqual(explicit["search_memory_update_preview"]["strategy_ids"], explicit["strategy_ids"])
+            with self.assertRaisesRegex(ValueError, "selected strategy"):
+                self.build_outcome(root, strategy_ids=["strategy:not-planned"])
+
+    def test_missing_run_and_strategy_cannot_close_auditable_loop(self) -> None:
+        with workspace_temp_dir() as root:
+            plan = self.write_inputs(root)
+            self.assertEqual(self.build_outcome(root, run_id=" ")["loop_status"], "missing_run_id")
+            plan["plans"][0]["source_plans"][0]["planned_attempts"] = []
+            (root / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+            payload = self.build_outcome(root)
+            self.assertEqual(payload["loop_status"], "missing_strategy_attribution")
+            self.assertEqual(payload["strategy_attribution_status"], "unavailable")
+
+    def test_no_results_rejects_document_ids_and_invalid_timestamps(self) -> None:
+        with workspace_temp_dir() as root:
+            self.write_inputs(root)
+            with self.assertRaisesRegex(ValueError, "no_results"):
+                self.build_outcome(root, result_source_document_ids=["doc:new"])
+            for timestamp in ("not-a-timestamp", "2026-07-15T10:00:00"):
+                with self.subTest(timestamp=timestamp), self.assertRaises(ValueError):
+                    self.build_outcome(root, executed_at=timestamp)
+            payload = self.build_outcome(root, outcome_status="candidate_results", result_source_document_ids=[None, 42, " "])
+            self.assertEqual(payload["loop_status"], "missing_candidate_result_document")
+
+    def test_review_identity_mismatch_or_duplicate_approval_cannot_close_loop(self) -> None:
+        for scenario in ("other_profile", "other_document", "duplicate"):
+            with self.subTest(scenario=scenario), workspace_temp_dir() as root:
+                self.write_inputs(root)
+                review = json.loads((root / "review.json").read_text(encoding="utf-8"))
+                if scenario == "other_profile":
+                    review["decisions"][0]["person_id"] = "person:other"
+                elif scenario == "other_document":
+                    review["decisions"][0]["source_document_id"] = "doc:other"
+                else:
+                    review["decisions"].append(dict(review["decisions"][0]))
+                (root / "review.json").write_text(json.dumps(review), encoding="utf-8")
+                payload = self.build_outcome(root)
+                self.assertEqual(payload["loop_status"], "pending_historian_approval")
+                self.assertFalse(payload["approved_for_demo"])
 
 
 if __name__ == "__main__":

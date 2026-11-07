@@ -127,9 +127,11 @@ def extract_document_mentions(
     output_json: Path | None = None,
     output_md: Path | None = None,
     segment_paths: list[Path] | None = None,
+    events_index_json: Path | None = None,
 ) -> dict[str, Any]:
     documents: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []
+    event_rules, event_label_index = _event_mention_rules(events_index_json)
 
     paths = sorted(segment_paths) if segment_paths is not None else sorted(segments_dir.rglob("*.weak-segments.json"))
     for segments_path in paths:
@@ -139,7 +141,10 @@ def extract_document_mentions(
             skipped.append(_skip_record(payload=payload, segments_path=segments_path, reason=skip_reason))
             continue
 
-        mentions = _mentions_for_document(payload=payload, segments_path=segments_path)
+        mentions = _mentions_for_document(
+            payload=payload, segments_path=segments_path,
+            event_rules=event_rules, event_label_index=event_label_index,
+        )
         document_entry = {
             "@type": "DocumentMentionCandidateDocument",
             "source_id": str(payload.get("source_id", "")),
@@ -150,6 +155,8 @@ def extract_document_mentions(
             "mention_count": len(mentions),
             "mentions": mentions,
         }
+        if event_label_index is not None:
+            document_entry["event_label_index"] = event_label_index
         documents.append(document_entry)
         if output_dir is not None:
             mention_path = output_dir / _mentions_relative_path(document_entry)
@@ -168,6 +175,8 @@ def extract_document_mentions(
         "documents": documents,
         "skipped_documents": skipped,
     }
+    if event_label_index is not None:
+        result["event_label_index"] = event_label_index
     if output_json is not None:
         output_json.parent.mkdir(parents=True, exist_ok=True)
         output_json.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -220,30 +229,67 @@ def render_document_mentions_markdown(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def _mentions_for_document(*, payload: dict[str, Any], segments_path: Path) -> list[dict[str, Any]]:
+def _event_mention_rules(index_path: Path | None) -> tuple[tuple[MentionRule, ...], dict[str, str] | None]:
+    if index_path is None:
+        return (), None
+    raw = index_path.read_bytes()
+    payload = json.loads(raw.decode("utf-8"))
+    if not isinstance(payload, dict) or payload.get("@type") != "HistoricalEventIndex" or not isinstance(payload.get("events"), list):
+        raise ValueError("Expected a HistoricalEventIndex with an events list.")
+    seen_ids: set[str] = set()
+    labels: dict[str, str] = {}
+    for entry in payload["events"]:
+        if not isinstance(entry, dict):
+            raise ValueError("HistoricalEventIndex entries require event_id and label strings.")
+        event_id, label = entry.get("event_id"), entry.get("label")
+        if not isinstance(event_id, str) or not event_id.strip() or not isinstance(label, str) or not label.strip():
+            raise ValueError("HistoricalEventIndex entries require event_id and label strings.")
+        event_id, label = event_id.strip(), label.strip()
+        if event_id in seen_ids or ("@id" in entry and entry["@id"] != event_id):
+            raise ValueError("HistoricalEventIndex event identifiers must be unique and consistent.")
+        seen_ids.add(event_id)
+        # Shared labels produce one mention; event identity remains unresolved.
+        labels.setdefault(label.casefold(), label)
+    rules = tuple(
+        MentionRule(
+            mention_type="EventMentionCandidate", mention_kind="event",
+            pattern=re.compile(r"(?<!\w)" + re.escape(label) + r"(?!\w)", re.IGNORECASE),
+            reason="explicit_historical_event_index_label", confidence=0.78,
+        )
+        for _, label in sorted(labels.items())
+    )
+    return rules, {"path": str(index_path), "sha256": hashlib.sha256(raw).hexdigest()}
+
+
+def _mentions_for_document(
+    *, payload: dict[str, Any], segments_path: Path,
+    event_rules: tuple[MentionRule, ...] = (), event_label_index: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
     mentions: list[dict[str, Any]] = []
     for segment in payload.get("segments", []):
         if not isinstance(segment, dict):
             continue
         segment_text = str(segment.get("text", ""))
-        for rule in MENTION_RULES:
+        for rule in (*MENTION_RULES, *event_rules):
             if not _rule_allowed_for_segment(rule=rule, segment=segment):
                 continue
             for match in rule.pattern.finditer(segment_text):
                 value = _clean_value(rule.mention_kind, match.group(0))
                 if not value:
                     continue
-                mentions.append(
-                    _mention_candidate(
-                        payload=payload,
-                        segment=segment,
-                        segments_path=segments_path,
-                        rule=rule,
-                        value=value,
-                        start=match.start(),
-                        end=match.end(),
-                    )
+                candidate = _mention_candidate(
+                    payload=payload,
+                    segment=segment,
+                    segments_path=segments_path,
+                    rule=rule,
+                    value=value,
+                    start=match.start(),
+                    end=match.end(),
                 )
+                if rule.mention_kind == "event":
+                    candidate["event_label_index"] = event_label_index
+                    candidate["warnings"].append("event_mention_not_event_link")
+                mentions.append(candidate)
     return _deduplicate_mentions(mentions)
 
 
@@ -308,7 +354,7 @@ def _rule_allowed_for_segment(*, rule: MentionRule, segment: dict[str, Any]) -> 
         return segment_type in {"formation_context", "person_mention_context"}
     if rule.mention_kind == "archival_reference":
         return segment_type in {"archival_reference_context", "person_mention_context"}
-    if rule.mention_kind in {"date", "place"}:
+    if rule.mention_kind in {"date", "place", "event"}:
         return segment_type in {"archival_reference_context", "formation_context", "person_mention_context"}
     return False
 
@@ -392,6 +438,8 @@ def _context(text: str, start: int, end: int, *, radius: int = 80) -> str:
 
 
 def _clean_value(mention_kind: str, value: str) -> str:
+    if mention_kind == "event":
+        return value
     cleaned = " ".join(value.split()).strip(" .,;:")
     if mention_kind == "person" and _is_false_positive_person_value(cleaned):
         return ""
@@ -434,6 +482,7 @@ def main() -> int:
     parser.add_argument("--output-dir", default="data/processed/documents")
     parser.add_argument("--output-json", default="risultati/document_analysis/document_mentions.json")
     parser.add_argument("--output-md", default="risultati/document_analysis/document_mentions.md")
+    parser.add_argument("--events-index-json", default="", help="Indice HistoricalEventIndex opzionale per label evento espliciti.")
     args = parser.parse_args()
 
     payload = extract_document_mentions(
@@ -441,6 +490,7 @@ def main() -> int:
         output_dir=Path(args.output_dir),
         output_json=Path(args.output_json),
         output_md=Path(args.output_md),
+        events_index_json=Path(args.events_index_json) if args.events_index_json else None,
     )
     print(f"DocumentMentionCandidate JSON scritto in {args.output_json}")
     print(f"DocumentMentionCandidate Markdown scritto in {args.output_md}")

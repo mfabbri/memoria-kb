@@ -93,6 +93,7 @@ def main() -> int:
         action_id=ACTION_ID,
         plan_id=PLAN_ID,
         source_id=SOURCE_ID,
+        strategy_ids=["nome-cognome", "testo-libero-nome-completo"],
         outcome_status="needs_manual_review",
         execution_mode="manual_review_session",
         query=query,

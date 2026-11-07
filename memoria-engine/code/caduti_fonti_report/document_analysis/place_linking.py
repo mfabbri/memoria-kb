@@ -47,6 +47,23 @@ def build_candidate_document_place_links(
         for mention in payload.get("mentions", []):
             if not isinstance(mention, dict) or str(mention.get("mention_kind", "")) != "place":
                 continue
+            missing_provenance_field = next(
+                (
+                    field
+                    for field in ("source_document_id", "source_id")
+                    if not str(mention.get(field) or "").strip()
+                ),
+                None,
+            )
+            if missing_provenance_field is not None:
+                skipped_mentions.append(
+                    _skipped_mention(
+                        mention=mention,
+                        mentions_path=mentions_path,
+                        reason=f"missing_{missing_provenance_field}",
+                    )
+                )
+                continue
             if _is_navigation_or_boilerplate_context(mention):
                 skipped_mentions.append(
                     _skipped_mention(
