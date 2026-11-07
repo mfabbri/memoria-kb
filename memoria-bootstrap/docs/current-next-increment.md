@@ -2,12 +2,21 @@
 
 ## Stato corrente e prossimo candidato — 2026-11-01
 
-**Post-MVP aperto, nessun incremento in esecuzione nel planner:**
-`planning/current-work.json` e' `completed` e contiene la chiusura del pilot
-OCR; non modificarne retroattivamente la cronologia. MVP finanziatori T29-T33 e
-migrazione T34/T34b completati. Primo candidato T45 (P0 segreti/test/contratto
-OCR->SourceDocument), poi T46/47 per integrare effettivamente una fonte online
-e una offline; T48 estende a luogo/evento, T49 chiude il feedback.
+**Post-MVP aperto; T45 e T46 completati il 2026-11-01.**
+Il bridge `documents register-ocr-source` registra artifact OCR hash-bound
+nello store SQLite con preview/apply, provenance e retry idempotente. T29-T34b
+sono chiusi. Prossimo candidato T47: integrare una fonte online e una offline;
+T48 estende a luogo/evento, T49 chiude il feedback.
+
+Il contratto e l'esito T46 v1.1 sono in
+`docs/ocr-source-document-integration-contract.md`. Il gate mirato passa: 9
+test del bridge, 27 test CLI e 5 test SQLite, oltre alle verifiche T45 di
+non-promozione, import candidate-only, T31, batch T36 e Tesseract. Il test T31
+è collezionato sia da unittest sia da pytest; il file
+`test_cli_paths.py` è pytest-only e il suo unico test è un placeholder, non una
+verifica dei path CLI. Il caso batch con `raw_file` Windows e backslash passa.
+I due fixture legacy di `test_document_ocr_batch.py` sono stati aggiornati con
+JPEG valido e output OCR sufficiente; la suite passa 7/7.
 
 Il pilot OCR provisional T42 e' **chiuso nel suo scope**, ma cutoff 1.0 e'
 non discriminante e non prova accuratezza o gate formale T41 (5%/95%). Non

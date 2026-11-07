@@ -15,10 +15,10 @@ Le milestone T29-T33 e T34/T34b sono chiuse. La direzione primaria e' T45-T49:
 consolidare l'interfaccia fra OCR, documenti, evidenze, entita' e feedback; non
 proseguire indefinitamente il solo tuning OCR. T41 mantiene il gate statistico
 separato (reference adjudicate e holdout indipendente); il pilot provisional
-T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. I test
-preesistenti hanno alcuni problemi legacy/cross-platform da classificare.
+T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. Il quality
+gate T45 e il bridge T46 sono chiusi; T47 è il prossimo incremento.
 
-### T45 - Quality gate post-MVP e contratto di integrazione (P0, prossimo candidato)
+### T45 - Quality gate post-MVP e contratto di integrazione (P0, completato 2026-11-01)
 
 **Obiettivo:** rendere riproducibili i test di base e definire un unico contratto
 tra OCR revisionabile e registrazione di documenti, senza cambiare la semantica
@@ -35,14 +35,46 @@ archivistica.
 - **Uscita:** un contratto implementabile, baseline test documentata e nessun
   secret nel change set; niente refactor generalizzato.
 
-### T46 - Bridge OCR revisionabile -> SourceDocument (P1)
+Avanzamento 2026-11-01: il micro-incremento contrattuale v1.0 è documentato in
+`memoria-bootstrap/docs/ocr-source-document-integration-contract.md`; resta
+distinto dall'implementazione del bridge T46. `.env` è ignorato da Git, non è
+tracciato e non compare nella cronologia Git esaminata; non è stato aperto.
+Non risultano archivi ZIP/7z/RAR nel worktree.
 
-Dipendenza: T45. Se disponibile un documento OCR approvato dall'operatore,
-registrarlo tramite lo store esistente, preservando raw URI, hash, fonte,
-accesso, versione struttura, testo derivato e stato di review. L'esito
-`provisional_auto_validated` deve restare candidato/non verificato; la sola
-accettazione OCR non abilita claim storici approvati. Preview/apply, idempotenza
-e provenance hanno test offline.
+Gate mirato: `test_ocr_candidate_assessment` (21),
+`test_ocr_provisional_threshold` (9), import evidence store (2), T31 feedback
+(2), OCR transform batch (9), Tesseract batch (11) e batch OCR legacy (7)
+passano. `test_register_t31_demo_feedback_loop_tool.py` è collezionato sia da
+unittest sia da pytest (2 test); non è stato trovato un test T31 non
+collezionabile nel worktree. `test_cli_paths.py` è pytest-only, passa 1 test ma
+il test è un placeholder (`Path(".").exists()`), non una verifica dei path CLI.
+Il caso batch che usa un percorso relativo Windows con backslash passa.
+
+`test_document_ocr_batch.py` inizialmente aveva 2 failure su 7: i fixture legacy
+scrivevano un JPEG non decodificabile e restituivano il solo token `OCR`; il
+quality gate attuale rifiutava correttamente quel risultato prima della
+registrazione/controllo del duplicato. I fixture sono stati aggiornati a JPEG
+decodificabili e testo OCR sufficiente, senza cambiare il codice di produzione;
+ora passano 7/7. Nessun errore di separatori Windows è emerso nei casi verificati.
+
+Stato del micro-incremento T45: completato il 2026-11-01. Contratto e baseline
+mirata sono registrati; la sequenza post-MVP prosegue con T46.
+
+### T46 - Bridge OCR revisionabile -> SourceDocument (P1, completato 2026-11-01)
+
+Dipendenza: T45. Implementato `documents register-ocr-source` con manifest
+hash-bound, preview/apply e validazione offline di documento originale, fonte,
+ID, pagine/evidence/structure/Markdown e trasformazione raster. `--apply`
+registra atomicamente un `SourceDocument` e il run auditabile; retry identico
+idempotente, payload divergente rifiutato. Il manifest può mantenere
+`provisional_auto_validated`, ma il bridge richiede review `unreviewed` e non
+imposta `human_verified`/`machine_pass`, non abilita estrazione claim e non
+crea claim. Originali supportati: locali; review e aggiornamento delle derivate
+restano fuori dallo scope v1.0.
+
+Gate 2026-11-01: 9 test di registrazione, 27 test CLI e 5 test SQLite passano;
+`git diff --check` e validatore routing/planner passano. Fixture sintetiche,
+nessuna inferenza OCR/VLM o accesso a documenti reali.
 
 ### T47 - Prima run online+offline su un profilo esistente (P1)
 

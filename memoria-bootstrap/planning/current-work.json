@@ -2,75 +2,67 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-10-31T16:12:57Z",
-  "updated_at": "2026-11-01T15:30:06Z",
+  "selected_at": "2026-11-01T17:36:41Z",
+  "updated_at": "2026-11-07T00:00:00Z",
   "roadmap_basis": [
     {
-      "path": "memoria-bootstrap/docs/current-next-increment.md",
-      "section": "Verifica visuale assistita e richieste di review",
-      "reason": "L'utente chiede di verificare il 100% della procedura OCR definita rispetto alla CLI e di colmare i gap prima di chiedere conferme manuali."
+      "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "section": "T46 - Bridge OCR revisionabile -> SourceDocument",
+      "reason": "T45 è completato; T46 è stato selezionato come incremento post-MVP e ora è completato."
     },
     {
-      "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T41 - Calibrazione OCR su campione reale stratificato",
-      "reason": "Il limite pagina e il limite di rischio di sistema sono distinti e vanno mantenuti coerenti nell'implementazione e nel contratto."
+      "path": "memoria-bootstrap/docs/current-next-increment.md",
+      "section": "Stato corrente e prossimo candidato",
+      "reason": "Il contratto T45 definisce i confini del bridge e i gate di provenance/idempotenza."
     }
   ],
   "increment": {
-    "id": "t41-manual-review-cap-3-percent-20261101",
-    "title": "Chiudere la soglia empirica OCR T42 e applicarla nel workflow CLI",
-    "objective": "Quantificare le correzioni delle dieci pagine, selezionare il cutoff operativo dai dati e limitare al 3% le review richieste dal workflow.",
+    "id": "t46-ocr-source-document-bridge-20261101",
+    "title": "Registrare OCR revisionabile come SourceDocument via store esistente",
+    "objective": "Implementare un comando preview/apply che valida originali e artefatti OCR hash-bound, registra un SourceDocument idempotente nello store esistente e mantiene gli esiti provisional non verificati e separati dai claim.",
     "scope": [
-      "Quantificare eventi di correzione e parole candidate stimate sulle dieci conferme T42.",
-      "Selezionare il massimo cutoff osservato senza accettare casi oltre il limite operativo pagina del 2%.",
-      "Consumare l'artifact hash-bound nel workflow CLI e impedire richieste manuali oltre il 3% del batch.",
-      "Mantenere separati l'esito provisional, machine_pass formale, human_verified, claim extraction e il gate 5%/95%.",
-      "Allineare la documentazione operativa all'esito misurato e alla sua portata."
+      "Accettare solo un manifest esplicito che lega documento originale, source_id e artefatti pagina/evidence/structure/Markdown con SHA-256.",
+      "Validare contenuti, digest e binding source_document_id/page_id senza rete e senza eseguire OCR.",
+      "Costruire un SourceDocument con identità deterministica da source_id, URI locale canonico e hash dei byte originali.",
+      "Registrare via SQLiteEvidenceStore con --apply, run auditabile e conflitti divergenti fail-closed; preview non scrive.",
+      "Preservare manifest, URI/hash originali, timestamp, struttura/versione e review status; T42 provisional non promuove human_verified, machine_pass o claim."
     ],
     "out_of_scope": [
-      "Inventare o simulare conferme umane, decisioni semantiche, reference o score.",
-      "Dichiarare dimostrato il target formale di false acceptance 5% al 95% dal pilot a dieci casi.",
-      "Aprire holdout, usare VLM senza preflight obbligatorio, o modificare i byte degli originali."
+      "Eseguire rete, OCR/VLM, estrazione di claim o modifiche a fatti/profili canonici.",
+      "Trattare provisional_auto_validated come human_verified o machine_pass.",
+      "Sovrascrivere un SourceDocument esistente con payload divergente o modificare i byte originali."
     ],
     "candidate_files": [
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-bootstrap/docs/agent-session-prompt.md",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_alert_dispositions.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_finalizer.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_review_ledger.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_provisional_threshold.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_correction.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_from_t36.py",
-      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
-      "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017/workflow-state.json",
       "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
+      "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
+      "memoria-engine/code/caduti_fonti_report/models.py",
+      "memoria-engine/code/caduti_fonti_report/sqlite_store.py",
+      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_source_document_registration.py",
+      "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+      "memoria-engine/tests/test_ocr_source_document_registration.py",
+      "memoria-engine/tests/test_memoria_cli.py",
       "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Il CLI marca auto_validation_enabled=true solo per decisioni provisional_auto_accept con artifact hash valido, cutoff congelato, identità e scope esatti; no-go/fuori scope restano manual review. Il percorso formale 5%/95%, machine_pass formale, human_verified e claim extraction restano separati."
+    "stop_condition": "Preview non modifica lo store; --apply registra esattamente un SourceDocument con binding verificati e retry idempotente; payload divergente rifiutato; provisional resta unverified e non crea claim; test offline mirati PASS."
   },
   "verification": {
     "documentation_touchpoints": [
       "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+      "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
       "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-      "memoria-bootstrap/docs/agent-session-prompt.md",
-      ".agents/skills/memoria-session/SKILL.md",
-      ".agents/skills/memoria-quality-gate/SKILL.md",
       "memoria-bootstrap/planning/current-work.json"
     ],
     "result": "passed",
     "tests": [
-      "195 test mirati passati per i precedenti incrementi CLI.",
-      "memoria-engine/.venv/Scripts/python.exe -m unittest discover -s memoria-engine/tests -p test_ocr_provisional_threshold.py; test_ocr_threshold_calibration.py; test_ocr_threshold_audit.py; test_ocr_risk_features.py; test_ocr_risk_score.py; test_ocr_tesseract_from_t36.py; test_ocr_workflow.py; test_ocr_workflow_cli.py; test_ocr_review_package.py: 139 test passati.",
+      "T46 verificato in questa sessione: unittest test_ocr_source_document_registration.py 9 PASS; test_memoria_cli.py 27 PASS; test_sqlite_store.py 5 PASS.",
+      "T45 PASS: test_ocr_candidate_assessment.py 21; test_ocr_provisional_threshold.py 9; test_document_analysis_evidence_store_import.py 2; test_register_t31_demo_feedback_loop_tool.py 2; test_document_ocr_batch.py 7; test_ocr_transform_batch.py 9; test_ocr_tesseract_batch.py 11.",
+      "T45 PASS: pytest memoria-engine/tests/test_cli_paths.py -q: 1 passed. unittest discover sullo stesso file raccoglie 0 test; è un test pytest, non un test T31.",
+      "T45 PASS: pytest memoria-engine/tests/test_register_t31_demo_feedback_loop_tool.py -q: 2 passed; il test T31 è collezionabile con unittest e pytest.",
+      "T45 classificazione/fix fixture: test_document_ocr_batch.py inizialmente 2/7 failure per JPEG fittizi non decodificabili e solo un token OCR; aggiornati i fixture, poi 7/7 PASS. Nessun codice di produzione modificato.",
+      "T45 security: .env è ignored/non tracked, nessuna entry nella cronologia Git esaminata e nessun archivio ZIP/7z/RAR nel worktree; contenuto .env non letto.",
       "CLI runtime: preview calibratore T42 mostra auto_validation_enabled=true con cutoff 1.0; --apply genera provisional-threshold-artifact-auto-validation-v1.json con auto_validation_mode provisional_empirical_scoped.",
       "CLI runtime: evaluate preview su T314-1275-00590 mostra provisional_auto_validated e auto_validation_enabled=true; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
       "Runtime smoke del nuovo stage OcrWorkflow sui 10 package T42 esistenti, senza rilanciare OCR: 10 provisional_auto_validated, zero manual_review_page_ids; machine_pass=false, human_verified=false, claim_extraction_allowed=false.",
@@ -82,7 +74,7 @@
       "Verifiche codice OCR precedenti: 55 test mirati passati (calibratore provisional, workflow e CLI), py_compile e smoke runtime v3.",
       "Follow-up documentale: prompt, playbook, roadmap, current-next e skill di sessione/quality gate coerenti sulla chiusura T42 provisional; validatore planner e git diff --check passati; nessun test OCR rilanciato perché non è cambiato codice."
     ],
-    "notes": "OcrWorkflow v1.4 consuma l'artifact T42 hash-bound. La regola empirica seleziona il massimo score osservato che non accetta alcun caso oltre il limite pagina del 2%; sui dieci casi questo produce cutoff 1.0, 10/10 accepted e 0/10 manual. Correzioni osservate: 63/11.616 parole candidate stimate (~0,54% aggregato), worst page 10/1.117 (~0,90%). Il cutoff 1.0 copre tutti gli score validi [0,1] nello scope, quindi non discrimina e non offre garanzia di errore futura o 5%/95%. Cap workflow review manuale: 3%; oltre il cap la richiesta viene bloccata. Smoke v3 passato; machine_pass, human_verified e claim extraction restano false.",
+    "notes": "T46 completato; verifiche offline eseguite il 2026-11-07 con fixture sintetiche. Nessuna inferenza OCR/VLM o accesso a dati reali.",
     "task_envelope": {
       "mode": "feature-slice",
       "repositories": [
@@ -91,50 +83,35 @@
       ],
       "read_set": [
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_calibration.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_threshold_audit.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_candidate_assessment.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_orchestrator.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_batch.py",
+        "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
+        "memoria-engine/code/caduti_fonti_report/models.py",
+        "memoria-engine/code/caduti_fonti_report/sqlite_store.py",
         "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/local_processing_runner.py",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t41-real-cli-inference-00598-20261018/workflow-state.json",
-        "D:/CaDiMalanca/me.mo.ri.a-kb-runtime/ocr-runs/t40-workflow-v12-review-package-00598-reviewed-20261017/workflow-state.json",
-        "memoria-bootstrap/docs/current-next-increment.md"
+        "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+        "memoria-engine/tests/test_memoria_cli.py"
       ],
       "write_set": [
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_workflow.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_package.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_lexicon_candidates.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_candidate_assessment.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_review_scaffold.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_review_ledger.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_provisional_threshold.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_visual_correction.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_features.py",
-      "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_risk_score.py",
-        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_tesseract_from_t36.py",
+        "memoria-engine/code/caduti_fonti_report/document_analysis/ocr_source_document_registration.py",
         "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-        "memoria-engine/tests/",
+        "memoria-engine/tests/test_ocr_source_document_registration.py",
+        "memoria-engine/tests/test_memoria_cli.py",
+        "memoria-bootstrap/docs/ocr-source-document-integration-contract.md",
         "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/agent-session-prompt.md",
+        "memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md",
         "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": ".\\memoria-engine\\.venv\\Scripts\\python.exe -m unittest discover -s memoria-engine\\tests -p test_ocr_provisional_threshold.py; repeat for test_ocr_threshold_calibration.py, test_ocr_threshold_audit.py, test_ocr_risk_features.py, test_ocr_risk_score.py, test_ocr_tesseract_from_t36.py, test_ocr_workflow.py, test_ocr_workflow_cli.py, test_ocr_review_package.py",
+      "test_command": ".\\memoria-engine\\.venv\\Scripts\\python.exe -m unittest discover -s memoria-engine\\tests -p test_ocr_source_document_registration.py; targeted test_memoria_cli.py and test_sqlite_store.py",
       "stop_conditions": [
-        "Every mandatory procedure stage maps to an executable CLI command/gate; no known implementation gap remains before manual review.",
-        "The 10-case empirical cutoff is executable and consumable, without any 5%/95% claim; formal audit path remains intact.",
-        "Only real human review remains outstanding; no label, OCR result or source byte is fabricated/changed; no holdout is accessed."
+        "Preview is read-only; apply writes one idempotent SourceDocument to the existing store.",
+        "Original URI/hash and derivative manifest/artifact hashes round-trip; divergent bindings fail closed.",
+        "Provisional status never sets human_verified/machine_pass or creates approved claims; targeted offline tests pass."
       ]
     }
   },
   "session_notes": [
+    "2026-11-07: T46 completed after focused offline gate: 9 registration tests, 27 CLI tests and 5 SQLite store tests pass. No OCR/VLM inference or real data access.",
+    "2026-11-01: T45 micro-increment completed: OCR->SourceDocument contract v1.0, focused baseline documented, two stale OCR batch test fixtures refreshed. 62 targeted tests pass across unittest/pytest; test_cli_paths.py is pytest-only placeholder, T31 test is collectable by both runners. .env ignored/untracked/not read, no archive found. T46 remains next; no production bridge implemented.",
     "2026-11-01: tuning provisional OCR T42 chiuso nello scope tedesco/PP-OCRv5/numbered_report. 63/11.616 eventi/parole candidate stimate (~0,54%), worst page 10/1.117 (~0,90%), cutoff 1.0, 10/10 provisional accepted e 0/10 manual nel pilot. Il cutoff non discrimina e non garantisce accuratezza futura; machine_pass, human_verified e claim restano falsi. OcrWorkflow blocca il batch se la review supera il 3%.",
     "2026-11-01: allineati agent-session-prompt, playbook, current-next, roadmap e skill memoria-session/memoria-quality-gate per distinguere la chiusura provisional T42 dal gate formale 5%/95%. Validazione documentale e planner eseguita; nessun codice OCR modificato.",
     "2026-11-01: l'utente impone che la review manuale non superi il 2-3%. Il cutoff 0.8333 mandava 4/10 pagine in review, quindi è inaccettabile. Ripristinare cutoff 1.0 per pagine scoreable nell'esatto scope (pilot: 0/10 manuale) e hard-fail delle richieste manuali oltre 3% nel workflow; out-of-scope non vengono auto-validated.",
@@ -168,17 +145,44 @@
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Selezionare il prossimo incremento dalla roadmap nella prossima sessione."
+    "description": "Selezionare T47 dalla roadmap post-MVP nella prossima sessione."
   },
   "routing": {
-    "policy_version": "3.0",
-    "tier": "low",
-    "task_class": "documentation",
-    "agent": "mmr_docs_editor",
-    "model": "gpt-6-luna",
-    "reasoning_effort": "low",
-    "rationale": "Documentation and skill alignment to close the already-completed T42 provisional tuning without changing the formal gate.",
+    "policy_version": "3.1",
+    "tier": "medium",
+    "task_class": "implementation",
+    "agent": "mmr_implementer",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "rationale": "T46 aggiunge un comportamento CLI e storage cross-component; implementazione specialistica circoscritta con review/gate del parent.",
     "trace": [
+      {
+        "event": "selected",
+        "at": "2026-11-01T17:36:41Z",
+        "tier": "medium",
+        "agent": "mmr_implementer",
+        "model": "gpt-6.1-sol",
+        "reasoning_effort": "medium",
+        "reason": "Implementare comando preview/apply per SourceDocument OCR hash-bound, idempotente e no-promote."
+      },
+      {
+        "event": "selected",
+        "at": "2026-11-01T17:17:43Z",
+        "tier": "low",
+        "agent": "parent",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Selezionato T45 dalla direzione post-MVP; definire il contratto e verificare i guard test esistenti prima del bridge T46."
+      },
+      {
+        "event": "completed",
+        "at": "2026-11-01T17:25:47Z",
+        "tier": "low",
+        "agent": "parent",
+        "model": "gpt-6-luna",
+        "reasoning_effort": "low",
+        "reason": "Contratto T45 documentato; test fixture legacy aggiornati; gate mirato e classificazione baseline passano."
+      },
       {
         "event": "selected",
         "at": "2026-11-01T15:30:06Z",

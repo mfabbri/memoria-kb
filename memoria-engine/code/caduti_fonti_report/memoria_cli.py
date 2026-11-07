@@ -1749,6 +1749,21 @@ def _command_sources_offline_status(args: argparse.Namespace) -> int:
     return _command_sources_offline_discover(args)
 
 
+def _command_documents_register_ocr_source(args: argparse.Namespace) -> int:
+    import sqlite3
+
+    from caduti_fonti_report.document_analysis.ocr_source_document_registration import register_ocr_source_document
+
+    try:
+        report = register_ocr_source_document(manifest_path=Path(args.manifest), database_path=Path(args.database),
+            sources_registry_path=Path(args.sources_registry) if args.sources_registry else None, apply=args.apply)
+    except (OSError, ValueError, TypeError, KeyError, sqlite3.Error) as exc:
+        print(f"Errore documents register-ocr-source: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_register(args: argparse.Namespace) -> int:
     try:
         options = {
@@ -3238,6 +3253,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     documents = subparsers.add_parser("documents", help="Intake documenti locali con registrazione esplicita.")
     documents_subparsers = documents.add_subparsers(dest="documents_command", required=True)
+    documents_ocr_source = documents_subparsers.add_parser(
+        "register-ocr-source", help="Valida un manifest OCR e registra SourceDocument solo con --apply.")
+    documents_ocr_source.add_argument("--manifest", required=True, help="Manifest OcrSourceDocumentRegistration v1.0.")
+    documents_ocr_source.add_argument("--database", required=True, help="SQLiteEvidenceStore destinazione esplicito.")
+    documents_ocr_source.add_argument("--sources-registry", default="", help="Registry fonti alternativo esplicito.")
+    documents_ocr_source.add_argument("--apply", action="store_true", help="Registra senza sovrascrivere documenti esistenti.")
+    documents_ocr_source.set_defaults(handler=_command_documents_register_ocr_source)
     documents_register = documents_subparsers.add_parser(
         "register",
         help="Mostra immagini ricorsive; crea sidecar solo con --apply.",

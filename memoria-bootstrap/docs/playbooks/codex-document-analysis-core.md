@@ -23,6 +23,23 @@ fatti verificati senza review e non crea una pipeline parallela per la demo.
   canonica/editoriale.
 - MVP e wrapper aggregano la pipeline principale.
 
+## Registrazione OCR in SourceDocument (T46)
+
+Per collegare output OCR già revisionabili allo store usare
+`documents register-ocr-source --manifest <manifest.json> --database
+<evidence.sqlite> [--sources-registry <registry.yaml>] [--apply]`. Il manifest
+v1.0 `OcrSourceDocumentRegistration` deve legare via SHA-256 il documento
+originale locale e, per ogni pagina, immagine sorgente, `OcrPageEvidence`,
+`DocumentStructure` e Markdown. I percorsi relativi partono dalla directory del
+manifest; il registry predefinito è `memoria-sources/registry/camalanca_fonti.yaml`.
+
+Eseguire prima il preview. `--apply` inserisce il `SourceDocument` e il relativo
+run auditabile in transazione; un retry identico è idempotente, un payload
+divergente viene rifiutato. Lo scope supportato richiede `review_status=unreviewed`
+e originale locale. Lo status `provisional_auto_validated` resta descrittivo:
+non abilita `machine_pass`, `human_verified`, claim extraction o claim approvati.
+Il bridge non lancia OCR e non modifica gli artifact.
+
 ## Workflow OCR CLI T36-T37
 
 `documents process --workflow-manifest` orchestra il runner batch T36 e la

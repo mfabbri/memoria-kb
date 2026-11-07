@@ -141,14 +141,14 @@ class DocumentOcrBatchTests(unittest.TestCase):
                         "5\t1\t1\t1\t1\t1\t0\t0\t10\t10\t91.0\tDocumento\n"
                     )
                 )
-            return completed(stdout="OCR")
+            return completed(stdout="OCR documento leggibile")
 
         with workspace_temp_dir() as tmp_dir:
             raw_dir = tmp_dir / "raw"
             output_dir = tmp_dir / "processed"
             image_path = raw_dir / "set-a" / "scan-a.jpg"
             image_path.parent.mkdir(parents=True)
-            image_path.write_bytes(b"\xff\xd8\xffscan\xff\xd9")
+            Image.new("RGB", (1000, 1400), color="white").save(image_path, format="JPEG")
             register_manual_document(file_path=image_path, source_id="manual_uploads", title="Scan A", archival_reference="A")
 
             first_report = run_document_ocr_batch(root_dir=raw_dir, output_dir=output_dir, command_runner=fake_runner)
@@ -212,14 +212,14 @@ class DocumentOcrBatchTests(unittest.TestCase):
                         "5\t1\t1\t1\t1\t1\t0\t0\t10\t10\t91.0\tDocumento\n"
                     )
                 )
-            return completed(stdout="OCR")
+            return completed(stdout="OCR documento leggibile")
 
         with workspace_temp_dir() as tmp_dir:
             raw_dir = tmp_dir / "raw"
             output_dir = tmp_dir / "processed"
             image_path = raw_dir / "set-a" / "scan-a.jpg"
             image_path.parent.mkdir(parents=True)
-            image_path.write_bytes(b"\xff\xd8\xffscan\xff\xd9")
+            Image.new("RGB", (1000, 1400), color="white").save(image_path, format="JPEG")
             register_manual_document(file_path=image_path, source_id="manual_uploads", title="Scan A", archival_reference="A")
 
             metadata_dir = output_dir / "legacy_source"
