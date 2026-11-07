@@ -10,11 +10,12 @@ from typing import Any, Sequence
 from ..candidate_event_updates import build_candidate_event_updates
 from .event_linking import build_candidate_document_event_links
 from .mention_extraction import extract_document_mentions
+from .source_document_catalog import resolve_source_documents
 
 
 def run_historical_event_preview(
     *, segments_dir: Path, events_index_json: Path, event_jsonld: Path,
-    candidate_claims_json: Path, output_dir: Path,
+    candidate_claims_json: Path, source_documents_db: Path, output_dir: Path,
 ) -> dict[str, Any]:
     """Write review artifacts into an empty directory, or verify an identical retry."""
     if not segments_dir.is_dir():
@@ -22,16 +23,26 @@ def run_historical_event_preview(
     segment_paths = sorted(segments_dir.rglob("*.weak-segments.json"))
     if not segment_paths:
         raise ValueError("The segments directory contains no weak segment documents.")
-    input_files = [events_index_json, event_jsonld, candidate_claims_json, *segment_paths]
+    input_files = [events_index_json, event_jsonld, candidate_claims_json, source_documents_db, *segment_paths]
     resolved_output = output_dir.resolve()
     for path in [segments_dir, *input_files]:
         resolved_input = path.resolve()
         if resolved_output.is_relative_to(resolved_input) or resolved_input.is_relative_to(resolved_output):
             raise ValueError("The output directory must not overlap any input.")
     event_id = _validate_event_inputs(events_index_json, event_jsonld, candidate_claims_json)
+    claims = _load(candidate_claims_json, "CandidateEvidenceClaimSet")["candidate_evidence_claims"]
+    if any(not isinstance(item, dict) or not _text(item.get("source_document_id")) for item in claims):
+        raise ValueError("Every candidate claim must identify a source_document_id.")
+    document_ids = {_text(item.get("source_document_id")) for item in claims if isinstance(item, dict)}
+    for segment_path in segment_paths:
+        segment_document = json.loads(segment_path.read_text(encoding="utf-8"))
+        document_ids.add(_text(segment_document.get("source_document_id")))
+    document_ids.discard("")
+    catalog_reference = resolve_source_documents(source_documents_db, document_ids)
     inputs = {
         "events_index": _reference(events_index_json), "event": _reference(event_jsonld),
         "candidate_claims": _reference(candidate_claims_json),
+        "source_documents_catalog": {"path": catalog_reference["path"], "sha256": catalog_reference["sha256"]},
         "segments": [_reference(path) for path in segment_paths],
     }
     manifest_path = output_dir / "manifest.json"
@@ -82,8 +93,9 @@ def run_historical_event_preview(
         },
         "source_ids": sorted({link["source_id"] for link in links["candidate_document_event_links"]}),
         "source_document_ids": sorted({link["source_document_id"] for link in links["candidate_document_event_links"]}),
+        "catalog_resolved_source_document_ids": catalog_reference["resolved_document_ids"],
         "warnings": ["event_preview_not_verified_fact", "event_preview_not_person_participation",
-                     "source_document_ids_not_catalog_verified"],
+                     "source_document_content_not_verified"],
     }
     _write(manifest_path, manifest)
     return manifest
@@ -167,6 +179,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--events-index-json", type=Path, required=True)
     parser.add_argument("--event-jsonld", type=Path, required=True)
     parser.add_argument("--candidate-claims-json", type=Path, required=True)
+    parser.add_argument("--source-documents-db", type=Path, required=True,
+                        help="SQLite catalog esistente, sola lettura, con source_documents.document_id.")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     try:

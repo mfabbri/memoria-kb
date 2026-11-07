@@ -2,16 +2,51 @@
 
 ## Stato corrente e prossimo candidato - 2026-11-07
 
-**Post-MVP aperto; T45-T47 completati; T48 e T49 ancora aperti.**
-T48 ha il ramo Place con link a provenance obbligatoria e CandidatePlaceUpdate
-preview; il ramo HistoricalEvent ora compone menzione, link univoco e
-CandidateEventUpdate su fixture; il runner offline e' ora invocabile con
-`python -m caduti_fonti_report.document_analysis.event_preview_pipeline` da
-input espliciti. Gate T48i e regressioni: 8 runner, 9 update, 8 linking e 14
-mention test PASS; schema JSON valido con jsonschema 4.26.0. Tutti gli artifact
-restano unreviewed/pending e non modificano entita' canoniche. Il runner non e'
-registrato nel comando root `memoria` o nel pipeline generale, i claim sono
-input preesistenti e il SourceDocument non e' verificato nel catalogo.
+**T48: percorso CLI disponibile; review umana reale ancora pendente. T49 non
+va avviato prima della chiusura di T48.** Il percorso usa una fonte abilitata nel
+registry, registra il SourceDocument nel database operativo con CLI, genera
+preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun
+utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non
+applica modifiche canoniche e non autentica il reviewer.
+
+La prova reale del 2026-11-07 usa `memorie_locali` e la pagina Resistenza mAPPe
+su Purocielo. Il SourceDocument operativo è `unreviewed`; la preview ha prodotto
+1 link e 2 aggiornamenti data candidati. Gli artifact sono in
+`memoria-engine/.tmp-tests/online-source-purocielo-20261107/preview-operational-catalog/`.
+Il prossimo passaggio è il comando `memoria documents preview-review-wizard`
+sul manifest di quella directory. Il wizard mostra contesto ed estratti, poi
+scrive la receipt solo dopo decisioni umane e conferma finale. I dettagli e i
+comandi sono in `docs/playbooks/online-source-research-review.md`.
+
+La slice T48j aggiunge il runner Place offline
+`python -m caduti_fonti_report.document_analysis.place_preview_pipeline`.
+Compone menzioni, link Place e CandidatePlaceUpdate da path espliciti con
+manifest hash-bound e guard sull'associazione indice/file. Gate mirato: 3 test
+PASS, con retry immutabile, output isolato e input invariati. Nessun claim viene
+estratto e il catalogo SourceDocument non viene consultato; T48 resta aperto per
+integrazione root/pipeline e catalog lookup.
+
+T48k ora richiede nei due runner `--source-documents-db`, SQLite esistente e
+sola lettura. Ogni ID citato dai claim o segmenti deve esistere in
+`source_documents.document_id`; il manifest lega hash catalogo e ID risolti.
+Gate: 3 test resolver, 10 runner evento e 4 runner Place PASS. Verifica solo
+l'esistenza dell'ID, non la validita' del contenuto o della fonte. Le lacune
+di integrazione e tracciamento review sono chiuse nei passi T48l e T48m.
+
+T48l ha aggiunto `memoria documents place-preview` e `event-preview`, con path
+espliciti per segmenti, indice, entità, claim, catalogo SQLite e output. I
+comandi mostrano manifest e conteggi; nessun apply o write canonico. Gate: 3 test
+CLI, 10 runner evento e 4 runner Place PASS; help e py_compile PASS. Per questi
+test è stato usato Python 3.13 di sistema, perché la `.venv` non importa
+`PIL._imaging` già richiesto dal modulo CLI. Il tracciamento della review è
+completato dal successivo T48m.
+
+T48m aggiunge `memoria documents preview-review-template` e
+`preview-review-record`: decisioni complete, reviewer e timestamp timezone-aware
+sono richiesti per ogni link/update. Gate: 5 test review PASS su fixture Place ed
+Event; incompletezza, timestamp senza timezone e artifact alterato falliscono.
+La receipt non autentica l'identita' e non modifica dati canonici. T49 resta
+aperto per misure reali comparabili; non e' stato avviato in questa sequenza.
 
 T49a-e coprono outcome tracciati, tempi di review dichiarati, readiness delle
 sessioni e delta assoluti candidate-baseline su task hash uguali con quality gate

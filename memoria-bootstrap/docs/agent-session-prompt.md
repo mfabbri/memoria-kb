@@ -29,6 +29,20 @@ soltanto le sezioni pertinenti del playbook codex-document-analysis-core.md;
 preflight Ollama WSL solo per inferenza VLM. Non riaprire il pilot T42 chiuso;
 la validazione statistica formale resta separata.
 
+Per una ricerca reale parti da un `source_id` abilitato in
+`memoria-sources/registry/camalanca_fonti.yaml` e dal database operativo già
+configurato: non sostituirli con una fonte non catalogata o un DB scratch senza
+motivo esplicito. Consulta la procedura completa in
+`memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
+Registra una pagina online con `memoria documents register-online-source`,
+prima in preview e poi con `--apply`; non scrivere nel database via script.
+Genera la preview Place/Event con il comando CLI e passa il suo manifest a
+`memoria documents preview-review-wizard`. Il wizard mostra evidenza e
+provenienza, raccoglie solo le decisioni della persona e scrive la receipt dopo
+conferma. Spiega sempre all'utente dove il CLI ha salvato gli artifact, cosa
+contengono e quale comando usare dopo. Non chiedere di creare o compilare JSON
+né inventare decisioni se il wizard non è disponibile/interattivo.
+
 Concludi con diff, test e risultato, limiti, planner aggiornato e prossimo passo.
 
 Per modifiche a `current-work.json`, esegui

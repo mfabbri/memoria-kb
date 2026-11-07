@@ -14,6 +14,14 @@ Dati reali, credenziali, corpus OCR e run pesanti restano fuori da Git.
 Il registry `memoria-sources/registry/camalanca_fonti.yaml` e' la fonte di verita'
 per i quattro livelli dichiarativi delle fonti.
 
+Per ricerche online parti da una fonte abilitata nel registry e dal database
+operativo configurato; usa la CLI per registrare SourceDocument e generare le
+preview, poi il wizard per raccogliere le decisioni umane. Non chiedere
+all'utente di creare o compilare JSON. Spiega dove la CLI ha salvato gli
+artifact, cosa contengono e il comando successivo. Se manca un passaggio CLI,
+delimita l'estensione necessaria prima di trasferire all'utente attività manuali
+sui file. Procedura completa: `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
+
 ## Incrementi
 
 - Leggi `memoria-bootstrap/planning/current-work.json` per scoprire eventuale

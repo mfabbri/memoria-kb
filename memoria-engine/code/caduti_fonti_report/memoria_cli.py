@@ -73,6 +73,15 @@ from caduti_fonti_report.document_analysis.ocr_review_batch import run_ocr_revie
 from caduti_fonti_report.document_analysis.ocr_review_finalizer import finalize_ocr_review_package
 from caduti_fonti_report.document_analysis.ocr_hunspell_catalog import export_hunspell_lexicon
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
+from caduti_fonti_report.document_analysis.event_preview_pipeline import run_historical_event_preview
+from caduti_fonti_report.document_analysis.place_preview_pipeline import run_place_preview
+from caduti_fonti_report.document_analysis.entity_preview_review import (
+    build_entity_preview_review_receipt,
+    build_entity_preview_review_receipt_from_decisions,
+    build_entity_preview_review_template,
+    run_entity_preview_review_wizard,
+)
+from caduti_fonti_report.document_analysis.online_source_registration import register_online_source_document
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
     DataRootResolution,
@@ -1764,6 +1773,113 @@ def _command_documents_register_ocr_source(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_place_preview(args: argparse.Namespace) -> int:
+    try:
+        manifest = run_place_preview(
+            segments_dir=Path(args.segments_dir), places_index_json=Path(args.places_index_json),
+            place_jsonld=Path(args.place_jsonld), candidate_claims_json=Path(args.candidate_claims_json),
+            source_documents_db=Path(args.source_documents_db), output_dir=Path(args.output_dir),
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents place-preview: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"manifest": str(Path(args.output_dir) / "manifest.json"),
+                      "place_id": manifest["place_id"], "counts": manifest["counts"],
+                      "preview_only": manifest["preview_only"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_event_preview(args: argparse.Namespace) -> int:
+    try:
+        manifest = run_historical_event_preview(
+            segments_dir=Path(args.segments_dir), events_index_json=Path(args.events_index_json),
+            event_jsonld=Path(args.event_jsonld), candidate_claims_json=Path(args.candidate_claims_json),
+            source_documents_db=Path(args.source_documents_db), output_dir=Path(args.output_dir),
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents event-preview: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"manifest": str(Path(args.output_dir) / "manifest.json"),
+                      "event_id": manifest["event_id"], "counts": manifest["counts"],
+                      "preview_only": manifest["preview_only"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _write_new_review_artifact(output_path: Path, payload: dict[str, object], protected: list[Path]) -> None:
+    output = output_path.resolve()
+    if any(output == path.resolve() for path in protected):
+        raise ValueError("Review output must not overwrite an input or preview artifact.")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("x", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+
+
+def _command_documents_preview_review_template(args: argparse.Namespace) -> int:
+    manifest_path, output_path = Path(args.manifest), Path(args.output)
+    try:
+        template = build_entity_preview_review_template(manifest_json=manifest_path)
+        _write_new_review_artifact(output_path, template, [manifest_path] + [
+            Path(str(ref["path"])) for ref in template["preview_artifacts"].values()
+        ])
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents preview-review-template: {exc}", file=sys.stderr)
+        return 1
+    print(f"Review template: {output_path}")
+    return 0
+
+
+def _command_documents_preview_review_record(args: argparse.Namespace) -> int:
+    manifest_path, decisions_path, output_path = Path(args.manifest), Path(args.decisions_json), Path(args.output)
+    try:
+        receipt = build_entity_preview_review_receipt(manifest_json=manifest_path, decisions_json=decisions_path)
+        protected = [manifest_path, decisions_path] + [
+            Path(str(ref["path"])) for ref in receipt["preview_artifacts"].values()
+        ]
+        _write_new_review_artifact(output_path, receipt, protected)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents preview-review-record: {exc}", file=sys.stderr)
+        return 1
+    print(f"Review receipt: {output_path}")
+    return 0
+
+
+def _command_documents_preview_review_wizard(args: argparse.Namespace) -> int:
+    manifest_path, output_path = Path(args.manifest), Path(args.output)
+    try:
+        if not sys.stdin.isatty():
+            raise ValueError("Review wizard requires an interactive terminal.")
+        decisions_payload = run_entity_preview_review_wizard(manifest_json=manifest_path)
+        if decisions_payload is None:
+            return 0
+        receipt = build_entity_preview_review_receipt_from_decisions(
+            manifest_json=manifest_path, decisions_payload=decisions_payload,
+        )
+        protected = [manifest_path] + [Path(str(ref["path"])) for ref in receipt["preview_artifacts"].values()]
+        _write_new_review_artifact(output_path, receipt, protected)
+    except (OSError, ValueError, TypeError, KeyError, EOFError, KeyboardInterrupt) as exc:
+        print(f"Review wizard interrotto o non valido: {exc}", file=sys.stderr)
+        return 1
+    print(f"Review receipt: {output_path}")
+    return 0
+
+
+def _command_documents_register_online_source(args: argparse.Namespace) -> int:
+    try:
+        report = register_online_source_document(
+            database_path=Path(args.database), source_id=args.source_id, document_id=args.document_id,
+            title=args.title, url=args.url, access_date=args.access_date,
+            sources_registry=Path(args.sources_registry) if args.sources_registry else None,
+            apply=args.apply, timestamp=datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+            expected_existing_title=args.expected_existing_title,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents register-online-source: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_register(args: argparse.Namespace) -> int:
     try:
         options = {
@@ -3260,6 +3376,52 @@ def build_parser() -> argparse.ArgumentParser:
     documents_ocr_source.add_argument("--sources-registry", default="", help="Registry fonti alternativo esplicito.")
     documents_ocr_source.add_argument("--apply", action="store_true", help="Registra senza sovrascrivere documenti esistenti.")
     documents_ocr_source.set_defaults(handler=_command_documents_register_ocr_source)
+    documents_online_source = documents_subparsers.add_parser(
+        "register-online-source", help="Preview o registra un SourceDocument online da una fonte abilitata nel registry.")
+    documents_online_source.add_argument("--database", required=True, help="SQLiteEvidenceStore operativo già esistente.")
+    documents_online_source.add_argument("--source-id", required=True, help="ID abilitato in camalanca_fonti.yaml.")
+    documents_online_source.add_argument("--document-id", required=True, help="ID SourceDocument univoco; non sovrascrive record esistenti.")
+    documents_online_source.add_argument("--title", required=True, help="Titolo esatto della pagina online.")
+    documents_online_source.add_argument("--url", required=True, help="URL HTTPS della pagina.")
+    documents_online_source.add_argument("--access-date", required=True, help="Data di accesso YYYY-MM-DD.")
+    documents_online_source.add_argument("--sources-registry", default="", help="Registry fonti esplicito opzionale.")
+    documents_online_source.add_argument("--expected-existing-title", default=None,
+                                         help="Titolo attuale esatto, richiesto per correggere solo il titolo di un record esistente.")
+    documents_online_source.add_argument("--apply", action="store_true", help="Registra SourceDocument e SearchRun; default preview.")
+    documents_online_source.set_defaults(handler=_command_documents_register_online_source)
+    for command_name, description, handler, specific_args in (
+        ("place-preview", "Compone la preview Place offline con review obbligatoria.",
+         _command_documents_place_preview,
+         (("places-index-json", "Indice Place esplicito."), ("place-jsonld", "Place JSON-LD esplicito."))),
+        ("event-preview", "Compone la preview HistoricalEvent offline con review obbligatoria.",
+         _command_documents_event_preview,
+         (("events-index-json", "Indice HistoricalEvent esplicito."), ("event-jsonld", "HistoricalEvent JSON-LD esplicito."))),
+    ):
+        preview = documents_subparsers.add_parser(command_name, help=description)
+        preview.add_argument("--segments-dir", required=True, help="Directory esplicita di segmenti weak.")
+        preview.add_argument("--candidate-claims-json", required=True, help="CandidateEvidenceClaimSet esplicito.")
+        preview.add_argument("--source-documents-db", required=True,
+                             help="Catalogo SQLite esistente; verifica SourceDocument in sola lettura.")
+        preview.add_argument("--output-dir", required=True, help="Directory nuova o preview identica preesistente.")
+        for argument, help_text in specific_args:
+            preview.add_argument("--" + argument, required=True, help=help_text)
+        preview.set_defaults(handler=handler)
+    review_template = documents_subparsers.add_parser(
+        "preview-review-template", help="Genera un template vuoto legato agli artifact di preview Place/Event.")
+    review_template.add_argument("--manifest", required=True, help="Manifest hash-bound Place/Event preview.")
+    review_template.add_argument("--output", required=True, help="Nuovo file template; non sovrascrive input.")
+    review_template.set_defaults(handler=_command_documents_preview_review_template)
+    review_record = documents_subparsers.add_parser(
+        "preview-review-record", help="Valida decisioni umane e produce una receipt senza apply canonico.")
+    review_record.add_argument("--manifest", required=True, help="Manifest esatto della preview revisionata.")
+    review_record.add_argument("--decisions-json", required=True, help="Decisioni compilate da un reviewer umano.")
+    review_record.add_argument("--output", required=True, help="Nuova receipt; non sovrascrive input o preview.")
+    review_record.set_defaults(handler=_command_documents_preview_review_record)
+    review_wizard = documents_subparsers.add_parser(
+        "preview-review-wizard", help="Conduce la review in terminale e genera receipt senza JSON decisionale manuale.")
+    review_wizard.add_argument("--manifest", required=True, help="Manifest hash-bound della preview Place/Event.")
+    review_wizard.add_argument("--output", required=True, help="Nuova receipt; scritta solo dopo conferma finale.")
+    review_wizard.set_defaults(handler=_command_documents_preview_review_wizard)
     documents_register = documents_subparsers.add_parser(
         "register",
         help="Mostra immagini ricorsive; crea sidecar solo con --apply.",

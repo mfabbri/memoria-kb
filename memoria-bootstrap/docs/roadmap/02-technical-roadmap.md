@@ -16,8 +16,9 @@ consolidare l'interfaccia fra OCR, documenti, evidenze, entita' e feedback; non
 proseguire indefinitamente il solo tuning OCR. T41 mantiene il gate statistico
 separato (reference adjudicate e holdout indipendente); il pilot provisional
 T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. I gate
-T45/T46 e la prima run T47 sono chiusi; T48 prosegue con preview Place e
-HistoricalEvent, mentre T49 resta aperto per misure reali.
+T45/T46 e la prima run T47 sono chiusi. T48 ha completato il percorso offline
+Place/HistoricalEvent fino alla registrazione di decisioni umane hash-bound;
+T49 resta aperto per misure reali comparabili.
 
 ### T45 - Quality gate post-MVP e contratto di integrazione (P0, completato 2026-11-01)
 
@@ -136,6 +137,51 @@ immutati. Gate: 8 runner, 9 update, 8 linking e 14 mention test PASS; py_compile
 validator JSON Schema e parse TOML PASS. Non estrae claim, non verifica il
 catalogo SourceDocument e non e' registrato nel comando root `memoria` o nel
 pipeline runner generale; T48 resta aperto.
+
+T48j aggiunge il runner Place `python -m
+caduti_fonti_report.document_analysis.place_preview_pipeline`: compone menzioni,
+CandidateDocumentPlaceLink e CandidatePlaceUpdate da input espliciti e fixture
+offline. Manifest hash-bound, retry verificato, output isolato e review-only;
+il Place JSON-LD deve coincidere con il file esplicitamente collegato dall'indice.
+Gate T48j: 3 test runner PASS; nessuna scrittura canonica o verifica del catalogo
+SourceDocument. T48 resta aperto per eventuale integrazione root/pipeline e lookup.
+
+T48k aggiunge `--source-documents-db` a entrambi i runner. Il database SQLite
+deve esistere e viene aperto con `mode=ro`; ogni `source_document_id` citato da
+claim o segmenti deve risolversi in `source_documents.document_id`. Il manifest
+lega hash del catalogo e ID risolti; ID assenti o schema incompatibile bloccano
+la preview. Gate: catalogo 3, HistoricalEvent 10 e Place 4 test PASS, oltre a
+py_compile e diff check. Questo verifica l'esistenza dell'identificatore, non
+contenuto, provenienza esterna o attendibilita' del documento. T48 resta aperto
+per integrazione CLI e review tracciata.
+
+T48l integra i due runner nel comando root `memoria documents` tramite
+`place-preview` ed `event-preview`. Tutti i path, incluso il catalogo SQLite,
+sono obbligatori; l'output CLI espone soltanto manifest, ID e conteggi, senza
+apply o scrittura canonica. Gate: 3 test CLI, 10 runner evento e 4 runner Place
+PASS; entrambi gli help CLI e py_compile PASS. Test eseguiti con Python 3.13
+di sistema perché la `.venv` locale non carica `PIL._imaging`; il runner root
+importa già moduli OCR/VLM in eager mode. T48 resta aperto per review tracciata.
+
+T48m aggiunge `memoria documents preview-review-template` e
+`preview-review-record`. Il template deriva link e update dagli artifact
+referenziati e hash-verificati nel manifest. La receipt richiede una decisione
+univoca per ogni candidato, reviewer, timestamp timezone-aware e provenance
+coerente; registra hash di manifest, artifact e decisioni. Non autentica il
+reviewer e non applica decisioni a dati canonici. Gate: 5 test review PASS,
+inclusi fixture Place/Event, incompletezza, timestamp invalido, tampering,
+input invariati e CLI. L'intero percorso software T48 è ora eseguibile su fixture
+offline; nessuna review reale o scrittura canonica è avvenuta in questa sessione.
+
+T48n prova il percorso con una pagina pubblica reale da una fonte già catalogata
+(`memorie_locali`) e registra il `SourceDocument` nel database operativo.
+L'output è una preview con 1 link e 2 aggiornamenti data candidati; il documento
+rimane `unreviewed`. T48o aggiunge `register-online-source` con preview/apply
+idempotente e `preview-review-wizard`, che mostra contesto ed estratti e crea una
+receipt hash-bound solo dopo decisioni e conferma della persona. Le istruzioni
+operative sono in `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
+La review di questa preview reale è ancora pendente; T48 non è chiuso e T49 deve
+restare fermo fino alla sua chiusura. Nessun fatto canonico è stato modificato.
 
 ### T49 - Review-feedback end-to-end ed evaluation (P2)
 

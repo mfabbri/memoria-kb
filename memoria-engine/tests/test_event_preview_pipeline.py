@@ -4,10 +4,12 @@ import contextlib
 import hashlib
 import io
 import json
+import sqlite3
 import shutil
 import sys
 import unittest
 import uuid
+from contextlib import closing
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
@@ -44,6 +46,11 @@ class HistoricalEventPreviewPipelineTests(unittest.TestCase):
                           "text": "La Battaglia di Purocielo compare nella relazione."}],
         })
         self.output = self.root / "preview"
+        self.catalog = self.root / "evidence.sqlite"
+        with closing(sqlite3.connect(self.catalog)) as connection:
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY)")
+            connection.execute("INSERT INTO source_documents VALUES ('doc:one')")
+            connection.commit()
 
     def write(self, path: Path, payload: object) -> Path:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -52,14 +59,16 @@ class HistoricalEventPreviewPipelineTests(unittest.TestCase):
 
     def run_preview(self, output: Path | None = None) -> dict:
         return run_historical_event_preview(segments_dir=self.segments, events_index_json=self.index,
-            event_jsonld=self.event, candidate_claims_json=self.claims, output_dir=output or self.output)
+            event_jsonld=self.event, candidate_claims_json=self.claims,
+            source_documents_db=self.catalog, output_dir=output or self.output)
 
     def test_composes_review_artifacts_and_hash_bound_manifest_without_changing_inputs(self) -> None:
-        originals = {path: path.read_bytes() for path in (self.event, self.index, self.claims, self.segment, FIXTURE)}
+        originals = {path: path.read_bytes() for path in (self.event, self.index, self.claims, self.segment, self.catalog, FIXTURE)}
         manifest = self.run_preview()
         self.assertEqual(manifest["counts"], {"documents": 1, "event_mentions": 1, "event_links": 1,
                                             "candidate_updates": 1, "skipped_claims": 0})
         self.assertEqual(manifest["source_document_ids"], ["doc:one"])
+        self.assertEqual(manifest["catalog_resolved_source_document_ids"], ["doc:one"])
         self.assertEqual(manifest["source_ids"], ["fixture"])
         self.assertEqual(manifest["review_status"], "pending")
         self.assertTrue(manifest["requires_human_review"])
@@ -140,10 +149,27 @@ class HistoricalEventPreviewPipelineTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as stdout:
             result = main(["--segments-dir", str(self.segments), "--events-index-json", str(self.index),
                            "--event-jsonld", str(self.event), "--candidate-claims-json", str(self.claims),
+                           "--source-documents-db", str(self.catalog),
                            "--output-dir", str(self.output)])
         self.assertEqual(result, 0)
         self.assertIn("event:battaglia-purocielo", stdout.getvalue())
         self.assertTrue((self.output / "manifest.json").is_file())
+
+    def test_missing_catalog_document_is_rejected_before_output(self) -> None:
+        with closing(sqlite3.connect(self.catalog)) as connection:
+            connection.execute("DELETE FROM source_documents")
+            connection.commit()
+        with self.assertRaisesRegex(ValueError, "absent from catalog"):
+            self.run_preview()
+        self.assertFalse(self.output.exists())
+
+    def test_candidate_claim_without_source_document_id_is_rejected(self) -> None:
+        payload = json.loads(self.claims.read_text(encoding="utf-8"))
+        payload["candidate_evidence_claims"][0]["source_document_id"] = ""
+        self.write(self.claims, payload)
+        with self.assertRaisesRegex(ValueError, "must identify a source_document_id"):
+            self.run_preview()
+        self.assertFalse(self.output.exists())
 
 
 if __name__ == "__main__":
