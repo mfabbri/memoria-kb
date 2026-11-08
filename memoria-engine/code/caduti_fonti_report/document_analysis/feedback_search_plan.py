@@ -63,6 +63,7 @@ def build_feedback_search_plan(
         "@type": "FeedbackSearchPlanSet",
         "generated_at": datetime.now(UTC).isoformat(),
         "actions_json": str(actions_json),
+        "actions_sha256": hashlib.sha256(actions_json.read_bytes()).hexdigest(),
         "links_json": str(links_json or ""),
         "profiles_index": str(profiles_index),
         "sources_yaml": str(sources_yaml),

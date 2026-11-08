@@ -60,7 +60,6 @@ from caduti_fonti_report.document_analysis.ocr_cohort_preregistration import (
     require_external_path, validate_ocr_cohort_preregistration,
 )
 from caduti_fonti_report.document_analysis.ocr_evidence_comparison import compare_ocr_page_evidence
-from caduti_fonti_report.document_analysis.ocr_vlm_crop_evaluation import evaluate_ocr_vlm_crop_cohort
 from caduti_fonti_report.document_analysis.ocr_transform_pilot import (
     local_paddle_checkpoint_identity,
     create_local_paddle_ocr_v5_runner,
@@ -82,6 +81,7 @@ from caduti_fonti_report.document_analysis.entity_preview_review import (
     run_entity_preview_review_wizard,
 )
 from caduti_fonti_report.document_analysis.online_source_registration import register_online_source_document
+from caduti_fonti_report.document_analysis.feedback_loop_evaluation import build_feedback_loop_evaluation
 from caduti_fonti_report.workspace_storage import LocalWorkspaceStorage, PCloudStorageError, WorkspaceStorage
 from caduti_fonti_report.workspace_resolver import (
     DataRootResolution,
@@ -123,6 +123,15 @@ INVENTORY_SECTIONS = (
 )
 
 MAX_INVENTORY_NAMES = 20
+
+
+def evaluate_ocr_vlm_crop_cohort(*args, **kwargs):
+    """Load Pillow-dependent VLM evaluation only when that command is invoked."""
+    from caduti_fonti_report.document_analysis.ocr_vlm_crop_evaluation import (
+        evaluate_ocr_vlm_crop_cohort as evaluate,
+    )
+
+    return evaluate(*args, **kwargs)
 DEFAULT_PROFILES_INDEX = Path("ricerche") / "person_profiles" / "purocielo.index.jsonld"
 DEFAULT_SOURCES_REGISTRY = Path("ricerche") / "camalanca_fonti.yaml"
 DEFAULT_MVP_DEMO_DESCRIPTOR = Path("database") / "memoria_mvp_demo.active.json"
@@ -1805,6 +1814,187 @@ def _command_documents_event_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_feedback_evaluate(args: argparse.Namespace) -> int:
+    try:
+        report = build_feedback_loop_evaluation(
+            feedback_plan_json=Path(args.feedback_plan_json),
+            outcome_json=[Path(path) for path in args.outcome_json],
+            candidate_claims_json=Path(args.candidate_claims_json) if args.candidate_claims_json else None,
+            measurements_json=Path(args.measurements_json) if args.measurements_json else None,
+            review_summary_json=Path(args.review_summary_json) if args.review_summary_json else None,
+            output_json=Path(args.output_json),
+            output_md=Path(args.output_md) if args.output_md else None,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback evaluate: {exc}", file=sys.stderr)
+        return 1
+    statuses = {name: metric["status"] for name, metric in report.get("metrics", {}).items()}
+    print(json.dumps({
+        "evaluation": str(Path(args.output_json)),
+        "markdown": str(Path(args.output_md)) if args.output_md else None,
+        "accepted_outcome_count": len(report.get("accepted_outcome_ids", [])),
+        "excluded_outcome_count": report.get("excluded_outcome_count", 0),
+        "metric_status": statuses,
+        "audit_only": True,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_plan(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.feedback_search_plan import build_feedback_search_plan
+
+    try:
+        report = build_feedback_search_plan(
+            actions_json=Path(args.actions_json),
+            links_json=Path(args.links_json) if args.links_json else None,
+            profiles_index=Path(args.profiles_index),
+            sources_yaml=Path(args.sources_yaml),
+            output_json=Path(args.output_json),
+            output_md=Path(args.output_md) if args.output_md else None,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback plan: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "plan_set": str(Path(args.output_json)),
+        "markdown": str(Path(args.output_md)) if args.output_md else None,
+        "plan_count": report["plan_count"],
+        "skipped_count": report["skipped_count"],
+        "review_status": report["review_status"],
+        "execution_allowed": report["execution_allowed"],
+        "online_search_started": report["online_search_started"],
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_actions_build(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_feedback_actions import (
+        build_document_research_feedback_actions,
+    )
+
+    try:
+        report = build_document_research_feedback_actions(
+            mentions_dir=Path(args.mentions_dir),
+            output_dir=Path(args.output_dir) if args.output_dir else None,
+            output_json=Path(args.output_json),
+            output_md=Path(args.output_md) if args.output_md else None,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback actions: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "actions": str(Path(args.output_json)),
+        "markdown": str(Path(args.output_md)) if args.output_md else None,
+        "document_count": report["document_count"],
+        "action_count": report["action_count"],
+        "skipped_count": report["skipped_count"],
+        "preview_only": True,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_outcome(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.feedback_loop_outcome import build_feedback_loop_outcome
+
+    try:
+        report = build_feedback_loop_outcome(
+            feedback_plan_json=Path(args.feedback_plan_json),
+            review_summary_json=Path(args.review_summary_json) if args.review_summary_json else None,
+            action_id=args.action_id,
+            plan_id=args.plan_id,
+            source_id=args.source_id,
+            strategy_ids=args.strategy_id,
+            outcome_status=args.outcome_status,
+            execution_mode=args.execution_mode,
+            query=args.query,
+            result_source_document_ids=args.result_source_document_id,
+            notes=args.notes,
+            run_id=args.run_id,
+            executed_at=args.executed_at or None,
+            output_json=Path(args.output_json),
+            output_md=Path(args.output_md) if args.output_md else None,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback outcome: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "outcome": str(Path(args.output_json)),
+        "markdown": str(Path(args.output_md)) if args.output_md else None,
+        "outcome_id": report["feedback_loop_outcome_id"],
+        "status": report["outcome_status"],
+        "loop_status": report["loop_status"],
+        "run_id": report["run_id"],
+        "executed_at": report["executed_at"],
+        "profile_write_allowed": report["profile_write_allowed"],
+        "claim_promotion_allowed": report["claim_promotion_allowed"],
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_triage_build_table(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_feedback_triage import (
+        build_research_feedback_actions_review_table,
+    )
+
+    try:
+        table = build_research_feedback_actions_review_table(
+            actions_json=Path(args.actions_json), output_md=Path(args.output_md), limit=args.limit,
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback triage build-table: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"review_table_md": str(Path(args.output_md)), "action_count": table["action_count"],
+                      "review_status": table["review_status"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_triage_summarize_table(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_feedback_triage import (
+        summarize_research_feedback_actions_review_table,
+    )
+
+    try:
+        summary = summarize_research_feedback_actions_review_table(
+            actions_json=Path(args.actions_json), review_table_md=Path(args.review_table_md),
+            output_json=Path(args.output_json), output_md=Path(args.output_md),
+        )
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore feedback triage summarize-table: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"review_summary_json": str(Path(args.output_json)),
+                      "review_summary_md": str(Path(args.output_md)),
+                      "review_status": summary["review_status"], "accepted_count": summary["accepted_count"],
+                      "pending_count": summary["pending_count"], "invalid_count": summary["invalid_count"],
+                      "review_timing_counts": summary["review_timing_counts"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_feedback_triage_review_wizard(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_feedback_triage import run_research_feedback_triage_wizard
+
+    try:
+        if not sys.stdin.isatty():
+            raise ValueError("Feedback triage review wizard requires an interactive terminal.")
+        summary = run_research_feedback_triage_wizard(
+            actions_json=Path(args.actions_json),
+            output_review_table_md=Path(args.output_review_table_md),
+            output_json=Path(args.output_json), output_md=Path(args.output_md),
+        )
+        if summary is None:
+            print("Review annullata; nessun artifact scritto.")
+            return 0
+    except (OSError, ValueError, TypeError, KeyError, EOFError, KeyboardInterrupt) as exc:
+        print(f"Feedback triage wizard interrotto o non valido: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"review_table_md": str(Path(args.output_review_table_md)),
+                      "review_summary_json": str(Path(args.output_json)),
+                      "review_summary_md": str(Path(args.output_md)),
+                      "review_status": summary["review_status"],
+                      "accepted_count": summary["accepted_count"],
+                      "review_timing_counts": summary["review_timing_counts"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _write_new_review_artifact(output_path: Path, payload: dict[str, object], protected: list[Path]) -> None:
     output = output_path.resolve()
     if any(output == path.resolve() for path in protected):
@@ -3366,6 +3556,78 @@ def build_parser() -> argparse.ArgumentParser:
         command.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
         command.add_argument("--limit", type=int, default=5, help="Numero massimo di elementi da mostrare.")
         command.set_defaults(handler=handler)
+
+    feedback = subparsers.add_parser("feedback", help="Workflow ed evaluation audit-only del feedback loop.")
+    feedback_subparsers = feedback.add_subparsers(dest="feedback_command", required=True)
+    feedback_actions = feedback_subparsers.add_parser("actions", help="Genera candidate di ricerca da menzioni documento.")
+    feedback_actions.add_argument("--mentions-dir", required=True, help="Directory esplicita dei DocumentMentionCandidate.")
+    feedback_actions.add_argument("--output-dir", help="Directory opzionale per artifact per documento.")
+    feedback_actions.add_argument("--output-json", required=True, help="Nuovo ResearchFeedbackActionSet JSON.")
+    feedback_actions.add_argument("--output-md", help="Preview Markdown opzionale.")
+    feedback_actions.set_defaults(handler=_command_feedback_actions_build)
+    feedback_triage = feedback_subparsers.add_parser("triage", help="Genera e riepiloga il triage delle azioni feedback.")
+    feedback_triage_subparsers = feedback_triage.add_subparsers(dest="feedback_triage_command", required=True)
+    feedback_triage_build = feedback_triage_subparsers.add_parser(
+        "build-table", help="Genera una tabella Markdown per decisioni umane.")
+    feedback_triage_build.add_argument("--actions-json", required=True, help="ResearchFeedbackActionSet esplicito.")
+    feedback_triage_build.add_argument("--output-md", required=True, help="Nuova tabella di review Markdown.")
+    feedback_triage_build.add_argument("--limit", type=int, default=0, help="Numero massimo di azioni; 0 include tutte.")
+    feedback_triage_build.set_defaults(handler=_command_feedback_triage_build_table)
+    feedback_triage_summary = feedback_triage_subparsers.add_parser(
+        "summarize-table", help="Valida decisioni e timestamp di una tabella Markdown compilata.")
+    feedback_triage_summary.add_argument("--actions-json", required=True, help="ResearchFeedbackActionSet originale.")
+    feedback_triage_summary.add_argument("--review-table-md", required=True, help="Tabella compilata dal reviewer.")
+    feedback_triage_summary.add_argument("--output-json", required=True, help="Nuovo ResearchFeedbackActionReviewSummary.")
+    feedback_triage_summary.add_argument("--output-md", required=True, help="Nuovo riepilogo Markdown.")
+    feedback_triage_summary.set_defaults(handler=_command_feedback_triage_summarize_table)
+    feedback_triage_wizard = feedback_triage_subparsers.add_parser(
+        "review-wizard", help="Raccoglie decisioni e tempi di review interattivamente, senza JSON manuale.")
+    feedback_triage_wizard.add_argument("--actions-json", required=True, help="ResearchFeedbackActionSet generato a monte.")
+    feedback_triage_wizard.add_argument("--output-review-table-md", required=True,
+                                        help="Nuovo artifact Markdown con decisioni umane e timestamp.")
+    feedback_triage_wizard.add_argument("--output-json", required=True, help="Nuovo riepilogo JSON review-only.")
+    feedback_triage_wizard.add_argument("--output-md", required=True, help="Nuovo riepilogo Markdown.")
+    feedback_triage_wizard.set_defaults(handler=_command_feedback_triage_review_wizard)
+    feedback_plan = feedback_subparsers.add_parser(
+        "plan", help="Genera un FeedbackSearchPlanSet deterministico e review-only.")
+    feedback_plan.add_argument("--actions-json", required=True, help="Azioni di ricerca feedback generate a monte.")
+    feedback_plan.add_argument("--links-json", help="CandidateDocumentPersonLinks opzionali.")
+    feedback_plan.add_argument("--profiles-index", required=True, help="Indice profili esplicito.")
+    feedback_plan.add_argument("--sources-yaml", required=True, help="Registry fonti esplicito.")
+    feedback_plan.add_argument("--output-json", required=True, help="Nuovo output FeedbackSearchPlanSet.")
+    feedback_plan.add_argument("--output-md", help="Output Markdown opzionale.")
+    feedback_plan.set_defaults(handler=_command_feedback_plan)
+    feedback_outcome = feedback_subparsers.add_parser(
+        "outcome", help="Registra un outcome reale come preview auditabile; nessun write canonico.")
+    feedback_outcome.add_argument("--feedback-plan-json", required=True, help="FeedbackSearchPlanSet che identifica l'azione.")
+    feedback_outcome.add_argument("--review-summary-json", help="Decisione storica esplicita, se disponibile.")
+    feedback_outcome.add_argument("--action-id", required=True, help="ResearchFeedbackAction eseguita.")
+    feedback_outcome.add_argument("--plan-id", required=True, help="FeedbackSearchPlan eseguito.")
+    feedback_outcome.add_argument("--source-id", required=True, help="Fonte effettivamente tentata.")
+    feedback_outcome.add_argument("--strategy-id", action="append", required=True, help="Strategia effettiva; ripetibile.")
+    feedback_outcome.add_argument("--outcome-status", required=True,
+                                  choices=("candidate_results", "no_results", "needs_manual_review", "blocked_or_dynamic"))
+    feedback_outcome.add_argument("--execution-mode", default="manual_review_session")
+    feedback_outcome.add_argument("--query", required=True, help="Query realmente eseguita.")
+    feedback_outcome.add_argument("--result-source-document-id", action="append", default=[],
+                                  help="SourceDocument identificabile trovato; ripetibile, non basta un risultato web.")
+    feedback_outcome.add_argument("--notes", default="")
+    feedback_outcome.add_argument("--run-id", required=True, help="Identificativo del run effettivamente avvenuto.")
+    feedback_outcome.add_argument("--executed-at", help="Timestamp reale ISO-8601 con timezone; default: istante CLI.")
+    feedback_outcome.add_argument("--output-json", required=True, help="Nuovo FeedbackLoopOutcome JSON.")
+    feedback_outcome.add_argument("--output-md", help="Markdown preview opzionale.")
+    feedback_outcome.set_defaults(handler=_command_feedback_outcome)
+    feedback_evaluate = feedback_subparsers.add_parser(
+        "evaluate", help="Calcola KPI da artifact FeedbackLoop espliciti; nessuna scrittura canonica.")
+    feedback_evaluate.add_argument("--feedback-plan-json", required=True, help="FeedbackSearchPlanSet registrato.")
+    feedback_evaluate.add_argument("--outcome-json", action="append", required=True,
+                                   help="FeedbackLoopOutcome; ripetibile per ogni outcome.")
+    feedback_evaluate.add_argument("--candidate-claims-json", help="CandidateEvidenceClaimSet opzionale.")
+    feedback_evaluate.add_argument("--measurements-json", help="FeedbackLoopEvaluationMeasurements opzionale.")
+    feedback_evaluate.add_argument("--review-summary-json", help="Riepilogo review legato ad action_id, opzionale.")
+    feedback_evaluate.add_argument("--output-json", required=True, help="Nuovo o esplicito output evaluation JSON.")
+    feedback_evaluate.add_argument("--output-md", help="Output Markdown opzionale.")
+    feedback_evaluate.set_defaults(handler=_command_feedback_evaluate)
 
     documents = subparsers.add_parser("documents", help="Intake documenti locali con registrazione esplicita.")
     documents_subparsers = documents.add_subparsers(dest="documents_command", required=True)

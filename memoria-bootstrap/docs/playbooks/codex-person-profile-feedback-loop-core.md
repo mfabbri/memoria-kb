@@ -63,26 +63,75 @@ effettivamente avvenute. Registrare gli ID e i timestamp durante il lavoro;
 non ricostruire tempi, token o costi a posteriori. Conservare run e dati reali
 fuori da Git.
 
-1. Parti da un `FeedbackSearchPlanSet` e registra ogni tentativo con il suo
-   `feedback_search_plan_id`, `action_id`, `source_id`, strategia, `run_id`,
-   query ed `executed_at` timezone-aware. `feedback_loop_outcome.py` produce
-   un `FeedbackLoopOutcome` per l'esito reale (`candidate_results`,
-   `no_results`, `needs_manual_review` o `blocked_or_dynamic`). Un risultato
-   candidato non e' un documento acquisito; associa `result_source_document_ids`
-   solo a documenti identificabili. `no_results` non prova assenza storica.
-2. Per attribuzione claim, passa al valutatore un `CandidateEvidenceClaimSet`
+Prima genera le action candidate dal directory di `DocumentMentionCandidate`
+usando il launcher installato. Il comando produce una preview JSON/Markdown e
+digest SHA-256 per ogni file di menzioni; non crea fatti o patch ai profili:
+
+```text
+memoria feedback actions --mentions-dir <mentions-dir> --output-dir <actions-dir> --output-json <actions.json> --output-md <actions.md>
+```
+
+`feedback plan` e il riepilogo prodotto da `feedback triage summarize-table`
+conservano `actions_sha256` per l’action set consumato. Quando si registra un
+outcome passando `--review-summary-json`, l’approvazione della decisione viene
+attribuita solo se il plan e il riepilogo hanno digest SHA-256 validi e uguali;
+digest mancante o diverso lascia l’outcome in attesa di approvazione. Questo
+controllo lega la review ai byte esatti, ma non autorizza né avvia ricerche.
+L’evaluation applica la stessa condizione al KPI di latenza: un riepilogo con
+digest mancante o diverso dal piano resta escluso dalla misura e produce
+un’issue di provenance.
+La tabella Markdown di triage include il digest dell’action set all’origine;
+`summarize-table` marca `invalid` una tabella priva di digest (incluse tabelle
+legacy) o non più corrispondente al file actions passato.
+
+1. Genera la preview del piano con le azioni, l'indice profili e il registry
+   espliciti:
+
+   ```text
+   memoria feedback plan --actions-json <actions.json> --profiles-index <profiles-index.jsonld> --sources-yaml <camalanca_fonti.yaml> --output-json <plan.json> --output-md <plan.md>
+   ```
+
+   Il comando produce solo il piano review-only; `execution_allowed` e
+   `online_search_started` restano false.
+2. Prima di una ricerca, raccogli la valutazione umana delle action candidate
+   con il wizard dal launcher. Chiede l'identificativo
+   dichiarato del reviewer, che non viene autenticato; mostra un'azione alla volta
+   e registra l'inizio/fine di ogni decisione:
+
+   ```text
+   memoria feedback triage review-wizard --actions-json <actions.json> --output-review-table-md <decisions.md> --output-json <review-summary.json> --output-md <review-summary.md>
+   ```
+
+   I file vengono scritti solo dopo conferma; `q` o mancata conferma non
+   producono artifact. Le decisioni `BUONA`, `DUBBIA` e `INUTILE` valutano
+   l'utilita' della action: non sono un'autorizzazione a eseguire la ricerca.
+   Anche `approved_for_demo` nell'outcome non abilita l'esecuzione; il piano
+   resta `execution_allowed=false`. Prima di procedere, verifica che la richiesta
+   utente autorizzi gia' action, fonte e strategia/query; altrimenti fermati e
+   chiedi quel via libera esplicito. Per review batch resta disponibile la coppia
+   `memoria feedback triage build-table` / `summarize-table`; compilare decisioni
+   e tempi nel Markdown, mai in JSON. Le tabelle senza hash o con hash diverso
+   dall'action set corrente vengono invalidate.
+3. Solo dopo un tentativo di ricerca realmente autorizzato e svolto, registra
+   l'esito reale dal launcher:
+
+   ```text
+   memoria feedback outcome --feedback-plan-json <plan.json> --review-summary-json <review-summary.json> --action-id <action_id> --plan-id <plan_id> --source-id <source_id> --strategy-id <strategy_id> --outcome-status <candidate_results|no_results|needs_manual_review|blocked_or_dynamic> --query <query-eseguita> --run-id <run_id> --executed-at <timestamp-ISO-8601-con-timezone> --result-source-document-id <source_document_id> --output-json <outcome.json> --output-md <outcome.md>
+   ```
+
+   Ripetere `--strategy-id` e `--result-source-document-id` quando necessario;
+   non aggiungere ID documento se non identificano SourceDocument registrati.
+   Conserva `feedback_search_plan_id`, `action_id`, `source_id`, strategia,
+   `run_id`, query ed `executed_at` timezone-aware effettivi. `no_results` non
+   dimostra assenza storica.
+4. Per attribuzione claim, passa al valutatore un `CandidateEvidenceClaimSet`
    reale con ID univoco, `source_id` e `source_document_id`. La metrica misura
-   la presenza di questi riferimenti, non verifica che il documento esista nel
-   catalogo.
-3. Durante il triage, compila `reviewer`, `review_started_at` e `reviewed_at`
-   in ISO 8601 con timezone. L'evaluation calcola la latenza solo quando la
-   decisione e' legata senza ambiguita' a un singolo outcome. Timestamp assenti
-   o non validi restano `unavailable`.
-4. Se la riconciliazione incontra un conflitto reale, registra in
+   la presenza di questi riferimenti, non verifica l'esistenza nel catalogo.
+5. Se la riconciliazione incontra un conflitto reale, registra in
    `FeedbackLoopEvaluationMeasurements.conflicts` `conflict_id`, `outcome_id`,
    `before_claim_ids` e `after_claim_ids`. Non creare record di conflitto per
    simulare una misura.
-5. Per l'uso sessione registra in `sessions` `session_id`, `run_id` e i valori
+6. Per l'uso sessione registra in `sessions` `session_id`, `run_id` e i valori
    realmente disponibili: `input_tokens`, `cached_input_tokens`,
    `output_tokens`, `cost_usd`. Per confrontare baseline e candidate aggiungi
    `comparison_group_id`, `task_contract_sha256`, `quality_gate_status`,
@@ -90,10 +139,11 @@ fuori da Git.
    un candidate, fingerprint del task identico e quality gate `passed`; i delta
    descrivono osservazioni e non dimostrano risparmi o causalita'.
 
-L'evaluation accetta questi artifact con:
+Usa il launcher installato `memoria feedback evaluate`; non invocare il modulo
+con `python -m` e non chiedere all'utente di compilare artifact JSON:
 
 ```text
-python -m caduti_fonti_report.document_analysis.feedback_loop_evaluation --feedback-plan-json <plan.json> --outcome-json <outcome.json> --candidate-claims-json <claims.json> --measurements-json <measurements.json> --review-summary-json <review-summary.json> --output-json <evaluation.json>
+memoria feedback evaluate --feedback-plan-json <plan.json> --outcome-json <outcome.json> --candidate-claims-json <claims.json> --measurements-json <measurements.json> --review-summary-json <review-summary.json> --output-json <evaluation.json> --output-md <evaluation.md>
 ```
 
 Ripetere `--outcome-json` per ogni outcome. Claims, measurements e review

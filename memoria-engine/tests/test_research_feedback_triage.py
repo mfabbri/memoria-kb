@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+import subprocess
 import sys
 import unittest
 import uuid
@@ -13,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 from caduti_fonti_report.document_analysis.research_feedback_triage import (  # noqa: E402
     build_research_feedback_actions_review_table,
     render_research_feedback_actions_review_table,
+    run_research_feedback_triage_wizard,
     summarize_research_feedback_actions_review_table,
 )
 
@@ -84,6 +88,88 @@ def write_actions_json(path: Path) -> None:
 
 
 class ResearchFeedbackTriageTests(unittest.TestCase):
+    def test_review_wizard_records_explicit_decisions_and_per_action_timing(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json = tmp_dir / "actions.json"
+            table_md, summary_json, summary_md = (tmp_dir / name for name in ("decisions.md", "summary.json", "summary.md"))
+            write_actions_json(actions_json)
+            answers = iter(["reviewer:test", "b", "nota 1", "i", "nota 2", "s"])
+            timestamps = iter([
+                "2026-11-08T10:00:00+00:00", "2026-11-08T10:02:00+00:00",
+                "2026-11-08T10:03:00+00:00", "2026-11-08T10:04:00+00:00",
+            ])
+            summary = run_research_feedback_triage_wizard(
+                actions_json=actions_json, output_review_table_md=table_md,
+                output_json=summary_json, output_md=summary_md,
+                input_fn=lambda _: next(answers), output_fn=lambda _: None, now_fn=lambda: next(timestamps),
+            )
+            self.assertIsNotNone(summary)
+            assert summary is not None
+            first, second = summary["decisions"]
+            self.assertEqual((first["decision"], first["reviewer"], first["review_timing_status"],
+                              first["review_duration_seconds"]), ("BUONA", "reviewer:test", "measured", 120.0))
+            self.assertEqual((second["decision"], second["review_timing_status"],
+                              second["review_duration_seconds"]), ("INUTILE", "measured", 60.0))
+            self.assertTrue(table_md.is_file())
+            self.assertEqual(json.loads(summary_json.read_text(encoding="utf-8"))["accepted_count"], 2)
+
+    def test_review_wizard_cancel_writes_no_artifacts(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json = tmp_dir / "actions.json"
+            table_md, summary_json, summary_md = (tmp_dir / name for name in ("decisions.md", "summary.json", "summary.md"))
+            write_actions_json(actions_json)
+            answers = iter(["reviewer:test", "q"])
+            summary = run_research_feedback_triage_wizard(
+                actions_json=actions_json, output_review_table_md=table_md,
+                output_json=summary_json, output_md=summary_md,
+                input_fn=lambda _: next(answers), output_fn=lambda _: None,
+                now_fn=lambda: "2026-11-08T10:00:00+00:00",
+            )
+            self.assertIsNone(summary)
+            self.assertFalse(table_md.exists())
+            self.assertFalse(summary_json.exists())
+            self.assertFalse(summary_md.exists())
+
+    def test_installed_launcher_builds_and_summarizes_timed_triage(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json = tmp_dir / "actions.json"
+            table_md = tmp_dir / "review-table.md"
+            summary_json, summary_md = tmp_dir / "summary.json", tmp_dir / "summary.md"
+            write_actions_json(actions_json)
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            if not launcher.is_file():
+                self.skipTest("Installed memoria launcher is not available in this environment.")
+            before = actions_json.read_bytes()
+            built = subprocess.run(
+                [str(launcher), "feedback", "triage", "build-table", "--actions-json", str(actions_json),
+                 "--output-md", str(table_md)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(built.returncode, 0, built.stderr)
+            rows = table_md.read_text(encoding="utf-8").splitlines()
+            updated = []
+            for line in rows:
+                if line.startswith("|") and "research-feedback-action:buona" in line:
+                    cells = line.strip("|").split("|")
+                    cells[0] = " BUONA "
+                    cells[8] = " reviewer:test "
+                    cells[9] = " 2026-11-08T10:00:00+00:00 "
+                    cells[10] = " 2026-11-08T10:02:00+00:00 "
+                    line = "|" + "|".join(cells) + "|"
+                updated.append(line)
+            table_md.write_text("\n".join(updated) + "\n", encoding="utf-8")
+            summarized = subprocess.run(
+                [str(launcher), "feedback", "triage", "summarize-table", "--actions-json", str(actions_json),
+                 "--review-table-md", str(table_md), "--output-json", str(summary_json),
+                 "--output-md", str(summary_md)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(summarized.returncode, 0, summarized.stderr)
+            summary = json.loads(summary_json.read_text(encoding="utf-8"))
+            self.assertEqual(summary["@type"], "ResearchFeedbackActionReviewSummary")
+            self.assertEqual(summary["review_status"], "partial_review")
+            self.assertEqual(summary["accepted_count"], 1)
+            self.assertEqual(summary["review_timing_counts"], {"measured": 1, "unavailable": 1})
+            self.assertEqual(actions_json.read_bytes(), before)
+
     def test_builds_markdown_review_table_from_actions(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             actions_json = tmp_dir / "research_feedback_actions.json"
@@ -125,6 +211,7 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
             persisted = json.loads(output_json.read_text(encoding="utf-8"))
             markdown = output_md.read_text(encoding="utf-8")
             serialized = json.dumps(persisted, ensure_ascii=False)
+            expected_actions_sha256 = hashlib.sha256(actions_json.read_bytes()).hexdigest()
 
         self.assertEqual(summary["@type"], "ResearchFeedbackActionReviewSummary")
         self.assertEqual(summary["review_status"], "reviewed")
@@ -132,10 +219,51 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
         self.assertEqual(summary["pending_count"], 0)
         self.assertEqual(summary["invalid_count"], 0)
         self.assertEqual(summary["counts_by_decision"], {"BUONA": 1, "DUBBIA": 1})
+        self.assertEqual(summary["actions_sha256"], expected_actions_sha256)
         self.assertIn("person:purocielo:andreoli-dino", serialized)
         self.assertIn("ResearchFeedbackAction triage summary", markdown)
         self.assertNotIn("ProfilePatch", serialized)
         self.assertNotIn("EvidenceClaim", serialized)
+
+    def test_summary_rejects_review_table_if_action_set_changed(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json = tmp_dir / "actions.json"
+            table_md = tmp_dir / "review.md"
+            write_actions_json(actions_json)
+            build_research_feedback_actions_review_table(actions_json=actions_json, output_md=table_md)
+            table = table_md.read_text(encoding="utf-8")
+            table = table.replace("|  | Andreoli Dino |", "| BUONA | Andreoli Dino |")
+            table_md.write_text(table, encoding="utf-8")
+            actions_json.write_text(actions_json.read_text(encoding="utf-8").replace("Purocielo", "Bologna"), encoding="utf-8")
+
+            summary = summarize_research_feedback_actions_review_table(
+                actions_json=actions_json, review_table_md=table_md
+            )
+
+        self.assertEqual(summary["source_actions_binding_status"], "mismatch")
+        self.assertEqual(summary["review_status"], "invalid")
+        self.assertEqual(summary["accepted_count"], 0)
+        self.assertIn("review_table_action_set_hash_mismatch", summary["warnings"])
+
+    def test_summary_rejects_legacy_review_table_without_action_hash(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            actions_json = tmp_dir / "actions.json"
+            table_md = tmp_dir / "review.md"
+            write_actions_json(actions_json)
+            build_research_feedback_actions_review_table(actions_json=actions_json, output_md=table_md)
+            table = table_md.read_text(encoding="utf-8")
+            table = table.replace("- Action set SHA-256: `" + hashlib.sha256(actions_json.read_bytes()).hexdigest() + "`\n", "")
+            table = table.replace("|  | Andreoli Dino |", "| BUONA | Andreoli Dino |")
+            table_md.write_text(table, encoding="utf-8")
+
+            summary = summarize_research_feedback_actions_review_table(
+                actions_json=actions_json, review_table_md=table_md
+            )
+
+        self.assertEqual(summary["source_actions_binding_status"], "missing")
+        self.assertEqual(summary["review_status"], "invalid")
+        self.assertEqual(summary["accepted_count"], 0)
+        self.assertIn("review_table_action_set_hash_missing", summary["warnings"])
 
     def test_reports_invalid_decision_and_unknown_action_id(self) -> None:
         with workspace_temp_dir() as tmp_dir:
@@ -196,7 +324,7 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
         self.assertEqual(summary["review_timing_counts"], {"measured": 1, "unavailable": 1})
         self.assertEqual(summary["review_timing_validation_errors"], [])
 
-    def test_legacy_eight_column_table_remains_accepted_without_timing(self) -> None:
+    def test_legacy_eight_column_table_is_not_approved_without_hash(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             actions_json, table_md = tmp_dir / "actions.json", tmp_dir / "review.md"
             write_actions_json(actions_json)
@@ -208,8 +336,10 @@ class ResearchFeedbackTriageTests(unittest.TestCase):
             )
             summary = summarize_research_feedback_actions_review_table(actions_json=actions_json, review_table_md=table_md)
         decision = summary["decisions"][0]
-        self.assertEqual(summary["accepted_count"], 1)
-        self.assertEqual(summary["review_status"], "reviewed")
+        self.assertEqual(summary["accepted_count"], 0)
+        self.assertEqual(summary["review_status"], "invalid")
+        self.assertEqual(summary["source_actions_binding_status"], "missing")
+        self.assertEqual(decision["decision_status"], "invalid")
         self.assertEqual(decision["reviewer"], "")
         self.assertEqual(decision["review_started_at"], "")
         self.assertEqual(decision["reviewed_at"], "")

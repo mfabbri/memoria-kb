@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+import subprocess
 import sys
 import unittest
 import uuid
@@ -88,6 +91,35 @@ def mention(
 
 
 class DocumentResearchFeedbackActionsTests(unittest.TestCase):
+    def test_installed_launcher_builds_actions_from_mentions(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            mentions_dir = tmp_dir / "mentions"
+            output_json = tmp_dir / "actions.json"
+            output_md = tmp_dir / "actions.md"
+            write_mentions_payload(
+                mentions_dir,
+                mentions=[
+                    mention(mention_kind="person", value="Andreoli Dino"),
+                    mention(mention_kind="place", value="Purocielo"),
+                ],
+            )
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            completed = subprocess.run(
+                [str(launcher), "feedback", "actions", "--mentions-dir", str(mentions_dir),
+                 "--output-json", str(output_json), "--output-md", str(output_md)],
+                cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, check=False,
+            )
+
+            payload = json.loads(output_json.read_text(encoding="utf-8")) if output_json.exists() else {}
+            output_md_exists = output_md.exists()
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(payload["@type"], "ResearchFeedbackActionSet")
+        self.assertEqual(payload["action_count"], 1)
+        self.assertTrue(output_md_exists)
+        self.assertNotIn("EvidenceClaim", json.dumps(payload))
+        self.assertNotIn("ProfilePatch", json.dumps(payload))
+
     def test_builds_research_feedback_actions_from_supported_person_mentions(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             mentions_dir = tmp_dir / "mentions"
@@ -116,12 +148,14 @@ class DocumentResearchFeedbackActionsTests(unittest.TestCase):
             )
             output_json_exists = output_json.exists()
             output_md_exists = output_md.exists()
+            mentions_sha256 = hashlib.sha256(next(mentions_dir.rglob("*.mentions.json")).read_bytes()).hexdigest()
 
         self.assertEqual(payload["@type"], "ResearchFeedbackActionSet")
         self.assertEqual(payload["document_count"], 1)
         self.assertEqual(payload["action_count"], 1)
         self.assertEqual(document["@type"], "ResearchFeedbackActionDocument")
         self.assertEqual(document["review_status"], "unreviewed")
+        self.assertEqual(document["mentions_sha256"], mentions_sha256)
         self.assertEqual(persisted["action_count"], 1)
         self.assertTrue(output_json_exists)
         self.assertTrue(output_md_exists)

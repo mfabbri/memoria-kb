@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,7 @@ def build_research_feedback_actions_review_table(
     table = {
         "@type": "ResearchFeedbackActionReviewTable",
         "source_actions_json": str(actions_json),
+        "actions_sha256": hashlib.sha256(actions_json.read_bytes()).hexdigest(),
         "action_count": len(actions),
         "allowed_decisions": sorted(ALLOWED_DECISIONS),
         "columns": TABLE_COLUMNS,
@@ -60,6 +62,15 @@ def summarize_research_feedback_actions_review_table(
 ) -> dict[str, Any]:
     actions_payload = _load_json_object(actions_json)
     actions_by_id = {str(action.get("action_id", "")): action for action in _flatten_actions(actions_payload)}
+    actions_sha256 = hashlib.sha256(actions_json.read_bytes()).hexdigest()
+    table_actions_sha256 = _review_table_actions_sha256(review_table_md)
+    if not table_actions_sha256:
+        binding_status = "missing"
+    elif table_actions_sha256 != actions_sha256:
+        binding_status = "mismatch"
+    else:
+        binding_status = "matched"
+    binding_error = f"review_table_action_set_hash_{binding_status}" if binding_status != "matched" else ""
     table_rows = _parse_review_table(review_table_md)
     decisions: list[dict[str, Any]] = []
     validation_errors: list[dict[str, str]] = []
@@ -76,7 +87,10 @@ def summarize_research_feedback_actions_review_table(
         status = "pending"
         error_type = ""
 
-        if not action_id:
+        if binding_error:
+            status = "invalid"
+            error_type = binding_error
+        elif not action_id:
             status = "invalid"
             error_type = "missing_action_id"
         elif action_id in seen_action_ids:
@@ -144,8 +158,12 @@ def summarize_research_feedback_actions_review_table(
     summary = {
         "@type": "ResearchFeedbackActionReviewSummary",
         "source_actions_json": str(actions_json),
+        "actions_sha256": actions_sha256,
         "source_review_table_md": str(review_table_md),
-        "review_status": _review_status(accepted_count=accepted_count, pending_count=pending_count, invalid_count=invalid_count),
+        "source_actions_binding_status": binding_status,
+        "review_status": "invalid" if binding_error else _review_status(
+            accepted_count=accepted_count, pending_count=pending_count, invalid_count=invalid_count
+        ),
         "action_count": len(actions_by_id),
         "row_count": len(table_rows),
         "accepted_count": accepted_count,
@@ -164,6 +182,7 @@ def summarize_research_feedback_actions_review_table(
             "decisions_do_not_create_verified_facts",
             "decisions_do_not_modify_profiles",
             "review_timestamps_are_operator_supplied_not_inferred",
+            *([binding_error] if binding_error else []),
         ],
     }
     if output_json is not None:
@@ -188,6 +207,7 @@ def render_research_feedback_actions_review_table(table: dict[str, Any]) -> str:
         "",
         f"- Azioni: `{table.get('action_count', 0)}`",
         f"- Stato: `{table.get('review_status', '')}`",
+        f"- Action set SHA-256: `{table.get('actions_sha256', '')}`",
         "",
         _markdown_table_header(TABLE_COLUMNS),
     ]
@@ -256,6 +276,77 @@ def render_research_feedback_actions_review_summary(summary: dict[str, Any]) -> 
             lines.append(f"- Riga `{error.get('row', '')}` action `{error.get('action_id', '')}`: `{error.get('error_type', '')}`")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def run_research_feedback_triage_wizard(
+    *,
+    actions_json: Path,
+    output_review_table_md: Path,
+    output_json: Path,
+    output_md: Path,
+    input_fn=None,
+    output_fn=None,
+    now_fn=None,
+) -> dict[str, Any] | None:
+    """Collect human action decisions and measured per-action review times."""
+    ask = input_fn or input
+    show = output_fn or print
+    clock = now_fn or (lambda: datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"))
+    inputs = Path(actions_json).resolve()
+    targets = [Path(output_review_table_md), Path(output_json), Path(output_md)]
+    resolved_targets = [path.resolve() for path in targets]
+    if len(set(resolved_targets)) != len(resolved_targets) or inputs in resolved_targets:
+        raise ValueError("Review wizard outputs must be distinct from each other and from the action input.")
+    if any(path.exists() for path in resolved_targets):
+        raise FileExistsError("Review wizard output already exists.")
+
+    table = build_research_feedback_actions_review_table(actions_json=inputs)
+    reviewer = ask("Identificativo reviewer: ").strip()
+    if not reviewer:
+        return None
+    choices = {"b": "BUONA", "d": "DUBBIA", "i": "INUTILE"}
+    for index, row in enumerate(table["rows"], start=1):
+        started_at = clock()
+        show(f"\n[{index}/{len(table['rows'])}] {row['action_id']}")
+        show(f"Valore: {row['valore']}")
+        show(f"Documento: {row['documento']}")
+        show(f"Fonti suggerite: {row['fonti_suggerite']}")
+        show(f"Indizi: {row['indizi']}")
+        show(f"Contesto: {row['contesto']}")
+        while True:
+            choice = ask("Decisione: [b] BUONA / [d] DUBBIA / [i] INUTILE / [q] annulla: ").strip().casefold()
+            if choice == "q":
+                return None
+            if choice in choices:
+                break
+            show("Scelta non valida.")
+        note = ask("Nota (opzionale, Invio per nessuna): ").strip()
+        row["decisione"] = choices[choice]
+        row["note_storico"] = note
+        row["reviewer"] = reviewer
+        row["review_started_at"] = started_at
+        row["reviewed_at"] = clock()
+
+    show(f"\nRiepilogo: {len(table['rows'])} decisioni registrate")
+    if ask("Confermare e scrivere gli artifact review-only? [s/N]: ").strip().casefold() != "s":
+        return None
+
+    review_markdown = render_research_feedback_actions_review_table(table)
+    created: list[Path] = []
+    try:
+        targets[0].parent.mkdir(parents=True, exist_ok=True)
+        with targets[0].open("x", encoding="utf-8") as handle:
+            handle.write(review_markdown)
+        created.append(targets[0])
+        summary = summarize_research_feedback_actions_review_table(
+            actions_json=inputs, review_table_md=targets[0], output_json=targets[1], output_md=targets[2],
+        )
+        created.extend(path for path in targets[1:] if path.exists())
+        return summary
+    except Exception:
+        for path in created:
+            path.unlink(missing_ok=True)
+        raise
 
 
 def _flatten_actions(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -352,6 +443,16 @@ def _parse_review_table(path: Path) -> list[dict[str, str]]:
             continue
         rows.append(dict(zip(columns, cells)))
     return rows
+
+
+def _review_table_actions_sha256(path: Path) -> str:
+    prefix = "- Action set SHA-256: `"
+    suffix = "`"
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith(prefix) and stripped.endswith(suffix):
+            return stripped[len(prefix) : -len(suffix)].strip().lower()
+    return ""
 
 
 def _markdown_table_header(columns: list[str]) -> str:

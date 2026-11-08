@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+import subprocess
 import sys
 import unittest
 import uuid
@@ -21,19 +24,22 @@ class FeedbackLoopEvaluationTests(unittest.TestCase):
         self.root.mkdir()
         self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
         self.plan = self.write("plan.json", {
-            "@type": "FeedbackSearchPlanSet", "plans": [{
+            "@type": "FeedbackSearchPlanSet", "actions_sha256": "a" * 64, "plans": [{
                 "@type": "FeedbackSearchPlan", "@id": "plan:one", "feedback_search_plan_id": "plan:one",
                 "action_id": "action:one", "profile_id": "person:test", "source_document_id": "doc:seed",
                 "source_plans": [{"source_id": source, "status": "planned", "planned_attempts": [{"attempt_id": "strategy:one"}]}
                                  for source in ("source:a", "source:b")],
             }],
         })
-        self.review = self.write("review.json", {"@type": "ResearchFeedbackActionReviewSummary", "decisions": [{
+        self.review = self.write("review.json", {"@type": "ResearchFeedbackActionReviewSummary",
+            "actions_sha256": "a" * 64, "decisions": [{
             "action_id": "action:one", "decision_status": "accepted", "decision": "BUONA",
             "person_id": "person:test", "source_document_id": "doc:seed",
         }]})
 
     def write(self, filename: str, payload: dict) -> Path:
+        if payload.get("@type") == "ResearchFeedbackActionReviewSummary":
+            payload.setdefault("actions_sha256", "a" * 64)
         path = self.root / filename
         path.write_text(json.dumps(payload), encoding="utf-8")
         return path
@@ -74,6 +80,95 @@ class FeedbackLoopEvaluationTests(unittest.TestCase):
             self.assertEqual(payload["metrics"][name]["status"], "unavailable", name)
             self.assertIsNone(payload["metrics"][name]["value"], name)
         self.assertEqual(payload["issues"], [])
+
+    def test_installed_launcher_evaluates_explicit_artifacts_audit_only(self) -> None:
+        outcome = self.outcome()
+        output = self.root / "launcher-evaluation.json"
+        launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+        if not launcher.is_file():
+            self.skipTest("Installed memoria launcher is not available in this environment.")
+        inputs_before = {path: path.read_bytes() for path in (self.plan, outcome)}
+        completed = subprocess.run(
+            [str(launcher), "feedback", "evaluate", "--feedback-plan-json", str(self.plan),
+             "--outcome-json", str(outcome), "--output-json", str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertTrue(output.is_file())
+        payload = json.loads(output.read_text(encoding="utf-8"))
+        self.assertTrue(payload["audit_only"])
+        self.assertFalse(payload["profile_write_allowed"])
+        self.assertFalse(payload["claim_promotion_allowed"])
+        self.assertEqual(inputs_before, {path: path.read_bytes() for path in (self.plan, outcome)})
+
+    def test_installed_launcher_chain_binds_triage_timing_to_outcome(self) -> None:
+        launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+        if not launcher.is_file():
+            self.skipTest("Installed memoria launcher is not available in this environment.")
+        actions = self.write("actions.json", {"@type": "ResearchFeedbackActionSet", "documents": [{
+            "source_id": "source:a", "source_document_id": "doc:seed", "actions": [{
+                "action_id": "action:one", "value": "Synthetic person", "source_document_id": "doc:seed",
+                "person_id": "person:test", "suggested_sources": ["source:a"],
+                "suggested_search_hints": [{"field": "name", "value": "Synthetic person"}],
+                "context": {"quote": "Synthetic context only."},
+            }],
+        }]})
+        plan_payload = json.loads(self.plan.read_text(encoding="utf-8"))
+        plan_payload["actions_sha256"] = hashlib.sha256(actions.read_bytes()).hexdigest()
+        self.plan.write_text(json.dumps(plan_payload), encoding="utf-8")
+        table = self.root / "triage.md"
+        summary = self.root / "triage-summary.json"
+        summary_md = self.root / "triage-summary.md"
+        outcome = self.root / "outcome-cli.json"
+        evaluation = self.root / "evaluation-chain.json"
+
+        built = subprocess.run(
+            [str(launcher), "feedback", "triage", "build-table", "--actions-json", str(actions),
+             "--output-md", str(table)], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(built.returncode, 0, built.stderr)
+        lines = table.read_text(encoding="utf-8").splitlines()
+        reviewed = []
+        for line in lines:
+            if line.startswith("|") and "action:one" in line:
+                cells = line.strip("|").split("|")
+                cells[0] = " BUONA "
+                cells[8] = " reviewer:e2e "
+                cells[9] = " 2026-11-08T10:00:00+00:00 "
+                cells[10] = " 2026-11-08T10:01:00+00:00 "
+                line = "|" + "|".join(cells) + "|"
+            reviewed.append(line)
+        table.write_text("\n".join(reviewed) + "\n", encoding="utf-8")
+        summarized = subprocess.run(
+            [str(launcher), "feedback", "triage", "summarize-table", "--actions-json", str(actions),
+             "--review-table-md", str(table), "--output-json", str(summary), "--output-md", str(summary_md)],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(summarized.returncode, 0, summarized.stderr)
+        outcome_result = subprocess.run(
+            [str(launcher), "feedback", "outcome", "--feedback-plan-json", str(self.plan),
+             "--review-summary-json", str(summary), "--action-id", "action:one", "--plan-id", "plan:one",
+             "--source-id", "source:a", "--strategy-id", "strategy:one", "--outcome-status", "no_results",
+             "--query", "synthetic query", "--run-id", "run:e2e", "--executed-at", "2026-11-08T10:02:00+00:00",
+             "--output-json", str(outcome)], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(outcome_result.returncode, 0, outcome_result.stderr)
+        evaluated = subprocess.run(
+            [str(launcher), "feedback", "evaluate", "--feedback-plan-json", str(self.plan),
+             "--outcome-json", str(outcome), "--review-summary-json", str(summary),
+             "--output-json", str(evaluation)], capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(evaluated.returncode, 0, evaluated.stderr)
+        outcome_payload = json.loads(outcome.read_text(encoding="utf-8"))
+        report = json.loads(evaluation.read_text(encoding="utf-8"))
+        latency = report["metrics"]["review_latency_seconds"]
+        self.assertTrue(outcome_payload["approved_for_demo"])
+        self.assertEqual(outcome_payload["research_feedback_action_id"], "action:one")
+        self.assertEqual(latency["status"], "measured")
+        self.assertEqual(latency["value"], 60.0)
+        self.assertTrue(report["audit_only"])
+        self.assertFalse(report["profile_write_allowed"])
+        self.assertFalse(report["claim_promotion_allowed"])
 
     def test_measures_explicit_claim_conflict_review_and_usage_inputs(self) -> None:
         first = self.outcome(status="candidate_results")
@@ -287,6 +382,32 @@ class FeedbackLoopEvaluationTests(unittest.TestCase):
         metric = payload["metrics"]["review_latency_seconds"]
         self.assertEqual((metric["status"], metric["value"], metric["numerator"], metric["denominator"]), ("unavailable", None, 0, 1))
         self.assertEqual(payload["issues"][0]["reason"], "review_summary_timing_unavailable")
+
+    def test_review_latency_requires_action_set_hash_match(self) -> None:
+        outcome = self.outcome()
+        for digest, reason in [("b" * 64, "review_summary_action_set_hash_mismatch"),
+                               ("", "review_summary_action_set_hash_unavailable")]:
+            with self.subTest(reason=reason):
+                summary = self.write("unbound-review.json", {
+                    "@type": "ResearchFeedbackActionReviewSummary",
+                    "actions_sha256": digest,
+                    "decisions": [{
+                        "action_id": "action:one", "decision_status": "accepted",
+                        "review_timing_status": "measured",
+                        "review_started_at": "2026-11-07T10:00:00+00:00",
+                        "reviewed_at": "2026-11-07T10:01:00+00:00",
+                        "review_duration_seconds": 60,
+                    }],
+                })
+                payload = build_feedback_loop_evaluation(
+                    feedback_plan_json=self.plan,
+                    outcome_json=[outcome],
+                    review_summary_json=summary,
+                )
+                metric = payload["metrics"]["review_latency_seconds"]
+                self.assertEqual(metric["status"], "unavailable")
+                self.assertEqual(metric["value"], None)
+                self.assertEqual(payload["issues"][0]["reason"], reason)
 
     def comparison_session(self, session_id: str, role: str, **values: object) -> dict:
         return {"session_id": session_id, "run_id": "run:one", "comparison_group_id": "comparison:one",

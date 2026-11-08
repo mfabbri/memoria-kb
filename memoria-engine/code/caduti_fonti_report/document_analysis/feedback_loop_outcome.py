@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -50,7 +51,16 @@ def build_feedback_loop_outcome(
     result_documents = sorted(set(_string_list(result_source_document_ids or [])))
     if status == "no_results" and result_documents:
         raise ValueError("A no_results outcome cannot include result SourceDocument IDs.")
-    approved_decision = _approved_decision(review_summary, selected_plan)
+    review_action_set_provenance = _review_action_set_provenance(
+        plan_payload=plan_payload,
+        review_summary=review_summary,
+        review_summary_path=review_summary_json,
+    )
+    approved_decision = (
+        _approved_decision(review_summary, selected_plan)
+        if review_action_set_provenance == "matched"
+        else {}
+    )
     approved_for_demo = bool(approved_decision)
 
     now = _execution_time(executed_at)
@@ -97,6 +107,7 @@ def build_feedback_loop_outcome(
         "loop_status": loop_status,
         "approved_for_demo": approved_for_demo,
         "approved_decision": approved_decision,
+        "review_action_set_provenance": review_action_set_provenance,
         "result_source_document_ids": result_documents,
         "notes": notes,
         "profile_write_allowed": False,
@@ -126,6 +137,7 @@ def build_feedback_loop_outcome(
             result_source_document_ids=result_documents,
             strategy_attribution=strategy_attribution,
             run_id=selected_run_id,
+            review_action_set_provenance=review_action_set_provenance,
         ),
     }
     if output_json is not None:
@@ -293,6 +305,23 @@ def _approved_decision(review_summary: dict[str, Any], plan: dict[str, Any]) -> 
     return matches[0] if len(matches) == 1 else {}
 
 
+def _review_action_set_provenance(
+    *,
+    plan_payload: dict[str, Any],
+    review_summary: dict[str, Any],
+    review_summary_path: Path | None,
+) -> str:
+    if review_summary_path is None:
+        return "not_provided"
+    plan_digest = str(plan_payload.get("actions_sha256", "")).strip().lower()
+    review_digest = str(review_summary.get("actions_sha256", "")).strip().lower()
+    if not plan_digest or not review_digest:
+        return "unavailable"
+    if not re.fullmatch(r"[0-9a-f]{64}", plan_digest) or not re.fullmatch(r"[0-9a-f]{64}", review_digest):
+        return "invalid"
+    return "matched" if plan_digest == review_digest else "mismatch"
+
+
 def _loop_status(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str], strategy_attribution: str, run_id: str) -> str:
     if outcome_status not in AUDITABLE_OUTCOME_STATUSES:
         return "invalid_outcome_status"
@@ -307,7 +336,7 @@ def _loop_status(*, approved_for_demo: bool, outcome_status: str, result_source_
     return "closed_with_auditable_outcome"
 
 
-def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str], strategy_attribution: str, run_id: str) -> list[str]:
+def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_document_ids: list[str], strategy_attribution: str, run_id: str, review_action_set_provenance: str) -> list[str]:
     warnings = [
         "feedback_loop_outcome_preview_only",
         "outcome_does_not_create_verified_facts",
@@ -315,6 +344,8 @@ def _warnings(*, approved_for_demo: bool, outcome_status: str, result_source_doc
     ]
     if not approved_for_demo:
         warnings.append("historian_feedback_action_approval_missing")
+    if review_action_set_provenance in {"unavailable", "invalid", "mismatch"}:
+        warnings.append(f"review_action_set_hash_{review_action_set_provenance}")
     if outcome_status == "candidate_results" and not result_source_document_ids:
         warnings.append("candidate_results_requires_source_document_id")
     if outcome_status == "no_results":

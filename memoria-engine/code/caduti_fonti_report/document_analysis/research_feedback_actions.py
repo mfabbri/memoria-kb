@@ -36,6 +36,7 @@ def build_document_research_feedback_actions(
             "source_id": str(payload.get("source_id", "")),
             "source_document_id": str(payload.get("source_document_id", "")),
             "mentions_file": str(mentions_path),
+            "mentions_sha256": hashlib.sha256(mentions_path.read_bytes()).hexdigest(),
             "review_status": "unreviewed",
             "action_count": len(actions),
             "actions": actions,
@@ -269,9 +270,7 @@ def _action_id(
     support_kinds: list[str],
 ) -> str:
     digest = hashlib.sha256(
-        f"{source_document_id}|{weak_segment_id}|{chunk_id}|{normalized_value}|{','.join(support_kinds)}".encode(
-            "utf-8"
-        )
+        f"{source_document_id}|{weak_segment_id}|{chunk_id}|{normalized_value}|{','.join(support_kinds)}".encode()
     ).hexdigest()[:16]
     return f"research-feedback-action:{digest}"
 

@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import shutil
+import subprocess
 import sys
 import unittest
 import uuid
@@ -151,6 +154,153 @@ def write_links_json(root_dir: Path, *, links: list[dict[str, object]] | None = 
 
 
 class FeedbackSearchPlanTests(unittest.TestCase):
+    def test_installed_launcher_connects_actions_plan_review_outcome_and_evaluation(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            if not launcher.is_file():
+                self.skipTest("Installed memoria launcher is not available in this environment.")
+            mentions_dir = tmp_dir / "mentions"
+            mentions_dir.mkdir()
+            mentions_file = mentions_dir / "signals.mentions.json"
+            mentions_file.write_text(json.dumps({
+                "@type": "DocumentMentionCandidateDocument",
+                "source_id": "manual_uploads",
+                "source_document_id": "doc:signals",
+                "review_status": "unreviewed",
+                "mentions": [
+                    {"mention_id": "mention:person:andreoli", "mention_kind": "person",
+                     "value": "Andreoli Dino", "normalized_value": "andreoli dino",
+                     "source_id": "manual_uploads", "source_document_id": "doc:signals",
+                     "chunk_id": "chunk:1", "weak_segment_id": "segment:1",
+                     "context": "Andreoli Dino a Purocielo", "confidence": 0.7,
+                     "candidate_profile_id": "", "review_status": "unreviewed"},
+                    {"mention_id": "mention:place:purocielo", "mention_kind": "place",
+                     "value": "Purocielo", "normalized_value": "purocielo",
+                     "source_id": "manual_uploads", "source_document_id": "doc:signals",
+                     "chunk_id": "chunk:1", "weak_segment_id": "segment:1",
+                     "context": "Andreoli Dino a Purocielo", "confidence": 0.7,
+                     "candidate_profile_id": "", "review_status": "unreviewed"},
+                ],
+            }, ensure_ascii=False), encoding="utf-8")
+            actions_json = tmp_dir / "actions.json"
+            profiles_index = write_profile_index(tmp_dir)
+            links_json = write_links_json(tmp_dir)
+            plan_json = tmp_dir / "plan.json"
+            triage_md = tmp_dir / "triage.md"
+            review_summary_json = tmp_dir / "review-summary.json"
+            review_summary_md = tmp_dir / "review-summary.md"
+            outcome_json = tmp_dir / "outcome.json"
+            evaluation_json = tmp_dir / "evaluation.json"
+            sources_yaml = Path(__file__).resolve().parents[1] / "ricerche" / "camalanca_fonti.yaml"
+            protected_inputs = (mentions_file, profiles_index, links_json, sources_yaml)
+            before = {path: path.read_bytes() for path in protected_inputs}
+
+            generated = subprocess.run(
+                [str(launcher), "feedback", "actions", "--mentions-dir", str(mentions_dir),
+                 "--output-json", str(actions_json)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(generated.returncode, 0, generated.stderr)
+            planned = subprocess.run(
+                [str(launcher), "feedback", "plan", "--actions-json", str(actions_json),
+                 "--links-json", str(links_json), "--profiles-index", str(profiles_index),
+                 "--sources-yaml", str(sources_yaml), "--output-json", str(plan_json)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(planned.returncode, 0, planned.stderr)
+            triaged = subprocess.run(
+                [str(launcher), "feedback", "triage", "build-table", "--actions-json", str(actions_json),
+                 "--output-md", str(triage_md)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(triaged.returncode, 0, triaged.stderr)
+
+            table_lines = triage_md.read_text(encoding="utf-8").splitlines()
+            reviewed_lines = []
+            for line in table_lines:
+                if line.startswith("|") and "research-feedback-action:" in line:
+                    cells = line.strip("|").split("|")
+                    cells[0] = " BUONA "
+                    cells[8] = " reviewer:synthetic-test "
+                    cells[9] = " 2026-11-08T09:00:00+00:00 "
+                    cells[10] = " 2026-11-08T09:01:00+00:00 "
+                    line = "|" + "|".join(cells) + "|"
+                reviewed_lines.append(line)
+            triage_md.write_text("\n".join(reviewed_lines) + "\n", encoding="utf-8")
+            summarized = subprocess.run(
+                [str(launcher), "feedback", "triage", "summarize-table", "--actions-json", str(actions_json),
+                 "--review-table-md", str(triage_md), "--output-json", str(review_summary_json),
+                 "--output-md", str(review_summary_md)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(summarized.returncode, 0, summarized.stderr)
+
+            actions = json.loads(actions_json.read_text(encoding="utf-8"))
+            plan = json.loads(plan_json.read_text(encoding="utf-8"))
+            triage = triage_md.read_text(encoding="utf-8")
+            review_summary = json.loads(review_summary_json.read_text(encoding="utf-8"))
+            action_id = actions["documents"][0]["actions"][0]["action_id"]
+            plan_entry = plan["plans"][0]
+            source_plan = plan_entry["source_plans"][0]
+            attempt = source_plan["planned_attempts"][0]
+            strategy_id = attempt.get("strategy_id") or attempt.get("attempt_id")
+            outcome_result = subprocess.run(
+                [str(launcher), "feedback", "outcome", "--feedback-plan-json", str(plan_json),
+                 "--review-summary-json", str(review_summary_json), "--action-id", action_id,
+                 "--plan-id", plan_entry["feedback_search_plan_id"], "--source-id", source_plan["source_id"],
+                 "--strategy-id", strategy_id, "--outcome-status", "no_results", "--query", "synthetic test query",
+                 "--run-id", "run:synthetic-test", "--executed-at", "2026-11-08T09:02:00+00:00",
+                 "--output-json", str(outcome_json)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(outcome_result.returncode, 0, outcome_result.stderr)
+            evaluated = subprocess.run(
+                [str(launcher), "feedback", "evaluate", "--feedback-plan-json", str(plan_json),
+                 "--outcome-json", str(outcome_json), "--review-summary-json", str(review_summary_json),
+                 "--output-json", str(evaluation_json)], capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(evaluated.returncode, 0, evaluated.stderr)
+            outcome = json.loads(outcome_json.read_text(encoding="utf-8"))
+            evaluation = json.loads(evaluation_json.read_text(encoding="utf-8"))
+            after = {path: path.read_bytes() for path in protected_inputs}
+
+        self.assertIn(action_id, triage)
+        self.assertEqual(plan["plan_count"], 1)
+        self.assertEqual(plan["plans"][0]["action_id"], action_id)
+        self.assertEqual(plan["plans"][0]["status"], "ready_for_review")
+        self.assertEqual(plan["review_status"], "unreviewed")
+        self.assertFalse(plan["execution_allowed"])
+        self.assertFalse(plan["online_search_started"])
+        self.assertEqual(review_summary["actions_sha256"], plan["actions_sha256"])
+        self.assertEqual(outcome["review_action_set_provenance"], "matched")
+        self.assertTrue(outcome["approved_for_demo"])
+        self.assertEqual(evaluation["metrics"]["review_latency_seconds"]["value"], 60.0)
+        self.assertTrue(evaluation["audit_only"])
+        self.assertFalse(evaluation["profile_write_allowed"])
+        self.assertFalse(evaluation["claim_promotion_allowed"])
+        self.assertEqual(before, after)
+
+    def test_installed_launcher_builds_review_only_plan_set(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            profiles_index = write_profile_index(tmp_dir)
+            actions_json = write_actions_json(tmp_dir, person_id="person:purocielo:andreoli-dino")
+            output_json, output_md = tmp_dir / "plan.json", tmp_dir / "plan.md"
+            sources_yaml = Path(__file__).resolve().parents[1] / "ricerche" / "camalanca_fonti.yaml"
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            if not launcher.is_file():
+                self.skipTest("Installed memoria launcher is not available in this environment.")
+            before = {path: path.read_bytes() for path in (profiles_index, actions_json, sources_yaml)}
+            completed = subprocess.run(
+                [str(launcher), "feedback", "plan", "--actions-json", str(actions_json),
+                 "--profiles-index", str(profiles_index), "--sources-yaml", str(sources_yaml),
+                 "--output-json", str(output_json), "--output-md", str(output_md)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            report = json.loads(output_json.read_text(encoding="utf-8"))
+            self.assertEqual(report["@type"], "FeedbackSearchPlanSet")
+            self.assertEqual(report["actions_sha256"], hashlib.sha256(actions_json.read_bytes()).hexdigest())
+            self.assertEqual(report["review_status"], "unreviewed")
+            self.assertFalse(report["execution_allowed"])
+            self.assertFalse(report["online_search_started"])
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+
     def test_builds_preview_plan_from_resolved_profile_and_registered_source(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             profiles_index = write_profile_index(tmp_dir)

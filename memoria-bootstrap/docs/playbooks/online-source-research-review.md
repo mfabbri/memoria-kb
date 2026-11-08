@@ -5,6 +5,11 @@ registry fino alla review umana delle candidate Place o HistoricalEvent. I
 risultati restano candidati: non diventano fatti canonici e non vengono
 pubblicati automaticamente.
 
+Eseguire tutti i comandi di prodotto qui sotto con il launcher Me.Mo.Ri.A
+installato (`memoria` o l'eseguibile nella `.venv`), non con `python -m` o
+import diretti. Se il launcher non parte, riparare prima l'ambiente e poi
+ripetere il comando attraverso il launcher.
+
 ## 1. Scegliere la fonte e verificare la ricerca
 
 1. Leggere `memoria-sources/registry/camalanca_fonti.yaml` e scegliere un
@@ -110,6 +115,7 @@ incremento CLI per colmare la lacuna; non inventare decisioni.
 
 Riportare il percorso degli artifact, l'esito del wizard e i limiti della
 fonte. Se la review è ancora pendente, lasciare le candidate `unreviewed` e
-indicare il comando esatto per riprenderla. Nessun passo di questa procedura
-autorizza claim canonici, merge, pubblicazione o avvio di T49 prima della
-chiusura di T48.
+indicare il comando esatto per riprenderla. La chiusura di T48 non autorizza
+claim canonici, merge o pubblicazione. T49 resta un percorso separato: fixture
+e preview non valgono come ricerca/review reale né come autorizzazione a
+eseguire nuove query.

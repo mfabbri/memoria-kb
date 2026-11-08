@@ -14,6 +14,12 @@ Dati reali, credenziali, corpus OCR e run pesanti restano fuori da Git.
 Il registry `memoria-sources/registry/camalanca_fonti.yaml` e' la fonte di verita'
 per i quattro livelli dichiarativi delle fonti.
 
+Per invocare o verificare un comando Me.Mo.Ri.A usa sempre il launcher CLI
+installato (`memoria` o il suo eseguibile nella `.venv`). Non saltarlo con
+`python -m`, import diretti o chiamate alle funzioni Python: queste non
+verificano l'entry point realmente usato dall'utente. Se il launcher e' guasto,
+ripara l'ambiente o il packaging e poi ripeti la chiamata tramite launcher.
+
 Per ricerche online parti da una fonte abilitata nel registry e dal database
 operativo configurato; usa la CLI per registrare SourceDocument e generare le
 preview, poi il wizard per raccogliere le decisioni umane. Non chiedere

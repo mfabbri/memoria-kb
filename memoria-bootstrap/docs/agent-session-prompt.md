@@ -23,6 +23,16 @@ quality gate separati; dopo l'N-esimo, riporta in breve lo stato rispetto alla
 roadmap. Non interrompere la sequenza per chiedere scelte gia' deducibili dal
 planner o dalla roadmap.
 
+Per eseguire o verificare comandi Me.Mo.Ri.A usa sempre il launcher installato
+(`memoria` o `.venv/Scripts/memoria.exe`), mai `python -m`, import diretti o
+chiamate alle funzioni applicative. Una prova con fixture verifica il software,
+non produce una misura reale. Se T49 ha la toolchain pronta ma mancano ricerca,
+review e outcome effettivamente collegati, non simulare quei dati: porta le
+candidate reali all'utente per la decisione umana e fermati prima di una nuova
+ricerca, salvo che action, fonte e strategia/query siano già autorizzate.
+`BUONA`/`DUBBIA` classificano l'action e non concedono da sole il permesso di
+cercare.
+
 Preserva provenance, review umana, preview/apply e audit. Non generare fatti
 storici da risultati di ricerca o da OCR provisional. Per task OCR consulta
 soltanto le sezioni pertinenti del playbook codex-document-analysis-core.md;

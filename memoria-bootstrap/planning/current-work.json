@@ -2,86 +2,73 @@
   "$schema": "./current-work.schema.json",
   "schema_version": "1.0",
   "status": "completed",
-  "selected_at": "2026-11-07T21:10:54Z",
-  "updated_at": "2026-11-07T21:43:00Z",
+  "selected_at": "2026-11-08T13:06:03Z",
+  "updated_at": "2026-11-08T13:08:19Z",
   "roadmap_basis": [
     {
-      "path": "memoria-bootstrap/docs/agent-session-prompt.md",
-      "section": "Procedura quotidiana di review candidate",
-      "reason": "La sessione reale ha mostrato che occorre guidare l?intero percorso ricerca da fonte catalogata a review CLI, inclusa la gestione degli artifact generati."
-    },
-    {
       "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "section": "T48 - Ricerca e linking su Place / HistoricalEvent",
-      "reason": "Allineare i riepiloghi T48 al source intake CLI e al wizard, lasciando esplicita la review umana ancora pendente."
+      "section": "T49 - Review-feedback end-to-end ed evaluation"
     }
   ],
   "increment": {
-    "id": "docs-online-source-research-review-20261107",
-    "title": "Playbook CLI per ricerca online e review candidate",
-    "objective": "Documentare il flusso operativo reale da fonte registry a SourceDocument e preview Place/Event, spiegando ruoli CLI/wizard, artifact generati e limiti della review.",
+    "id": "t49t-feedback-full-chain-launcher-e2e-20261108",
+    "title": "Verificare la catena feedback completa via launcher",
+    "objective": "Un fixture offline percorre generazione action, piano, review triage, outcome ed evaluation via launcher e mantiene hash/provenance e audit-only coerenti.",
     "scope": [
-      "Aggiungere un playbook breve con passi source registry, ricerca reale, registrazione CLI nel database operativo, preview CLI e review wizard.",
-      "Dire chiaramente che l?utente non compila JSON e che gli artifact generati sono output del CLI, indicando quale manifest passare al wizard.",
-      "Aggiornare prompt operativo, current-next e riepilogo roadmap T48 evitando istruzioni obsolete di template JSON manuale.",
-      "Inserire in AGENTS.md la regola persistente CLI/wizard e la spiegazione degli artifact generati."
+      "Aggiungere un test integrato con mention, indice profilo e registry fixture/operativi read-only.",
+      "Usare solo action e decisione esplicitamente sintetiche; propagare actions_sha256 in plan e review summary.",
+      "Verificare outcome binding, review latency esplicita ed evaluation audit-only."
     ],
     "out_of_scope": [
-      "Modifiche runtime/CLI o registry.",
-      "Raccolta/decisione di review al posto dell?utente.",
-      "Avvio T49 o scritture canoniche."
+      "Ricerca reale, dati storici, reviewer o misure presentate come reali.",
+      "Scritture canoniche e apertura di nuove fonti online."
     ],
     "candidate_files": [
-      "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
-      "memoria-bootstrap/docs/agent-session-prompt.md",
-      "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-engine/tests/test_feedback_search_plan.py",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/planning/current-work.json",
-      "AGENTS.md"
+      "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
+      "memoria-bootstrap/planning/current-work.json"
     ],
-    "stop_condition": "Il prompt rimanda a un playbook che guida dalla fonte catalogata alla review wizard; il playbook chiarisce input/output, percorsi, comandi e limiti senza chiedere editing manuale JSON; current-next/roadmap riflettono T48 e T49 resta fermo."
+    "stop_condition": "Il launcher attraversa action -> plan -> triage summary -> outcome -> evaluation con hash concordi, timing esplicito, nessuna mutazione input e nessun effetto canonico."
   },
   "verification": {
     "documentation_touchpoints": [
-      "memoria-bootstrap/docs/agent-session-prompt.md",
-      "memoria-bootstrap/docs/current-next-increment.md",
       "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-      "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
-      "memoria-bootstrap/planning/current-work.json",
-      "AGENTS.md"
+      "memoria-bootstrap/docs/current-next-increment.md",
+      "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
+      "memoria-bootstrap/planning/current-work.json"
     ],
     "tests": [
-      "CLI help register-online-source, place-preview, event-preview, preview-review-wizard: PASS",
-      "Planner JSON Schema/routing validator: PASS",
-      "git diff --check plus whitespace scan of new playbook: PASS"
+      "T49r: 19 test evaluation + 28 subtest PASS; missing/mismatch summary hash excluded from review-latency KPI with explicit issue.",
+      "T49s: 12 test triage + 4 subtest PASS; table missing/mismatch digest invalidates decisions.",
+      "T49t: full installed-launcher chain actions -> plan -> triage -> outcome -> evaluation PASS with synthetic fixture and matching hashes.",
+      "Combined gate: 53 test + 45 subtest across plan, triage, outcome and evaluation PASS; Ruff import checks PASS; planner validator and git diff --check PASS."
     ],
     "result": "passed",
-    "notes": "Persistent AGENTS.md and the daily prompt now require registry-first research, the operational database, CLI-generated artifacts and wizard-only human decisions; the new playbook provides the detailed sequence and commands. current-next and T48 roadmap now record that real human review is pending and T49 must remain paused. No source or canonical data changed.",
+    "notes": "T49r-t harden review hash provenance through the KPI and verify the full flow using only synthetic fixture values. No real search, historical decision or measurement is fabricated. T49 remains open pending real linked artifacts.",
     "task_envelope": {
-      "mode": "scoped-fix",
+      "mode": "quality-slice",
       "repositories": [
+        "memoria-engine",
         "memoria-bootstrap"
       ],
       "read_set": [
-        "AGENTS.md",
-        "memoria-bootstrap/docs/agent-session-prompt.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-engine/code/caduti_fonti_report/memoria_cli.py"
+        "memoria-engine/tests/test_feedback_search_plan.py",
+        "memoria-engine/tests/test_feedback_loop_outcome.py",
+        "memoria-engine/tests/test_feedback_loop_evaluation.py"
       ],
       "write_set": [
-        "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
-        "memoria-bootstrap/docs/agent-session-prompt.md",
-        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-engine/tests/test_feedback_search_plan.py",
         "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/planning/current-work.json",
-        "AGENTS.md"
+        "memoria-bootstrap/docs/current-next-increment.md",
+        "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
+        "memoria-bootstrap/planning/current-work.json"
       ],
-      "test_command": "Review incrociata istruzioni/comandi CLI; planner JSON Schema; git diff --check.",
+      "test_command": "pytest tests/test_feedback_search_plan.py tests/test_feedback_loop_outcome.py tests/test_feedback_loop_evaluation.py tests/test_research_feedback_triage.py -q; Ruff targeted; git diff --check; planner validator",
       "stop_conditions": [
-        "Il playbook non invita a compilare/modificare JSON manualmente.",
-        "I comandi indicano output CLI e wizard, nessuna review/canonical write automatica.",
-        "T48 e T49 hanno stato coerente in current-next e roadmap."
+        "All app operations use the installed memoria launcher.",
+        "Test review/outcome remain explicitly synthetic; no external search is started."
       ]
     }
   },
@@ -153,29 +140,57 @@
     "2026-11-07: avviato T48o su istruzione esplicita utente: tutte le decisioni e l?intake online devono passare da CLI/wizard; niente compilazione manuale JSON da parte dell?utente.",
     "2026-11-07: T48o completato: source online intake via CLI preview/apply e correzione titolo con compare-and-swap; wizard terminale hash-bound raccoglie decisioni senza JSON manuale e scrive receipt solo dopo conferma. Gate: 6 test registration + 8 wizard PASS, py_compile e diff check PASS. Titolo del SourceDocument operativo corretto via CLI; resta unreviewed. Nessuna decisione umana inventata o scrittura canonica. T49 resta fermo.",
     "2026-11-07: completata documentazione del flusso reale registry -> SourceDocument operativo -> preview CLI -> review wizard. Nuovo playbook collegato al prompt; current-next e roadmap T48 allineati alla review reale ancora pendente. Help dei quattro comandi, planner validator e diff check PASS; nessun dato o decisione di review modificati.",
-    "2026-11-07: completata documentazione del flusso reale registry -> SourceDocument operativo -> preview CLI -> review wizard. La regola persistente ? in AGENTS.md e agent-session-prompt rimanda al nuovo playbook; current-next e roadmap T48 sono allineati. Help CLI, planner validator e diff/whitespace check PASS; nessun dato o decisione review modificati."
+    "2026-11-07: completata documentazione del flusso reale registry -> SourceDocument operativo -> preview CLI -> review wizard. La regola persistente ? in AGENTS.md e agent-session-prompt rimanda al nuovo playbook; current-next e roadmap T48 sono allineati. Help CLI, planner validator e diff/whitespace check PASS; nessun dato o decisione review modificati.",
+    "2026-11-08: avviato fix richiesto dall?utente: i comandi devono passare sempre dal launcher CLI installato. Diagnosi: memoria.exe presente nella .venv, ma il caricamento eager di OCR VLM importa Pillow rotto anche per il wizard; spostato il relativo import su chiamata lazy per permettere i sottocomandi non OCR. Review umana resta pendente.",
+    "2026-11-08: fix launcher completato. Il test con memoria-engine/.venv/Scripts/memoria.exe --help passa; la chiamata al wizard da memoria-engine risolve il manifest, accetta artifact/hash e raggiunge il prompt reviewer dopo import lazy del modulo VLM. Interrotto senza decisioni; receipt assente. Planner validator e git diff --check PASS. Prossimo: review umana via launcher installato; T49 resta fermo.",
+    "2026-11-08: l?utente ha completato la review T48 via launcher installato. Receipt hash-bound presente in memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json: 3 accept_candidate (un link, due date), reviewer dichiarato marco; review completa ma non autenticata, nessun apply/canonical write. T48 chiuso; selezionare il prossimo micro-incremento T49 usando solo misure esplicite.",
+    "2026-11-08: receipt operational T48 verificata in sola lettura: review_complete=true, 3 decisioni accept_candidate, SHA-256 di manifest, link e updates corrispondenti, canonical_write_allowed=false. Allineati current-next e roadmap alla chiusura T48; il playbook T49 chiarisce che feedback-loop-evaluation non e esposto dal launcher memoria e richiede un incremento di integrazione CLI prima dell?uso operativo. T49 non avviato.",
+    "2026-11-08: avviato T49f su richiesta esplicita di tre incrementi sequenziali: esporre la evaluation T49 esistente attraverso il launcher memoria, aggiornando la guida che ancora indicava python -m. Routing effettivo parent Luna/low; Sol/medium preferito dalla policy non selezionabile qui, nessuna delega.",
+    "2026-11-08: T49f completato: `memoria feedback evaluate` esegue il builder T49 tramite launcher installato; output espone outcome accettati/esclusi, KPI status e audit_only. 17 test/26 subtest PASS; smoke help e test subprocess tramite launcher PASS, input immutati; planner validator/diff check PASS. Ruff sui file CLI ha tre finding preesistenti verificati anche su HEAD (I001, UP035, F401). Playbook aggiornato; nessuna metrica reale/canonical write.",
+    "2026-11-08: avviato T49g come secondo dei tre incrementi richiesti: esporre la generazione di FeedbackSearchPlanSet dal launcher installato con tutti i path espliciti, senza ricerca online o scritture canoniche. Routing parent Luna/low come fallback effettivo per slice circoscritta.",
+    "2026-11-08: T49g completato: `memoria feedback plan` espone il builder deterministico con actions/profiles/registry/output espliciti. 7 test PASS; subprocess via launcher verifica review_status=unreviewed, execution_allowed=false e input invariati; help, diff check e planner validator PASS. Playbook aggiornato. Nessuna ricerca o write canonico.",
+    "2026-11-08: avviato T49h, terzo dei tre incrementi richiesti: esporre la registrazione di FeedbackLoopOutcome tramite launcher memoria. Nessuna ricerca live o decisione storica verra inventata; gate sintetico only.",
+    "2026-11-08: T49h completato: `memoria feedback outcome` richiede binding espliciti action/plan/source/strategy/run, query e status; data esecuzione viene fornita o registrata dal comando. Gate 12 test/13 subtest PASS; help e end-to-end subprocess via launcher PASS; flag di non-promozione e input invariati. T49f 17/26 e T49g 7 test PASS con gate separati. I tre incrementi richiesti completano i comandi launcher plan/outcome/evaluate; nessuna ricerca reale, misura o dato canonico creato. T49 resta aperto per artifact reali.",
+    "2026-11-08: avviato T49i come primo dei tre incrementi richiesti: portare build-table/summarize-table del feedback triage nel launcher memoria, senza usare moduli diretti o decidere per lo storico. Routing effettivo parent Luna/low fallback, scope circoscritto.",
+    "2026-11-08: T49i completed: memoria feedback triage build-table/summarize-table available via installed launcher; 8 tests/4 subtests PASS, includes measured/unavailable timing fixture; planner/diff PASS. Avviato T49j, secondo dei tre incrementi: review wizard interattivo per ResearchFeedbackAction con tempi raccolti sul momento e receipt solo dopo conferma.",
+    "2026-11-08: T49j completato: memoria feedback triage review-wizard raccoglie reviewer, decisione, nota e timestamp per azione; scrive tabella/summary solo dopo conferma e annulla senza output. 10 test/4 subtest PASS; help + TTY launcher smoke sintetico PASS (timing measured); ruff test, diff e planner PASS. Nessuna review reale o write canonico.",
+    "2026-11-08: avviato T49k, terzo dei tre incrementi richiesti: end-to-end quality slice che lega triage summary, outcome e KPI review latency per action_id via launcher installato. Motivo test-only: integrazione cross-command non coperta dai tre gate separati; usare fixture sintetiche.",
+    "2026-11-08: T49k completato: integration test subprocess via memoria.exe compone feedback triage build/summarize, outcome e evaluate; action_id univoco e timestamp espliciti producono review_latency_seconds=60, evaluation audit-only. 18 test/26 subtest PASS, Ruff test PASS. T49i (8 test/4 subtest) e T49j (10 test/4 subtest + smoke TTY sintetico) chiusi con gate propri. I tre incrementi richiesti completati; nessuna ricerca, misura reale o scrittura canonica; T49 roadmap resta aperta.",
+    "T49l completato: aggiunto memoria feedback actions al launcher installato. Gate separato: 9 test actions PASS; help CLI PASS; solo fixture offline.",
+    "T49m completato: aggiunto mentions_sha256 alle action documents. Gate separato: 9 test actions PASS; digest calcolato dai byte sorgente e verificato in fixture; input invariato.",
+    "T49n completato: test launcher-to-launcher menzioni -> actions -> piano -> tabella triage. Gate: 17 test actions/plan PASS, Ruff mirato PASS, git diff --check e planner validator PASS. Nessuna ricerca reale, review o misura inventata; T49 resta aperta in attesa di artifact effettivamente collegati.",
+    "T49o completato: ResearchFeedbackActionReviewSummary registra actions_sha256 del file actions usato per il triage. Gate separato: 10 test e 4 subtest triage PASS; Ruff import check PASS; nessuna decisione reale.",
+    "T49p completato: FeedbackSearchPlanSet registra actions_sha256 dell?action set consumato. Gate separato: 8 test plan PASS; Ruff import check PASS; flag review-only invariati.",
+    "T49o completato: ResearchFeedbackActionReviewSummary registra actions_sha256 del file actions usato per il triage. Gate: 10 test e 4 subtest triage PASS; Ruff import check PASS.",
+    "T49p completato: FeedbackSearchPlanSet registra actions_sha256 dell?action set consumato. Gate: 8 test plan PASS; digest verificato; execution_allowed e online_search_started restano false.",
+    "T49q completato: FeedbackLoopOutcome attribuisce BUONA/DUBBIA solo con hash plan/review entrambi validi e concordi; hash missing/mismatch fail-closed sull?approvazione ma l?outcome resta auditabile. Gate combinato: 50 test e 43 subtest PASS, Ruff import check, planner validator e git diff --check PASS. Nessuna ricerca, decisione o misura reale inventata.",
+    "T49r completato: evaluation include il review latency solo con actions_sha256 valido e concorde tra plan e triage summary; mismatch/missing produce issue ed escludono il timing. Gate: 19 test evaluation e 28 subtest PASS; Ruff import check PASS.",
+    "T49s completato: la tabella Markdown incorpora actions_sha256 e summarize-table fail-closed su hash mancante/mismatch. Gate: 12 test e 4 subtest triage PASS; Ruff import check PASS.",
+    "T49r completato: evaluation include review latency solo con actions_sha256 valido e concorde tra plan e triage summary; missing/mismatch produce issue e timing unavailable. Gate: 19 test evaluation, 28 subtest PASS.",
+    "T49s completato: la review table Markdown porta actions_sha256; summarize-table invalida righe su missing/mismatch, incluse tabelle legacy. Gate: 12 test triage, 4 subtest PASS.",
+    "T49t completato: test launcher end-to-end actions -> plan -> triage summary -> outcome -> evaluation; hash concordi, timing sintetico 60 s, evaluation audit-only e input protetti. Gate combinato: 53 test e 45 subtest, Ruff import, planner validator, diff check PASS. Nessuna ricerca o review reale avviata."
   ],
   "next_action": {
     "mode": "recalculate",
-    "description": "Resume T48 at the pending human review using the wizard command in the playbook; do not start T49 before T48 is closed."
+    "description": "La catena software end-to-end ? verificata su fixture. Per raccogliere misure T49 servono un action set da materiale reale e decisioni del reviewer; prima di ogni nuova ricerca online chiedere conferma esplicita su action, fonte/strategia e query."
   },
   "routing": {
     "policy_version": "3.1",
     "tier": "low",
-    "task_class": "documentation",
-    "agent": "mmr_docs_editor",
+    "task_class": "quality",
+    "agent": "parent",
     "model": "gpt-6-luna",
     "reasoning_effort": "low",
-    "rationale": "Aggiornamento documentale circoscritto derivato da sessione osservata; il playbook evita di caricare la cronologia nelle sessioni future.",
+    "rationale": "Fallback parent Luna/low; integration test delimitato che verifica un confine end-to-end mancante.",
     "trace": [
       {
-        "event": "selected",
-        "at": "2026-11-07T21:30:00Z",
+        "event": "fallback",
+        "at": "2026-11-08T11:31:48Z",
         "tier": "low",
-        "agent": "mmr_docs_editor",
+        "agent": "parent",
         "model": "gpt-6-luna",
         "reasoning_effort": "low",
-        "reason": "Task documentale circoscritto, eseguibile direttamente senza delega."
+        "reason": "Sol/medium preferito per review di regressioni non selezionabile; test end-to-end delimitato e indipendente."
       }
     ]
   }

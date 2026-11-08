@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import subprocess
 import sys
 import unittest
 import uuid
@@ -31,6 +33,7 @@ def workspace_temp_dir():
 def write_feedback_plan(path: Path) -> None:
     payload = {
         "@type": "FeedbackSearchPlanSet",
+        "actions_sha256": "a" * 64,
         "review_status": "unreviewed",
         "execution_allowed": False,
         "online_search_started": False,
@@ -65,9 +68,12 @@ def write_feedback_plan(path: Path) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def write_review_summary(path: Path, *, decision: str = "BUONA", status: str = "accepted") -> None:
+def write_review_summary(
+    path: Path, *, decision: str = "BUONA", status: str = "accepted", actions_sha256: str = "a" * 64
+) -> None:
     payload = {
         "@type": "ResearchFeedbackActionReviewSummary",
+        "actions_sha256": actions_sha256,
         "review_status": "reviewed",
         "accepted_count": 1 if status == "accepted" else 0,
         "decisions": [
@@ -86,6 +92,37 @@ def write_review_summary(path: Path, *, decision: str = "BUONA", status: str = "
 
 
 class FeedbackLoopOutcomeTests(unittest.TestCase):
+    def test_installed_launcher_records_explicit_outcome_preview(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            plan, review = tmp_dir / "plan.json", tmp_dir / "review.json"
+            output = tmp_dir / "outcome.json"
+            write_feedback_plan(plan)
+            write_review_summary(review)
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            if not launcher.is_file():
+                self.skipTest("Installed memoria launcher is not available in this environment.")
+            before = {path: path.read_bytes() for path in (plan, review)}
+            completed = subprocess.run(
+                [str(launcher), "feedback", "outcome", "--feedback-plan-json", str(plan),
+                 "--review-summary-json", str(review), "--action-id", "research-feedback-action:7bdbb2060d955baa",
+                 "--plan-id", "feedback-search-plan:a19b13e6e3cd8b0d", "--source-id", "storia_memoria_bo",
+                 "--strategy-id", "testo-libero-nome-completo", "--outcome-status", "no_results",
+                 "--query", "Andreoli Dino", "--run-id", "run:launcher-fixture",
+                 "--executed-at", "2026-07-15T10:00:00+00:00", "--output-json", str(output)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            payload = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(payload["@type"], "FeedbackLoopOutcome")
+            self.assertEqual(payload["research_feedback_action_id"], "research-feedback-action:7bdbb2060d955baa")
+            self.assertEqual(payload["feedback_search_plan_id"], "feedback-search-plan:a19b13e6e3cd8b0d")
+            self.assertEqual(payload["source_id"], "storia_memoria_bo")
+            self.assertEqual(payload["run_id"], "run:launcher-fixture")
+            self.assertEqual(payload["executed_at"], "2026-07-15T10:00:00+00:00")
+            self.assertFalse(payload["profile_write_allowed"])
+            self.assertFalse(payload["claim_promotion_allowed"])
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+
     def build_outcome(self, root: Path, **overrides: object) -> dict:
         arguments = {
             "feedback_plan_json": root / "plan.json",
@@ -135,6 +172,7 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
         self.assertEqual(payload["loop_status"], "closed_with_auditable_outcome")
         self.assertEqual(payload["outcome_status"], "no_results")
         self.assertTrue(payload["approved_for_demo"])
+        self.assertEqual(payload["review_action_set_provenance"], "matched")
         self.assertEqual(payload["profile_id"], "person:purocielo:andreoli-dino")
         self.assertEqual(payload["source_id"], "storia_memoria_bo")
         self.assertFalse(payload["profile_write_allowed"])
@@ -167,6 +205,45 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
         self.assertFalse(payload["approved_for_demo"])
         self.assertIn("historian_feedback_action_approval_missing", payload["warnings"])
         self.assertFalse(payload["creates_verified_facts"])
+
+    def test_mismatched_action_set_hash_cannot_approve_outcome(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            feedback_plan_json = tmp_dir / "feedback_search_plan.json"
+            review_summary_json = tmp_dir / "research_feedback_actions_review_summary.json"
+            write_feedback_plan(feedback_plan_json)
+            write_review_summary(review_summary_json, actions_sha256="b" * 64)
+
+            payload = build_feedback_loop_outcome(
+                feedback_plan_json=feedback_plan_json,
+                review_summary_json=review_summary_json,
+                action_id="research-feedback-action:7bdbb2060d955baa",
+                outcome_status="no_results",
+                query="Andreoli Dino",
+            )
+
+        self.assertEqual(payload["review_action_set_provenance"], "mismatch")
+        self.assertFalse(payload["approved_for_demo"])
+        self.assertEqual(payload["loop_status"], "pending_historian_approval")
+        self.assertIn("review_action_set_hash_mismatch", payload["warnings"])
+
+    def test_missing_action_set_hash_cannot_approve_outcome(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            feedback_plan_json = tmp_dir / "feedback_search_plan.json"
+            review_summary_json = tmp_dir / "research_feedback_actions_review_summary.json"
+            write_feedback_plan(feedback_plan_json)
+            write_review_summary(review_summary_json, actions_sha256="")
+
+            payload = build_feedback_loop_outcome(
+                feedback_plan_json=feedback_plan_json,
+                review_summary_json=review_summary_json,
+                action_id="research-feedback-action:7bdbb2060d955baa",
+                outcome_status="no_results",
+                query="Andreoli Dino",
+            )
+
+        self.assertEqual(payload["review_action_set_provenance"], "unavailable")
+        self.assertFalse(payload["approved_for_demo"])
+        self.assertIn("review_action_set_hash_unavailable", payload["warnings"])
 
     def test_candidate_results_require_document_id(self) -> None:
         with workspace_temp_dir() as tmp_dir:

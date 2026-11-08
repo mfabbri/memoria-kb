@@ -19,6 +19,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -75,7 +76,9 @@ def build_feedback_loop_evaluation(
     metrics["claim_document_attribution"] = _claim_metric(candidate_claims_json, inputs, issues)
     measurements = _load(measurements_json, "FeedbackLoopEvaluationMeasurements") if measurements_json else {}
     measurement_ref = [inputs[str(measurements_json)]] if measurements_json else []
-    summary_reviews, excluded_summary_reviews = _review_summary_measurements(review_summary_json, accepted, issues)
+    summary_reviews, excluded_summary_reviews = _review_summary_measurements(
+        review_summary_json, accepted, issues, _text(plan_payload.get("actions_sha256"))
+    )
     summary_ref = [inputs[str(review_summary_json)]] if review_summary_json else []
     metrics.update(_measurement_metrics(measurements, accepted, measurement_ref, issues,
         summary_reviews=summary_reviews, summary_ref=summary_ref, excluded_summary_reviews=excluded_summary_reviews))
@@ -268,13 +271,27 @@ def _measurement_metrics(payload: dict[str, Any], outcomes: list[dict[str, Any]]
     return metrics
 
 
-def _review_summary_measurements(path: Path | None, outcomes: list[dict[str, Any]], issues: list[dict[str, str]]) -> tuple[list[dict[str, Any]], int]:
+def _review_summary_measurements(
+    path: Path | None,
+    outcomes: list[dict[str, Any]],
+    issues: list[dict[str, str]],
+    expected_actions_sha256: str,
+) -> tuple[list[dict[str, Any]], int]:
     if path is None:
         return [], 0
     payload = _load(path, "ResearchFeedbackActionReviewSummary")
     decisions = payload.get("decisions")
     if not isinstance(decisions, list):
         raise ValueError("ResearchFeedbackActionReviewSummary requires decisions.")
+    summary_digest = _text(payload.get("actions_sha256")).lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", expected_actions_sha256.lower()):
+        provenance_error = "feedback_plan_action_set_hash_unavailable"
+    elif not re.fullmatch(r"[0-9a-f]{64}", summary_digest):
+        provenance_error = "review_summary_action_set_hash_unavailable"
+    elif summary_digest != expected_actions_sha256.lower():
+        provenance_error = "review_summary_action_set_hash_mismatch"
+    else:
+        provenance_error = ""
     action_counts = Counter(_text(row.get("action_id")) for row in decisions if isinstance(row, dict))
     rows, excluded = [], 0
     for index, decision in enumerate(decisions):
@@ -283,6 +300,10 @@ def _review_summary_measurements(path: Path | None, outcomes: list[dict[str, Any
             excluded += 1
             continue
         if decision.get("decision_status") != "accepted":
+            continue
+        if provenance_error:
+            issues.append({"input": str(path), "record_id": _text(decision.get("action_id")), "reason": provenance_error})
+            excluded += 1
             continue
         if not any(_text(decision.get(key)) for key in ("review_started_at", "reviewed_at")) and decision.get("review_timing_status") not in {"measured", "invalid"}:
             action_id = _text(decision.get("action_id"))

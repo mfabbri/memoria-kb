@@ -180,8 +180,7 @@ rimane `unreviewed`. T48o aggiunge `register-online-source` con preview/apply
 idempotente e `preview-review-wizard`, che mostra contesto ed estratti e crea una
 receipt hash-bound solo dopo decisioni e conferma della persona. Le istruzioni
 operative sono in `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
-La review di questa preview reale è ancora pendente; T48 non è chiuso e T49 deve
-restare fermo fino alla sua chiusura. Nessun fatto canonico è stato modificato.
+La review umana e' stata completata il 2026-11-08 con il wizard installato: receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json`, hash-bound a manifest e artifact. Sono state accettate tre candidate (un link e due date); il reviewer dichiarato e' `marco`, non autenticato. La receipt non autorizza apply o scrittura canonica; il SourceDocument resta `unreviewed` e il Place/HistoricalEvent canonico e' invariato. T48 e' chiuso sul ciclo di preview e review. T49 puo' essere selezionato come prossimo workstream, usando solo misure effettivamente registrate e mantenendo `unavailable` per token/costi assenti.
 
 ### T49 - Review-feedback end-to-end ed evaluation (P2)
 
@@ -221,6 +220,34 @@ passato; misure mancanti restano `unavailable`, senza claim di risparmio.
 Gate finale delle tre slice: 16 test evaluation, 7 test triage, 3 regressioni
 T31, `py_compile` e `git diff --check` PASS. Nessuna sessione reale e' stata
 misurata in questa sequenza: il completamento roadmap T49 resta aperto.
+
+T49f (2026-11-08) aggiunge `memoria feedback evaluate` al launcher installato, con input espliciti ripetibili, output JSON/Markdown e status KPI. Gate: 17 test evaluation (incluse 26 subtest) PASS; help CLI installato PASS; fixture end-to-end tramite launcher PASS, audit-only e input immutati. Nessuna misura reale e nessun dato canonico scritto.
+
+T49g (2026-11-08) aggiunge `memoria feedback plan` con actions, indice profili, registry e output espliciti. Il piano rimane `unreviewed`, `execution_allowed=false` e `online_search_started=false`. Gate: 7 test plan PASS; smoke via launcher e verifica input invariati PASS. Nessuna ricerca reale o scrittura profilo.
+
+T49h (2026-11-08) aggiunge `memoria feedback outcome`, che richiede action, plan, source, strategy, query, run e stato outcome espliciti; il timestamp e' fornito o catturato all'istante del comando. Gate: 12 test outcome (13 subtest) PASS; help CLI e test subprocess tramite launcher PASS. Fixture preserva binding, input e flag no-profile-write/no-claim-promotion. Nessun run reale creato: T49 resta aperto per dati effettivamente raccolti.
+
+T49i (2026-11-08) espone nel launcher `feedback triage build-table/summarize-table`; summary mantiene binding action_id e classifica timing mancante come `unavailable`. Gate: 8 test (4 subtest) PASS e flusso subprocess da launcher PASS. T49j aggiunge `feedback triage review-wizard`: cattura decisione, reviewer e timestamp per azione e scrive gli artifact solo dopo conferma. Gate: 10 test (4 subtest) PASS, incluso cancel senza output e smoke TTY sintetico tramite launcher; Ruff test e planner/diff gate PASS. Nessuna decisione reale o canonical write.
+
+T49k (2026-11-08) aggiunge il quality gate end-to-end della catena installata triage summary -> outcome -> evaluation. Il fixture lega summary e outcome per `action_id`, misura 60 secondi dai timestamp timezone-aware espliciti e mantiene l'evaluation audit-only; claim/costi/token non forniti restano `unavailable`. Gate: 18 test evaluation (26 subtest) PASS, Ruff test PASS, `git diff --check` e planner validator PASS. Nessuna misura reale e' stata prodotta. Il gate Ruff complessivo del file CLI resta rosso per tre finding gia presenti in HEAD (I001, UP035, F401), non introdotti da T49f.
+
+T49l (2026-11-08) espone `memoria feedback actions`, generando `ResearchFeedbackActionSet` dal launcher installato a partire da `DocumentMentionCandidate`. La preview e' review-only e non promuove menzioni a fatti. Gate: 9 test actions PASS, incluso subprocess launcher; help del comando PASS. Nessun artifact reale generato.
+
+T49m (2026-11-08) lega ogni documento action al SHA-256 del file `DocumentMentionCandidate` consumato (`mentions_sha256`), preservando source/document ID e stato `unreviewed`. Gate: 9 test actions PASS e digest verificato sui byte fixture; nessun input mutato.
+
+T49n (2026-11-08) estende il test d'integrazione via launcher installato da menzioni sintetiche -> actions -> piano profilo/fonte -> tabella triage. `action_id` resta collegato, il piano e' `unreviewed`, `execution_allowed=false` e `online_search_started=false`; gli input sono immutati. Gate: 17 test actions/plan PASS e Ruff mirato PASS. Nessuna decisione umana o ricerca inventata. T49 resta aperto per artifact e misure da una sessione reale.
+
+T49o (2026-11-08) aggiunge `actions_sha256` al `ResearchFeedbackActionReviewSummary`, calcolato sui byte dell’action set letto per il triage. Gate: 10 test e 4 subtest triage PASS; Ruff import check PASS. Decisioni test esclusivamente sintetiche.
+
+T49p (2026-11-08) aggiunge `actions_sha256` al `FeedbackSearchPlanSet`. Gate: 8 test plan PASS, digest verificato sui byte passati al launcher, flag `execution_allowed=false` e `online_search_started=false` invariati.
+
+T49q (2026-11-08) attribuisce l’approvazione del `FeedbackLoopOutcome` solo se plan e review summary contengono lo stesso SHA-256 valido. Digest mancante o discordante mantiene `approved_for_demo=false` e l’esito in attesa di approvazione, con warning esplicita; l’outcome resta registrabile e audit-only. Gate: 50 test e 43 subtest su triage, plan, outcome ed evaluation PASS; Ruff import check PASS. Nessuna ricerca reale eseguita; T49 resta aperta per review, outcome e misure realmente collegati.
+
+T49r (2026-11-08) fa dipendere il KPI review-latency dal binding tra `actions_sha256` del piano e del riepilogo triage. Digest mancante o discordante esclude la durata e registra l’issue esplicita; nessun timestamp e' inferito. Gate: 19 test evaluation (28 subtest) PASS, Ruff import check PASS.
+
+T49s (2026-11-08) rende l’action hash parte della tabella Markdown di triage e invalida una tabella legacy senza hash o compilata su un action set diverso. Gate: 12 test e 4 subtest triage PASS; digest mismatch/missing produce `review_status=invalid` e zero decisioni accettate. Nessuna decisione reale alterata.
+
+T49t (2026-11-08) estende la prova launcher end-to-end da `DocumentMentionCandidate` fino a evaluation: actions -> plan -> triage summary -> outcome -> evaluation. Il fixture verifica hash concordi, decisione e timestamp dichiaratamente sintetici, latenza di review 60 s e flag audit-only. Nessuna ricerca è stata eseguita. Gate complessivo aggiornato: 53 test e 45 subtest su triage, plan, outcome ed evaluation PASS; Ruff import checks PASS.
 
 **Priorita' parallele:** Q2 solo come micro-refactor giustificato; T41 gate
 statistico OCR separato; T27/T28 cloud solo se necessario al percorso.

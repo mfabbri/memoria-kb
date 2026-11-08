@@ -1,22 +1,12 @@
 # Current Next Increment
 
-## Stato corrente e prossimo candidato - 2026-11-07
+## Stato corrente e prossimo candidato - 2026-11-08
 
-**T48: percorso CLI disponibile; review umana reale ancora pendente. T49 non
-va avviato prima della chiusura di T48.** Il percorso usa una fonte abilitata nel
-registry, registra il SourceDocument nel database operativo con CLI, genera
-preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun
-utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non
-applica modifiche canoniche e non autentica il reviewer.
+**T48: percorso CLI e review umana reale completati il 2026-11-08.** Il percorso usa una fonte abilitata nel registry, registra il SourceDocument nel database operativo con CLI, genera preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non applica modifiche canoniche e non autentica il reviewer.
 
-La prova reale del 2026-11-07 usa `memorie_locali` e la pagina Resistenza mAPPe
-su Purocielo. Il SourceDocument operativo è `unreviewed`; la preview ha prodotto
-1 link e 2 aggiornamenti data candidati. Gli artifact sono in
-`memoria-engine/.tmp-tests/online-source-purocielo-20261107/preview-operational-catalog/`.
-Il prossimo passaggio è il comando `memoria documents preview-review-wizard`
-sul manifest di quella directory. Il wizard mostra contesto ed estratti, poi
-scrive la receipt solo dopo decisioni umane e conferma finale. I dettagli e i
-comandi sono in `docs/playbooks/online-source-research-review.md`.
+La prova reale usa `memorie_locali` e la pagina Resistenza mAPPe su Purocielo. Il SourceDocument operativo e' `unreviewed`; la preview ha prodotto 1 link e 2 aggiornamenti data candidati. Gli artifact sono in `memoria-engine/.tmp-tests/online-source-purocielo-20261107/preview-operational-catalog/`.
+
+La receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json` registra tre decisioni `accept_candidate`: un link all'evento e due date (1944-10-10 e 1944-10-12). Il reviewer dichiarato e' `marco`; la receipt e' legata al manifest e agli hash degli artifact. La review non autentica il reviewer, non cambia lo stato `unreviewed` del SourceDocument e non applica modifiche all'evento canonico. T48 e' chiuso. T49f-t hanno aggiunto al launcher installato valutazione, piano, outcome, triage e generazione action da menzioni; l’hash dell’action set si propaga e viene verificato da table, summary, outcome ed evaluation. T49t verifica l’intera catena su fixture sintetiche; nessuna ricerca è avvenuta. T49 resta aperto finché non saranno disponibili artifact da una ricerca e review feedback effettivamente collegate. Il prossimo passaggio è generare candidate da materiale reale, fermarsi per le decisioni del reviewer e procedere a una nuova ricerca solo se autorizzata per action, fonte e strategia/query; una decisione `BUONA`/`DUBBIA` non vale da sola come permesso di ricerca. I comandi e i limiti sono descritti in `docs/playbooks/codex-person-profile-feedback-loop-core.md` e `docs/playbooks/online-source-research-review.md`.
 
 La slice T48j aggiunge il runner Place offline
 `python -m caduti_fonti_report.document_analysis.place_preview_pipeline`.
