@@ -5,12 +5,42 @@ registry fino alla review umana delle candidate Place o HistoricalEvent. I
 risultati restano candidati: non diventano fatti canonici e non vengono
 pubblicati automaticamente.
 
+Per menzioni e action collegate a profili persona, applicare anche il
+`codex-person-profile-feedback-loop-core.md`: la review di una action e la
+risoluzione dell'identità sono decisioni distinte.
+
 Eseguire tutti i comandi di prodotto qui sotto con il launcher Me.Mo.Ri.A
 installato (`memoria` o l'eseguibile nella `.venv`), non con `python -m` o
 import diretti. Se il launcher non parte, riparare prima l'ambiente e poi
 ripetere il comando attraverso il launcher.
 
 ## 1. Scegliere la fonte e verificare la ricerca
+
+### Connettori e selezione degli attempt
+
+Quando il registry dichiara un connettore per la fonte, usare il launcher
+installato `memoria sources online run`. Consultare la strategia e selezionare
+gli ID attempt autorizzati con `--attempt-id` ripetibile. Prima di eseguire,
+confrontare gli ID del piano con i report dei run precedenti e con gli attempt
+esclusi dall'utente. Non rilanciare attempt già eseguiti e non eseguire attempt
+esclusi anche se riappaiono nel piano. `--execute-first-planned-attempt`, un
+piano `ready_for_review` o una decisione `BUONA` non sostituiscono
+l'autorizzazione per fonte e query.
+
+```powershell
+memoria sources online run `
+  --profiles-index <profiles-index.jsonld> `
+  --sources-yaml memoria-sources/registry/camalanca_fonti.yaml `
+  --source <source_id> --profile-id <profile_id> --limit 1 `
+  --attempt-id <attempt_id> `
+  --output-json <run.json> --output-dir <nuova-directory-run> `
+  --acquire-documents-root <directory-acquisizione>
+```
+
+Aggiungere altri `--attempt-id` solo se autorizzati e non eseguiti. Per fonti
+con SPID/CIE, il login resta un handoff manuale: non inserire credenziali,
+cookie o token nella CLI. Quando il connettore esiste, non usare un motore web
+generale come ripiego.
 
 1. Leggere `memoria-sources/registry/camalanca_fonti.yaml` e scegliere un
    `source_id` presente in `enabled_sources` e adatto alla domanda. Non inventare
@@ -48,6 +78,22 @@ non esiste un file acquisito e verificabile.
 Non correggere un record esistente sovrascrivendolo. Per la sola correzione
 intenzionale del titolo è disponibile `--expected-existing-title`, che richiede
 il titolo corrente esatto e verifica anche ID, fonte, URL e data.
+
+### Sidecar acquisiti dal connettore
+
+Il connettore può produrre sidecar `*.document.yaml` con il file acquisito e
+metadata annidati. Sono input validi per `memoria documents text-extract` anche
+se l'opzione CLI si chiama `--metadata-json`. Passare sidecar espliciti delle
+sole schede dettagliate, non immagini o pagine generiche. L'estrazione mantiene
+`source_document_id`, URL, titolo e `review_status`, calcola un digest e non
+esegue OCR né crea claim. Usare una directory nuova per gli output.
+
+Rispetta anche la valutazione del dettaglio del connettore: stati come
+`detail_needs_manual_review` o
+`unverified_permalink_manual_review` richiedono verifica manuale della pagina
+prima di usarla per estrarre claim. Il fatto che `text-extract` riesca a leggere
+il sidecar o che i metadata dicano `claim_eligible` non prova da solo che il
+permalink sia stato verificato o che il contenuto supporti un'affermazione.
 
 ## 3. Generare la preview
 

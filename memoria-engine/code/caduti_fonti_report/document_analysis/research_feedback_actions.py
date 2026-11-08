@@ -18,11 +18,28 @@ def build_document_research_feedback_actions(
     output_json: Path | None = None,
     output_md: Path | None = None,
     mention_paths: list[Path] | None = None,
+    person_mention_ids: list[str] | None = None,
+    profile_id: str = "",
 ) -> dict[str, Any]:
+    selected_person_ids = {value.strip() for value in (person_mention_ids or []) if value.strip()}
+    profile_id = profile_id.strip()
+    if bool(selected_person_ids) != bool(profile_id):
+        raise ValueError("--profile-id e --person-mention-id devono essere usati insieme.")
     documents: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []
 
     paths = sorted(mention_paths) if mention_paths is not None else sorted(mentions_dir.rglob("*.mentions.json"))
+    if selected_person_ids:
+        available_person_ids = set()
+        for mentions_path in paths:
+            payload = _load_json_object(mentions_path)
+            for mention in payload.get("mentions", []):
+                if isinstance(mention, dict) and str(mention.get("mention_kind", "")) == "person":
+                    available_person_ids.add(str(mention.get("mention_id", "")))
+        missing = sorted(selected_person_ids - available_person_ids)
+        if missing:
+            raise ValueError(f"Menzioni persona selezionate non trovate: {', '.join(missing)}")
+
     for mentions_path in paths:
         payload = _load_json_object(mentions_path)
         skip_reason = _skip_reason(payload=payload)
@@ -30,7 +47,12 @@ def build_document_research_feedback_actions(
             skipped.append(_skip_record(payload=payload, mentions_path=mentions_path, reason=skip_reason))
             continue
 
-        actions = _actions_for_document(payload=payload, mentions_path=mentions_path)
+        actions = _actions_for_document(
+            payload=payload,
+            mentions_path=mentions_path,
+            selected_person_ids=selected_person_ids,
+            profile_id=profile_id,
+        )
         document_entry = {
             "@type": "ResearchFeedbackActionDocument",
             "source_id": str(payload.get("source_id", "")),
@@ -53,6 +75,11 @@ def build_document_research_feedback_actions(
         "mentions_dir": str(mentions_dir),
         "output_dir": str(output_dir or ""),
         "generation_method": "deterministic_research_feedback_action_rules",
+        "selection": {
+            "profile_id": profile_id,
+            "person_mention_ids": sorted(selected_person_ids),
+            "identity_resolution": "unreviewed_candidate_link" if selected_person_ids else "unresolved",
+        },
         "document_count": len(documents),
         "action_count": action_count,
         "skipped_count": len(skipped),
@@ -113,7 +140,13 @@ def render_research_feedback_actions_markdown(payload: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def _actions_for_document(*, payload: dict[str, Any], mentions_path: Path) -> list[dict[str, Any]]:
+def _actions_for_document(
+    *,
+    payload: dict[str, Any],
+    mentions_path: Path,
+    selected_person_ids: set[str],
+    profile_id: str,
+) -> list[dict[str, Any]]:
     mentions = [mention for mention in payload.get("mentions", []) if isinstance(mention, dict)]
     grouped: dict[str, list[dict[str, Any]]] = {}
     for mention in mentions:
@@ -127,7 +160,11 @@ def _actions_for_document(*, payload: dict[str, Any], mentions_path: Path) -> li
 
     actions: list[dict[str, Any]] = []
     for group_mentions in grouped.values():
-        people = [mention for mention in group_mentions if str(mention.get("mention_kind", "")) == "person"]
+        people = [
+            mention for mention in group_mentions
+            if str(mention.get("mention_kind", "")) == "person"
+            and (not selected_person_ids or str(mention.get("mention_id", "")) in selected_person_ids)
+        ]
         supporting = [
             mention
             for mention in group_mentions
@@ -143,7 +180,7 @@ def _actions_for_document(*, payload: dict[str, Any], mentions_path: Path) -> li
             support_scope = "same_segment" if same_segment_support else "same_chunk"
             actions.append(
                 _action_candidate(
-                    person=person,
+                    person={**person, "candidate_profile_id": profile_id or str(person.get("candidate_profile_id", ""))},
                     supporting=scoped_support,
                     mentions_path=mentions_path,
                     support_scope=support_scope,
@@ -217,6 +254,7 @@ def _action_candidate(
         "warnings": [
             "research_feedback_action_not_verified_fact",
             "requires_human_review_before_search",
+                    *( ["identity_resolution_unreviewed_candidate_link"] if person.get("candidate_profile_id") else [] ),
             f"support_scope:{support_scope}",
         ],
         "generation_method": "deterministic_research_feedback_action_rules",

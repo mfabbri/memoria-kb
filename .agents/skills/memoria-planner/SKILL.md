@@ -41,6 +41,32 @@ Efficiency gate:
 - after an architecture review approves a boundary, resume that candidate's
   implementation unless a newer decision invalidates it.
 
+## Safe planner writes on Windows
+
+Treat `current-work.json` as user work, including uncommitted history. Before
+editing it, make a byte-for-byte backup outside Git or under an ignored temp
+directory. On Windows PowerShell 5.1, `ConvertFrom-Json -AsHashtable` is not
+available; a parse error can leave `$null`, and PowerShell may continue running
+later statements unless errors are terminating.
+
+For a planner update:
+
+1. Set `$ErrorActionPreference = 'Stop'`; parse the current file and verify its
+   status and increment before changing fields. Stop on any parse or shape
+   error.
+2. Serialize to a new temporary file. Parse that file again and validate the
+   current-work schema and routing before replacing the original.
+3. Replace the destination atomically, retaining the backup until the final
+   validator passes. Never write a failed or empty serialization over the
+   working file.
+4. Preserve unrelated `session_notes`; update only the active increment and
+   notes directly required by the task.
+
+Use APIs supported by the active PowerShell version; do not assume
+`-AsHashtable` exists. After replacement, run
+`memoria-bootstrap/planning/validate-codex-model-routing.py` and verify the
+resulting planner status and increment ID.
+
 ## Close
 
 Update status, verification result, concise notes, routing trace and next action:

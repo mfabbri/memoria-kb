@@ -249,8 +249,116 @@ T49s (2026-11-08) rende l’action hash parte della tabella Markdown di triage e
 
 T49t (2026-11-08) estende la prova launcher end-to-end da `DocumentMentionCandidate` fino a evaluation: actions -> plan -> triage summary -> outcome -> evaluation. Il fixture verifica hash concordi, decisione e timestamp dichiaratamente sintetici, latenza di review 60 s e flag audit-only. Nessuna ricerca è stata eseguita. Gate complessivo aggiornato: 53 test e 45 subtest su triage, plan, outcome ed evaluation PASS; Ruff import checks PASS.
 
+T49u-w (2026-11-08), tre incrementi sequenziali richiesti dall'utente, completano
+il passaggio operativo fino alle action reali senza aprire una ricerca:
+
+- T49u espone `memoria documents text-extract` su sidecar metadata e raw file
+  espliciti. Nessuna OCR o scansione ricorsiva; il testo conserva ID e stato
+  `unreviewed`. Test mirato e help del launcher PASS.
+- T49v espone `memoria documents mention-preview`, componendo chunk, segmenti
+  deboli e menzioni da soli `ProcessedDocumentText` selezionati. Manifest con
+  digest input/output; claim extraction resta disabilitata. Test mirato, help e
+  Ruff test PASS.
+- T49w aggiunge a `memoria feedback actions` la selezione per `profile_id` e
+  `mention_id` espliciti. Sul DOCX già collegato al run T47 Bendini l'hash raw
+  coincide con quello del run; il launcher genera una action per “Bendini
+  Walter”, con due date candidate e Imola nello stesso contesto. L'action è
+  collegata al profilo soltanto come candidata, resta `unreviewed` e segnala
+  identità irrisolta. Gate: 12 test actions PASS, hash menzioni concorde e
+  `claim_eligible=false`. Artifact reali in
+  `memoria-engine/.tmp-tests/t49w-bendini-existing-run-20261108/`, ignorati da
+  Git. Nessuna ricerca, review umana, scrittura database o modifica canonica.
+
+La review umana via wizard è stata completata: summary hash-bound all'action
+set, decisione `BUONA`, reviewer dichiarato `marco` e latenza misurata 10 s.
+Il plan preview successivo ha restituito `profile_not_found`: l'indice contiene
+il profilo, ma il suo `seed.source` è `ricerche\\caduti_purocielo.csv` e il
+planner esclude per default i profili legacy seed. Il piano resta
+`execution_allowed=false`; nessuna ricerca è partita. T49 resta aperto in attesa
+di risolvere l'eleggibilità del profilo o selezionare un profilo/materiale
+idoneo. `BUONA` non autorizza la ricerca: prima di qualunque tentativo devono
+essere autorizzate esplicitamente action, fonte/strategia e query. Il PDF
+candidato del T47 non è stato acquisito né usato in questa slice.
+
+Correzione T49 2026-11-08: i descriptor per entrambi i source ID erano presenti;
+il builder derivava la root errata dal path `memoria-sources/registry`. Dopo il
+fix e' stato generato il plan Bendini con 5 tentativi: 2 su
+`storia_memoria_bo` e 3 su `partigiani_italia`, zero fonti saltate. Il plan
+resta `ready_for_review`, `execution_allowed=false` e
+`online_search_started=false`. La review `BUONA` classifica l'action, non
+conferma l'identita' della mention `Bendini Walter “Ateo”` col profilo
+`Bendini Ateo`; le due date di nascita nel DOCX sono alternative. Nessuna query
+live e' stata eseguita.
+
 **Priorita' parallele:** Q2 solo come micro-refactor giustificato; T41 gate
 statistico OCR separato; T27/T28 cloud solo se necessario al percorso.
+
+Aggiornamento ricerca Bendini 2026-11-08: dopo l'indisponibilita' del browser
+locale sono state eseguite quattro varianti autorizzate con un motore web
+generale, dopo ulteriore consenso dell'utente. Paese.app indicizza una voce
+“Ateo Bendini, 1909, Imola” ([aggregatore](https://paese.app/cognomi/bendini));
+e' un candidato esterno, non una conferma d'identita' o un fatto canonico.
+Nessuna scheda nominativa dei due archivi e' emersa. Il portale I Partigiani
+d'Italia dichiara che l'accesso ai dati e alle riproduzioni delle schede
+richiede SPID o CIE ([portale ufficiale](https://partigianiditalia.cultura.gov.it/)).
+Non sono stati creati SourceDocument, claim o aggiornamenti profilo; le ricerche
+dirette nei siti e la registrazione CLI restano da completare quando il browser
+sara' disponibile e senza oltrepassare l'autenticazione.
+
+Rettifica procedurale 2026-11-08: il blocco non e' la disponibilita' del
+browser CUA. Esistono `profiles_runner.py`, i connettori Playwright e una
+sessione persistente con handoff umano SPID/CIE. Il launcher `memoria` non
+espone pero' il runner; il wrapper `run_profiles_meta_search.ps1` usa
+`python -m`, non ammesso dalle istruzioni persistenti. Il runner attuale esegue
+solo il primo tentativo pianificato e non seleziona un attempt ID arbitrario.
+La ripresa richiede una slice del launcher con selezione esplicita dei quattro
+tentativi. La ricerca web generale e' stata un ripiego improprio e non ha
+prodotto SourceDocument o fatti.
+
+T49u completato 2026-11-08: `memoria sources online run` instrada dal launcher
+installato ai connettori esistenti e accetta `--attempt-id` ripetibile. La
+validazione del profilo, fonte e ID avviene prima di auth/cache/rete; i template
+non selezionati non sono eseguiti. Per Partigiani l'autenticazione SPID/CIE
+resta un handoff manuale Playwright. Gate mirato: 34 test e 8 subtest PASS,
+launcher subprocess offline PASS, Ruff import check e `git diff --check` PASS.
+Nessuna query live e' stata lanciata; le quattro query T49 restano da eseguire
+tramite questo comando.
+
+T49v completato 2026-11-08 via launcher e connettori: i due attempt Storia
+hanno restituito la stessa pagina persona `Ateo Bendini`; i due attempt
+Partigiani hanno restituito una pagina persona `Bendini, Walter Ateo` e una
+pagina generica del portale, trattata come risultato non utilizzabile. Due
+SourceDocument unici sono registrati in `evidence.sqlite`, entrambi
+`unreviewed`/`excerpt_only`; la pagina generica non e' stata registrata. Il
+report Partigiani contiene claim candidate non promosse. Gli artifact completi
+sono in `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-bendini-four-searches-20261108\`.
+Nessun fatto canonico o profilo e' stato modificato. T49 resta aperto per
+revisione umana dell'identita' e delle evidenze.
+
+T49x-z (2026-11-08) proseguono il percorso integrato dai due documenti online
+registrati, senza riaprire la ricerca:
+
+- T49x estende `memoria documents text-extract` ai sidecar YAML
+  `*.document.yaml` prodotti dai connettori. Mantiene `SourceDocument`, URL,
+  titolo, tipo e `review_status`; 7 test mirati PASS. Il launcher ha estratto
+  due testi con digest corrispondenti ai contenuti acquisiti.
+- T49y genera menzioni dai due testi espliciti: 10 candidate, tutte
+  `unreviewed`, claim extraction disabilitata. Sono presenti falsi positivi
+  (`Bendini Genere`, `Caduto Commissioni`) e non vanno interpretati come fatti.
+- T49z genera un'action candidata `Walter Ateo` collegata al profilo solo come
+  `unreviewed_candidate_link`, più un piano con 5 tentativi proposti. Plan e
+  action sono hash-bound; `execution_allowed=false` e
+  `online_search_started=false`. Il wizard registra la decisione `BUONA`
+  (reviewer dichiarato `marco`, latenza misurata 73 s): è giudizio sull'utilità
+  dell'action, non sull'identità e non autorizza nuove query. Tra i cinque
+  tentativi del piano, quattro erano già stati eseguiti e
+  `solo-cognome-contains` resta esplicitamente escluso dall'utente; nessuno è
+  stato rilanciato.
+
+Artifact operativi in
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-bendini-four-searches-20261108\`.
+Nessuna identità, data o claim è stata approvata e nessun profilo canonico è
+stato modificato.
 
 ## Confini repository
 
@@ -1400,6 +1508,16 @@ Criteri di uscita:
 
 Stato: chiusa il 2026-09-02. La migrazione controllata dei profili legacy è
 completata; le evidenze operative restano nel data root esterno.
+
+Correzione verificata il 2026-11-08: la chiusura T34/T34b non aveva rimosso
+`seed.source = ricerche\\caduti_purocielo.csv` dai 57 profili legacy. Dopo
+approvazione utente, il comando installato
+`memoria profiles seed-migration` ha aggiornato tutti e 57 i profili:
+associazione e payload CSV sono rimossi dai profili attivi, con 57 backup
+byte-exact e audit hash-bound nel data root esterno. I valori storici e i loro
+stati di review non sono stati ricostruiti, modificati o promossi. I residui
+tecnici di associazione al seed CSV sono zero; la revisione e la ricostruzione
+storica restano distinte.
 
 Chiusura operativa 2026-09-02: T34 non lascia un preflight pendente nella fase
 di intake/revisione preview. La riconciliazione finale dei residui e

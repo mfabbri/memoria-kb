@@ -91,6 +91,83 @@ def mention(
 
 
 class DocumentResearchFeedbackActionsTests(unittest.TestCase):
+    def test_profile_scoped_action_preview_uses_exact_person_mentions(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            mentions_dir = tmp_dir / "mentions"
+            output_json = tmp_dir / "actions.json"
+            target = mention(mention_kind="person", value="Bendini Walter")
+            other = mention(mention_kind="person", value="Elvira Cava")
+            support = mention(mention_kind="date", value="30 gennaio 1909")
+            mentions_path = write_mentions_payload(
+                mentions_dir,
+                source_id="local_docx",
+                source_document_id="local_docx:fixture",
+                mentions=[target, other, support],
+            )
+            expected_digest = hashlib.sha256(mentions_path.read_bytes()).hexdigest()
+
+            payload = build_document_research_feedback_actions(
+                mentions_dir=mentions_dir,
+                output_json=output_json,
+                person_mention_ids=[str(target["mention_id"])],
+                profile_id="person:purocielo:bendini-ateo",
+            )
+
+        action = payload["documents"][0]["actions"][0]
+        self.assertEqual(payload["action_count"], 1)
+        self.assertEqual(payload["selection"]["profile_id"], "person:purocielo:bendini-ateo")
+        self.assertEqual(payload["selection"]["identity_resolution"], "unreviewed_candidate_link")
+        self.assertEqual(action["source_candidate_id"], target["mention_id"])
+        self.assertEqual(action["person_id"], "person:purocielo:bendini-ateo")
+        self.assertEqual(payload["documents"][0]["mentions_sha256"], expected_digest)
+        self.assertIn("identity_resolution_unreviewed_candidate_link", action["warnings"])
+        self.assertEqual(action["review_status"], "unreviewed")
+        self.assertEqual(action["supporting_candidate_ids"], [support["mention_id"]])
+
+    def test_profile_scoped_action_preview_rejects_missing_person_mention_before_writing(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            mentions_dir = tmp_dir / "mentions"
+            output_json = tmp_dir / "actions.json"
+            write_mentions_payload(
+                mentions_dir,
+                mentions=[mention(mention_kind="person", value="Bendini Walter")],
+            )
+
+            with self.assertRaisesRegex(ValueError, "non trovate"):
+                build_document_research_feedback_actions(
+                    mentions_dir=mentions_dir,
+                    output_json=output_json,
+                    person_mention_ids=["document-mention-candidate:not-present"],
+                    profile_id="person:purocielo:bendini-ateo",
+                )
+
+        self.assertFalse(output_json.exists())
+
+    def test_installed_launcher_supports_profile_scoped_action_preview(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            mentions_dir = tmp_dir / "mentions"
+            output_json = tmp_dir / "actions.json"
+            target = mention(mention_kind="person", value="Bendini Walter")
+            write_mentions_payload(
+                mentions_dir,
+                mentions=[target, mention(mention_kind="date", value="30 gennaio 1909")],
+            )
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            completed = subprocess.run(
+                [
+                    str(launcher), "feedback", "actions", "--mentions-dir", str(mentions_dir),
+                    "--profile-id", "person:purocielo:bendini-ateo",
+                    "--person-mention-id", str(target["mention_id"]),
+                    "--output-json", str(output_json),
+                ],
+                cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True, check=False,
+            )
+            payload = json.loads(output_json.read_text(encoding="utf-8")) if output_json.exists() else {}
+
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(payload["action_count"], 1)
+        self.assertEqual(payload["documents"][0]["actions"][0]["person_id"], "person:purocielo:bendini-ateo")
+
     def test_installed_launcher_builds_actions_from_mentions(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             mentions_dir = tmp_dir / "mentions"

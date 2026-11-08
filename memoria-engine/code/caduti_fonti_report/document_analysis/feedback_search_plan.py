@@ -379,7 +379,7 @@ def _normalize_name(value: str) -> str:
 
 
 def _plan_id(*, action_id: str, profile_id: str, person_name: str) -> str:
-    digest = hashlib.sha256(f"{action_id}|{profile_id}|{person_name}".encode("utf-8")).hexdigest()[:16]
+    digest = hashlib.sha256(f"{action_id}|{profile_id}|{person_name}".encode()).hexdigest()[:16]
     return f"feedback-search-plan:{digest}"
 
 
@@ -387,6 +387,8 @@ def _repo_root_from_sources_yaml(sources_yaml: Path) -> Path:
     resolved = sources_yaml.resolve()
     if resolved.parent.name == "ricerche":
         return resolved.parent.parent
+    if resolved.parent.name == "registry" and resolved.parent.parent.name == "memoria-sources":
+        return resolved.parent.parent.parent
     return resolved.parent
 
 

@@ -3,32 +3,43 @@ from __future__ import annotations
 import atexit
 import hashlib
 import json
+import re
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-import re
 from urllib.parse import urlparse
 
 import yaml
 
 from ..archival_html_cache import ArchivalHtmlCache
 from ..authenticated_session import ManualAuthenticatedPlaywrightSession, source_uses_manual_authenticated_session
-from ..detail_page_logic import DetailPageAssessment, DetailPageInterpreter, DetailPageSignals, extract_detail_page_signals
+from ..detail_page_logic import (
+    DetailPageAssessment,
+    DetailPageInterpreter,
+    DetailPageSignals,
+    extract_detail_page_signals,
+)
 from ..http_utils import fetch_text, page_title, strip_tags
 from ..models import EvidenceClaim, PersonQuery, SearchHit, Source, SourceDocument, SourceResult
 from ..search_result_logic import CandidateLink, SearchResultAssessment, SearchResultInterpreter, SearchResultSignals
 from ..source_definitions import SourceDefinition, load_source_definition
 from ..source_strategies import build_attempts_from_strategy_definition
+from .bundesarchiv_invenio_executor import BundesarchivInvenioPlaywrightExecutor
 from .cwgc_result_parser import extract_cwgc_result_signals
 from .cwgc_strategy import CwgcUrlSearchExecutor
 from .generic_result_parser import extract_generic_result_signals
 from .german_docs_in_russia_executor import GermanDocsInRussiaSearchExecutor
 from .http_get_form_executor import HttpGetFormSearchExecutor
 from .playwright_form_executor import PlaywrightFormSearchExecutor
+from .search_executor import (
+    PostFormSearchExecutor,
+    ReferenceOnlySearchExecutor,
+    SearchExecutionResult,
+    UrlTemplateFetchSearchExecutor,
+)
+from .search_strategy import SearchAttempt
 from .storia_memoria_bo_executor import StoriaMemoriaBoSearchExecutor, fetch_storia_memoria_bo_detail_html
-from .search_executor import PostFormSearchExecutor, ReferenceOnlySearchExecutor, SearchExecutionResult, UrlTemplateFetchSearchExecutor
-from .bundesarchiv_invenio_executor import BundesarchivInvenioPlaywrightExecutor
-
 
 SignalsParser = Callable[[SearchExecutionResult, PersonQuery], SearchResultSignals]
 HtmlProvider = Callable[[SearchExecutionResult], str]
@@ -51,6 +62,7 @@ class UniformSourceConnector:
         now_factory: Callable[[], datetime] | None = None,
         repo_root: Path | None = None,
         max_search_attempts: int = 0,
+        selected_attempt_ids: list[str] | tuple[str, ...] = (),
     ) -> None:
         self.source = source
         self.source_id = source.source_id
@@ -67,6 +79,9 @@ class UniformSourceConnector:
         self.run_id = run_id
         self.now_factory = now_factory or (lambda: datetime.now(UTC))
         self.max_search_attempts = max(0, int(max_search_attempts))
+        self.selected_attempt_ids = tuple(selected_attempt_ids)
+        if self.selected_attempt_ids and self.max_search_attempts:
+            raise ValueError("attempt-id e max_search_attempts sono incompatibili.")
         self._assessment_by_result_key: dict[str, SearchResultAssessment] = {}
         self._detail_assessment_by_document_id: dict[str, DetailPageAssessment] = {}
         self._claims_by_document_id: dict[str, list[EvidenceClaim]] = {}
@@ -77,6 +92,30 @@ class UniformSourceConnector:
         self._last_query: PersonQuery | None = None
         atexit.register(self.close)
 
+    @staticmethod
+    def selected_attempts(
+        source: Source,
+        definition: SourceDefinition,
+        query: PersonQuery,
+        selected_attempt_ids: list[str] | tuple[str, ...],
+    ) -> list[SearchAttempt]:
+        ids = tuple(selected_attempt_ids)
+        strategy = definition.strategy_definition
+        if not ids or len(set(ids)) != len(ids) or any(not value.strip() for value in ids):
+            raise ValueError("attempt-id vuoti o duplicati.")
+        if strategy is None or strategy.source_id != source.source_id or definition.source_id != source.source_id:
+            raise ValueError("Strategia attempt-id non corrispondente alla fonte.")
+        templates = [template for template in strategy.attempts if template.template_id in ids]
+        if len(templates) != len(ids) or {template.template_id for template in templates} != set(ids):
+            raise ValueError("attempt-id sconosciuto o ambiguo per la fonte selezionata.")
+        attempts = build_attempts_from_strategy_definition(
+            definition=replace(strategy, attempts=templates, max_attempts=0),
+            source=source, query=query, profile=definition.profile,
+        )
+        if {attempt.attempt_id for attempt in attempts} != set(ids):
+            raise ValueError("attempt-id non applicabile ai dati del profilo selezionato.")
+        return attempts
+
     def search_person(self, query: PersonQuery) -> list[SourceResult]:
         self._last_query = query
         self._assessment_by_result_key = {}
@@ -85,7 +124,11 @@ class UniformSourceConnector:
         self._detail_html_cache_by_url = {}
         self._manual_review_detail_urls = set()
         results: list[SourceResult] = []
-        cached_hits = self._cached_detail_hits_for_query(query)
+        selected_attempts = (
+            self.selected_attempts(self.source, self.definition, query, self.selected_attempt_ids)
+            if self.selected_attempt_ids else None
+        )
+        cached_hits = self._cached_detail_hits_for_query(query) if selected_attempts is None else []
         if cached_hits:
             status = "candidate_results"
             if len(cached_hits) > self.definition.result_logic.candidate_limit:
@@ -112,7 +155,7 @@ class UniformSourceConnector:
                 metadata={"rule_id": "archival_cache_lookup", "source_id": self.source.source_id},
             )
             return [result]
-        attempts = build_attempts_from_strategy_definition(
+        attempts = selected_attempts if selected_attempts is not None else build_attempts_from_strategy_definition(
             definition=self.definition.strategy_definition,
             source=self.source,
             query=query,

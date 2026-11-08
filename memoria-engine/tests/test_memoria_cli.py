@@ -1,23 +1,22 @@
 from __future__ import annotations
 
-import json
+import hashlib
 import io
+import json
 import shutil
 import subprocess
 import sys
 import unittest
 import uuid
-from contextlib import contextmanager
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
-
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR / "code"))
 
-from caduti_fonti_report.sqlite_store import SQLiteEvidenceStore  # noqa: E402
 from caduti_fonti_report.memoria_cli import main as memoria_main  # noqa: E402
+from caduti_fonti_report.sqlite_store import SQLiteEvidenceStore  # noqa: E402
 
 
 @contextmanager
@@ -2017,6 +2016,120 @@ class MemoriaCliTests(unittest.TestCase):
         self.assertEqual(before_claims, after_claims)
         self.assertEqual(canonical_ledger_before, canonical_ledger_after)
         self.assertEqual(verified_facts_outputs, [])
+
+    def test_documents_text_extract_uses_only_explicit_metadata_files(self) -> None:
+        with workspace_temp_dir() as workspace:
+            raw_root = workspace / "raw"
+            raw_root.mkdir()
+            (raw_root / "selected.txt").write_text("Ateo Bendini, 30 gennaio 1909.", encoding="utf-8")
+            metadata = workspace / "metadata" / "selected.metadata.json"
+            write_json(
+                metadata,
+                {
+                    "source_id": "fixture_source",
+                    "source_document_id": "document:fixture:1",
+                    "raw_file": "selected.txt",
+                    "media_type": "text/plain",
+                    "document_class": "primary_source",
+                    "claim_eligible": True,
+                    "review_status": "unreviewed",
+                },
+            )
+            output_dir = workspace / "processed"
+            stdout = io.StringIO()
+
+            with redirect_stdout(stdout):
+                exit_code = memoria_main(
+                    [
+                        "documents",
+                        "text-extract",
+                        "--metadata-json",
+                        str(metadata),
+                        "--raw-root",
+                        str(raw_root),
+                        "--output-dir",
+                        str(output_dir),
+                    ]
+                )
+
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                overwrite_exit_code = memoria_main(
+                    [
+                        "documents",
+                        "text-extract",
+                        "--metadata-json",
+                        str(metadata),
+                        "--raw-root",
+                        str(raw_root),
+                        "--output-dir",
+                        str(output_dir),
+                    ]
+                )
+
+            report = json.loads(stdout.getvalue())
+            text_path = Path(report["documents"][0]["text_path"])
+            processed = json.loads(text_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(report["document_count"], 1)
+        self.assertEqual(report["extracted_count"], 1)
+        self.assertEqual(processed["source_document_id"], "document:fixture:1")
+        self.assertEqual(processed["review_status"], "unreviewed")
+        self.assertEqual(processed["text"], "Ateo Bendini, 30 gennaio 1909.")
+        self.assertTrue(processed["text_sha256"])
+        self.assertEqual(overwrite_exit_code, 1)
+        self.assertIn("deve essere nuova o vuota", stderr.getvalue())
+
+    def test_documents_mention_preview_composes_hash_bound_candidate_artifacts(self) -> None:
+        with workspace_temp_dir() as workspace:
+            text_path = workspace / "processed" / "fixture_source" / "document-fixture-1.text.json"
+            write_json(
+                text_path,
+                {
+                    "@type": "ProcessedDocumentText",
+                    "source_id": "fixture_source",
+                    "source_document_id": "document:fixture:1",
+                    "document_class": "primary_source",
+                    "claim_eligible": True,
+                    "review_status": "unreviewed",
+                    "text_status": "extracted",
+                    "text": "Ateo Bendini nacque il 30 gennaio 1909 e servi' nella 36a Brigata Garibaldi.",
+                    "text_sha256": "fixture-text-digest",
+                },
+            )
+            original_bytes = text_path.read_bytes()
+            output_dir = workspace / "preview"
+            stdout = io.StringIO()
+
+            with redirect_stdout(stdout):
+                exit_code = memoria_main(
+                    [
+                        "documents",
+                        "mention-preview",
+                        "--text-json",
+                        str(text_path),
+                        "--output-dir",
+                        str(output_dir),
+                    ]
+                )
+
+            report = json.loads(stdout.getvalue())
+            manifest = json.loads(Path(report["manifest"]).read_text(encoding="utf-8"))
+            mentions = json.loads((output_dir / "mentions.json").read_text(encoding="utf-8"))
+            input_unchanged = text_path.read_bytes() == original_bytes
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(report["document_count"], 1)
+        self.assertEqual(manifest["review_status"], "unreviewed")
+        self.assertFalse(manifest["claim_extraction_allowed"])
+        self.assertEqual(manifest["input_texts"][0]["sha256"], hashlib.sha256(original_bytes).hexdigest())
+        self.assertTrue(input_unchanged)
+        self.assertGreater(report["chunk_count"], 0)
+        self.assertGreater(report["segment_count"], 0)
+        self.assertGreater(report["mention_count"], 0)
+        self.assertTrue(all(item["sha256"] for item in manifest["artifacts"]))
+        self.assertTrue(all(document["review_status"] == "unreviewed" for document in mentions["documents"]))
 
     def test_review_start_accepts_powershell_auto_switch(self) -> None:
         shell = powershell_exe()

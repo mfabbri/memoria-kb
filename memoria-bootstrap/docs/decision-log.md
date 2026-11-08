@@ -1,5 +1,29 @@
 # Decision Log
 
+## 2026-11-08 - Chiusura effettiva dei seed CSV profili
+
+Correzione operativa dopo verifica del data root: la chiusura T34/T34b
+dichiarata a settembre non aveva rimosso i seed CSV dai profili esistenti.
+L'indice Purocielo conteneva 60 profili, di cui 57 ancora con
+`seed.source = ricerche\\caduti_purocielo.csv`. Su approvazione esplicita
+dell'utente, la CLI installata `memoria profiles seed-migration` ha migrato
+tutti i 57 profili nel run esterno
+`P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\profile-seed-migration-20261108`.
+
+L'apply ha creato 57 backup byte-exact hash-verificati e un audit con hash
+prima/dopo e seed originali. Nei profili attivi `seed.source` ora vale
+`profile_seed_migration`, `seed.source_id` identifica il run e `seed.payload` e'
+vuoto; `metadata.profile_seed_migration_id` collega l'operazione all'audit.
+Verifica post-run: 60 profili indicizzati, zero riferimenti al CSV nei profili,
+57 backup su 57 hash-concordi. Nessun campo biografico, stato editoriale o
+review e' stato modificato; `verified_facts` resta vuoto nei 57 profili prima e
+dopo. L'audit e i backup conservano il seed originale per provenance e rollback.
+
+Questa operazione chiude l'associazione tecnica al seed legacy; non dichiara
+ricostruiti o revisionati i contenuti storici dei profili. Il feedback plan T49
+ora risolve Bendini, ma resta senza fonti pianificabili perche' mancano i
+descriptor operativi per i source ID selezionati. Nessuna ricerca e' partita.
+
 ## 2026-11-01 - Direzione post-MVP e routing Codex 3.1
 
 Decisione: non riaprire T29-T34b (MVP finanziatori e migrazione profili chiusi).

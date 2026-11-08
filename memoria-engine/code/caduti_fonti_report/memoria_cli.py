@@ -33,6 +33,7 @@ from caduti_fonti_report.document_analysis.manual_registration_batch import (
     preview_manual_documents_batch,
     register_manual_documents_batch,
 )
+from caduti_fonti_report.legacy_profile_seed_migration import migrate_legacy_profile_seeds
 from caduti_fonti_report.document_analysis.ocr_batch import _collect_candidates, run_document_ocr_batch
 from caduti_fonti_report.document_analysis.ocr_tesseract_batch import run_tesseract_evidence_batch
 from caduti_fonti_report.document_analysis.ocr_markdown import export_ocr_pages_markdown
@@ -835,6 +836,50 @@ def _command_profiles_status(args: argparse.Namespace) -> int:
         return 1
     if status.missing_profile_files:
         return 1
+    return 0
+
+
+def _command_profiles_seed_migration(args: argparse.Namespace) -> int:
+    try:
+        resolution = resolve_data_root(explicit_data_root=args.data_root)
+    except DataRootResolutionError as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 2
+    if not resolution.path.is_dir():
+        print(f"ERROR Data root non trovato: {resolution.path}", file=sys.stderr)
+        return 1
+    index_path = (
+        Path(args.profiles_index).expanduser().resolve()
+        if args.profiles_index.strip()
+        else resolution.path / DEFAULT_PROFILES_INDEX
+    )
+    output_dir = Path(args.output_dir).expanduser().resolve()
+    try:
+        audit = migrate_legacy_profile_seeds(
+            profiles_index=index_path,
+            output_dir=output_dir,
+            expected_legacy_count=args.expected_legacy_count,
+            apply=args.apply,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"ERROR Migrazione seed profili non eseguita: {exc}", file=sys.stderr)
+        return 1
+    print(f"Migrazione seed profili: {audit['status']}")
+    print(f"Profili legacy previsti/trovati ora: {audit['expected_legacy_count']}/{audit['legacy_profile_count']}")
+    if audit["status"] == "already_applied":
+        print(f"Migrazione gia' applicata a {audit.get('previously_migrated_count', 0)} profili.")
+    else:
+        print(f"Profili migrati: {audit['migrated_count']}")
+    audit_name = (
+        "profile-seed-migration.audit.json"
+        if args.apply or audit["status"] == "already_applied"
+        else "profile-seed-migration.preview.json"
+    )
+    print(f"Audit: {output_dir / audit_name}")
+    if args.apply:
+        print(f"Backup: {output_dir / 'backups'}")
+    else:
+        print("Nessun profilo canonico modificato; usare --apply solo dopo aver verificato l'audit.")
     return 0
 
 
@@ -1878,6 +1923,8 @@ def _command_feedback_actions_build(args: argparse.Namespace) -> int:
             output_dir=Path(args.output_dir) if args.output_dir else None,
             output_json=Path(args.output_json),
             output_md=Path(args.output_md) if args.output_md else None,
+            person_mention_ids=args.person_mention_id,
+            profile_id=args.profile_id or "",
         )
     except (OSError, ValueError, TypeError, KeyError) as exc:
         print(f"Errore feedback actions: {exc}", file=sys.stderr)
@@ -2067,6 +2114,121 @@ def _command_documents_register_online_source(args: argparse.Namespace) -> int:
         print(f"Errore documents register-online-source: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_text_extract(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.text_extraction import extract_document_text
+
+    metadata_paths = [Path(path) for path in args.metadata_json]
+    output_dir = Path(args.output_dir)
+    try:
+        if output_dir.exists() and any(output_dir.iterdir()):
+            raise ValueError("--output-dir deve essere nuova o vuota; nessun artifact esistente viene sovrascritto.")
+        report = extract_document_text(
+            metadata_dir=metadata_paths[0].parent,
+            output_dir=output_dir,
+            raw_root_dir=Path(args.raw_root),
+            metadata_paths=metadata_paths,
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents text-extract: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "text_set": "ProcessedDocumentTextSet",
+        "document_count": report["document_count"],
+        "extracted_count": report["extracted_count"],
+        "skipped_count": report["skipped_count"],
+        "documents": report["documents"],
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_mention_preview(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.document_chunking import chunk_document_texts
+    from caduti_fonti_report.document_analysis.mention_extraction import extract_document_mentions
+    from caduti_fonti_report.document_analysis.weak_document_segmentation import weak_segment_document_chunks
+
+    text_paths = [Path(path) for path in args.text_json]
+    output_dir = Path(args.output_dir)
+    try:
+        if output_dir.exists() and any(output_dir.iterdir()):
+            raise ValueError("--output-dir deve essere nuova o vuota; nessun artifact esistente viene sovrascritto.")
+        for text_path in text_paths:
+            if not text_path.is_file():
+                raise ValueError(f"ProcessedDocumentText non trovato: {text_path}")
+            text_payload = json.loads(text_path.read_text(encoding="utf-8"))
+            if not isinstance(text_payload, dict) or text_payload.get("@type") != "ProcessedDocumentText":
+                raise ValueError(f"Tipo artifact non supportato: {text_path}")
+        chunks_dir = output_dir / "chunks"
+        segments_dir = output_dir / "segments"
+        mentions_dir = output_dir / "mentions"
+        chunks = chunk_document_texts(
+            text_dir=text_paths[0].parent,
+            output_dir=chunks_dir,
+            output_json=output_dir / "chunks.json",
+            output_md=output_dir / "chunks.md",
+            text_paths=text_paths,
+        )
+        if chunks["skipped_count"]:
+            raise ValueError(f"Chunking ha saltato {chunks['skipped_count']} file espliciti.")
+        chunk_paths = [Path(document["chunk_file"]) for document in chunks["documents"]]
+        segments = weak_segment_document_chunks(
+            chunk_dir=chunks_dir,
+            output_dir=segments_dir,
+            output_json=output_dir / "segments.json",
+            output_md=output_dir / "segments.md",
+            chunk_paths=chunk_paths,
+        )
+        if segments["skipped_count"]:
+            raise ValueError(f"Segmentazione ha saltato {segments['skipped_count']} file espliciti.")
+        segment_paths = [Path(document["segments_file"]) for document in segments["documents"]]
+        mentions = extract_document_mentions(
+            segments_dir=segments_dir,
+            output_dir=mentions_dir,
+            output_json=output_dir / "mentions.json",
+            output_md=output_dir / "mentions.md",
+            segment_paths=segment_paths,
+        )
+        if mentions["skipped_count"]:
+            raise ValueError(f"Estrazione menzioni ha saltato {mentions['skipped_count']} file espliciti.")
+        artifact_paths = [
+            output_dir / "chunks.json",
+            output_dir / "segments.json",
+            output_dir / "mentions.json",
+        ]
+        manifest = {
+            "@type": "DocumentMentionPreviewManifest",
+            "schema_version": "1.0",
+            "review_status": "unreviewed",
+            "input_texts": [
+                {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+                for path in text_paths
+            ],
+            "artifacts": [
+                {"path": str(path), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+                for path in artifact_paths
+            ],
+            "document_count": mentions["document_count"],
+            "chunk_count": chunks["chunk_count"],
+            "segment_count": segments["segment_count"],
+            "mention_count": mentions["mention_count"],
+            "claim_extraction_allowed": False,
+        }
+        manifest_path = output_dir / "manifest.json"
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"Errore documents mention-preview: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({
+        "manifest": str(manifest_path),
+        "document_count": manifest["document_count"],
+        "chunk_count": manifest["chunk_count"],
+        "segment_count": manifest["segment_count"],
+        "mention_count": manifest["mention_count"],
+        "review_status": manifest["review_status"],
+        "claim_extraction_allowed": manifest["claim_extraction_allowed"],
+    }, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -3400,7 +3562,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     workspace_exchange_code.set_defaults(handler=_command_workspace_pcloud_exchange_code)
 
-    profiles = subparsers.add_parser("profiles", help="Diagnostica read-only dei profili persona.")
+    profiles = subparsers.add_parser("profiles", help="Gestione e diagnostica dei profili persona.")
     profiles_subparsers = profiles.add_subparsers(dest="profiles_command", required=True)
     profiles_status = profiles_subparsers.add_parser(
         "status",
@@ -3419,6 +3581,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Formato di output.",
     )
     profiles_status.set_defaults(handler=_command_profiles_status)
+
+    profiles_seed_migration = profiles_subparsers.add_parser(
+        "seed-migration",
+        help="Rimuove i riferimenti attivi ai seed CSV legacy con backup e audit espliciti.",
+    )
+    profiles_seed_migration.add_argument("--data-root", default="", help="Path esplicito al data root esterno.")
+    profiles_seed_migration.add_argument("--profiles-index", default="", help="Indice profili esplicito.")
+    profiles_seed_migration.add_argument("--output-dir", required=True, help="Directory esplicita per audit e backup.")
+    profiles_seed_migration.add_argument(
+        "--expected-legacy-count",
+        required=True,
+        type=int,
+        help="Conteggio precondizione dei profili seed legacy da migrare.",
+    )
+    profiles_seed_migration.add_argument(
+        "--apply",
+        action="store_true",
+        help="Applica la migrazione canonica dopo backup verificati; default preview-only.",
+    )
+    profiles_seed_migration.set_defaults(handler=_command_profiles_seed_migration)
 
     mvp = subparsers.add_parser("mvp", help="Vista read-only del walkthrough MVP demo.")
     mvp_subparsers = mvp.add_subparsers(dest="mvp_command", required=True)
@@ -3564,6 +3746,14 @@ def build_parser() -> argparse.ArgumentParser:
     feedback_actions.add_argument("--output-dir", help="Directory opzionale per artifact per documento.")
     feedback_actions.add_argument("--output-json", required=True, help="Nuovo ResearchFeedbackActionSet JSON.")
     feedback_actions.add_argument("--output-md", help="Preview Markdown opzionale.")
+    feedback_actions.add_argument(
+        "--profile-id", default="",
+        help="Profilo destinatario del linking candidato; richiede --person-mention-id espliciti.",
+    )
+    feedback_actions.add_argument(
+        "--person-mention-id", action="append", default=[],
+        help="Menzione persona esatta da includere; ripetibile e legata all'hash dell'intero file menzioni.",
+    )
     feedback_actions.set_defaults(handler=_command_feedback_actions_build)
     feedback_triage = feedback_subparsers.add_parser("triage", help="Genera e riepiloga il triage delle azioni feedback.")
     feedback_triage_subparsers = feedback_triage.add_subparsers(dest="feedback_triage_command", required=True)
@@ -3651,6 +3841,27 @@ def build_parser() -> argparse.ArgumentParser:
                                          help="Titolo attuale esatto, richiesto per correggere solo il titolo di un record esistente.")
     documents_online_source.add_argument("--apply", action="store_true", help="Registra SourceDocument e SearchRun; default preview.")
     documents_online_source.set_defaults(handler=_command_documents_register_online_source)
+    documents_text_extract = documents_subparsers.add_parser(
+        "text-extract",
+        help="Estrae testo da metadata e file espliciti; non esegue OCR né scansioni ricorsive.",
+    )
+    documents_text_extract.add_argument(
+        "--metadata-json", action="append", required=True,
+        help="Sidecar JSON o YAML esplicito (inclusi i sidecar online *.document.yaml); ripetibile.",
+    )
+    documents_text_extract.add_argument("--raw-root", required=True, help="Radice esplicita per risolvere raw_file relativi; i sidecar online possono indicare file assoluti.")
+    documents_text_extract.add_argument("--output-dir", required=True, help="Nuova directory per ProcessedDocumentText.")
+    documents_text_extract.set_defaults(handler=_command_documents_text_extract)
+    documents_mention_preview = documents_subparsers.add_parser(
+        "mention-preview",
+        help="Compone chunk, segmenti deboli e DocumentMentionCandidate da testi espliciti; solo preview.",
+    )
+    documents_mention_preview.add_argument(
+        "--text-json", action="append", required=True,
+        help="ProcessedDocumentText esplicito; ripetibile per documenti selezionati.",
+    )
+    documents_mention_preview.add_argument("--output-dir", required=True, help="Nuova directory per gli artifact collegati.")
+    documents_mention_preview.set_defaults(handler=_command_documents_mention_preview)
     for command_name, description, handler, specific_args in (
         ("place-preview", "Compone la preview Place offline con review obbligatoria.",
          _command_documents_place_preview,

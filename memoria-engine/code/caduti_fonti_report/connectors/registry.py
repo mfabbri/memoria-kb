@@ -28,9 +28,13 @@ def create_source_connector(
     repo_root: Path | None = None,
     run_source_func: Callable[[Source, Caduto], SourceResult] | None = None,
     max_search_attempts: int = 0,
+    selected_attempt_ids: list[str] | tuple[str, ...] = (),
     authenticated_session_factory: AuthenticatedSessionFactory | None = None,
 ) -> SourceConnector:
     connector_run_id = run_id or "evidence-aware-connector"
+
+    if selected_attempt_ids and (source.kind == "local_excel" or not has_source_definition(source, repo_root=repo_root)):
+        raise ValueError("La selezione attempt-id richiede una strategia dichiarativa.")
 
     if source.kind == "local_excel":
         return LocalExcelSourceConnector(source, run_id=connector_run_id)
@@ -41,6 +45,7 @@ def create_source_connector(
             run_id=connector_run_id,
             repo_root=repo_root,
             max_search_attempts=max_search_attempts,
+            selected_attempt_ids=selected_attempt_ids,
             authenticated_session_factory=authenticated_session_factory,
         )
 

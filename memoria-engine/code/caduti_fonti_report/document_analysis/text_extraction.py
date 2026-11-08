@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
+import yaml
+
 
 def extract_document_text(
     *,
@@ -23,7 +25,7 @@ def extract_document_text(
     processed = []
     paths = sorted(metadata_paths) if metadata_paths is not None else sorted(metadata_dir.rglob("*.metadata.json"))
     for metadata_path in paths:
-        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata = _load_document_metadata(metadata_path)
         if not isinstance(metadata, dict):
             continue
         document_text = _processed_text(metadata, metadata_path=metadata_path, raw_root_dir=raw_root_dir)
@@ -56,6 +58,33 @@ def extract_document_text(
         "document_class_counts": dict(sorted(document_class_counts.items())),
         "documents": processed,
     }
+
+
+def _load_document_metadata(metadata_path: Path) -> dict[str, Any]:
+    raw = metadata_path.read_text(encoding="utf-8")
+    if metadata_path.suffix.casefold() in {".yaml", ".yml"}:
+        try:
+            payload = yaml.safe_load(raw)
+        except yaml.YAMLError as exc:
+            raise ValueError(f"Sidecar YAML non valido: {metadata_path}") from exc
+    else:
+        payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        return {}
+
+    nested = payload.get("metadata")
+    metadata = dict(nested) if isinstance(nested, dict) else dict(payload)
+    for source_key, target_key in (
+        ("document_id", "source_document_id"),
+        ("source_id", "source_id"),
+        ("file", "raw_file"),
+        ("url", "source_url"),
+        ("title", "title"),
+    ):
+        value = payload.get(source_key)
+        if value and not metadata.get(target_key):
+            metadata[target_key] = value
+    return metadata
 
 
 def _processed_text(metadata: dict[str, Any], *, metadata_path: Path, raw_root_dir: Path) -> dict[str, Any]:
@@ -97,7 +126,9 @@ def _processed_text(metadata: dict[str, Any], *, metadata_path: Path, raw_root_d
         "@type": "ProcessedDocumentText",
         "source_id": str(metadata.get("source_id", "")),
         "source_document_id": str(metadata.get("source_document_id", "")),
-        "document_class": str(metadata.get("document_class", "")),
+        "source_url": str(metadata.get("source_url", metadata.get("url", ""))),
+        "title": str(metadata.get("title", "")),
+        "document_class": str(metadata.get("document_class", metadata.get("document_type", ""))),
         "claim_eligible": bool(metadata.get("claim_eligible", False)),
         "review_status": str(metadata.get("review_status", "")) or "unreviewed",
         "raw_file": raw_file,

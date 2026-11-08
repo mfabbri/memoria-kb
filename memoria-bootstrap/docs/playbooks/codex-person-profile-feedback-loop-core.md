@@ -17,6 +17,18 @@ feedback_action = richiesta di nuova ricerca
 search_run_outcome = risultato o no-result tracciato
 ```
 
+## Seed importati da CSV
+
+I profili operativi non devono mantenere `seed.source` o `seed.payload`
+collegati a `caduti_purocielo.csv`. Per la migrazione amministrativa usare il
+launcher installato `memoria profiles seed-migration` in preview, verificare il
+conteggio atteso e l'audit, poi aggiungere `--apply` solo con autorizzazione
+esplicita. L'operazione conserva gli originali nei backup hash-verificati e
+marca il profilo con `seed.source=profile_seed_migration`; non revisiona dati
+biografici, non cambia stati editoriali e non crea `verified_facts`. Il termine
+`profile_seed_migration` registra la trasformazione del seed e non e' una fonte
+storica.
+
 ## Regole di riconciliazione multi-fonte
 
 - Ogni claim mantiene `source_document_id`, source e metodo.
@@ -56,12 +68,55 @@ Un feedback loop e' chiuso solo quando:
 
 La sola generazione di molte query candidate non completa il ciclo.
 
+La review dell'utilità di una `ResearchFeedbackAction` non risolve l'identità
+della menzione e non autorizza una ricerca. Prima del run, confrontare ogni
+`attempt_id` del piano con l'autorizzazione esplicita dell'utente, i run già
+eseguiti e le query escluse. Eseguire soltanto gli ID autorizzati e non ancora
+consumati con `memoria sources online run --attempt-id ...`; il flag è
+ripetibile e consente di escludere i template non selezionati. Un piano può
+contenere attempt già eseguiti o esclusi: `ready_for_review` e `BUONA` non
+abilitano l'esecuzione.
+
+Se non restano attempt autorizzati, fermarsi e proporre una nuova query
+fonte-specifica per approvazione. Non attribuire retroattivamente a una nuova
+action risultati di ricerche avvenute prima che action e piano fossero creati.
+Registrare `FeedbackLoopOutcome` solo dopo il run autorizzato collegato a
+quell'action e a quel piano.
+
 ## Raccolta delle misure T49
 
 Le metriche T49 si alimentano con artifact di una ricerca e di una review
 effettivamente avvenute. Registrare gli ID e i timestamp durante il lavoro;
 non ricostruire tempi, token o costi a posteriori. Conservare run e dati reali
 fuori da Git.
+
+Per estrarre testo da documenti già acquisiti, il launcher accetta sidecar
+JSON o YAML selezionati uno per volta e scrive `ProcessedDocumentText` in una
+directory di output. I sidecar online `*.document.yaml` possono contenere
+`file` e metadata annidati; quelli JSON locali possono usare `raw_file` relativo
+alla radice esplicita:
+
+```text
+memoria documents text-extract --metadata-json <document.metadata.json> --raw-root <raw-root> --output-dir <text-output>
+```
+
+Ripetere `--metadata-json` solo per i documenti scelti. Nonostante il nome
+dell'opzione, sono validi anche i sidecar YAML online. Il comando non esegue
+OCR né scansioni ricorsive; mantiene `source_document_id`, URL e
+`review_status`, e calcola il digest del testo estratto. I dati reali e gli
+output di run restano fuori da Git.
+
+Per comporre i candidati dalle sole estrazioni selezionate, passa uno o più
+`ProcessedDocumentText` al launcher. Il comando produce chunk, segmenti deboli,
+menzioni e un manifest con digest degli input/output; le menzioni restano
+`unreviewed` e non abilitano claim:
+
+```text
+memoria documents mention-preview --text-json <document.text.json> --output-dir <preview-dir>
+```
+
+Ripetere `--text-json` solo per documenti che si vogliono includere. La directory
+di output deve essere nuova o vuota.
 
 Prima genera le action candidate dal directory di `DocumentMentionCandidate`
 usando il launcher installato. Il comando produce una preview JSON/Markdown e
@@ -70,6 +125,21 @@ digest SHA-256 per ogni file di menzioni; non crea fatti o patch ai profili:
 ```text
 memoria feedback actions --mentions-dir <mentions-dir> --output-dir <actions-dir> --output-json <actions.json> --output-md <actions.md>
 ```
+
+Quando il file di menzioni contiene più persone, si può restringere la preview
+a ID `mention_id` espliciti e dichiarare il profilo come collegamento candidato:
+
+```text
+memoria feedback actions --mentions-dir <mentions-dir> --profile-id <person-profile-id> --person-mention-id <mention-id> --output-json <actions.json> --output-md <actions.md>
+```
+
+Il comando rifiuta ID persona mancanti e lega comunque `mentions_sha256`
+all'intero file consumato. Il profilo resta un collegamento candidato
+`unreviewed`: va verificato nella review umana prima di pianificare una ricerca.
+Le menzioni deterministiche possono contenere falsi positivi; anche una
+menzione persona con `BUONA` non dimostra che la persona citata sia il profilo
+canonico indicato. Conservare ID e contesto della menzione e lasciare la
+risoluzione d'identità allo storico.
 
 `feedback plan` e il riepilogo prodotto da `feedback triage summarize-table`
 conservano `actions_sha256` per l’action set consumato. Quando si registra un

@@ -4,9 +4,25 @@
 
 **T48: percorso CLI e review umana reale completati il 2026-11-08.** Il percorso usa una fonte abilitata nel registry, registra il SourceDocument nel database operativo con CLI, genera preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non applica modifiche canoniche e non autentica il reviewer.
 
+### Correzione 2026-11-08: seed CSV profili migrati
+
+La migrazione canonica dei 57 seed CSV e' stata applicata con approvazione
+utente. I profili attivi non contengono piu' riferimenti o payload
+`caduti_purocielo.csv`; backup byte-exact e audit sono in
+`P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\profile-seed-migration-20261108`.
+Contenuti biografici, stati editoriali e review non sono stati promossi o
+modificati. Un fix T49 ha corretto la root del catalogo source: il launcher
+genera ora il plan Bendini con 5 tentativi dichiarativi per `storia_memoria_bo`
+e `partigiani_italia`, 0 fonti saltate e nessuna ricerca avviata. L'action
+riporta `Bendini Walter “Ateo”`, mentre il profilo canonico e' `Bendini Ateo`;
+la mention resta un collegamento non revisionato e il DOCX riporta due date di
+nascita alternative. Il plan e' pronto per review/autorizzazione, ma non
+eseguibile. Il paragrafo T49 qui sotto descrive la preview precedente alla
+migrazione e al fix della root.
+
 La prova reale usa `memorie_locali` e la pagina Resistenza mAPPe su Purocielo. Il SourceDocument operativo e' `unreviewed`; la preview ha prodotto 1 link e 2 aggiornamenti data candidati. Gli artifact sono in `memoria-engine/.tmp-tests/online-source-purocielo-20261107/preview-operational-catalog/`.
 
-La receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json` registra tre decisioni `accept_candidate`: un link all'evento e due date (1944-10-10 e 1944-10-12). Il reviewer dichiarato e' `marco`; la receipt e' legata al manifest e agli hash degli artifact. La review non autentica il reviewer, non cambia lo stato `unreviewed` del SourceDocument e non applica modifiche all'evento canonico. T48 e' chiuso. T49f-t hanno aggiunto al launcher installato valutazione, piano, outcome, triage e generazione action da menzioni; l’hash dell’action set si propaga e viene verificato da table, summary, outcome ed evaluation. T49t verifica l’intera catena su fixture sintetiche; nessuna ricerca è avvenuta. T49 resta aperto finché non saranno disponibili artifact da una ricerca e review feedback effettivamente collegate. Il prossimo passaggio è generare candidate da materiale reale, fermarsi per le decisioni del reviewer e procedere a una nuova ricerca solo se autorizzata per action, fonte e strategia/query; una decisione `BUONA`/`DUBBIA` non vale da sola come permesso di ricerca. I comandi e i limiti sono descritti in `docs/playbooks/codex-person-profile-feedback-loop-core.md` e `docs/playbooks/online-source-research-review.md`.
+La receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json` registra tre decisioni `accept_candidate`: un link all'evento e due date (1944-10-10 e 1944-10-12). Il reviewer dichiarato e' `marco`; la receipt e' legata al manifest e agli hash degli artifact. La review non autentica il reviewer, non cambia lo stato `unreviewed` del SourceDocument e non applica modifiche all'evento canonico. T48 e' chiuso. T49f-t hanno aggiunto al launcher installato valutazione, piano, outcome, triage e generazione action da menzioni; l’hash dell’action set si propaga e viene verificato da table, summary, outcome ed evaluation. T49u-v espongono estrazione testuale selettiva e preparazione delle menzioni dal launcher. T49w ha generato una action reale per Bendini dal DOCX collegato al T47; l'identità resta un collegamento candidato `unreviewed`. La review via wizard è stata completata con decisione `BUONA`, reviewer dichiarato `marco` e latenza misurata 10 s; receipt e tabella sono in `memoria-engine/.tmp-tests/t49w-bendini-existing-run-20261108/`. La preview del piano è stata saltata (`profile_not_found`): l'indice contiene il profilo, ma il suo seed è il CSV legacy `ricerche\\caduti_purocielo.csv`, escluso dal planner per default. `execution_allowed=false`; nessuna ricerca è partita. T49 resta aperto per risolvere l'eleggibilità del profilo o selezionare materiale idoneo. `BUONA` non autorizza una ricerca: action, fonte/strategia e query devono essere autorizzate esplicitamente. I comandi e i limiti sono descritti in `docs/playbooks/codex-person-profile-feedback-loop-core.md` e `docs/playbooks/online-source-research-review.md`.
 
 La slice T48j aggiunge il runner Place offline
 `python -m caduti_fonti_report.document_analysis.place_preview_pipeline`.
@@ -44,6 +60,52 @@ passato. Il gate recente passa 16 evaluation, 7 triage e 3 test T31; T49 resta
 aperto finche' non sono disponibili misure reali comparabili. Latenza, conflitti,
 token e costi assenti restano `unavailable`; i delta di fixture non attestano
 risparmi.
+
+Esito ricerca Bendini 2026-11-08: le quattro varianti autorizzate sono state
+inviate a un motore web generale; Paese.app indicizza “Ateo Bendini, 1909,
+Imola” solo come candidato esterno. Non e' emersa una scheda nominativa dei due
+archivi. Questa non ha eseguito i connettori locali: `profiles_runner.py` e i
+connettori esistono, incluso l'handoff Playwright SPID/CIE a login umano, ma il
+launcher `memoria` non li espone e il wrapper storico invoca `python -m`.
+Inoltre `profiles_runner` seleziona solo il primo tentativo pianificato, senza
+selettore di attempt ID. Nessun SourceDocument, claim o modifica profilo. Il
+prossimo prerequisito e aggiungere al launcher l'invocazione dei connettori e la
+selezione esplicita dei quattro tentativi; poi completare la ricerca e la
+registrazione con i passaggi umani previsti per SPID/CIE.
+
+T49u ora colma quel prerequisito: `memoria sources online run` accetta gli
+attempt ID dichiarati per una fonte e un profilo, prevalidandoli prima di
+browser, cache o rete. I tentativi non selezionati restano esclusi; il login
+SPID/CIE resta manuale. Gate: 34 test/8 subtest, launcher subprocess offline,
+Ruff import check e `git diff --check` PASS. Le quattro ricerche reali non sono
+ancora state lanciate; prossimo passo: eseguirle con i quattro ID autorizzati,
+registrando solo pagine di dettaglio identificabili e consultabili.
+
+T49v completato tramite `memoria sources online run`: i due attempt Storia
+convergono sulla pagina persona `Ateo Bendini`; per Partigiani il primo ha
+restituito la scheda `Bendini, Walter Ateo`, il secondo una pagina generica del
+portale senza dettaglio persona. Sono registrati due SourceDocument unici in
+`P:\Comune\Me.Mo.Ri.a\database\evidence.sqlite`, entrambi `unreviewed` e
+`excerpt_only`; la scheda generica non e' stata registrata. Gli output e i
+documenti acquisiti sono in
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-bendini-four-searches-20261108\`.
+Il report contiene claim candidate non promosse; nessun fatto o profilo
+canonico e' stato modificato. T49 resta aperto per review umana.
+
+T49x-z (2026-11-08) proseguono il percorso sui due SourceDocument, senza
+riaprire la ricerca. T49x aggiunge il supporto ai sidecar online YAML in
+`memoria documents text-extract`: 7 test mirati PASS; i due testi estratti
+mantengono ID, URL, titolo, tipo, stato `unreviewed` e digest. T49y compone
+10 menzioni candidate dai due testi, con claim extraction disabilitata; sono
+presenti falsi positivi e nessuna menzione equivale a identità. T49z produce
+una action `Walter Ateo` collegata al profilo solo come candidata e una
+review-only plan hash-bound. Il wizard ha registrato `BUONA` con reviewer
+dichiarato `marco` e latenza misurata 73 s; la decisione valuta l'utilità
+dell'action, non l'identità né l'autorizzazione alla ricerca. Il piano elenca
+anche `solo-cognome-contains`, già escluso dall'utente: non va eseguito. I
+quattro attempt autorizzati sono già stati consumati; nessuna nuova query è
+partita. Artifact in `t49x-text-extract-v2/`, `t49y-mention-preview/` e
+`t49z-feedback-preview/`; nessun claim o profilo canonico è stato modificato.
 
 La run T47 `t47-bendini-online-offline-20261107` e' auditata nel workspace
 esterno. CSV e DOCX locali sono hash-bound ai rispettivi ID; una pagina

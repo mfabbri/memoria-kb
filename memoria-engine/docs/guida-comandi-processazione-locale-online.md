@@ -147,7 +147,79 @@ P:\Comune\Me.Mo.Ri.a\risultati\runs\<RunId>\document_analysis\feedback_search_pl
 Usare quando vuoi interrogare una fonte censita nel registry partendo da
 `PersonResearchProfile` JSON-LD.
 
-Comando singolo profilo/singola fonte:
+### Percorso corrente: launcher `memoria`
+
+Il comando passa dal launcher installato ai connettori dichiarativi e permette
+di selezionare uno o piu' tentativi tramite ID esatti. Tutti gli ID vengono
+validati per fonte e profilo prima di aprire browser, consultare cache o inviare
+richieste. Gli altri tentativi della strategia non vengono eseguiti.
+
+```powershell
+$Memoria = ".\.venv\Scripts\memoria.exe"
+$WorkspaceRoot = "P:\Comune\Me.Mo.Ri.a"
+$ProfileIndex = "$WorkspaceRoot\ricerche\person_profiles\purocielo.index.jsonld"
+$RunDir = "$WorkspaceRoot\risultati\runs\t49-bendini-selected-attempts"
+$Registry = "..\memoria-sources\registry\camalanca_fonti.yaml"
+
+& $Memoria sources online run `
+  --profiles-index $ProfileIndex `
+  --sources-yaml $Registry `
+  --profile-id "person:purocielo:bendini-ateo" `
+  --source storia_memoria_bo --limit 1 `
+  --attempt-id nome-cognome `
+  --attempt-id testo-libero-nome-completo `
+  --output-json "$RunDir\storia.json" `
+  --output-md "$RunDir\storia.md" `
+  --output-dir "$RunDir\storia-schede"
+
+& $Memoria sources online run `
+  --profiles-index $ProfileIndex `
+  --sources-yaml $Registry `
+  --profile-id "person:purocielo:bendini-ateo" `
+  --source partigiani_italia --limit 1 `
+  --attempt-id cognome-nome-contains `
+  --attempt-id cognome-nome-nascita `
+  --ensure-authenticated-session `
+  --output-json "$RunDir\partigiani.json" `
+  --output-md "$RunDir\partigiani.md" `
+  --output-dir "$RunDir\partigiani-schede"
+```
+
+`--attempt-id` e' ripetibile; usare solo gli ID previsti dalla strategia
+della fonte selezionata. `--execute-first-planned-attempt` e' incompatibile con
+la selezione esplicita. Per `partigiani_italia`, `--ensure-authenticated-session`
+apre/riusa un browser Playwright e attende il login SPID/CIE svolto dalla
+persona; non passare credenziali, cookie o token alla CLI. I risultati e le
+schede restano candidati da revisionare, senza aggiornamenti canonici.
+
+Per registrare un dettaglio come `SourceDocument`, usare poi
+`memoria documents register-online-source` in preview e applicare solo dopo la
+verifica umana dei metadati. L'output del runner da solo non promuove fatti.
+
+I sidecar prodotti dal runner (`*.document.yaml`) sono utilizzabili direttamente
+con `memoria documents text-extract`; il comando mantiene `source_document_id`,
+URL, titolo e `review_status` e genera un digest del testo. Selezionare solo le
+schede dettagliate da trattare, non la pagina dei risultati né i sidecar delle
+immagini:
+
+```powershell
+memoria documents text-extract `
+  --metadata-json "$RunDir\acquired\storia_memoria_bo\storia_memoria_bo\<scheda>\<documento>.txt.document.yaml" `
+  --raw-root "$RunDir\acquired" `
+  --output-dir "$RunDir\document-text"
+```
+
+Per sidecar JSON già esistenti il comando resta compatibile. Non esegue OCR e
+non crea claim; il passo successivo `memoria documents mention-preview` produce
+menzioni candidate in una directory nuova.
+
+### Riferimento storico: wrapper PowerShell
+
+I comandi col wrapper `run_profiles_meta_search.ps1` qui sotto sono esempi
+storici. Per nuove invocazioni usare il launcher installato `memoria`, che
+assicura il dispatch CLI e supporta la selezione esplicita degli attempt ID.
+
+Comando storico singolo profilo/singola fonte:
 
 ```powershell
 $WorkspaceRoot = "P:\Comune\Me.Mo.Ri.a"

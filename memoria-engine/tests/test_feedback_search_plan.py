@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.document_analysis.feedback_search_plan import (  # noqa: E402
+    _repo_root_from_sources_yaml,
     build_feedback_search_plan,
     render_feedback_search_plan_markdown,
 )
@@ -154,6 +155,14 @@ def write_links_json(root_dir: Path, *, links: list[dict[str, object]] | None = 
 
 
 class FeedbackSearchPlanTests(unittest.TestCase):
+    def test_modular_registry_path_resolves_workspace_root(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            root = tmp_dir / "workspace"
+            registry = root / "memoria-sources" / "registry" / "camalanca_fonti.yaml"
+            registry.parent.mkdir(parents=True)
+            registry.write_text("enabled_sources: []\nsources: []\n", encoding="utf-8")
+            self.assertEqual(_repo_root_from_sources_yaml(registry), root.resolve())
+
     def test_installed_launcher_connects_actions_plan_review_outcome_and_evaluation(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")

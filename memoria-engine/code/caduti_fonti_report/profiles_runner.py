@@ -24,6 +24,11 @@ from .validate_sources_registry import validate_sources_registry_file
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Esegue il meta motore usando PersonResearchProfile JSON-LD.")
+    add_profiles_report_arguments(parser)
+    return run_profiles_report_from_args(parser.parse_args())
+
+
+def add_profiles_report_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--profiles-index", required=True)
     parser.add_argument("--sources-yaml", default="ricerche/camalanca_fonti.yaml")
     parser.add_argument("--output-md", default="risultati/profili_purocielo_fonti_report.md")
@@ -40,8 +45,10 @@ def main() -> int:
     parser.add_argument("--refresh-authenticated-cache", action="store_true", help="Ignora la cache autenticata locale e rifetcha live le pagine manual_persistent_context.")
     parser.add_argument("--keep-authenticated-browser-open-seconds", type=int, default=0, help="Mantiene aperto il browser autenticato per N secondi prima della chiusura finale.")
     parser.add_argument("--acquire-documents-root", default="", help="Se impostato, acquisisce i SourceDocument di dettaglio come documenti offline processabili.")
-    args = parser.parse_args()
+    parser.add_argument("--attempt-id", action="append", default=[], help="ID dichiarato del tentativo da eseguire; ripetibile, richiede source e limit > 0.")
 
+
+def run_profiles_report_from_args(args: argparse.Namespace) -> int:
     result = run_profiles_report(
         profiles_index=Path(args.profiles_index),
         sources_yaml=Path(args.sources_yaml),
@@ -55,6 +62,7 @@ def main() -> int:
         name_filter=args.name,
         include_search_plan=args.include_search_plan,
         execute_first_planned_attempt=args.execute_first_planned_attempt,
+        selected_attempt_ids=args.attempt_id,
         ensure_authenticated_session=args.ensure_authenticated_session,
         refresh_authenticated_cache=args.refresh_authenticated_cache,
         keep_authenticated_browser_open_seconds=args.keep_authenticated_browser_open_seconds,
@@ -77,6 +85,7 @@ def run_profiles_report(
     name_filter: str = "",
     include_search_plan: bool = False,
     execute_first_planned_attempt: bool = False,
+    selected_attempt_ids: list[str] | tuple[str, ...] = (),
     ensure_authenticated_session: bool = False,
     refresh_authenticated_cache: bool = False,
     keep_authenticated_browser_open_seconds: int = 0,
@@ -91,6 +100,15 @@ def run_profiles_report(
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    selected_attempt_ids = tuple(selected_attempt_ids)
+    if selected_attempt_ids and (
+        not source_id.strip() or limit <= 0 or execute_first_planned_attempt
+        or any(not value.strip() for value in selected_attempt_ids)
+        or len(set(selected_attempt_ids)) != len(selected_attempt_ids)
+    ):
+        print("Selezione attempt-id non valida: richiede ID unici, source, limit > 0 e nessuna modalita first.")
+        return {"exit_code": 2, "error": "invalid_attempt_selection"}
+
     if execute_first_planned_attempt and (not source_id.strip() or limit <= 0):
         print("La modalita' execute-first-planned-attempt richiede Source e Limit > 0.")
         return {
@@ -103,9 +121,9 @@ def run_profiles_report(
             "error": "planned_execution_requires_source_limit",
         }
 
-    include_search_plan = include_search_plan or execute_first_planned_attempt
+    include_search_plan = include_search_plan or execute_first_planned_attempt or bool(selected_attempt_ids)
     max_search_attempts = 1 if execute_first_planned_attempt else 0
-    planned_execution_mode = "first_planned_attempt" if execute_first_planned_attempt else "standard"
+    planned_execution_mode = "selected_attempts" if selected_attempt_ids else ("first_planned_attempt" if execute_first_planned_attempt else "standard")
 
     repository = ProfileRepository(profiles_index)
     profiles = repository.load_profiles(
@@ -166,6 +184,22 @@ def run_profiles_report(
         }
 
     repo_root = _repo_root_from_sources_yaml(sources_yaml)
+    if selected_attempt_ids:
+        from .connectors.uniform_source_connector import UniformSourceConnector
+
+        try:
+            for source in sources:
+                if not has_source_definition(source, repo_root=repo_root):
+                    raise ValueError("La selezione attempt-id richiede una strategia dichiarativa.")
+                definition = load_source_definition(source, repo_root=repo_root)
+                for profile in profiles:
+                    UniformSourceConnector.selected_attempts(
+                        source, definition, person_query_from_profile(profile), selected_attempt_ids
+                    )
+        except ValueError as exc:
+            print(str(exc))
+            return {"exit_code": 2, "error": "invalid_attempt_selection"}
+
     prepared_authenticated_sessions: dict[str, tuple[ManualAuthenticatedPlaywrightSession, object]] = {}
     if ensure_authenticated_session:
         prepared_authenticated_sessions = _ensure_manual_authenticated_sessions(sources=sources, repo_root=repo_root)
@@ -176,6 +210,7 @@ def run_profiles_report(
             run_id=f"profiles-meta-search:{source.source_id}",
             repo_root=repo_root,
             max_search_attempts=max_search_attempts,
+            **({"selected_attempt_ids": selected_attempt_ids} if selected_attempt_ids else {}),
             authenticated_session_factory=(
                 _prepared_authenticated_session_factory(prepared_authenticated_sessions)
                 if prepared_authenticated_sessions
@@ -246,6 +281,7 @@ def run_profiles_report(
                             "acquired_documents": acquisition_items,
                             **(
                                 {
+                                    "selected_attempt_ids": list(selected_attempt_ids),
                                     "planned_execution_mode": planned_execution_mode,
                                     "planned_attempt_execution_limit": max_search_attempts,
                                 }
@@ -303,6 +339,7 @@ def run_profiles_report(
             "used_fallback": source_selection.used_fallback,
         },
         "include_search_plan": include_search_plan,
+        "selected_attempt_ids": list(selected_attempt_ids),
         "planned_execution_mode": planned_execution_mode,
         "planned_attempt_execution_limit": max_search_attempts,
         "acquire_documents_root": str(acquire_documents_root) if acquire_documents_root is not None else "",

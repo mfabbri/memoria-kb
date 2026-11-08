@@ -40,3 +40,20 @@ eseguire la validazione completa del planner e del routing, usare da root:
 ```powershell
 & .\memoria-engine\.venv\Scripts\python.exe .\memoria-bootstrap\planning\validate-codex-model-routing.py
 ```
+
+## Aggiornamento sicuro su Windows
+
+`current-work.json` può contenere note locali non ancora salvate in Git. Prima
+di riscriverlo, conservarne una copia byte-per-byte in una directory temporanea
+ignorata da Git. Impostare `$ErrorActionPreference = 'Stop'` prima di leggere o
+trasformare il JSON: Windows PowerShell 5.1 non supporta
+`ConvertFrom-Json -AsHashtable` e un errore di parsing non intercettato può
+lasciare `$null`, mentre gli statement successivi continuano.
+
+Preparare la modifica in un file temporaneo; rileggerlo, validarlo contro
+`current-work.schema.json` e verificare routing/status/ID prima di sostituire
+l'originale con un rename atomico. Conservare il backup fino al passaggio del
+validatore completo. In caso di errore non scrivere un JSON vuoto o parziale e
+non ricostruire le note storiche da memoria quando esiste ancora una copia
+recuperabile. Aggiornare solo i campi dell'incremento attivo e le note
+strettamente pertinenti.

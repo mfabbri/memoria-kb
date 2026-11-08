@@ -66,6 +66,71 @@ class DocumentTextExtractionTests(unittest.TestCase):
         self.assertNotIn("CandidateEvidenceClaim", json.dumps(text_payload))
         self.assertNotIn("alert", text_payload["text"])
 
+    def test_extracts_online_connector_yaml_sidecar_and_preserves_provenance(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            raw_dir = tmp_dir / "raw"
+            raw_dir.mkdir()
+            raw_path = raw_dir / "bendini.html"
+            raw_path.write_text(
+                "<html><body><h1>Ateo Bendini</h1><p>Scheda archivistica.</p></body></html>",
+                encoding="utf-8",
+            )
+            metadata_dir = tmp_dir / "metadata"
+            metadata_dir.mkdir()
+            metadata_path = metadata_dir / "bendini.html.document.yaml"
+            metadata_path.write_text(
+                "document_id: storia_memoria_bo:fixture-1\n"
+                "source_id: storia_memoria_bo\n"
+                "title: Ateo Bendini\n"
+                "url: https://example.test/bendini\n"
+                f"file: {raw_path.as_posix()}\n"
+                "metadata:\n"
+                "  document_id: storia_memoria_bo:fixture-1\n"
+                "  source_id: storia_memoria_bo\n"
+                "  document_type: online_detail_document\n"
+                "  media_type: text/html\n"
+                "  review_status: unreviewed\n"
+                "  claim_eligible: true\n"
+                "  source_url: https://example.test/bendini\n",
+                encoding="utf-8",
+            )
+            output_dir = tmp_dir / "processed"
+
+            summary = extract_document_text(
+                metadata_dir=metadata_dir,
+                output_dir=output_dir,
+                raw_root_dir=raw_dir,
+                metadata_paths=[metadata_path],
+            )
+            text_payload = json.loads(Path(summary["documents"][0]["text_path"]).read_text(encoding="utf-8"))
+
+        self.assertEqual(summary["document_count"], 1)
+        self.assertEqual(summary["extracted_count"], 1)
+        self.assertEqual(text_payload["source_document_id"], "storia_memoria_bo:fixture-1")
+        self.assertEqual(text_payload["source_id"], "storia_memoria_bo")
+        self.assertEqual(text_payload["source_url"], "https://example.test/bendini")
+        self.assertEqual(text_payload["title"], "Ateo Bendini")
+        self.assertEqual(text_payload["document_class"], "online_detail_document")
+        self.assertEqual(text_payload["review_status"], "unreviewed")
+        self.assertEqual(text_payload["text"], "Ateo Bendini Scheda archivistica.")
+        self.assertEqual(text_payload["text_sha256"], hashlib.sha256(text_payload["text"].encode("utf-8")).hexdigest())
+        self.assertNotIn("CandidateEvidenceClaim", json.dumps(text_payload))
+
+    def test_rejects_invalid_online_yaml_sidecar_with_actionable_error(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            metadata_dir = tmp_dir / "metadata"
+            metadata_dir.mkdir()
+            metadata_path = metadata_dir / "invalid.document.yaml"
+            metadata_path.write_text("metadata: [unterminated\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "Sidecar YAML non valido"):
+                extract_document_text(
+                    metadata_dir=metadata_dir,
+                    output_dir=tmp_dir / "processed",
+                    raw_root_dir=tmp_dir / "raw",
+                    metadata_paths=[metadata_path],
+                )
+
     def test_result_page_text_preserves_not_claim_eligible(self) -> None:
         with workspace_temp_dir() as tmp_dir:
             raw_dir = tmp_dir / "raw"
