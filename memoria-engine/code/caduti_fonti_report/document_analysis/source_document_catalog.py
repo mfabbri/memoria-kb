@@ -40,9 +40,13 @@ def resolve_source_documents(catalog_db: Path, document_ids: set[str]) -> dict[s
     if missing:
         raise ValueError("SourceDocument IDs are absent from catalog: " + ", ".join(missing))
     digest = hashlib.sha256()
-    digest.update(resolved_path.read_bytes())
+    database_raw = resolved_path.read_bytes()
+    digest.update(database_raw)
     wal_path = Path(str(resolved_path) + "-wal")
-    if wal_path.is_file():
+    wal_raw = wal_path.read_bytes() if wal_path.is_file() else None
+    if wal_raw is not None:
         digest.update(b"\0WAL\0")
-        digest.update(wal_path.read_bytes())
-    return {"path": str(resolved_path), "sha256": digest.hexdigest(), "resolved_document_ids": requested}
+        digest.update(wal_raw)
+    return {"path": str(resolved_path), "sha256": digest.hexdigest(), "resolved_document_ids": requested,
+            "database_sha256": hashlib.sha256(database_raw).hexdigest(),
+            "wal_sha256": hashlib.sha256(wal_raw).hexdigest() if wal_raw is not None else None}

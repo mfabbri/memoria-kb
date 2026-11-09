@@ -53,6 +53,18 @@ conferma. Spiega sempre all'utente dove il CLI ha salvato gli artifact, cosa
 contengono e quale comando usare dopo. Non chiedere di creare o compilare JSON
 né inventare decisioni se il wizard non è disponibile/interattivo.
 
+Quando serve una decisione o un dato dall'utente, usa come procedura normale
+una domanda per messaggio. Prima della domanda riassumi il contesto e le
+evidenze rilevanti, indica che cosa la risposta sblocca e presenta le opzioni
+con le rispettive conseguenze quando sono note. Se la sequenza di decisioni è
+già identificabile, dichiara quante domande totali ci sono e quante ne restano;
+aggiorna il conteggio dopo ogni risposta. Se il numero può cambiare, dillo
+esplicitamente. Attendi la risposta prima di porre la domanda successiva, non
+accorpare decisioni indipendenti e non considerare il silenzio come consenso.
+Se l'interfaccia non rende visibile la domanda, ripresentala nel messaggio
+successivo con il contesto essenziale e lo stato della sequenza. Continua nel
+frattempo le attività indipendenti dalla risposta.
+
 Concludi con diff, test e risultato, limiti, planner aggiornato e prossimo passo.
 
 Per modifiche a `current-work.json`, esegui

@@ -360,6 +360,78 @@ Artifact operativi in
 Nessuna identità, data o claim è stata approvata e nessun profilo canonico è
 stato modificato.
 
+Nota T49 del 2026-11-09: nel dialogo con l'utente e' stato confermato il
+collegamento d'identita' fra Bendini Ateo/Ateo Bendini. Alcuni valori sono
+stati accettati solo come candidati; Walter nel nome, genere e serie archivistica
+restano da verificare. Le risposte non sono state convertite retroattivamente
+in receipt o timestamp, non promuovono claim a fatti verificati e non modificano
+il profilo canonico.
+
+### T50 - Review auditabile dei claim persona e candidate update (P1, completato 2026-11-09)
+
+Obiettivo: collegare `CandidateEvidenceClaimSet` con riferimenti a
+`SourceDocument` a una revisione umana per claim, poi a una
+`CandidateProfileUpdate` preview-only. Le decisioni di review non autorizzano
+nuove ricerche, non promuovono claim a fatti verificati e non applicano modifiche
+canoniche.
+
+T50a (2026-11-09) aggiunge `memoria review claims-preview`: da un set di claim
+esplicito genera queue JSON/Markdown e manifest con SHA-256 dell'input e degli
+artifact, preservando i payload/provenance e lasciando ogni claim `unreviewed`.
+Il comando rifiuta ID o provenance mancanti, claim duplicati e stati gia'
+revisionati; retry identico accettato, output divergente rifiutato. Gate: 7 test
+e 23 subtest mirati PASS, launcher subprocess PASS, help CLI, Ruff mirato e
+`git diff --check` PASS. Il manifest dichiara che l'esistenza dei
+`SourceDocument` nel catalogo non e' stata verificata. Nessuna decisione,
+receipt, promozione o scrittura canonica.
+
+T50b (2026-11-09) aggiunge `memoria review claims-wizard`: verifica manifest,
+queue, Markdown e input, presenta un claim alla volta e raccoglie reviewer,
+decisione, nota e timestamp timezone-aware. La receipt hash-binds gli artifact
+e viene scritta solo dopo conferma finale; input mutati, cancel, conferma assente
+e output gia' esistente falliscono senza sovrascrittura. Gate: 13 test e 36
+subtest PASS; help/non-interactive launcher, smoke TTY sintetico, Ruff e diff
+check PASS. Nessuna decisione reale replayed, claim promosso o modifica
+canonica. L'identita' del reviewer non e' autenticata e l'esistenza del
+SourceDocument nel catalogo non e' verificata.
+
+T50c (2026-11-09) aggiunge `memoria review claims-updates-preview`: valida la
+receipt completa e i digest del manifest, queue, Markdown e CandidateEvidenceClaimSet
+originale; richiede che le decisioni coprano la queue una volta e che il profilo
+JSON-LD corrisponda. Solo `accept_candidate` alimenta `CandidateProfileUpdate`
+pending; gli altri esiti sono esclusi. Claim, SourceDocument, URL e decisioni
+restano collegati, i conflitti sono instradati alla discussione e l'output e'
+hash-bound/retry-idempotent. Gate: 13 test e 17 subtest PASS, inclusa regressione
+per date complete con stesso mese ma giorno diverso; launcher help/subprocess,
+Ruff mirato e diff check PASS. Quattro finding Ruff nel modulo preesistente sono
+stati verificati anche su HEAD. Nessun profilo modificato e nessun `verified_fact`
+creato.
+
+### T51 - Collegare report di ricerca e review claim persona (P1, completato 2026-11-09)
+
+T51a (2026-11-09) aggiunge `memoria review claims-build`: converte il solo
+`profile_id` selezionato da un report fonte esplicito in
+`CandidateEvidenceClaimSet`, con manifest hash-bound e Markdown. Richiede
+coerenza fra profilo del risultato e `subject_id`, risolve ogni claim su un
+unico documento nello stesso risultato e deriva `source_id`, URL e data accesso
+dal documento collegato. Preserva quote, confidence, metodo, attempt e contesto;
+claim fuori fonte selezionata, ambigui, duplicati o già revisionati falliscono.
+Gate: 12 test e 29 subtest PASS, launcher help/success/error e catena
+`claims-build` -> `claims-preview` su fixture PASS, Ruff e diff check PASS.
+Nessun accesso al catalogo o uso/scrittura degli artifact reali T49.
+
+T51b (2026-11-09) rende `--source-documents-db` obbligatorio in
+`memoria review claims-preview`. Il resolver SQLite read-only registra path,
+digest combinato, SHA-256 separati database/WAL e l'elenco esatto degli ID
+risolti nel manifest e nella queue. Wizard e `claims-updates-preview` ricontrollano
+membership e digest; catalogo o WAL cambiati invalidano receipt e consumer.
+Output directory che collidono con DB/WAL/SHM sono rifiutate. Gate: 50 test e
+97 subtest PASS su review, update, report adapter e resolver, inclusa regressione
+Place/Event; launcher subprocess e catena TTY sintetica build -> catalog-bound
+preview -> receipt -> update PASS, Ruff mirato e diff check PASS. Nessun DB
+operativo reale letto o modificato. I manifest non catalog-bound v1.0 non sono
+accettati dalla review operativa v1.1.
+
 ## Confini repository
 
 - `memoria-bootstrap`: documentazione operativa e decisioni.

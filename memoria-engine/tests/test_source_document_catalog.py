@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import hashlib
+import shutil
 import sqlite3
 import sys
-import shutil
 import unittest
-from contextlib import closing
 import uuid
+from contextlib import closing
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
@@ -14,6 +15,27 @@ from caduti_fonti_report.document_analysis.source_document_catalog import resolv
 
 
 class SourceDocumentCatalogTests(unittest.TestCase):
+    def test_reports_database_and_wal_digests_from_read_only_resolution(self) -> None:
+        path = self._catalog_path()
+        with closing(sqlite3.connect(path)) as connection:
+            connection.execute("PRAGMA journal_mode=WAL")
+            connection.execute("PRAGMA wal_autocheckpoint=0")
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY)")
+            connection.execute("INSERT INTO source_documents VALUES ('doc:1')")
+            connection.commit()
+            wal = Path(str(path) + "-wal")
+            before_db, before_wal = path.read_bytes(), wal.read_bytes()
+            first = resolve_source_documents(path, {"doc:1"})
+            self.assertEqual(first["database_sha256"], hashlib.sha256(before_db).hexdigest())
+            self.assertEqual(first["wal_sha256"], hashlib.sha256(before_wal).hexdigest())
+            self.assertEqual(path.read_bytes(), before_db)
+            self.assertEqual(wal.read_bytes(), before_wal)
+            connection.execute("INSERT INTO source_documents VALUES ('doc:2')")
+            connection.commit()
+            second = resolve_source_documents(path, {"doc:1"})
+            self.assertNotEqual(first["sha256"], second["sha256"])
+            self.assertNotEqual(first["wal_sha256"], second["wal_sha256"])
+
     def test_resolves_ids_and_reports_stable_catalog_fingerprint(self) -> None:
         path = self._catalog_path()
         with closing(sqlite3.connect(path)) as connection:

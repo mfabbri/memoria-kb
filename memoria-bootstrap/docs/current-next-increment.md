@@ -4,6 +4,32 @@
 
 **T48: percorso CLI e review umana reale completati il 2026-11-08.** Il percorso usa una fonte abilitata nel registry, registra il SourceDocument nel database operativo con CLI, genera preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non applica modifiche canoniche e non autentica il reviewer.
 
+### Aggiornamento 2026-11-09: T50 e T51 completati
+
+Il launcher ora copre il percorso dagli artifact di ricerca fino alla proposta
+profilo review-only:
+
+```text
+memoria review claims-build --report-json <report> --profile-id <id> --output-dir <claims-dir>
+memoria review claims-preview --claims-json <claims-dir/candidate_evidence_claims.json> --source-documents-db <database-operativo/evidence.sqlite> --output-dir <review-dir>
+memoria review claims-wizard --manifest <review-dir/candidate_claim_review_manifest.json> --output <nuova-receipt.json>
+memoria review claims-updates-preview --receipt <nuova-receipt.json> --profile-jsonld <profilo.jsonld> --output-dir <updates-dir>
+```
+
+Il builder conserva provenance e claim `unreviewed`; il preview richiede il
+catalogo SQLite esistente e in sola lettura; queue, receipt e candidate update
+sono legati ai digest del report, claim, manifest, DB/WAL e agli ID
+`SourceDocument` risolti. Solo `accept_candidate` genera proposte `pending`.
+La presenza del documento nel catalogo non verifica il contenuto della scheda o
+l'identità. Nessun profilo canonico o `verified_fact` è stato modificato.
+
+T49 resta aperto per review effettivamente registrate e misure legate a run
+reali. Le decisioni Bendini raccolte in chat non sono state convertite in
+receipt; il wizard registra una review con timestamp al momento, senza
+retrodatazione. I quattro attempt risultano già eseguiti e quello solo-cognome
+è escluso: non riavviarli. Qualsiasi nuova query richiede autorizzazione
+separata per action, fonte e strategia/query.
+
 ### Correzione 2026-11-08: seed CSV profili migrati
 
 La migrazione canonica dei 57 seed CSV e' stata applicata con approvazione

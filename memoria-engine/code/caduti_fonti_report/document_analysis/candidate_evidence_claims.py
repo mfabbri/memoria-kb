@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import math
 from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
 from typing import Any
 
 from .preview_payloads import list_strings
@@ -69,3 +74,173 @@ class CandidateEvidenceClaimRecord:
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, output_dir: Path) -> dict[str, Any]:
+    raw = report_json.read_bytes()
+    report = json.loads(raw)
+    if not isinstance(report, dict) or (
+        report.get("@type") != "SourceResearchReport"
+        and not ("@type" not in report and report.get("input_mode") == "person_profiles_jsonld")
+    ):
+        raise ValueError("Expected a SourceResearchReport or person_profiles_jsonld source report.")
+    if not isinstance(profile_id, str) or not profile_id.strip():
+        raise ValueError("An explicit profile ID is required.")
+    source_selection = report.get("source_selection")
+    if source_selection is None:
+        if report.get("@type") != "SourceResearchReport":
+            raise ValueError("A person_profiles_jsonld report requires explicit source_selection.")
+        selected_sources = None
+    else:
+        if not isinstance(source_selection, dict):
+            raise ValueError("Source selection must be an object.")
+        selected_sources = _report_identifier_list(source_selection, "selected_source_ids")
+    profiles = _report_list(report, "profiles")
+    profile_ids = [_report_text(profile, "profile_id") for profile in profiles]
+    if len(set(profile_ids)) != len(profile_ids):
+        raise ValueError("Source report contains duplicate profile IDs.")
+    if profile_ids.count(profile_id) != 1:
+        raise ValueError("Source report must contain exactly one selected profile.")
+    profile_index = profile_ids.index(profile_id)
+    profile = profiles[profile_index]
+    report_attempts = _report_attempt_ids(report)
+    report_ref = {"path": str(report_json.resolve()), "sha256": hashlib.sha256(raw).hexdigest()}
+    candidates = []
+    seen_claims: set[str] = set()
+    for result_index, entry in enumerate(_report_list(profile, "results")):
+        if _report_text(entry, "profile_id") != profile_id:
+            raise ValueError("Result profile reference does not match the selected profile.")
+        result = entry.get("result")
+        declared_source_ids = []
+        for source_reference in (entry, result if isinstance(result, dict) else {}):
+            if "source_id" in source_reference:
+                declared_source_ids.append(_report_text(source_reference, "source_id"))
+        attempts = _report_attempt_ids(entry)
+        if report_attempts and attempts and attempts != report_attempts:
+            raise ValueError("Result selected attempt IDs disagree with the source report.")
+        matched_attempt = _report_text(entry, "matched_planned_attempt_id", required=False)
+        if matched_attempt and (attempts or report_attempts) and matched_attempt not in (attempts or report_attempts):
+            raise ValueError("Matched attempt ID is not among the explicitly selected attempts.")
+        documents = {}
+        for document in _report_list(entry, "documents"):
+            document_id = _report_text(document, "document_id")
+            if document_id in documents:
+                raise ValueError("Ambiguous duplicate document ID within a report result.")
+            document_source_id = _report_text(document, "source_id")
+            if any(source_id != document_source_id for source_id in declared_source_ids):
+                raise ValueError("Document and result source IDs disagree.")
+            if selected_sources is not None and document_source_id not in selected_sources:
+                raise ValueError("Document source ID is outside the report's explicit source selection.")
+            metadata = document.get("metadata", {})
+            if (not isinstance(metadata, dict) or (metadata.get("profile_id") and metadata["profile_id"] != profile_id)
+                    or (document.get("profile_id") and document["profile_id"] != profile_id)):
+                raise ValueError("Document profile metadata does not match the selected profile.")
+            documents[document_id] = document
+        for claim in _report_list(entry, "claims"):
+            claim_id = _report_text(claim, "claim_id")
+            if (claim.get("@id") and claim["@id"] != claim_id) or (claim.get("profile_id") and claim["profile_id"] != profile_id):
+                raise ValueError("Claim identifiers or profile references disagree.")
+            if claim_id in seen_claims:
+                raise ValueError("Source report contains duplicate claim IDs.")
+            seen_claims.add(claim_id)
+            if _report_text(claim, "subject_id") != profile_id:
+                raise ValueError("Claim subject_id does not match the selected profile.")
+            document_id = _report_text(claim, "source_document_id")
+            if document_id not in documents:
+                raise ValueError("Claim must reference exactly one document in the same result.")
+            document = documents[document_id]
+            source_id = document["source_id"]
+            url = _report_text(document, "url")
+            access_date = _report_text(document, "access_date")
+            date.fromisoformat(access_date)
+            if _report_text(claim, "source_url", required=False) not in {"", url}:
+                raise ValueError("Claim source URL differs from its linked document.")
+            if "source_id" in claim and _report_text(claim, "source_id") != source_id:
+                raise ValueError("Claim source ID differs from its linked document.")
+            if claim.get("review_status") != "unreviewed":
+                raise ValueError("Only unreviewed source-report claims can become candidates.")
+            confidence = claim.get("confidence")
+            if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1 or not math.isfinite(confidence):
+                raise ValueError("Claim confidence must be numeric and in [0, 1].")
+            quote = _report_text(claim, "quote")
+            document_ref = {key: value for key, value in document.items() if key != "raw_text"}
+            candidates.append({
+                "@type": "CandidateEvidenceClaim", "@id": claim_id, "claim_id": claim_id,
+                "profile_id": profile_id, "subject_id": claim["subject_id"],
+                "source_document_id": document_id, "source_id": source_id, "source_url": url, "url": url,
+                "access_date": access_date, "field": _report_text(claim, "field"), "value": _report_text(claim, "value"),
+                "normalized_value": _report_text(claim, "normalized_value", required=False),
+                "quote": quote, "evidence_span": quote, "confidence": confidence,
+                "extraction_method": _report_text(claim, "extraction_method"), "review_status": "unreviewed",
+                "selected_attempt_ids": attempts, "matched_planned_attempt_id": matched_attempt,
+                "source_report_claim": claim,
+                "provenance": {"source_report": report_ref, "profile_index": profile_index, "result_index": result_index,
+                               "source_document": document_ref, "source_url": url, "access_date": access_date,
+                               "report_selected_attempt_ids": report_attempts, "result_selected_attempt_ids": attempts,
+                               "matched_planned_attempt_id": matched_attempt},
+            })
+    flags = {"preview_only": True, "review_status": "unreviewed", "canonical_write_allowed": False,
+             "claim_promotion_allowed": False, "profile_write_allowed": False, "source_document_existence_verified": False}
+    payload = {"@type": "CandidateEvidenceClaimSet", "profile_id": profile_id, "source_report": report_ref,
+               "candidate_evidence_claims": candidates, **flags}
+    output_dir = output_dir.resolve()
+    claims_path, md_path = output_dir / "candidate_evidence_claims.json", output_dir / "candidate_evidence_claims.md"
+    claims_raw = _report_json_bytes(payload)
+    lines = ["# Claim candidati dal report fonte", "", f"Profilo: `{profile_id}`", f"Report SHA-256: `{report_ref['sha256']}`", "",
+             "Candidate unreviewed; nessuna verifica del catalogo, decisione o promozione.", ""]
+    for candidate in candidates:
+        lines.extend([f"## {candidate['field']}: {candidate['value']}", "", f"Claim: `{candidate['claim_id']}`",
+                      f"Fonte: `{candidate['source_id']}`; documento: `{candidate['source_document_id']}`",
+                      f"URL: {candidate['url']}", f"Accesso: {candidate['access_date']}", "", candidate["quote"], ""])
+    md_raw = ("\n".join(lines) + "\n").encode("utf-8")
+    manifest = {"@type": "SourceReportCandidateClaimsManifest", "source_report": report_ref, "profile_id": profile_id,
+                "selected_source_ids": selected_sources if selected_sources is not None else [],
+                "source_selection_declared": selected_sources is not None,
+                "claim_count": len(candidates), "source_document_ids": sorted({item["source_document_id"] for item in candidates}),
+                "artifacts": {"candidate_claims": {"path": str(claims_path), "sha256": hashlib.sha256(claims_raw).hexdigest()},
+                              "markdown": {"path": str(md_path), "sha256": hashlib.sha256(md_raw).hexdigest()}}, **flags}
+    files = {claims_path.name: claims_raw, md_path.name: md_raw, "candidate_evidence_claims_manifest.json": _report_json_bytes(manifest)}
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            raise ValueError("Claims output must be a directory.")
+        entries = list(output_dir.iterdir())
+        if entries and (set(path.name for path in entries) != set(files)
+                        or any(not (output_dir / name).is_file() or (output_dir / name).read_bytes() != data
+                               for name, data in files.items())):
+            raise ValueError("Claims output must be new, empty, or an identical prior preview.")
+        if entries:
+            return manifest
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for name, data in files.items():
+        (output_dir / name).write_bytes(data)
+    return manifest
+
+
+def _report_text(payload: Any, key: str, *, required: bool = True) -> str:
+    if not isinstance(payload, dict):
+        raise ValueError("Source report entries must be objects.")
+    value = payload.get(key, "")
+    if not isinstance(value, str) or (required and not value.strip()):
+        raise ValueError(f"Source report requires text field {key}.")
+    return value
+
+
+def _report_list(payload: Any, key: str) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict) or not isinstance(payload.get(key), list) or any(not isinstance(item, dict) for item in payload[key]):
+        raise ValueError(f"Source report requires an object list: {key}.")
+    return payload[key]
+
+
+def _report_attempt_ids(payload: dict[str, Any]) -> list[str]:
+    return _report_identifier_list(payload, "selected_attempt_ids", required=False)
+
+
+def _report_identifier_list(payload: dict[str, Any], key: str, *, required: bool = True) -> list[str]:
+    values = payload.get(key, None if required else [])
+    if not isinstance(values, list) or any(not isinstance(value, str) or not value.strip() for value in values) or len(values) != len(set(values)):
+        raise ValueError(f"{key} must contain unique non-empty identifier strings.")
+    return values
+
+
+def _report_json_bytes(payload: dict[str, Any]) -> bytes:
+    return (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")

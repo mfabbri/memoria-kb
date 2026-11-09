@@ -83,6 +83,56 @@ action risultati di ricerche avvenute prima che action e piano fossero creati.
 Registrare `FeedbackLoopOutcome` solo dopo il run autorizzato collegato a
 quell'action e a quel piano.
 
+## Review dei claim persona da un report fonte
+
+Per una ricerca gia' eseguita e autorizzata, selezionare un solo profilo dal
+report dei connettori. La CLI genera i claim candidati senza chiedere allo
+storico di preparare JSON e senza avviare altre ricerche:
+
+```text
+memoria review claims-build --report-json <report-fonte.json> --profile-id <profile-id> --output-dir <claims-dir>
+memoria review claims-preview --claims-json <claims-dir/candidate_evidence_claims.json> --source-documents-db <database-operativo/evidence.sqlite> --output-dir <review-dir>
+memoria review claims-wizard --manifest <review-dir/candidate_claim_review_manifest.json> --output <nuova-receipt.json>
+memoria review claims-updates-preview --receipt <nuova-receipt.json> --profile-jsonld <profilo-esistente.jsonld> --output-dir <proposte-dir>
+```
+
+Usare il database operativo gia' configurato, non un catalogo scratch per una
+review reale. `claims-build` conserva i riferimenti del report e non consulta il
+catalogo; `claims-preview` richiede il database SQLite esistente e verifica in
+sola lettura l'esistenza di ogni `source_document_id`. Queue e manifest legano
+path, digest del database e dell'eventuale WAL e l'elenco esatto degli ID
+risolti. La presenza nel catalogo non verifica il contenuto storico o
+l'identita' della persona.
+
+Il wizard mostra evidenza, fonte e un claim per volta, raccoglie reviewer,
+decisione e nota e registra il timestamp al momento della scelta. Quando serve
+l'intervento dello storico, presentare una sola domanda per messaggio e
+attendere la risposta prima di proporre la successiva. Ogni domanda deve
+riportare il candidato/claim in esame, la fonte e il dato che supportano la
+proposta, le eventuali discrepanze o incertezze e l'effetto pratico della
+decisione. Quando le domande sono già note, dichiarare il totale e quante ne
+restano, aggiornando il conteggio dopo ogni risposta; se il totale dipende dalle
+risposte, dichiararlo. Non accorpare scelte distinte, non interpretare il
+silenzio come consenso e, se la domanda non è visibile nell'interfaccia,
+riproporla nel messaggio successivo con contesto e avanzamento.
+
+`q` o mancata conferma finale non scrivono una receipt; il reviewer dichiarato
+non viene autenticato. Non trasformare decisioni raccolte in chat in una
+receipt retrodatata e non ricostruire tempi mancanti: il wizard registra le
+decisioni solo con il timestamp effettivo della review.
+
+Il wizard ricontrolla input e catalogo prima e dopo la raccolta delle decisioni;
+la receipt conserva gli stessi riferimenti. Anche `claims-updates-preview`
+ricontrolla il binding. Se il database o il WAL cambiano, rigenerare la preview
+e riprendere la review sui nuovi artifact: le receipt precedenti rimangono
+auditabili, ma non autorizzano il consumer. I manifest precedenti senza
+catalogo (v1.0) non sono accettati dalla review operativa v1.1.
+
+Solo `accept_candidate` alimenta le proposte `pending`; gli altri esiti non
+producono aggiornamenti. I conflitti restano da discutere. Gli artifact nelle
+directory indicate dalla CLI conservano provenance e hash; non applicano patch,
+non creano `verified_facts` e non modificano il profilo canonico.
+
 ## Raccolta delle misure T49
 
 Le metriche T49 si alimentano con artifact di una ricerca e di una review

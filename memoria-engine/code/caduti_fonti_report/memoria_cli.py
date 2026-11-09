@@ -1161,6 +1161,91 @@ def _command_review_targets(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_review_claims_build(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.candidate_evidence_claims import build_source_report_candidate_claims
+
+    try:
+        report = build_source_report_candidate_claims(
+            report_json=Path(args.report_json), profile_id=args.profile_id, output_dir=Path(args.output_dir),
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"ERROR review claims-build: {exc}", file=sys.stderr)
+        return 1
+    print(f"Manifest: {Path(args.output_dir).resolve() / 'candidate_evidence_claims_manifest.json'}")
+    print(f"Profilo: {report['profile_id']}; claim candidati unreviewed: {report['claim_count']}")
+    print("Preview-only: collegamenti documentali dal report; esistenza nel catalogo non verificata.")
+    return 0
+
+
+def _command_review_claims_preview(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.candidate_evidence_claim_review import (
+        build_candidate_evidence_claim_review,
+    )
+
+    try:
+        report = build_candidate_evidence_claim_review(
+            claims_json=Path(args.claims_json), source_documents_db=Path(args.source_documents_db),
+            output_dir=Path(args.output_dir),
+        )
+    except (OSError, UnicodeError, ValueError, TypeError) as exc:
+        print(f"ERROR review claims-preview: {exc}", file=sys.stderr)
+        return 1
+    print("Me.Mo.Ria review claims-preview")
+    print(f"Manifest: {Path(args.output_dir).resolve() / 'candidate_claim_review_manifest.json'}")
+    print(f"Claim candidati: {report['counts']['claims']}")
+    print(f"Input SHA-256: {report['claims_input']['sha256']}")
+    print("Review-only: nessuna decisione, promozione claim o modifica canonica.")
+    print("SourceDocument: presenza verificata nel catalogo SQLite esplicito; contenuti non validati.")
+    return 0
+
+
+def _command_review_claims_wizard(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.candidate_evidence_claim_review import (
+        _protect_catalog_output,
+        run_candidate_evidence_claim_review_wizard,
+    )
+
+    manifest_path, output_path = Path(args.manifest), Path(args.output)
+    try:
+        if not sys.stdin.isatty():
+            raise ValueError("Claim review wizard requires an interactive terminal.")
+        if output_path.exists():
+            raise ValueError("Review receipt output must be new.")
+        receipt = run_candidate_evidence_claim_review_wizard(manifest_json=manifest_path)
+        if receipt is None:
+            print("Review annullata o non confermata; nessuna receipt scritta.")
+            return 0
+        protected = [manifest_path, Path(receipt["claims_input"]["path"])] + [
+            Path(ref["path"]) for ref in receipt["preview_artifacts"].values()
+        ]
+        catalog_path = Path(receipt["source_documents_catalog"]["path"])
+        protected.extend([catalog_path, Path(str(catalog_path) + "-wal"), Path(str(catalog_path) + "-shm")])
+        _protect_catalog_output(output_path.parent.resolve(), receipt["source_documents_catalog"])
+        _write_new_review_artifact(output_path, receipt, protected)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, EOFError, KeyboardInterrupt) as exc:
+        print(f"ERROR review claims-wizard interrotto o non valido: {exc}", file=sys.stderr)
+        return 1
+    print(f"Review receipt: {output_path}")
+    print("Decisioni candidate registrate; nessuna promozione, risoluzione identita o modifica canonica.")
+    return 0
+
+
+def _command_review_claims_updates_preview(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.candidate_profile_updates import build_reviewed_claim_profile_updates_preview
+
+    try:
+        report = build_reviewed_claim_profile_updates_preview(
+            receipt_json=Path(args.receipt), profile_jsonld=Path(args.profile_jsonld), output_dir=Path(args.output_dir),
+        )
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"ERROR review claims-updates-preview: {exc}", file=sys.stderr)
+        return 1
+    print(f"Manifest: {Path(args.output_dir).resolve() / 'candidate_profile_updates_manifest.json'}")
+    print(f"Profilo: {report['profile_id']}; aggiornamenti candidati pending: {report['candidate_update_count']}")
+    print("Preview-only: nessuna patch, modifica profilo o promozione a verified facts.")
+    return 0
+
+
 def _command_review_decide(args: argparse.Namespace) -> int:
     resolution = _resolve_existing_data_root_for_command(args)
     if resolution is None:
@@ -3691,6 +3776,29 @@ def build_parser() -> argparse.ArgumentParser:
 
     review = subparsers.add_parser("review", help="Bridge read-only dei workflow review MVP.")
     review_subparsers = review.add_subparsers(dest="review_command", required=True)
+    review_claims_build = review_subparsers.add_parser(
+        "claims-build", help="Converte un profilo esplicito del report fonte in claim candidati hash-bound.")
+    review_claims_build.add_argument("--report-json", required=True, help="SourceResearchReport esplicito.")
+    review_claims_build.add_argument("--profile-id", required=True, help="ID esatto del solo profilo selezionato.")
+    review_claims_build.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
+    review_claims_build.set_defaults(handler=_command_review_claims_build)
+    review_claims_preview = review_subparsers.add_parser(
+        "claims-preview", help="Genera una review queue hash-bound dai claim persona espliciti; nessuna decisione.")
+    review_claims_preview.add_argument("--claims-json", required=True, help="CandidateEvidenceClaimSet esplicito.")
+    review_claims_preview.add_argument("--source-documents-db", required=True, help="Catalogo SQLite esistente; sola lettura.")
+    review_claims_preview.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
+    review_claims_preview.set_defaults(handler=_command_review_claims_preview)
+    review_claims_wizard = review_subparsers.add_parser(
+        "claims-wizard", help="Revisiona un claim per volta e scrive una receipt solo dopo conferma.")
+    review_claims_wizard.add_argument("--manifest", required=True, help="Manifest esatto di claims-preview.")
+    review_claims_wizard.add_argument("--output", required=True, help="Nuova receipt review-only.")
+    review_claims_wizard.set_defaults(handler=_command_review_claims_wizard)
+    review_claims_updates = review_subparsers.add_parser(
+        "claims-updates-preview", help="Compone proposte pending dai soli claim accettati in una receipt verificata.")
+    review_claims_updates.add_argument("--receipt", required=True, help="Receipt completa di claims-wizard.")
+    review_claims_updates.add_argument("--profile-jsonld", required=True, help="Profilo persona esatto; non viene modificato.")
+    review_claims_updates.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
+    review_claims_updates.set_defaults(handler=_command_review_claims_updates_preview)
     for command_name, command_help, handler in (
         ("discover", "Scopre run review candidate senza creare sessioni.", _command_review_discover),
         ("status", "Mostra stato review o discovery se non esiste una sessione attiva.", _command_review_status),

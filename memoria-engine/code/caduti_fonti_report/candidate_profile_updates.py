@@ -130,6 +130,36 @@ def build_candidate_profile_updates(
         *_deduplicated_claims(report_payload, profile.profile_id),
         *_candidate_document_claims(candidate_claims_payload, profile.profile_id, input_path=candidate_claims_json),
     ]
+    candidate_updates = _candidate_update_items(
+        profile_jsonld=profile_jsonld, profile_payload=profile_payload, profile_id=profile.profile_id, claims=claims,
+    )
+    existing_profiles = _load_profile_index_names(profiles_index, source_profile_id=profile.profile_id)
+    candidate_new_profiles, candidate_existing_profile_links = _candidate_profiles_from_report(
+        report_payload, profile.profile_id, existing_profiles=existing_profiles,
+    )
+    return {
+        "@context": {
+            "ca": "https://ca-di-malanca.local/ontology/",
+            "CandidateProfileUpdate": "ca:CandidateProfileUpdate",
+            "CandidateNewProfile": "ca:CandidateNewProfile",
+            "CandidateExistingProfileLink": "ca:CandidateExistingProfileLink",
+            "profile_id": "ca:profile_id", "field": "ca:field",
+            "candidate_value": "ca:candidate_value", "review_status": "ca:review_status",
+        },
+        "@type": "CandidateProfileUpdateSet", "generated_at": datetime.now(UTC).isoformat(),
+        "input_report": str(report_json) if report_json is not None else "",
+        "input_candidate_claims": str(candidate_claims_json) if candidate_claims_json is not None else "",
+        "profiles_index": str(profiles_index) if profiles_index else "",
+        "profile_id": profile.profile_id, "profile_source_file": str(profile_jsonld),
+        "merge_policy": "preview_only_no_profile_write", "candidate_updates": candidate_updates,
+        "candidate_new_profiles": candidate_new_profiles,
+        "candidate_existing_profile_links": candidate_existing_profile_links,
+    }
+
+
+def _candidate_update_items(
+    *, profile_jsonld: Path, profile_payload: dict[str, Any], profile_id: str, claims: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for claim in claims:
         field = str(claim.get("field", "")).strip()
@@ -138,7 +168,6 @@ def build_candidate_profile_updates(
             continue
         grouped[(field, _normalize(value))].append(claim)
 
-    generated_at = datetime.now(UTC).isoformat()
     candidate_updates = []
     for (field, _normalized_value), field_claims in sorted(grouped.items()):
         value = str(field_claims[0]["value"]).strip()
@@ -147,8 +176,8 @@ def build_candidate_profile_updates(
         candidate_updates.append(
             {
                 "@type": "CandidateProfileUpdate",
-                "@id": _candidate_update_id(profile.profile_id, field, value, field_claims),
-                "profile_id": profile.profile_id,
+                "@id": _candidate_update_id(profile_id, field, value, field_claims),
+                "profile_id": profile_id,
                 "profile_source_file": str(profile_jsonld),
                 "field": field,
                 "candidate_value": value,
@@ -167,35 +196,142 @@ def build_candidate_profile_updates(
             }
         )
 
-    existing_profiles = _load_profile_index_names(profiles_index, source_profile_id=profile.profile_id)
-    candidate_new_profiles, candidate_existing_profile_links = _candidate_profiles_from_report(
-        report_payload,
-        profile.profile_id,
-        existing_profiles=existing_profiles,
-    )
-    return {
-        "@context": {
-            "ca": "https://ca-di-malanca.local/ontology/",
-            "CandidateProfileUpdate": "ca:CandidateProfileUpdate",
-            "CandidateNewProfile": "ca:CandidateNewProfile",
-            "CandidateExistingProfileLink": "ca:CandidateExistingProfileLink",
-            "profile_id": "ca:profile_id",
-            "field": "ca:field",
-            "candidate_value": "ca:candidate_value",
-            "review_status": "ca:review_status",
-        },
-        "@type": "CandidateProfileUpdateSet",
-        "generated_at": generated_at,
-        "input_report": str(report_json) if report_json is not None else "",
-        "input_candidate_claims": str(candidate_claims_json) if candidate_claims_json is not None else "",
-        "profiles_index": str(profiles_index) if profiles_index else "",
-        "profile_id": profile.profile_id,
-        "profile_source_file": str(profile_jsonld),
-        "merge_policy": "preview_only_no_profile_write",
-        "candidate_updates": candidate_updates,
-        "candidate_new_profiles": candidate_new_profiles,
-        "candidate_existing_profile_links": candidate_existing_profile_links,
+    return candidate_updates
+
+
+def build_reviewed_claim_profile_updates_preview(
+    *, receipt_json: Path, profile_jsonld: Path, output_dir: Path,
+) -> dict[str, Any]:
+    from .document_analysis.candidate_evidence_claim_review import _protect_catalog_output
+
+    receipt, receipt_hash = _validated_claim_review_receipt(receipt_json)
+    profile_raw = profile_jsonld.read_bytes()
+    profile_payload = json.loads(profile_raw)
+    if not isinstance(profile_payload, dict) or profile_payload.get("@type") != "PersonResearchProfile":
+        raise ValueError("Expected a PersonResearchProfile object.")
+    profile_id = profile_from_jsonld(profile_payload).profile_id
+    if not profile_id or any(item["profile_id"] != profile_id for item in receipt["decisions"]):
+        raise ValueError("Receipt claims do not match this exact profile.")
+    if profile_payload.get("@id") and profile_payload.get("profile_id") and profile_payload["@id"] != profile_payload["profile_id"]:
+        raise ValueError("Profile identifiers disagree.")
+    accepted = [item for item in receipt["decisions"] if item["decision"] == "accept_candidate"]
+    accepted_by_id = {item["claim_id"]: item for item in accepted}
+    claims = []
+    for item in accepted:
+        source_claim = item["source_claim"]
+        provenance = source_claim.get("provenance") if isinstance(source_claim.get("provenance"), dict) else {}
+        claims.append({"claim_id": item["claim_id"], "field": item["candidate"]["field"],
+                       "value": item["candidate"]["value"], "source_document_id": item["source_document_id"],
+                       "source_url": source_claim.get("source_url") or source_claim.get("url") or provenance.get("source_url") or "",
+                       "quote": item["evidence_span"] or item["context"], "confidence": item["confidence"]})
+    updates = _candidate_update_items(profile_jsonld=profile_jsonld, profile_payload=profile_payload,
+                                      profile_id=profile_id, claims=claims)
+    for update in updates:
+        decisions = [accepted_by_id[claim_id] for claim_id in update["source_claim_ids"]]
+        update["source_ids"] = sorted({item["source_id"] for item in decisions})
+        update["review_provenance"] = decisions
+    payload = {
+        "@type": "CandidateProfileUpdateSet", "profile_id": profile_id, "profile_source_file": str(profile_jsonld),
+        "input_report": "", "input_candidate_claims": receipt["claims_input"]["path"],
+        "review_receipt": {"path": str(receipt_json.resolve()), "sha256": receipt_hash},
+        "profile_input": {"path": str(profile_jsonld.resolve()), "sha256": hashlib.sha256(profile_raw).hexdigest()},
+        "merge_policy": "preview_only_no_profile_write", "candidate_updates": updates,
+        "candidate_new_profiles": [], "candidate_existing_profile_links": [],
+        "accepted_claim_count": len(accepted), "excluded_decision_count": len(receipt["decisions"]) - len(accepted),
+        "preview_only": True, "review_status": "pending", "canonical_write_allowed": False,
+        "profile_write_allowed": False, "claim_promotion_allowed": False, "person_identity_resolved": False,
+        "source_document_existence_verified": True, "source_documents_catalog": receipt["source_documents_catalog"],
     }
+    output_dir = output_dir.resolve()
+    json_path, md_path = output_dir / "candidate_profile_updates.jsonld", output_dir / "candidate_profile_updates.md"
+    json_raw = _stable_review_json(payload)
+    md_raw = render_candidate_updates_markdown(payload).encode("utf-8")
+    manifest = {
+        "@type": "ReviewedClaimProfileUpdatesManifest", "review_receipt": payload["review_receipt"],
+        "profile_input": payload["profile_input"], "preview_manifest": receipt["preview_manifest"],
+        "claims_input": receipt["claims_input"], "review_artifacts": receipt["preview_artifacts"],
+        "artifacts": {"candidate_updates": {"path": str(json_path), "sha256": hashlib.sha256(json_raw).hexdigest()},
+                      "markdown": {"path": str(md_path), "sha256": hashlib.sha256(md_raw).hexdigest()}},
+        "profile_id": profile_id, "candidate_update_count": len(updates), "review_status": "pending",
+        "preview_only": True, "canonical_write_allowed": False, "profile_write_allowed": False,
+        "claim_promotion_allowed": False, "source_document_existence_verified": True,
+        "source_documents_catalog": receipt["source_documents_catalog"],
+    }
+    files = {json_path.name: json_raw, md_path.name: md_raw,
+             "candidate_profile_updates_manifest.json": _stable_review_json(manifest)}
+    _protect_catalog_output(output_dir, receipt["source_documents_catalog"])
+    if output_dir.exists():
+        if not output_dir.is_dir():
+            raise ValueError("Updates output must be a directory.")
+        entries = list(output_dir.iterdir())
+        if entries and (set(path.name for path in entries) != set(files)
+                        or any(not (output_dir / name).is_file() or (output_dir / name).read_bytes() != data
+                               for name, data in files.items())):
+            raise ValueError("Updates output must be new, empty, or an identical prior preview.")
+        if entries:
+            return manifest
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for name, raw in files.items():
+        (output_dir / name).write_bytes(raw)
+    return manifest
+
+
+def _validated_claim_review_receipt(receipt_json: Path) -> tuple[dict[str, Any], str]:
+    from .document_analysis.candidate_evidence_claim_review import DECISIONS, _load_review_preview
+
+    raw = receipt_json.read_bytes()
+    receipt = json.loads(raw)
+    if not isinstance(receipt, dict) or receipt.get("@type") != "CandidateEvidenceClaimReviewReceipt" or receipt.get("review_status") != "complete":
+        raise ValueError("Expected a complete CandidateEvidenceClaimReviewReceipt.")
+    flags = {"review_complete": True, "preview_only": True, "decisions_recorded": True,
+             "human_review_recorded": True, "canonical_write_allowed": False, "profile_write_allowed": False,
+             "claim_promotion_allowed": False, "person_identity_resolved": False,
+             "source_document_existence_verified": True, "reviewer_identity_authenticated": False}
+    if any(receipt.get(key) is not value for key, value in flags.items()):
+        raise ValueError("Receipt review-only flags are invalid.")
+    reference = receipt.get("preview_manifest")
+    if not isinstance(reference, dict) or not isinstance(reference.get("path"), str) or not reference["path"]:
+        raise ValueError("Receipt requires the exact preview manifest reference.")
+    manifest_path = Path(reference["path"])
+    manifest, manifest_hash, queue = _load_review_preview(manifest_path)
+    if reference != {"path": str(manifest_path.resolve()), "sha256": manifest_hash}:
+        raise ValueError("Receipt manifest digest or path does not match.")
+    if receipt.get("claims_input") != manifest["claims_input"] or receipt.get("preview_artifacts") != manifest["artifacts"]:
+        raise ValueError("Receipt claims/queue references do not match the preview.")
+    if receipt.get("source_documents_catalog") != manifest["source_documents_catalog"]:
+        raise ValueError("Receipt catalog reference does not match the verified preview.")
+    expected = {item["item_id"]: item for item in queue["items"]}
+    decisions = receipt.get("decisions")
+    if not isinstance(decisions, list) or not decisions:
+        raise ValueError("Receipt requires claim decisions.")
+    seen = set()
+    counts: dict[str, int] = defaultdict(int)
+    for decision in decisions:
+        if not isinstance(decision, dict):
+            raise ValueError("Every receipt decision must be an object.")
+        item_id = decision.get("item_id")
+        if not isinstance(item_id, str) or item_id not in expected or item_id in seen:
+            raise ValueError("Receipt has an unknown or duplicate claim item.")
+        seen.add(item_id)
+        if any(decision.get(key) != value for key, value in expected[item_id].items()):
+            raise ValueError("Receipt claim IDs, values or provenance differ from the queue.")
+        if decision.get("decision") not in DECISIONS:
+            raise ValueError("Receipt contains a pending or invalid claim decision.")
+        if not isinstance(decision.get("reviewer"), str) or not decision["reviewer"].strip() or not isinstance(decision.get("note"), str):
+            raise ValueError("Receipt decision requires reviewer and text note.")
+        timestamp = datetime.fromisoformat(str(decision.get("reviewed_at", "")).replace("Z", "+00:00"))
+        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+            raise ValueError("Receipt decision timestamps must include a timezone.")
+        counts[decision["decision"]] += 1
+    if seen != set(expected) or receipt.get("decision_count") != len(decisions) or receipt.get("decision_counts") != dict(counts):
+        raise ValueError("Receipt decisions must cover the exact queue once.")
+    if receipt.get("decisions_source") != {"method": "interactive_cli_wizard", "sha256": hashlib.sha256(_stable_review_json({"decisions": decisions})).hexdigest()}:
+        raise ValueError("Receipt decision digest does not match.")
+    return receipt, hashlib.sha256(raw).hexdigest()
+
+
+def _stable_review_json(payload: dict[str, Any]) -> bytes:
+    return (json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n").encode("utf-8")
 
 
 def render_candidate_updates_markdown(payload: dict[str, Any]) -> str:
@@ -597,6 +733,11 @@ def _compatible_partial_date(candidate_value: str, current_value: str) -> bool:
     months = candidate_tokens.intersection(MONTHS)
     if months and not months.intersection(current_tokens):
         return False
+    if months and current_tokens.intersection(MONTHS):
+        candidate_days = {int(token) for token in candidate_tokens if token.isdigit() and 1 <= int(token) <= 31}
+        current_days = {int(token) for token in current_tokens if token.isdigit() and 1 <= int(token) <= 31}
+        if candidate_days and current_days and candidate_days != current_days:
+            return False
     meaningful_tokens = years.union(months)
     if not meaningful_tokens:
         return False
