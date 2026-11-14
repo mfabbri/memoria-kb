@@ -76,7 +76,14 @@ def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
-def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, output_dir: Path) -> dict[str, Any]:
+def build_source_report_candidate_claims(
+    *, report_json: Path, profile_id: str, output_dir: Path, source_document_ids: list[str] | None = None,
+) -> dict[str, Any]:
+    selected_document_ids = _report_identifier_list({"source_document_ids": source_document_ids}, "source_document_ids")
+    if not selected_document_ids:
+        raise ValueError("At least one explicit source document ID is required.")
+    selected_document_ids = sorted(selected_document_ids)
+    selected_document_set = set(selected_document_ids)
     raw = report_json.read_bytes()
     report = json.loads(raw)
     if not isinstance(report, dict) or (
@@ -107,6 +114,8 @@ def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, 
     report_ref = {"path": str(report_json.resolve()), "sha256": hashlib.sha256(raw).hexdigest()}
     candidates = []
     seen_claims: set[str] = set()
+    profile_document_ids: set[str] = set()
+    excluded_claim_ids: list[str] = []
     for result_index, entry in enumerate(_report_list(profile, "results")):
         if _report_text(entry, "profile_id") != profile_id:
             raise ValueError("Result profile reference does not match the selected profile.")
@@ -136,6 +145,7 @@ def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, 
                     or (document.get("profile_id") and document["profile_id"] != profile_id)):
                 raise ValueError("Document profile metadata does not match the selected profile.")
             documents[document_id] = document
+            profile_document_ids.add(document_id)
         for claim in _report_list(entry, "claims"):
             claim_id = _report_text(claim, "claim_id")
             if (claim.get("@id") and claim["@id"] != claim_id) or (claim.get("profile_id") and claim["profile_id"] != profile_id):
@@ -163,6 +173,9 @@ def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, 
             if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1 or not math.isfinite(confidence):
                 raise ValueError("Claim confidence must be numeric and in [0, 1].")
             quote = _report_text(claim, "quote")
+            if document_id not in selected_document_set:
+                excluded_claim_ids.append(claim_id)
+                continue
             document_ref = {key: value for key, value in document.items() if key != "raw_text"}
             candidates.append({
                 "@type": "CandidateEvidenceClaim", "@id": claim_id, "claim_id": claim_id,
@@ -179,14 +192,19 @@ def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, 
                                "report_selected_attempt_ids": report_attempts, "result_selected_attempt_ids": attempts,
                                "matched_planned_attempt_id": matched_attempt},
             })
+    if selected_document_set - profile_document_ids:
+        raise ValueError("Selected source document IDs must belong to documents of the selected report profile.")
+    selection = {"selected_source_document_ids": selected_document_ids,
+                 "excluded_claim_ids": sorted(excluded_claim_ids), "excluded_claim_count": len(excluded_claim_ids)}
     flags = {"preview_only": True, "review_status": "unreviewed", "canonical_write_allowed": False,
              "claim_promotion_allowed": False, "profile_write_allowed": False, "source_document_existence_verified": False}
     payload = {"@type": "CandidateEvidenceClaimSet", "profile_id": profile_id, "source_report": report_ref,
-               "candidate_evidence_claims": candidates, **flags}
+               "candidate_evidence_claims": candidates, **selection, **flags}
     output_dir = output_dir.resolve()
     claims_path, md_path = output_dir / "candidate_evidence_claims.json", output_dir / "candidate_evidence_claims.md"
     claims_raw = _report_json_bytes(payload)
     lines = ["# Claim candidati dal report fonte", "", f"Profilo: `{profile_id}`", f"Report SHA-256: `{report_ref['sha256']}`", "",
+             f"Documenti selezionati: {', '.join(selected_document_ids)}", f"Claim esclusi: {len(excluded_claim_ids)}", "",
              "Candidate unreviewed; nessuna verifica del catalogo, decisione o promozione.", ""]
     for candidate in candidates:
         lines.extend([f"## {candidate['field']}: {candidate['value']}", "", f"Claim: `{candidate['claim_id']}`",
@@ -198,7 +216,7 @@ def build_source_report_candidate_claims(*, report_json: Path, profile_id: str, 
                 "source_selection_declared": selected_sources is not None,
                 "claim_count": len(candidates), "source_document_ids": sorted({item["source_document_id"] for item in candidates}),
                 "artifacts": {"candidate_claims": {"path": str(claims_path), "sha256": hashlib.sha256(claims_raw).hexdigest()},
-                              "markdown": {"path": str(md_path), "sha256": hashlib.sha256(md_raw).hexdigest()}}, **flags}
+                              "markdown": {"path": str(md_path), "sha256": hashlib.sha256(md_raw).hexdigest()}}, **selection, **flags}
     files = {claims_path.name: claims_raw, md_path.name: md_raw, "candidate_evidence_claims_manifest.json": _report_json_bytes(manifest)}
     if output_dir.exists():
         if not output_dir.is_dir():

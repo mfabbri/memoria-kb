@@ -68,12 +68,67 @@ def write_report(root, payload):
 
 
 class SourceReportCandidateClaimsTests(unittest.TestCase):
+    def test_explicit_document_selection_excludes_search_claims_and_is_auditable(self):
+        with workspace_temp_dir() as root:
+            report = report_fixture()
+            entry = report["profiles"][0]["results"][0]
+            search_document = copy.deepcopy(entry["documents"][0])
+            search_document.update(document_id="document:search", url="https://example.invalid/search", title="Search page")
+            search_claim = copy.deepcopy(entry["claims"][0])
+            search_claim.update(claim_id="claim:search", source_document_id="document:search",
+                                source_url=search_document["url"], field="person.full_name", value="Search page")
+            entry["documents"].append(search_document)
+            entry["claims"].append(search_claim)
+            path = write_report(root, report)
+            output = root / "claims"
+            manifest = build_source_report_candidate_claims(
+                report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=output)
+            payload = json.loads((output / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
+            self.assertEqual([item["claim_id"] for item in payload["candidate_evidence_claims"]], ["claim:synthetic"])
+            for artifact in (payload, manifest):
+                self.assertEqual(artifact["selected_source_document_ids"], ["document:synthetic"])
+                self.assertEqual(artifact["excluded_claim_ids"], ["claim:search"])
+                self.assertEqual(artifact["excluded_claim_count"], 1)
+                self.assertEqual(artifact["source_report"]["sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
+            before = {item: item.read_bytes() for item in output.iterdir()}
+            with self.assertRaises(ValueError):
+                build_source_report_candidate_claims(
+                    report_json=path, profile_id="person:synthetic",
+                    source_document_ids=["document:synthetic", "document:search"], output_dir=output)
+            self.assertEqual({item: item.read_bytes() for item in output.iterdir()}, before)
+            both = root / "both"
+            selected = build_source_report_candidate_claims(
+                report_json=path, profile_id="person:synthetic",
+                source_document_ids=["document:synthetic", "document:search"], output_dir=both)
+            self.assertEqual(selected["claim_count"], 2)
+            self.assertEqual(selected["excluded_claim_count"], 0)
+            self.assertEqual(build_source_report_candidate_claims(
+                report_json=path, profile_id="person:synthetic",
+                source_document_ids=["document:search", "document:synthetic"], output_dir=both), selected)
+
+    def test_missing_duplicate_unknown_and_other_profile_document_selection_fail_before_output(self):
+        for selected in (None, [], [""], ["document:synthetic", "document:synthetic"],
+                         ["document:missing"], ["document:other"], ["document:synthetic", "document:missing"]):
+            with self.subTest(selected=selected), workspace_temp_dir() as root:
+                report = report_fixture()
+                other_entry = copy.deepcopy(report["profiles"][0]["results"][0])
+                other_entry["profile_id"] = "person:other"
+                other_entry["documents"][0]["document_id"] = "document:other"
+                other_entry["documents"][0]["metadata"]["profile_id"] = "person:other"
+                other_entry["claims"] = []
+                report["profiles"][1]["results"] = [other_entry]
+                path = write_report(root, report)
+                with self.assertRaises(ValueError):
+                    build_source_report_candidate_claims(
+                        report_json=path, profile_id="person:synthetic", source_document_ids=selected, output_dir=root / "claims")
+                self.assertFalse((root / "claims").exists())
+
     def test_preserves_claim_document_attempt_provenance_and_hashes_without_promotion(self):
         with workspace_temp_dir() as root:
             report = report_fixture()
             path = write_report(root, report)
             before = path.read_bytes()
-            manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+            manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
             payload = json.loads((root / "claims" / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
             item = payload["candidate_evidence_claims"][0]
             original = report["profiles"][0]["results"][0]["claims"][0]
@@ -158,7 +213,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
                     del entry["profile_id"]
                 path = write_report(root, report)
                 with self.assertRaises(ValueError):
-                    build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+                    build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
                 self.assertFalse((root / "claims").exists())
 
     def test_malformed_report_shapes_are_rejected(self):
@@ -166,7 +221,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
             with self.subTest(payload=payload), workspace_temp_dir() as root:
                 path = write_report(root, payload)
                 with self.assertRaises(ValueError):
-                    build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+                    build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
 
     def test_repeated_document_in_separate_results_keeps_each_attempt_context(self):
         with workspace_temp_dir() as root:
@@ -176,7 +231,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
             second["matched_planned_attempt_id"] = "query-year"
             report["profiles"][0]["results"].append(second)
             path = write_report(root, report)
-            build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+            build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
             payload = json.loads((root / "claims" / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
             self.assertEqual([item["matched_planned_attempt_id"] for item in payload["candidate_evidence_claims"]], ["query-name", "query-year"])
 
@@ -184,12 +239,12 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
         with workspace_temp_dir() as root:
             path = write_report(root, report_fixture())
             output = root / "claims"
-            first = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=output)
+            first = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=output)
             before = {item: item.read_bytes() for item in output.iterdir()}
-            self.assertEqual(build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=output), first)
+            self.assertEqual(build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=output), first)
             path.write_bytes(path.read_bytes() + b" ")
             with self.assertRaises(ValueError):
-                build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=output)
+                build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=output)
             self.assertEqual({item: item.read_bytes() for item in output.iterdir()}, before)
 
     def test_explicit_report_type_and_zero_claim_result_remain_unreviewed(self):
@@ -200,7 +255,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
             del report["source_selection"]
             report["profiles"][0]["results"][0]["claims"] = []
             path = write_report(root, report)
-            manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+            manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
             self.assertEqual(manifest["claim_count"], 0)
             self.assertEqual(manifest["review_status"], "unreviewed")
             self.assertIs(manifest["source_selection_declared"], False)
@@ -214,7 +269,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
                     report["@type"] = "SourceResearchReport"
                     del report["input_mode"], report["source_selection"]
                 path = write_report(root, report)
-                manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", output_dir=root / "claims")
+                manifest = build_source_report_candidate_claims(report_json=path, profile_id="person:synthetic", source_document_ids=["document:synthetic"], output_dir=root / "claims")
                 payload = json.loads((root / "claims" / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
                 self.assertEqual(payload["candidate_evidence_claims"][0]["source_id"], "source:synthetic")
                 self.assertEqual(manifest["source_selection_declared"], not explicit_type)
@@ -225,7 +280,7 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
             report = report_fixture()
             path = write_report(root, report)
             before = path.read_bytes()
-            command = [str(launcher), "review", "claims-build", "--report-json", str(path), "--profile-id", "person:synthetic", "--output-dir", str(root / "claims")]
+            command = [str(launcher), "review", "claims-build", "--report-json", str(path), "--profile-id", "person:synthetic", "--source-document-id", "document:synthetic", "--output-dir", str(root / "claims")]
             completed = subprocess.run(command, capture_output=True, text=True, check=False)
             self.assertEqual(completed.returncode, 0, completed.stderr)
             self.assertEqual(path.read_bytes(), before)

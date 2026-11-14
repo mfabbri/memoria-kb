@@ -44,6 +44,15 @@ Per una ricerca reale parti da un `source_id` abilitato in
 configurato: non sostituirli con una fonte non catalogata o un DB scratch senza
 motivo esplicito. Consulta la procedura completa in
 `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
+Salva sempre tutti gli artifact di una ricerca o review reale nella destinazione
+operativa persistente `P:\Comune\Me.Mo.Ri.a\risultati\runs\<run-id>\`, usando
+un nuovo ID stabile per ogni run. La regola comprende report, documenti acquisiti,
+claim, queue, manifest, receipt, preview e feedback. Non usare `.tmp`,
+`.tmp-tests` o altre directory del workspace per dati o review reali: sono
+riservate a fixture sintetiche e smoke test. Se la destinazione persistente non
+è disponibile o scrivibile, fermati e segnala il blocco; non ripiegare su una
+cartella temporanea. Mantieni gli output della stessa run sotto la medesima
+directory radice e comunica il percorso e il comando CLI successivo.
 Registra una pagina online con `memoria documents register-online-source`,
 prima in preview e poi con `--apply`; non scrivere nel database via script.
 Genera la preview Place/Event con il comando CLI e passa il suo manifest a
@@ -52,6 +61,13 @@ provenienza, raccoglie solo le decisioni della persona e scrive la receipt dopo
 conferma. Spiega sempre all'utente dove il CLI ha salvato gli artifact, cosa
 contengono e quale comando usare dopo. Non chiedere di creare o compilare JSON
 né inventare decisioni se il wizard non è disponibile/interattivo.
+Genera claim solo quando l'affermazione riguarda esplicitamente l'entità
+principale selezionata, come una persona o un luogo; titoli, descrizioni e dati
+generici del portale non sono claim dell'entità. Se chiedi una decisione su un
+claim, spiega prima eventuali termini poco chiari. Una risposta esplicita come
+«accetto come candidata» è la decisione per l'elemento presentato: registrala
+come accettazione candidata, senza trasformarla in fatto verificato e senza
+richiederne una seconda conferma.
 
 Quando serve una decisione o un dato dall'utente, usa come procedura normale
 una domanda per messaggio. Prima della domanda riassumi il contesto e le

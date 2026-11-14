@@ -1167,6 +1167,7 @@ def _command_review_claims_build(args: argparse.Namespace) -> int:
     try:
         report = build_source_report_candidate_claims(
             report_json=Path(args.report_json), profile_id=args.profile_id, output_dir=Path(args.output_dir),
+            source_document_ids=args.source_document_id,
         )
     except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
         print(f"ERROR review claims-build: {exc}", file=sys.stderr)
@@ -3780,6 +3781,9 @@ def build_parser() -> argparse.ArgumentParser:
         "claims-build", help="Converte un profilo esplicito del report fonte in claim candidati hash-bound.")
     review_claims_build.add_argument("--report-json", required=True, help="SourceResearchReport esplicito.")
     review_claims_build.add_argument("--profile-id", required=True, help="ID esatto del solo profilo selezionato.")
+    review_claims_build.add_argument(
+        "--source-document-id", required=True, action="append",
+        help="ID esatto di un documento del profilo da includere; ripetibile. Gli altri claim sono esclusi.")
     review_claims_build.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
     review_claims_build.set_defaults(handler=_command_review_claims_build)
     review_claims_preview = review_subparsers.add_parser(

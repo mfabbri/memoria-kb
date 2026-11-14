@@ -10,13 +10,16 @@ Il launcher ora copre il percorso dagli artifact di ricerca fino alla proposta
 profilo review-only:
 
 ```text
-memoria review claims-build --report-json <report> --profile-id <id> --output-dir <claims-dir>
+memoria review claims-build --report-json <report> --profile-id <id> --source-document-id <record-persona-o-luogo> --output-dir <claims-dir>
 memoria review claims-preview --claims-json <claims-dir/candidate_evidence_claims.json> --source-documents-db <database-operativo/evidence.sqlite> --output-dir <review-dir>
 memoria review claims-wizard --manifest <review-dir/candidate_claim_review_manifest.json> --output <nuova-receipt.json>
 memoria review claims-updates-preview --receipt <nuova-receipt.json> --profile-jsonld <profilo.jsonld> --output-dir <updates-dir>
 ```
 
-Il builder conserva provenance e claim `unreviewed`; il preview richiede il
+Il builder richiede la selezione esplicita dei SourceDocument che rappresentano
+il record della persona o del luogo; claim legati agli altri documenti sono
+esclusi e gli ID selezionati/esclusi restano nel manifest. Conserva provenance
+e stato `unreviewed`; il preview richiede il
 catalogo SQLite esistente e in sola lettura; queue, receipt e candidate update
 sono legati ai digest del report, claim, manifest, DB/WAL e agli ID
 `SourceDocument` risolti. Solo `accept_candidate` genera proposte `pending`.
@@ -46,9 +49,9 @@ nascita alternative. Il plan e' pronto per review/autorizzazione, ma non
 eseguibile. Il paragrafo T49 qui sotto descrive la preview precedente alla
 migrazione e al fix della root.
 
-La prova reale usa `memorie_locali` e la pagina Resistenza mAPPe su Purocielo. Il SourceDocument operativo e' `unreviewed`; la preview ha prodotto 1 link e 2 aggiornamenti data candidati. Gli artifact sono in `memoria-engine/.tmp-tests/online-source-purocielo-20261107/preview-operational-catalog/`.
+La prova reale usa `memorie_locali` e la pagina Resistenza mAPPe su Purocielo. Il SourceDocument operativo e' `unreviewed`; la preview ha prodotto 1 link e 2 aggiornamenti data candidati. Gli artifact sono in `P:\Comune\Me.Mo.Ri.a\risultati\runs\online-source-purocielo-20261107/preview-operational-catalog/`.
 
-La receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json` registra tre decisioni `accept_candidate`: un link all'evento e due date (1944-10-10 e 1944-10-12). Il reviewer dichiarato e' `marco`; la receipt e' legata al manifest e agli hash degli artifact. La review non autentica il reviewer, non cambia lo stato `unreviewed` del SourceDocument e non applica modifiche all'evento canonico. T48 e' chiuso. T49f-t hanno aggiunto al launcher installato valutazione, piano, outcome, triage e generazione action da menzioni; l’hash dell’action set si propaga e viene verificato da table, summary, outcome ed evaluation. T49u-v espongono estrazione testuale selettiva e preparazione delle menzioni dal launcher. T49w ha generato una action reale per Bendini dal DOCX collegato al T47; l'identità resta un collegamento candidato `unreviewed`. La review via wizard è stata completata con decisione `BUONA`, reviewer dichiarato `marco` e latenza misurata 10 s; receipt e tabella sono in `memoria-engine/.tmp-tests/t49w-bendini-existing-run-20261108/`. La preview del piano è stata saltata (`profile_not_found`): l'indice contiene il profilo, ma il suo seed è il CSV legacy `ricerche\\caduti_purocielo.csv`, escluso dal planner per default. `execution_allowed=false`; nessuna ricerca è partita. T49 resta aperto per risolvere l'eleggibilità del profilo o selezionare materiale idoneo. `BUONA` non autorizza una ricerca: action, fonte/strategia e query devono essere autorizzate esplicitamente. I comandi e i limiti sono descritti in `docs/playbooks/codex-person-profile-feedback-loop-core.md` e `docs/playbooks/online-source-research-review.md`.
+La receipt `P:\Comune\Me.Mo.Ri.a\risultati\runs\online-source-purocielo-20261107/review-operational-receipt.json` registra tre decisioni `accept_candidate`: un link all'evento e due date (1944-10-10 e 1944-10-12). Il reviewer dichiarato e' `marco`; la receipt e' legata al manifest e agli hash degli artifact. La review non autentica il reviewer, non cambia lo stato `unreviewed` del SourceDocument e non applica modifiche all'evento canonico. T48 e' chiuso. T49f-t hanno aggiunto al launcher installato valutazione, piano, outcome, triage e generazione action da menzioni; l’hash dell’action set si propaga e viene verificato da table, summary, outcome ed evaluation. T49u-v espongono estrazione testuale selettiva e preparazione delle menzioni dal launcher. T49w ha generato una action reale per Bendini dal DOCX collegato al T47; l'identità resta un collegamento candidato `unreviewed`. La review via wizard è stata completata con decisione `BUONA`, reviewer dichiarato `marco` e latenza misurata 10 s; receipt e tabella sono in `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49w-bendini-existing-run-20261108/`. La preview del piano è stata saltata (`profile_not_found`): l'indice contiene il profilo, ma il suo seed è il CSV legacy `ricerche\\caduti_purocielo.csv`, escluso dal planner per default. `execution_allowed=false`; nessuna ricerca è partita. T49 resta aperto per risolvere l'eleggibilità del profilo o selezionare materiale idoneo. `BUONA` non autorizza una ricerca: action, fonte/strategia e query devono essere autorizzate esplicitamente. I comandi e i limiti sono descritti in `docs/playbooks/codex-person-profile-feedback-loop-core.md` e `docs/playbooks/online-source-research-review.md`.
 
 La slice T48j aggiunge il runner Place offline
 `python -m caduti_fonti_report.document_analysis.place_preview_pipeline`.

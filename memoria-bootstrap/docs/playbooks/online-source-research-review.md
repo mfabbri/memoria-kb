@@ -14,6 +14,20 @@ installato (`memoria` o l'eseguibile nella `.venv`), non con `python -m` o
 import diretti. Se il launcher non parte, riparare prima l'ambiente e poi
 ripetere il comando attraverso il launcher.
 
+## Destinazione persistente degli artifact reali
+
+Per ogni ricerca o review reale, creare un nuovo run ID e salvare report,
+documenti acquisiti, preview, claim, queue, manifest, receipt e feedback sotto
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\<run-id>\`. Organizzare i passaggi in
+sottodirectory della stessa run; non sovrascrivere run precedenti. Non usare
+`.tmp`, `.tmp-tests` o directory del repository per dati/artifact reali: sono
+destinati a fixture sintetiche e smoke test. Se la root persistente non è
+accessibile o scrivibile, interrompere il flusso e segnalare il blocco senza
+creare un ripiego temporaneo. Nei comandi seguenti `<run-dir>` indica la
+directory persistente di quella run, mentre gli input e gli output intermedi
+vanno collocati nelle sue sottodirectory. Comunicare all'utente il percorso
+effettivo, il contenuto prodotto e il successivo comando CLI.
+
 ## 1. Scegliere la fonte e verificare la ricerca
 
 ### Connettori e selezione degli attempt

@@ -180,7 +180,7 @@ rimane `unreviewed`. T48o aggiunge `register-online-source` con preview/apply
 idempotente e `preview-review-wizard`, che mostra contesto ed estratti e crea una
 receipt hash-bound solo dopo decisioni e conferma della persona. Le istruzioni
 operative sono in `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
-La review umana e' stata completata il 2026-11-08 con il wizard installato: receipt `memoria-engine/.tmp-tests/online-source-purocielo-20261107/review-operational-receipt.json`, hash-bound a manifest e artifact. Sono state accettate tre candidate (un link e due date); il reviewer dichiarato e' `marco`, non autenticato. La receipt non autorizza apply o scrittura canonica; il SourceDocument resta `unreviewed` e il Place/HistoricalEvent canonico e' invariato. T48 e' chiuso sul ciclo di preview e review. T49 puo' essere selezionato come prossimo workstream, usando solo misure effettivamente registrate e mantenendo `unavailable` per token/costi assenti.
+La review umana e' stata completata il 2026-11-08 con il wizard installato: receipt `P:\Comune\Me.Mo.Ri.a\risultati\runs\online-source-purocielo-20261107/review-operational-receipt.json`, hash-bound a manifest e artifact. Sono state accettate tre candidate (un link e due date); il reviewer dichiarato e' `marco`, non autenticato. La receipt non autorizza apply o scrittura canonica; il SourceDocument resta `unreviewed` e il Place/HistoricalEvent canonico e' invariato. T48 e' chiuso sul ciclo di preview e review. T49 puo' essere selezionato come prossimo workstream, usando solo misure effettivamente registrate e mantenendo `unavailable` per token/costi assenti.
 
 ### T49 - Review-feedback end-to-end ed evaluation (P2)
 
@@ -266,7 +266,7 @@ il passaggio operativo fino alle action reali senza aprire una ricerca:
   collegata al profilo soltanto come candidata, resta `unreviewed` e segnala
   identità irrisolta. Gate: 12 test actions PASS, hash menzioni concorde e
   `claim_eligible=false`. Artifact reali in
-  `memoria-engine/.tmp-tests/t49w-bendini-existing-run-20261108/`, ignorati da
+  `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49w-bendini-existing-run-20261108/`, ignorati da
   Git. Nessuna ricerca, review umana, scrittura database o modifica canonica.
 
 La review umana via wizard è stata completata: summary hash-bound all'action

@@ -513,6 +513,21 @@ def write_consolidate_workspace(workspace: Path) -> None:
 
 
 class MemoriaCliTests(unittest.TestCase):
+    def test_installed_claims_build_requires_repeatable_document_selection(self):
+        launcher = Path(sys.executable).parent / ("memoria.exe" if sys.platform == "win32" else "memoria")
+        with workspace_temp_dir() as root:
+            command = [str(launcher), "review", "claims-build", "--report-json", str(root / "missing.json"),
+                       "--profile-id", "person:synthetic", "--output-dir", str(root / "claims")]
+            missing = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(missing.returncode, 2)
+            self.assertIn("--source-document-id", missing.stderr)
+            repeated = subprocess.run(command + ["--source-document-id", "document:first", "--source-document-id", "document:second"],
+                                      capture_output=True, text=True, check=False)
+            self.assertEqual(repeated.returncode, 1)
+            self.assertIn("ERROR review claims-build", repeated.stderr)
+            self.assertNotIn("unrecognized arguments", repeated.stderr)
+            self.assertFalse((root / "claims").exists())
+
     def test_documents_process_preview_is_read_only_and_lists_candidates(self) -> None:
         with workspace_temp_dir() as workspace:
             root = workspace / "immagini"

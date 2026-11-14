@@ -85,16 +85,53 @@ quell'action e a quel piano.
 
 ## Review dei claim persona da un report fonte
 
+Tutti gli artifact di una review reale devono restare nella destinazione
+operativa persistente `P:\Comune\Me.Mo.Ri.a\risultati\runs\<run-id>\`.
+Usare sottodirectory della stessa run per claim, queue/manifest, receipt e
+CandidateProfileUpdate; creare un nuovo run ID senza sovrascrivere run esistenti.
+Le cartelle `.tmp`, `.tmp-tests` e quelle nel workspace sono riservate a fixture
+sintetiche e smoke test. Se la destinazione persistente non è disponibile,
+fermarsi e segnalare il blocco: non usare cartelle temporanee come destinazione
+iniziale. Comunicare il path e il comando CLI successivo.
+
 Per una ricerca gia' eseguita e autorizzata, selezionare un solo profilo dal
 report dei connettori. La CLI genera i claim candidati senza chiedere allo
 storico di preparare JSON e senza avviare altre ricerche:
 
 ```text
-memoria review claims-build --report-json <report-fonte.json> --profile-id <profile-id> --output-dir <claims-dir>
+memoria review claims-build --report-json <report-fonte.json> --profile-id <profile-id> --source-document-id <documento-persona-o-luogo> --output-dir <claims-dir>
 memoria review claims-preview --claims-json <claims-dir/candidate_evidence_claims.json> --source-documents-db <database-operativo/evidence.sqlite> --output-dir <review-dir>
 memoria review claims-wizard --manifest <review-dir/candidate_claim_review_manifest.json> --output <nuova-receipt.json>
 memoria review claims-updates-preview --receipt <nuova-receipt.json> --profile-jsonld <profilo-esistente.jsonld> --output-dir <proposte-dir>
 ```
+
+Ripetere `--source-document-id` per ogni documento che contiene un record
+specifico del soggetto principale selezionato (persona o luogo). La selezione è
+obbligatoria: `claims-build` include solo i claim legati agli ID indicati e
+registra nel payload e nel manifest gli ID selezionati e i claim esclusi. Non
+selezionare titoli di portali, pagine di ricerca o altri documenti generici come
+se fossero record del soggetto. Verificare che titolo, URL e tipo di documento
+identifichino il record principale prima di passare gli ID; la presenza del
+SourceDocument nel catalogo viene verificata al passo `claims-preview`.
+
+### Ambito dei claim e nomi propri
+
+Un `EvidenceClaim` di questo flusso deve esprimere un'affermazione riferibile al
+soggetto principale selezionato (persona o luogo), con proprietà e valore
+supportati dal documento identificato. Non creare claim generici su portali,
+pagine di ricerca, intestazioni, provenienza o metadati che non descrivono quel
+soggetto. La provenienza resta associata al claim come fonte, non diventa da sola
+un fatto del soggetto. Se un elemento estratto non ha un soggetto principale
+chiaro, escluderlo dalla coda dei claim invece di chiedere allo storico di
+classificarlo come claim.
+
+Per i nominativi, conserva la forma letterale della fonte e non assegnare
+automaticamente le parole ai campi nome, secondo nome o cognome solo in base
+all'ordine tipografico. Punteggiatura e convenzioni della fonte possono essere
+indizi, ma non bastano da sole a risolvere un'identità ambigua. Mantieni la
+segmentazione come candidata finché una fonte o un'altra evidenza la supporta;
+presenta la discrepanza allo storico prima di proporre un aggiornamento del
+profilo.
 
 Usare il database operativo gia' configurato, non un catalogo scratch per una
 review reale. `claims-build` conserva i riferimenti del report e non consulta il
@@ -115,6 +152,17 @@ restano, aggiornando il conteggio dopo ogni risposta; se il totale dipende dalle
 risposte, dichiararlo. Non accorpare scelte distinte, non interpretare il
 silenzio come consenso e, se la domanda non è visibile nell'interfaccia,
 riproporla nel messaggio successivo con contesto e avanzamento.
+
+Spiegare i termini di dominio prima di chiedere una scelta; ad esempio, chiarire
+che `claim generico` indica un'affermazione non riferibile alla persona o al
+luogo principale. Una risposta esplicita come «accetto come candidata» o
+«confermo» è la decisione sull'elemento attualmente presentato: registrarla e
+passare alla domanda successiva senza chiedere se fosse davvero una decisione.
+`accept_candidate` lascia il dato candidato e non lo rende un fatto verificato.
+Se la risposta non ha un riferimento univoco, chiedere una sola chiarificazione.
+Le decisioni espresse in chat non autorizzano a fabbricare o retrodatare una
+receipt; conserva la decisione nel contesto della sessione e usa il wizard per
+una receipt con il suo timestamp effettivo, senza ripetere decisioni già chiare.
 
 `q` o mancata conferma finale non scrivono una receipt; il reviewer dichiarato
 non viene autenticato. Non trasformare decisioni raccolte in chat in una
