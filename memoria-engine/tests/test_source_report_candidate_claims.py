@@ -235,6 +235,56 @@ class SourceReportCandidateClaimsTests(unittest.TestCase):
             payload = json.loads((root / "claims" / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
             self.assertEqual([item["matched_planned_attempt_id"] for item in payload["candidate_evidence_claims"]], ["query-name", "query-year"])
 
+    def test_equivalent_claims_across_attempts_dedupe_and_preserve_all_provenance_via_cli(self):
+        with workspace_temp_dir() as root:
+            report = report_fixture()
+            first = report["profiles"][0]["results"][0]
+            first["selected_attempt_ids"] = ["query-name"]
+            second = copy.deepcopy(first)
+            second["selected_attempt_ids"] = ["query-year"]
+            second["matched_planned_attempt_id"] = "query-year"
+            report["profiles"][0]["results"].append(second)
+            del report["selected_attempt_ids"]
+            path = write_report(root, report)
+            launcher = Path(sys.executable).parent / ("memoria.exe" if sys.platform == "win32" else "memoria")
+            command = [str(launcher), "review", "claims-build", "--report-json", str(path), "--profile-id",
+                       "person:synthetic", "--source-document-id", "document:synthetic", "--output-dir", str(root / "claims")]
+            built = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(built.returncode, 0, built.stderr)
+            payload = json.loads((root / "claims" / "candidate_evidence_claims.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(payload["candidate_evidence_claims"]), 1)
+            candidate = payload["candidate_evidence_claims"][0]
+            self.assertEqual(candidate["selected_attempt_ids"], ["query-name", "query-year"])
+            self.assertEqual(candidate["matched_planned_attempt_ids"], ["query-name", "query-year"])
+            self.assertEqual(candidate["matched_planned_attempt_id"], "query-name")
+            self.assertEqual(candidate["provenance"]["result_indexes"], [0, 1])
+            self.assertEqual([item["matched_planned_attempt_id"] for item in candidate["attempt_provenance"]],
+                             ["query-name", "query-year"])
+            self.assertEqual([item["source_report_claim"] for item in candidate["attempt_provenance"]],
+                             [first["claims"][0], second["claims"][0]])
+
+    def test_conflicting_claim_id_across_attempts_fails_before_cli_output(self):
+        with workspace_temp_dir() as root:
+            report = report_fixture()
+            first = report["profiles"][0]["results"][0]
+            first["selected_attempt_ids"] = ["query-name"]
+            second = copy.deepcopy(first)
+            second["selected_attempt_ids"] = ["query-year"]
+            second["matched_planned_attempt_id"] = "query-year"
+            second["claims"][0]["value"] = "30 novembre 1910"
+            second["claims"][0]["normalized_value"] = "1910-11-30"
+            report["profiles"][0]["results"].append(second)
+            del report["selected_attempt_ids"]
+            path = write_report(root, report)
+            launcher = Path(sys.executable).parent / ("memoria.exe" if sys.platform == "win32" else "memoria")
+            output = root / "claims"
+            command = [str(launcher), "review", "claims-build", "--report-json", str(path), "--profile-id",
+                       "person:synthetic", "--source-document-id", "document:synthetic", "--output-dir", str(output)]
+            built = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(built.returncode, 1)
+            self.assertIn("conflicting duplicate claim ID", built.stderr)
+            self.assertFalse(output.exists())
+
     def test_identical_retry_and_changed_input_refusal_preserve_existing_output(self):
         with workspace_temp_dir() as root:
             path = write_report(root, report_fixture())

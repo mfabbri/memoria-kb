@@ -2,55 +2,53 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-14T16:08:56Z",
-    "updated_at": "2026-11-14T20:38:44Z",
+    "selected_at": "2026-11-14T21:54:52Z",
+    "updated_at": "2026-11-14T22:00:51Z",
     "roadmap_basis": [
         {
             "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "section": "T52 - Hardening integrato review claims e candidate profile updates",
-            "reason": "Selezionati tre incrementi verificabili dopo T50/T51: contesto wizard generico, compatibilità queue, riconciliazione nomi strutturati."
+            "section": "T56 - Relazioni candidate fra entità",
+            "reason": "T55 ha misurato gap di provenance; T56 prosegue su fixture offline senza richiedere fonti reali o catalogazione."
         }
     ],
     "increment": {
-        "id": "t52-hardening-claims-review-and-name-updates",
-        "title": "Hardening generico del ciclo review claim e candidate profile update",
-        "objective": "Rendere il wizard claims review comprensibile senza dati hardcoded, preservare la compatibilita delle preview e riconciliare i campi nome/cognome senza scritture canoniche.",
+        "id": "t56-typed-entity-relationship-previews",
+        "title": "Relazioni candidate tipizzate fra entità",
+        "objective": "Comporre preview tipizzate SourceDocument-Person/Place/Event da link candidati espliciti, mantenendo provenance source/evidence e separando identity match, menzione e fatto storico.",
         "scope": [
-            "T52a: mostrare provenienza catalogata e significato delle scelte con dati generici.",
-            "T52b: nuove preview v1.2 e compatibilita verificata per artifact v1.1.",
-            "T52c: mappare given_name/family_name e classificare divergenze come conflitti."
+            "Input hash-bound CandidateDocumentPerson/Place/EventLinkSet.",
+            "Output relations con document/source, evidence reference, review unreviewed e avvertenze semantiche.",
+            "Preservare candidati conflittuali senza equivalenze automatiche.",
+            "Fixture offline per persona-luogo-evento e CLI preview."
         ],
         "out_of_scope": [
-            "Nuove ricerche live o review di profili reali.",
-            "T41 gate statistico OCR, pianificato dopo T52.",
-            "T27/T28 pCloud, da pianificare separatamente per la nuova applicazione."
+            "Asserire relazioni storiche persona-luogo/evento o partecipazione personale.",
+            "Verificare SourceDocument nel catalogo o applicare decisioni canoniche.",
+            "Ricerca live o uso di profili/dati reali."
         ],
         "candidate_files": [
-            "memoria-engine/code/caduti_fonti_report/document_analysis/candidate_evidence_claim_review.py",
-            "memoria-engine/code/caduti_fonti_report/document_analysis/source_document_catalog.py",
-            "memoria-engine/code/caduti_fonti_report/candidate_profile_updates.py",
-            "memoria-engine/tests/test_candidate_evidence_claim_review.py",
-            "memoria-engine/tests/test_source_document_catalog.py",
-            "memoria-engine/tests/test_candidate_profile_updates.py",
+            "memoria-engine/code/caduti_fonti_report/document_analysis/candidate_entity_relationships.py",
+            "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
+            "memoria-engine/tests/test_candidate_entity_relationships.py",
             "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
-            "memoria-bootstrap/docs/current-next-increment.md",
-            "memoria-bootstrap/planning/current-work.json"
+            "memoria-bootstrap/planning/current-work.json",
+            "memoria-bootstrap/docs/current-focus.md",
+            "memoria-bootstrap/docs/playbooks/online-source-research-review.md"
         ],
-        "stop_condition": "Tre slice T52 implementate e verificate; fixture offline passano; nessun dato reale/canonico modificato e nessun identificativo reale hardcoded."
+        "stop_condition": "Fixture offline e CLI producono relazioni tipizzate con provenance source/evidence, stati unreviewed, conflitti preservati e nessuna asserzione storica; gate mirato verde."
     },
     "verification": {
         "result": "passed",
-        "notes": "36 test, 60 sottocasi PASS; Ruff --select F PASS; git diff --check PASS. Ruff completo su file toccati segnala E501 preesistenti in codice/test legacy. Wizard usa metadati opzionali del catalogo; queue v1.1 compatibile e nuove preview v1.2. Nessun dato operativo o profilo canonico modificato.",
+        "notes": "Preview CLI CandidateEntityRelationshipSet pronta su fixture; i tre input sono hash-bound, i conflitti restano distinti, i link sono unreviewed e source_document_existence_verified/historical_fact_asserted restano false. 43 test e 13 subcases PASS, Ruff F-check PASS, diff check PASS. T55 resta bloccato dal supporto CLI per SourceDocument locale.",
         "tests": [
-            "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_candidate_profile_updates.py tests/test_reviewed_claim_profile_updates.py tests/test_candidate_evidence_claim_review.py tests/test_source_document_catalog.py -q",
-            "memoria-engine/.venv/Scripts/ruff.exe check --select F sui file modificati",
+            "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_candidate_entity_relationships.py tests/test_document_person_linking.py tests/test_document_place_linking.py tests/test_document_event_linking.py tests/test_memoria_cli_place_event_preview.py tests/test_entity_preview_review.py -q",
+            "memoria-engine/.venv/Scripts/ruff.exe check --select F sui file T56 modificati",
             "git diff --check"
         ],
         "documentation_touchpoints": [
+            "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
             "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
-            "memoria-bootstrap/docs/current-next-increment.md"
+            "memoria-bootstrap/docs/current-focus.md"
         ],
         "task_envelope": {
             "mode": "feature-slice",
@@ -59,22 +57,23 @@
                 "memoria-bootstrap"
             ],
             "read_set": [
-                "claims wizard e SourceDocument resolver",
-                "candidate profile updates mapping",
-                "test mirati T50/T51",
-                "roadmap T41/T49/T50/T51 e direzione pCloud"
+                "builder T48 Person/Place/Event candidate links e provenance",
+                "contract CLI document preview",
+                "roadmap T56 e fixture offline"
             ],
             "write_set": [
-                "claims review wizard/resolver e candidate profile updates",
-                "test mirati",
-                "roadmap master/technical/current-next",
-                "current-work.json"
+                "builder composito typed relationship preview",
+                "CLI documents relationship-preview",
+                "fixture/test offline e roadmap T56",
+                "planner",
+                "memoria-bootstrap/docs/current-focus.md",
+                "memoria-bootstrap/docs/playbooks/online-source-research-review.md"
             ],
-            "test_command": "pytest test_candidate_profile_updates.py test_reviewed_claim_profile_updates.py test_candidate_evidence_claim_review.py test_source_document_catalog.py; Ruff F-check; git diff --check",
+            "test_command": "pytest tests/test_candidate_entity_relationships.py tests/test_document_person_linking.py tests/test_document_place_linking.py tests/test_document_event_linking.py tests/test_memoria_cli_place_event_preview.py tests/test_entity_preview_review.py -q; Ruff F-check; git diff --check",
             "stop_conditions": [
-                "No real profile identifiers/URLs hardcoded.",
-                "No live research or canonical profile changes.",
-                "T41 and pCloud work remain separate."
+                "Solo relazioni SourceDocument-to-candidate entity da link espliciti.",
+                "Nessuna equivalenza o fatto storico inventato.",
+                "No real data, review simulation, catalog write or canonical mutation."
             ]
         }
     },
@@ -210,18 +209,22 @@
         "2026-11-14: T52a-c completati dopo review architetturale: wizard claim con contesto/provenienza generici e senza dati reali hardcoded; compatibilita queue v1.1 e nuove preview v1.2; mapping nome/cognome strutturati con conflitti espliciti. 36 test/60 sottocasi PASS, Ruff F-check e diff-check PASS. T41 resta il prossimo gate dopo T52; T27/T28 pCloud candidati separati per nuova applicazione.",
         "2026-11-14: priorita aggiornata su richiesta utente: continuare sviluppo motore memoria con T27/T28 pCloud (nuova applicazione disponibile); T41 OCR rinviato. T27 richiede definizione target diagnostico remoto e gestione token/log nel task envelope.",
         "2026-11-14: su indicazione utente T27/T28 pCloud e T41 OCR rinviati; nessun incremento non-OCR successivo gia' selezionato. I KPI T49 mancanti richiedono dati di sessioni future; Q2 resta opportunistico.",
-        "2026-11-14: utente conferma il rinvio di T27/T28 pCloud e T41 OCR. La sequenza documentata T53-T58 resta la direzione; T53 e' baseline read-only del workspace, candidato non avviato. Nessun task envelope aperto."
+        "2026-11-14: utente conferma il rinvio di T27/T28 pCloud e T41 OCR. La sequenza documentata T53-T58 resta la direzione; T53 e' baseline read-only del workspace, candidato non avviato. Nessun task envelope aperto.",
+        "2026-11-14: T53 baseline completata read-only; report t53-workspace-baseline-2026-11-14.md; data root raggiungibile, 60 profili caricati, hash indice diverso dal repo, ricevute Toni presenti ma persistenza catalogo non interrogata. T54 primo candidato; T41 e T27/T28 restano sospesi.",
+        "2026-11-14: T54 completato; builder deduplica solo collisioni semantiche equivalenti e conserva attempt_provenance. 12 test builder/CLI, 52 test compatibilità +42 subcases, Ruff F-check e diff check PASS. Roadmap T54 aggiornata.",
+        "2026-11-14: T55 fermato prima di produrre dossier: il catalogo non attesta gli ID locali/online T47 e manca il comando CLI per registrare un file locale generico come SourceDocument. PDF T47 non acquisito; nessuna ricerca live o scrittura. Report t55-bendini-pilot-readiness-2026-11-14.md. T56 avviato su fixture offline a partire dal gap di provenance/tipi relazionali.",
+        "2026-11-14: T56 completato; aggiunto relationship-preview typed da Person/Place/Event link-set con provenance e senza asserzioni storiche/catalog verification. 43 test +13 subcases, Ruff F-check, help CLI e diff check PASS. Guida, focus e roadmap aggiornati. T55 resta bloccato dal comando mancante di registrazione SourceDocument locale generico; nessuna ricerca o scrittura."
     ],
     "next_action": {
         "mode": "recalculate",
-        "description": "Alla prossima apertura, rivalidare e avviare T53 baseline read-only del workspace secondo docs/current-focus.md e la roadmap tecnica. T27/T28 pCloud e T41 OCR restano sospesi. T53 non e ancora avviato."
+        "description": "Delimitare il micro-incremento prerequisito per T55: registrazione preview/apply di un singolo file locale generico come SourceDocument, con hash, provenance e verifica idempotente. Non avviare nuove ricerche live; T27/T28 e T41 restano sospesi."
     },
     "routing": {
         "model": "gpt-6-luna",
         "agent": "parent",
         "tier": "low",
         "reasoning_effort": "low",
-        "rationale": "Fallback effettivo parent per microincrementi circoscritti con fixture mirate; il routing implementer Sol non era disponibile in-sessione, nessuna attribuzione non verificata.",
+        "rationale": "Fallback effettivo parent disponibile per incrementi; Sol/medium non disponibile nel contesto. La slice è implementata direttamente con gate mirato, nessuna attribuzione a un modello non usato.",
         "task_class": "implementation",
         "policy_version": "3.1",
         "trace": [
@@ -233,6 +236,42 @@
                 "at": "2026-11-14T16:16:47Z",
                 "tier": "low",
                 "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:40:53Z",
+                "tier": "low",
+                "reason": "T53 discovery-lite read-only; fallback parent secondo policy 3.1, nessuna delega necessaria."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:55:00Z",
+                "tier": "low",
+                "reason": "T54 implementazione circoscritta; fallback effettivo secondo policy 3.1."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:49:25Z",
+                "tier": "low",
+                "reason": "T55 discovery-lite su artifact esistenti e CLI read-only; fallback parent secondo policy 3.1."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:54:52Z",
+                "tier": "low",
+                "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
             }
         ]
     }

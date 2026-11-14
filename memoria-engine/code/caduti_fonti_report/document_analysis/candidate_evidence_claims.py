@@ -113,9 +113,9 @@ def build_source_report_candidate_claims(
     report_attempts = _report_attempt_ids(report)
     report_ref = {"path": str(report_json.resolve()), "sha256": hashlib.sha256(raw).hexdigest()}
     candidates = []
-    seen_claims: set[str] = set()
+    seen_claims: dict[str, dict[str, Any]] = {}
     profile_document_ids: set[str] = set()
-    excluded_claim_ids: list[str] = []
+    excluded_claim_ids: set[str] = set()
     for result_index, entry in enumerate(_report_list(profile, "results")):
         if _report_text(entry, "profile_id") != profile_id:
             raise ValueError("Result profile reference does not match the selected profile.")
@@ -150,9 +150,6 @@ def build_source_report_candidate_claims(
             claim_id = _report_text(claim, "claim_id")
             if (claim.get("@id") and claim["@id"] != claim_id) or (claim.get("profile_id") and claim["profile_id"] != profile_id):
                 raise ValueError("Claim identifiers or profile references disagree.")
-            if claim_id in seen_claims:
-                raise ValueError("Source report contains duplicate claim IDs.")
-            seen_claims.add(claim_id)
             if _report_text(claim, "subject_id") != profile_id:
                 raise ValueError("Claim subject_id does not match the selected profile.")
             document_id = _report_text(claim, "source_document_id")
@@ -173,11 +170,8 @@ def build_source_report_candidate_claims(
             if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1 or not math.isfinite(confidence):
                 raise ValueError("Claim confidence must be numeric and in [0, 1].")
             quote = _report_text(claim, "quote")
-            if document_id not in selected_document_set:
-                excluded_claim_ids.append(claim_id)
-                continue
             document_ref = {key: value for key, value in document.items() if key != "raw_text"}
-            candidates.append({
+            candidate = {
                 "@type": "CandidateEvidenceClaim", "@id": claim_id, "claim_id": claim_id,
                 "profile_id": profile_id, "subject_id": claim["subject_id"],
                 "source_document_id": document_id, "source_id": source_id, "source_url": url, "url": url,
@@ -191,7 +185,40 @@ def build_source_report_candidate_claims(
                                "source_document": document_ref, "source_url": url, "access_date": access_date,
                                "report_selected_attempt_ids": report_attempts, "result_selected_attempt_ids": attempts,
                                "matched_planned_attempt_id": matched_attempt},
-            })
+            }
+            fingerprint = _claim_semantic_fingerprint(candidate)
+            attempt_record = {
+                "result_index": result_index,
+                "report_selected_attempt_ids": report_attempts,
+                "selected_attempt_ids": attempts,
+                "matched_planned_attempt_id": matched_attempt,
+                "source_report_claim": claim,
+            }
+            attempt_identity = (matched_attempt, tuple(attempts))
+            existing = seen_claims.get(claim_id)
+            if existing is not None:
+                if existing["fingerprint"] != fingerprint:
+                    raise ValueError(f"Source report contains conflicting duplicate claim ID: {claim_id}.")
+                if attempt_identity in existing["attempt_identities"]:
+                    raise ValueError(f"Source report repeats claim ID within the same attempt: {claim_id}.")
+                existing["attempt_identities"].add(attempt_identity)
+                existing["attempt_records"].append(attempt_record)
+                candidate_index = existing.get("candidate_index")
+                if candidate_index is not None:
+                    _merge_attempt_provenance(candidates[candidate_index], existing["attempt_records"])
+            else:
+                seen_claims[claim_id] = {
+                    "fingerprint": fingerprint,
+                    "attempt_identities": {attempt_identity},
+                    "attempt_records": [attempt_record],
+                    "candidate_index": None,
+                }
+                if document_id in selected_document_set:
+                    seen_claims[claim_id]["candidate_index"] = len(candidates)
+                    _merge_attempt_provenance(candidate, [attempt_record])
+                    candidates.append(candidate)
+            if document_id not in selected_document_set:
+                excluded_claim_ids.add(claim_id)
     if selected_document_set - profile_document_ids:
         raise ValueError("Selected source document IDs must belong to documents of the selected report profile.")
     selection = {"selected_source_document_ids": selected_document_ids,
@@ -251,6 +278,42 @@ def _report_list(payload: Any, key: str) -> list[dict[str, Any]]:
 
 def _report_attempt_ids(payload: dict[str, Any]) -> list[str]:
     return _report_identifier_list(payload, "selected_attempt_ids", required=False)
+
+
+def _claim_semantic_fingerprint(candidate: dict[str, Any]) -> str:
+    semantic = {key: value for key, value in candidate.items()
+                if key not in {"selected_attempt_ids", "matched_planned_attempt_id"}}
+    provenance = dict(semantic["provenance"])
+    for key in ("result_index", "report_selected_attempt_ids", "result_selected_attempt_ids", "matched_planned_attempt_id"):
+        provenance.pop(key, None)
+    semantic["provenance"] = provenance
+    return json.dumps(semantic, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
+def _merge_attempt_provenance(candidate: dict[str, Any], records: list[dict[str, Any]]) -> None:
+    ordered = sorted(records, key=lambda item: (
+        item["matched_planned_attempt_id"], item["result_index"],
+        json.dumps(item["source_report_claim"], ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+    ))
+    candidate["attempt_provenance"] = ordered
+    candidate["selected_attempt_ids"] = sorted({
+        attempt_id
+        for record in ordered
+        for attempt_id in record["report_selected_attempt_ids"] + record["selected_attempt_ids"]
+    })
+    matched_attempt_ids = sorted({record["matched_planned_attempt_id"] for record in ordered
+                                  if record["matched_planned_attempt_id"]})
+    candidate["matched_planned_attempt_ids"] = matched_attempt_ids
+    candidate["matched_planned_attempt_id"] = matched_attempt_ids[0] if matched_attempt_ids else ""
+    candidate["provenance"]["result_index"] = min(record["result_index"] for record in ordered)
+    candidate["provenance"]["result_indexes"] = sorted({record["result_index"] for record in ordered})
+    candidate["provenance"]["report_selected_attempt_ids"] = sorted({
+        attempt_id for record in ordered for attempt_id in record["report_selected_attempt_ids"]
+    })
+    candidate["provenance"]["result_selected_attempt_ids"] = sorted({
+        attempt_id for record in ordered for attempt_id in record["selected_attempt_ids"]
+    })
+    candidate["provenance"]["matched_planned_attempt_ids"] = matched_attempt_ids
 
 
 def _report_identifier_list(payload: dict[str, Any], key: str, *, required: bool = True) -> list[str]:

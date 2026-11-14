@@ -160,6 +160,30 @@ Il CLI valida il catalogo in sola lettura, genera i file di preview e mostra il
 manifest, gli ID e i conteggi. Usare il manifest stampato dal comando; non
 chiedere all'utente di aprire o modificare gli artifact JSON.
 
+Quando sono già disponibili i tre set di link candidati, la vista tipizzata
+comune si compone senza inferenze aggiuntive:
+
+```powershell
+memoria documents relationship-preview `
+  --person-links-json <candidate-document-person-links> `
+  --place-links-json <candidate-document-place-links> `
+  --event-links-json <candidate-document-event-links> `
+  --output-dir <nuova-directory-preview>
+```
+
+La vista distingue `identity_match_candidate` dai link di menzione Place/Event,
+conserva provenienza del link e contesto-evidenza e lascia i candidati
+`unreviewed`. Gli identificativi del documento non sono verificati nel catalogo
+da questo compositore; un link a HistoricalEvent non afferma partecipazione
+personale né un fatto storico. Le collisioni restano visibili come candidati
+separati.
+
+`CandidateEntityRelationshipManifest` è una vista riepilogativa, non una
+receipt di review e non è attualmente accettato da
+`documents preview-review-wizard`. Lasciare il set `unreviewed`; per Place/Event
+usare il manifest specifico prodotto dai rispettivi preview. Non dichiarare
+review completata finché non esiste una receipt riferita agli artifact esatti.
+
 Prima di passare alla review, spiegare in breve cosa è stato generato, dove si
 trova la preview e che cosa resta da decidere. Le candidate e i conteggi non
 sono conferme storiche; link e aggiornamenti non modificano l'entità canonica.

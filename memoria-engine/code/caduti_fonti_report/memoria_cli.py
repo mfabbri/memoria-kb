@@ -14,7 +14,6 @@ import yaml
 
 from caduti_fonti_report.memoria_cli_diagnostic_formatters import (
     print_count_block as _print_count_block,
-    print_count_markdown as _print_count_markdown,
     print_inventory_markdown as _print_inventory_markdown,
     print_inventory_text as _print_inventory_text,
     print_profiles_status_markdown as _print_profiles_status_markdown,
@@ -75,6 +74,7 @@ from caduti_fonti_report.document_analysis.ocr_hunspell_catalog import export_hu
 from caduti_fonti_report.document_analysis.preview_payloads import write_json
 from caduti_fonti_report.document_analysis.event_preview_pipeline import run_historical_event_preview
 from caduti_fonti_report.document_analysis.place_preview_pipeline import run_place_preview
+from caduti_fonti_report.document_analysis.candidate_entity_relationships import build_candidate_entity_relationships
 from caduti_fonti_report.document_analysis.entity_preview_review import (
     build_entity_preview_review_receipt,
     build_entity_preview_review_receipt_from_decisions,
@@ -1942,6 +1942,22 @@ def _command_documents_event_preview(args: argparse.Namespace) -> int:
     print(json.dumps({"manifest": str(Path(args.output_dir) / "manifest.json"),
                       "event_id": manifest["event_id"], "counts": manifest["counts"],
                       "preview_only": manifest["preview_only"]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_relationship_preview(args: argparse.Namespace) -> int:
+    try:
+        result = build_candidate_entity_relationships(
+            person_links_json=Path(args.person_links_json), place_links_json=Path(args.place_links_json),
+            event_links_json=Path(args.event_links_json), output_dir=Path(args.output_dir),
+        )
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+        print(f"Errore documents relationship-preview: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps({"manifest": str(Path(args.output_dir) / "manifest.json"),
+                      "relationship_count": result["relationship_count"],
+                      "source_document_count": result["source_document_count"],
+                      "preview_only": result["preview_only"]}, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -3991,6 +4007,13 @@ def build_parser() -> argparse.ArgumentParser:
         for argument, help_text in specific_args:
             preview.add_argument("--" + argument, required=True, help=help_text)
         preview.set_defaults(handler=handler)
+    relationship_preview = documents_subparsers.add_parser(
+        "relationship-preview", help="Compone relazioni candidate tipizzate da link Person/Place/Event espliciti.")
+    relationship_preview.add_argument("--person-links-json", required=True, help="CandidateDocumentPersonLinkSet esplicito.")
+    relationship_preview.add_argument("--place-links-json", required=True, help="CandidateDocumentPlaceLinkSet esplicito.")
+    relationship_preview.add_argument("--event-links-json", required=True, help="CandidateDocumentEventLinkSet esplicito.")
+    relationship_preview.add_argument("--output-dir", required=True, help="Directory nuova o preview identica preesistente.")
+    relationship_preview.set_defaults(handler=_command_documents_relationship_preview)
     review_template = documents_subparsers.add_parser(
         "preview-review-template", help="Genera un template vuoto legato agli artifact di preview Place/Event.")
     review_template.add_argument("--manifest", required=True, help="Manifest hash-bound Place/Event preview.")

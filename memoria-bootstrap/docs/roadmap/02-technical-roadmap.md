@@ -43,7 +43,7 @@ Usare `docs/current-focus.md` per lo stato breve; questa roadmap è il backlog.
   due documenti potenziali Bendini e del catalogo online Toni, gap per T54/T55.
   Se data root non disponibile, esito `blocked` con prerequisito esatto.
 
-### T54 — Claims-build multi-attempt idempotente (P0, da fare)
+### T54 — Claims-build multi-attempt idempotente (P0, completato 2026-11-14)
 
 - **Input:** comportamento T51/T49 e fixture che replicano due attempt della
   stessa pagina/documento, senza copiare dati personali nel repository.
@@ -54,7 +54,13 @@ Usare `docs/current-focus.md` per lo stato breve; questa roadmap è il backlog.
   doppio attempt equivalente; collisioni incompatibili falliscono con
   diagnosi; test CLI/fixture offline e compatibilità dei manifest passano.
 
-### T55 — Dossier Bendini da fonti online e offline (P0, da fare)
+Evidenza di chiusura 2026-11-14: `claims-build` accorpa claim con ID e payload
+semantico identici, unisce attempt/matched-attempt e conserva ogni claim e indice
+risultato in `attempt_provenance`; collisioni o ripetizioni nello stesso attempt
+falliscono prima di creare output. Fixture sintetiche e CLI installata passano;
+manifest preesistenti restano leggibili e il formato non richiede migrazione.
+
+### T55 — Dossier Bendini da fonti online e offline (P0, bloccato: registrazione SourceDocument locale)
 
 - **Input:** profilo e materiale T47 effettivamente esistenti. Il PDF
   individuato in T47 non è automaticamente un `SourceDocument`: acquisirlo o
@@ -66,13 +72,29 @@ Usare `docs/current-focus.md` per lo stato breve; questa roadmap è il backlog.
   confronto multi-fonte e feedback tracciato, senza patch canonica automatica.
   Se manca review umana, registrare `awaiting_review` senza inventarla.
 
-### T56 — Relazioni candidate fra entità (P1, da fare)
+Verifica di prerequisito 2026-11-14: T47 registra che gli ID del DOCX e della
+pagina online non sono nel catalogo operativo; il PDF è rimasto SearchResult.
+La CLI non dispone di registrazione preview/apply di un file locale generico
+nel catalogo `SourceDocument` (il comando locale esistente gestisce immagini).
+Nessuna nuova ricerca o registrazione avviata. Dettaglio e perimetro minimo
+della capacità mancante: `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md`.
+
+### T56 — Relazioni candidate fra entità (P1, completato 2026-11-14)
 
 - **Input:** Place, HistoricalEvent, PersonResearchProfile e builder T48.
 - **Azione:** definire relazioni candidate tipizzate e provenance source-level
   e evidence-level, separando entity mentions, identity match e fatto storico.
 - **DoD:** fixture offline persona-luogo-evento con evidenza e review,
   conflitti mantenuti e CLI di preview (se necessaria) con test di regressione.
+
+Evidenza di chiusura 2026-11-14: `memoria documents relationship-preview`
+compone i link candidati espliciti in `CandidateEntityRelationshipSet`, con
+relazioni documento-riferimento/persona, luogo ed evento tipizzate, hash del
+link-set, riferimenti a mention/chunk/segment/context e stato `unreviewed`.
+La relazione persona è classificata come identity-match candidate; Place/Event
+restano menzioni. I conflitti restano distinti; catalog verification e fatti
+storici/partecipazione non sono asseriti. Gate su fixture e CLI: 43 test e 13
+sottocasi PASS, Ruff F-check e diff check PASS.
 
 ### T57 — Memoria di ricerca incrementale (P1, da fare)
 

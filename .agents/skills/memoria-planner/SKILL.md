@@ -29,6 +29,10 @@ description: Gestisci il planner persistente all'avvio/chiusura di una slice, co
 5. Dopo la sostituzione esegui
    `memoria-bootstrap/planning/validate-codex-model-routing.py` con `jsonschema`
    installato. Se la validazione è skipped, non considerarla riuscita.
+6. Controlla il diff del planner dopo la sostituzione: devono cambiare solo
+   campi della slice corrente e la nuova nota. Mantieni indentazione e
+   codifica esistenti; se la riserializzazione riformatta lo storico, riparti
+   dal backup byte-exact e applica una patch più circoscritta.
 
 ## Chiusura
 

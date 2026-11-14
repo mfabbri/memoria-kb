@@ -12,8 +12,11 @@ quando cambia una priorità o si completa una milestone.
   memoria di ricerca. Misurare esiti reali, non quantità di CLI o connettori.
 - **Sospesi senza data:** T41 OCR formale e T27/T28 pCloud. Non selezionarli
   automaticamente; restano backlog differito fino a nuova decisione utente.
-- **MVP finanziatori:** T29-T33 chiusi. T34/T34b e T45-T52 chiusi secondo gli
+- **MVP finanziatori:** T29-T33 chiusi. T34/T34b e T45-T54/T56 chiusi secondo gli
   artifact e i gate registrati. Nessuna nuova golden run come prerequisito.
+- **Blocco operativo:** T55 richiede registrazione CLI di SourceDocument da un
+  file locale generico; il comando disponibile gestisce immagini, OCR o fonti
+  online. Il PDF Bendini di T47 resta SearchResult e non è stato acquisito.
 - **Dati veri:** fuori da Git. Prima di agire su documenti/profili reali,
   verificare la disponibilità del data root operativo e il consenso sul perimetro.
 
@@ -21,29 +24,29 @@ quando cambia una priorità o si completa una milestone.
 
 | ID | Prio | Obiettivo e criterio di uscita |
 |---|---|---|
-| T53 | P0 | Baseline read-only del data root reale vs indici e catalogo dichiarati; inventario gap e prove riproducibili, nessuna modifica canonica. |
-| T54 | P0 | Deduplica multi-attempt in `claims-build`: accorpa soltanto claim effettivamente equivalenti conservando tutti gli attempt; rifiuta ID collision incoerenti; fixture e test CLI. |
-| T55 | P0 | Pilot Bendini: collegare almeno due documenti identificabili online/offline, confrontare claim, mostrare conflitti e review candidate, dossier unico senza canonizzazione. |
-| T56 | P1 | Relazioni candidate Person/Place/HistoricalEvent tipizzate, con source document, evidenza e review; nessuna equivalenza inventata. |
+| T53 | P0 | Completato 2026-11-14: baseline read-only; rapporto in `docs/reports/t53-workspace-baseline-2026-11-14.md`. |
+| T54 | P0 | Completato 2026-11-14: `claims-build` multi-attempt idempotente, provenance conservata e collisioni incompatibili rifiutate. |
+| T55 | P0 | Bloccato: manca una CLI preview/apply per registrare file locali generici come `SourceDocument`; dettaglio in `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md`. |
+| T56 | P1 | Completato 2026-11-14: preview tipizzata documento-riferimento/Person/Place/Event; identity match distinto da menzione e fatto storico. |
 | T57 | P1 | Rendere recuperabili in sessioni successive evidenze, decisioni e feedback, con vista consolidata e applicazione canonica soltanto autorizzata/auditata. |
 | T58 | P2 | Certificare tre famiglie/fonte già nel registry sul percorso end-to-end con fixture, prove e stati `no_results` documentati. |
 
-**Dipendenze:** T53 -> T54 -> T55; T56 e T57 si appoggiano ai gap misurati da
-T55; T58 dopo il primo dossier operativo. I task T54-T58 sono roadmap **non
-implementazione già avvenuta**. Eseguire solo il primo incremento non concluso
-la cui dipendenza è soddisfatta e che resta allineato alla decisione utente.
+**Dipendenze:** T53 -> T54 -> T55; T56 è chiuso sulle fixture software e T57
+resta dipendente dal dossier T55. T58 viene dopo il primo dossier operativo.
+Prima di riprendere T55 serve delimitare il micro-incremento CLI per registrare
+un SourceDocument locale esplicito con preview/apply, hash e verifica
+idempotente. T27/T28 e T41 restano sospesi.
 
-## T53: primo incremento selezionabile (non già avviato)
+## Evidenze T53-T56
 
-- Read-only: confrontare profili e indice canonico nel data root con i file
-  distribuiti dal repo, inventariare catalogo `SourceDocument`, ricerca Bendini
-  T47 e report Toni T49. Contrassegnare artefatti non disponibili, non inventarli.
-- Output: matrice `presente/verificato/mancante/non accessibile`, hash/ID delle
-  prove accessibili, gap reali per T54/T55 e rischio su futuri apply.
-- Gate: nessuna scrittura sul data root, nessuna query live, differenze e comandi
-  di verifica riportati; test solo se cambiano script o contratti.
-- Non correggere i 57 profili copiati dal vecchio ZIP come fossero canonici:
-  la migrazione effettiva 2026-11-08 è attestata nel data root esterno.
+- Rapporti: `docs/reports/t53-workspace-baseline-2026-11-14.md` e
+  `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md`.
+- Il data root reale resta autoritativo per profili e catalogo; la copia indice
+  nel repository non va usata per correggere o sostituire dati operativi.
+- T54 deduplica solo a parità di ID e payload semantico; non deduplica per solo
+  valore.
+- T56 compone link candidati con `memoria documents relationship-preview`;
+  la preview non verifica l'esistenza del SourceDocument nel catalogo.
 
 ## Note per T54 e T55
 
