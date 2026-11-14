@@ -2,7 +2,6 @@ name = "mmr_docs_editor"
 description = "Editor per modifiche semplici a documentazione, planner e configurazione agent."
 model = "gpt-6-luna"
 model_reasoning_effort = "low"
-sandbox_mode = "workspace-write"
 developer_instructions = """
 Modifica solo documentazione, planner o configurazione agent delimitati dal task envelope.
 Non toccare codice runtime, dati reali, claim, profili canonici o pipeline.

@@ -54,6 +54,8 @@ def _build_review_queue(*, claims_json: Path, source_documents_db: Path) -> dict
             "person_candidate_id": _optional_text(claim, "person_candidate_id"),
             "source_id": claim["source_id"],
             "source_document_id": claim["source_document_id"],
+            "source_document_title": "",
+            "source_document_url": "",
             "candidate": {"field": claim["field"], "value": claim["value"],
                           "normalized_value": _optional_text(claim, "normalized_value")},
             "question": f"Accettare come candidato {claim['field']} = {claim['value']} per {profile_id}?",
@@ -66,14 +68,20 @@ def _build_review_queue(*, claims_json: Path, source_documents_db: Path) -> dict
             "source_claim": claim,
         })
     document_ids = {item["source_document_id"] for item in items}
-    catalog_reference = resolve_source_documents(source_documents_db, document_ids)
+    catalog_reference = resolve_source_documents(source_documents_db, document_ids, include_metadata=True)
     if catalog_reference["resolved_document_ids"] != sorted(document_ids):
         raise ValueError("Claim SourceDocument IDs must match catalog IDs exactly.")
+    catalog_documents = {document["document_id"]: document for document in catalog_reference.get("documents", [])}
+    catalog_manifest_reference = {key: value for key, value in catalog_reference.items() if key != "documents"}
+    for item in items:
+        document = catalog_documents.get(item["source_document_id"], {})
+        item["source_document_title"] = str(document.get("title") or "")
+        item["source_document_url"] = str(document.get("url") or "")
     return {
         "@type": "CandidateEvidenceClaimReviewQueue",
         "claims_input": input_ref,
         "review_status": "unreviewed",
-        "source_documents_catalog": catalog_reference,
+        "source_documents_catalog": catalog_manifest_reference,
         "source_document_existence_verified": True,
         "items": items,
         **_review_only_flags(),
@@ -92,7 +100,7 @@ def build_candidate_evidence_claim_review(
     markdown_path = output_dir / "candidate_claim_review_queue.md"
     manifest = {
         "@type": "CandidateEvidenceClaimReviewManifest",
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "claims_input": input_ref,
         "artifacts": {
             "review_queue": {"path": str(queue_path), "sha256": _digest(queue_bytes)},
@@ -145,21 +153,33 @@ def run_candidate_evidence_claim_review_wizard(
     decisions = []
     choices = {"a": "accept_candidate", "r": "reject_candidate", "e": "needs_more_evidence"}
     for index, item in enumerate(items, start=1):
-        output_fn(f"\n[{index}/{len(items)}] {item['question']}")
-        output_fn(f"Claim: {item['claim_id']}; profilo: {item['profile_id']}")
+        output_fn(f"\n[{index}/{len(items)}] CLAIM CANDIDATO")
+        output_fn(f"Profilo a cui il report propone di collegare il dato: {item['profile_id']}")
+        output_fn(f"Dato proposto ({_explain_field(item['candidate']['field'])}): {item['candidate']['value']}")
+        output_fn(f"Claim: {item['claim_id']}")
         output_fn(f"Fonte: {item['source_id']}; SourceDocument: {item['source_document_id']}")
+        if item.get("source_document_title"):
+            output_fn(f"Scheda/documento che riporta il dato: {item['source_document_title']}")
+        if item.get("source_document_url"):
+            output_fn(f"URL della scheda: {item['source_document_url']}")
+        person_candidate_id = item.get("person_candidate_id")
+        if person_candidate_id and person_candidate_id != item["profile_id"]:
+            output_fn(f"Record persona indicato dal claim: {person_candidate_id}")
         source_claim = item["source_claim"]
         provenance = source_claim.get("provenance") if isinstance(source_claim.get("provenance"), dict) else {}
         for key in ("source_url", "raw_file", "weak_segment_id", "chunk_id"):
             reference = source_claim.get(key) or provenance.get(key)
             if reference:
                 output_fn(f"{key}: {reference}")
-        output_fn(f"Metodo: {item['extraction_method']}; confidence: {item['confidence']}")
+        if item.get("person_candidate_id") and item["person_candidate_id"] != item["profile_id"]:
+            output_fn("ATTENZIONE: il claim indica un record persona diverso dal profilo. Il report propone il collegamento, ma il catalogo non verifica l'identita.")
+        output_fn(f"Estrazione: {item['extraction_method']}; confidenza tecnica: {item['confidence']} (non è una valutazione storica)")
         output_fn("Evidenza: " + (item["evidence_span"] or item["context"]))
         if item["context"] and item["context"] != item["evidence_span"]:
             output_fn("Contesto: " + item["context"])
         while True:
-            answer = ask("Decisione: [a] accetta candidato / [r] respinge / [e] altra evidenza / [q] annulla: ").strip().lower()
+            output_fn("Effetto: [a] associa questo valore al profilo solo come candidato; [r] lo esclude dal profilo; [e] lo lascia in sospeso per altra evidenza. Nessuna scelta crea un fatto canonico.")
+            answer = ask("Dato questo contesto, quale decisione vuoi registrare? [a] candidato / [r] respingi / [e] altra evidenza / [q] annulla: ").strip().lower()
             if answer == "q":
                 return None
             if answer in choices:
@@ -200,8 +220,10 @@ def run_candidate_evidence_claim_review_wizard(
 def _load_review_preview(manifest_json: Path) -> tuple[dict[str, Any], str, dict[str, Any]]:
     raw = manifest_json.read_bytes()
     manifest = json.loads(raw)
-    if not isinstance(manifest, dict) or manifest.get("@type") != "CandidateEvidenceClaimReviewManifest" or manifest.get("schema_version") != "1.1":
-        raise ValueError("Expected a catalog-bound CandidateEvidenceClaimReviewManifest v1.1.")
+    if (not isinstance(manifest, dict)
+            or manifest.get("@type") != "CandidateEvidenceClaimReviewManifest"
+            or manifest.get("schema_version") not in {"1.1", "1.2"}):
+        raise ValueError("Expected a catalog-bound CandidateEvidenceClaimReviewManifest v1.1 or v1.2.")
     for key, value in {**_review_only_flags(), "source_document_existence_verified": True}.items():
         if manifest.get(key) is not value:
             raise ValueError(f"Review manifest has an invalid {key} flag.")
@@ -212,6 +234,10 @@ def _load_review_preview(manifest_json: Path) -> tuple[dict[str, Any], str, dict
     if not isinstance(catalog, dict) or not isinstance(catalog.get("path"), str) or not Path(catalog["path"]).is_absolute():
         raise ValueError("Review manifest requires an absolute SourceDocument catalog reference.")
     expected_queue = _build_review_queue(claims_json=claims_path, source_documents_db=Path(catalog["path"]))
+    if manifest["schema_version"] == "1.1":
+        for item in expected_queue["items"]:
+            item.pop("source_document_title", None)
+            item.pop("source_document_url", None)
     if catalog != expected_queue["source_documents_catalog"]:
         raise ValueError("SourceDocument catalog changed or referenced IDs differ from the preview.")
     artifacts = manifest.get("artifacts")
@@ -272,6 +298,22 @@ def _optional_text(payload: dict[str, Any], key: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"Candidate claim {key} must be text.")
     return value.strip()
+
+
+def _explain_field(field: str) -> str:
+    explanations = {
+        "archive.series": "serie archivistica: sezione/serie del catalogo in cui è descritta la scheda",
+        "archive.recognition_commission": "commissione che ha riconosciuto la qualifica",
+        "partisan.recognition_status": "qualifica partigiana riconosciuta",
+        "formation.name": "formazione partigiana indicata nella scheda",
+        "birth.municipality": "comune di nascita",
+        "birth.province": "provincia di nascita",
+        "person.full_name": "nominativo riportato nella scheda",
+        "person.given_name": "nome riportato nella scheda",
+        "person.family_name": "cognome riportato nella scheda",
+    }
+    return explanations.get(field, field)
+
 
 
 def _json_bytes(payload: dict[str, Any]) -> bytes:

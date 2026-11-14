@@ -6,7 +6,9 @@ import sqlite3
 from pathlib import Path
 
 
-def resolve_source_documents(catalog_db: Path, document_ids: set[str]) -> dict[str, object]:
+def resolve_source_documents(
+    catalog_db: Path, document_ids: set[str], *, include_metadata: bool = False,
+) -> dict[str, object]:
     """Verify document IDs in source_documents without creating or changing the database."""
     if not catalog_db.is_file():
         raise ValueError("SourceDocument catalog must be an existing SQLite file.")
@@ -25,13 +27,23 @@ def resolve_source_documents(catalog_db: Path, document_ids: set[str]) -> dict[s
                 raise ValueError("SourceDocument catalog lacks document_id column.")
             requested = sorted(value.strip() for value in document_ids if value.strip())
             found: set[str] = set()
+            documents: dict[str, dict[str, str]] = {}
+            metadata_columns = [column for column in ("title", "url") if column in columns]
+            selected_columns = ["document_id", *metadata_columns]
+            projection = ", ".join(f'"{column}"' for column in selected_columns)
             for offset in range(0, len(requested), 500):
                 batch = requested[offset:offset + 500]
                 if batch:
                     placeholders = ",".join("?" for _ in batch)
-                    found.update(str(row[0]) for row in connection.execute(
-                        f"SELECT document_id FROM source_documents WHERE document_id IN ({placeholders})", batch
-                    ))
+                    for row in connection.execute(
+                        f"SELECT {projection} FROM source_documents WHERE document_id IN ({placeholders})", batch
+                    ):
+                        document_id = str(row[0])
+                        found.add(document_id)
+                        documents[document_id] = {
+                            column: str(value) if value is not None else ""
+                            for column, value in zip(selected_columns, row, strict=True)
+                        }
         finally:
             connection.close()
     except sqlite3.Error as error:
@@ -47,6 +59,9 @@ def resolve_source_documents(catalog_db: Path, document_ids: set[str]) -> dict[s
     if wal_raw is not None:
         digest.update(b"\0WAL\0")
         digest.update(wal_raw)
-    return {"path": str(resolved_path), "sha256": digest.hexdigest(), "resolved_document_ids": requested,
-            "database_sha256": hashlib.sha256(database_raw).hexdigest(),
+    result = {"path": str(resolved_path), "sha256": digest.hexdigest(), "resolved_document_ids": requested,
+              "database_sha256": hashlib.sha256(database_raw).hexdigest(),
             "wal_sha256": hashlib.sha256(wal_raw).hexdigest() if wal_raw is not None else None}
+    if include_metadata:
+        result["documents"] = [documents[document_id] for document_id in requested]
+    return result

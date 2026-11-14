@@ -15,6 +15,8 @@ from .person_profiles import profile_from_jsonld
 
 PROFILE_FIELD_PATHS = {
     "person.full_name": ("identity", "canonical_name"),
+    "person.given_name": ("identity", "given_name"),
+    "person.family_name": ("identity", "family_name"),
     "birth.date": ("birth", "date"),
     "death.date": ("death", "date"),
 }
@@ -25,6 +27,8 @@ LIST_PROFILE_FIELDS = {
 
 UPDATE_PATHS = {
     "person.full_name": "/identity/canonical_name",
+    "person.given_name": "/identity/given_name",
+    "person.family_name": "/identity/family_name",
     "birth.date": "/birth/date",
     "death.date": "/death/date",
     "death.cause": "/verified_facts/death.cause",

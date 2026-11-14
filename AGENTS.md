@@ -30,9 +30,11 @@ sui file. Procedura completa: `memoria-bootstrap/docs/playbooks/online-source-re
 
 ## Incrementi
 
-- Leggi `memoria-bootstrap/planning/current-work.json` per scoprire eventuale
-  lavoro persistente; se concluso, usa `$memoria-roadmap-selector` per scegliere
-  dalle sezioni post-MVP delle roadmap, senza leggere tutta la cronologia.
+- Per lavoro guidato dalla roadmap, apri `memoria-bootstrap/docs/current-focus.md`
+  e lo stato breve con `python memoria-bootstrap/planning/current-work-summary.py`;
+  leggi `current-work.json` integrale solo quando occorre modificarlo o
+  verificare un dettaglio storico. Se concluso usa `$memoria-roadmap-selector`.
+  Priorità T53-T58; OCR T41 e pCloud T27/T28 sospesi.
 - Un micro-incremento verificabile alla volta: obiettivo, write set, prova
   mirata e stop condition. `memoria-engine` contiene runtime e test;
   `memoria-bootstrap` pianificazione; `memoria-sources` registry;
@@ -55,7 +57,7 @@ review indipendente ad alto rischio o contesto che giustifica l'overhead.
 Registra disponibilita' e fallback espliciti; i nomi del config non garantiscono
 l'accesso al modello. Passa riferimenti a file e risultati, non dump integrali.
 
-Per task OCR apri soltanto la sezione pertinente di
+Solo su richiesta esplicita di lavoro OCR, apri la sezione pertinente di
 `memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md`;
 preflight Ollama WSL solo se e' prevista inferenza VLM. La soglia T42
 provisional `1.0` non e' discriminante, non abilita `machine_pass`, claim o

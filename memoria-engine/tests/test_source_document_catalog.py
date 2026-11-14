@@ -15,6 +15,18 @@ from caduti_fonti_report.document_analysis.source_document_catalog import resolv
 
 
 class SourceDocumentCatalogTests(unittest.TestCase):
+    def test_optional_title_and_url_metadata_is_returned_only_when_requested(self) -> None:
+        path = self._catalog_path()
+        with closing(sqlite3.connect(path)) as connection:
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+            connection.execute("INSERT INTO source_documents VALUES ('doc:1', 'Scheda sintetica', 'https://example.invalid/doc:1')")
+            connection.commit()
+        plain = resolve_source_documents(path, {"doc:1"})
+        enriched = resolve_source_documents(path, {"doc:1"}, include_metadata=True)
+        self.assertNotIn("documents", plain)
+        self.assertEqual(enriched["documents"], [{"document_id": "doc:1", "title": "Scheda sintetica", "url": "https://example.invalid/doc:1"}])
+        self.assertEqual({key: value for key, value in plain.items()}, {key: value for key, value in enriched.items() if key != "documents"})
+
     def test_reports_database_and_wal_digests_from_read_only_resolution(self) -> None:
         path = self._catalog_path()
         with closing(sqlite3.connect(path)) as connection:

@@ -1,18 +1,17 @@
 # Codex Roadmap Task Selector — post-MVP
 
-Scegliere un incremento solo quando il planner corrente e' chiuso o invalido.
-Il sommario in `memoria-bootstrap/docs/current-next-increment.md` e la sezione
-"Post-MVP" di `docs/roadmap/02-technical-roadmap.md` sono i primi entrypoint.
+**Fonte breve:** `memoria-bootstrap/docs/current-focus.md`.
+**Fonte per i gate:** sezione T53-T58 della roadmap tecnica.
 
-Priorita': T45 igiene/contratto end-to-end -> T46 OCR/documenti -> T47
-prima run online+offline -> T48 entita' luogo/evento -> T49 feedback/evaluation.
-I gate T41 OCR formali e Q2 refactor restano paralleli e non bloccano il
-percorso integrato, salvo sicurezza o regressioni documentate.
+- Prima verificare se il planner contiene un task aperto coerente. Usare
+  `planning/current-work-summary.py`, non stampare 12 MB di note.
+- Se chiuso, selezionare una slice che avanza verso un dossier reale
+  multi-fonte, con prove verificabili e dipendenze soddisfatte.
+- Sequenza proposta: T53 baseline read-only; T54 deduplica multi-attempt;
+  T55 Bendini; T56 relazioni; T57 memoria; T58 certificazione fonti.
+- Non riprendere T29-T52; OCR T41 e pCloud T27/T28 sono sospesi. Q2 solo se
+  il gap impedisce il percorso attivo.
+- Nessuna ricerca live senza source_id, strategia e attempt autorizzati;
+  nessuna decisione storica o scrittura canonica automatica.
 
-Non riaprire T29-T34b: la golden run e il pacchetto finanziatori sono chiusi.
-Non introdurre fonti indiscriminatamente: selezionare una fonte online gia'
-registrata e un documento offline identificabile. Una search result generica
-non genera claim. L'aggiornamento del profilo resta preview con review umana.
-
-Usa ricerca mirata (`rg`) anziche' leggere i documenti per intero. Restituisci
-ID, dipendenze, confine dei file, test minimo, prova attesa e stop condition.
+Output: ID, dipendenze, write set, prove, test, criterio di stop e limiti.

@@ -2,7 +2,6 @@ name = "mmr_scanner"
 description = "Ricognizione read-only, circoscritta e token-efficient del repository."
 model = "gpt-6-luna"
 model_reasoning_effort = "low"
-sandbox_mode = "read-only"
 developer_instructions = """
 Esegui soltanto la ricognizione richiesta dal parent.
 Usa ricerca per path/simbolo e letture mirate; evita scansioni o dump estesi.

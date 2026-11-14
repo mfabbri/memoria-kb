@@ -9,16 +9,91 @@ aggiungere nuova logica applicativa. Ogni milestone deve essere piccola,
 verificabile e allineata alla roadmap MVP.
 
 
-## Sequenza post-MVP attiva — decisione del 2026-11-01
+## Stato della sequenza post-MVP - aggiornato 2026-11-14
 
-Le milestone T29-T33 e T34/T34b sono chiuse. La direzione primaria e' T45-T49:
-consolidare l'interfaccia fra OCR, documenti, evidenze, entita' e feedback; non
-proseguire indefinitamente il solo tuning OCR. T41 mantiene il gate statistico
-separato (reference adjudicate e holdout indipendente); il pilot provisional
-T42 a dieci pagine e' chiuso, ma il cutoff 1.0 e' non discriminante. I gate
-T45/T46 e la prima run T47 sono chiusi. T48 ha completato il percorso offline
-Place/HistoricalEvent fino alla registrazione di decisioni umane hash-bound;
-T49 resta aperto per misure reali comparabili.
+T45-T51 hanno completato le rispettive implementazioni software e i cicli
+operativi documentati. T49-E chiude il ciclo auditabile della ricerca Toni
+autorizzata e della relativa evaluation; alcuni KPI T49 (attribuzione claim,
+conflitti, token/costi e confronto tra sessioni) restano non misurati. T50/T51
+forniscono il percorso di review claim e candidate update preview; l'uso ha
+rilevato hardening necessario su contesto del wizard, compatibilita' delle queue
+e riconciliazione dei campi nome/cognome.
+
+T52a-c sono stati completati il 2026-11-14. Su decisione successiva,
+T27/T28 pCloud e T41 OCR sono sospesi. È definita la nuova sequenza T53-T58
+(qui sotto), con T53 primo incremento da selezionare e verificare, **non già
+avviato**. I KPI T49 non misurati richiedono dati da sessioni future; Q2 resta
+opportunistico, non una priorità autonoma. Nessuna modifica canonica è autorizzata.
+
+## Nuova sequenza integrata T53-T58 — decisione 2026-11-14
+
+**Direzione:** priorità al percorso documentale reale, senza nuova golden run.
+T41 OCR e T27/T28 pCloud sono sospesi fino a richiesta esplicita dell'utente.
+Ogni avanzamento distingue implementazione, test sintetici e prove su data root.
+Usare `docs/current-focus.md` per lo stato breve; questa roadmap è il backlog.
+
+### T53 — Baseline read-only del workspace (P0, da fare)
+
+- **Input:** data root canonico accessibile, indice profili, catalogo SQLite,
+  artifact T47 Bendini e T49 Toni, registry attuale. Il repo ZIP non sostituisce
+  lo stato del data root dopo la migrazione del 2026-11-08.
+- **Azione:** inventario con hash/ID e prova CLI ove pertinente, senza nuovo
+  scraping, senza scritture a canonici e senza migrazioni di storage.
+- **DoD:** rapporto presente/mancante/non accessibile; esistenza verificata dei
+  due documenti potenziali Bendini e del catalogo online Toni, gap per T54/T55.
+  Se data root non disponibile, esito `blocked` con prerequisito esatto.
+
+### T54 — Claims-build multi-attempt idempotente (P0, da fare)
+
+- **Input:** comportamento T51/T49 e fixture che replicano due attempt della
+  stessa pagina/documento, senza copiare dati personali nel repository.
+- **Azione:** distinguere duplicati semanticamente equivalenti dalle collisioni
+  di ID non equivalenti. Conservare attempt, fonte, quote, ID e audit di ogni
+  provenienza; non raggruppare fonti diverse solo per valore coincidente.
+- **DoD:** `memoria review claims-build` produce un set deterministico dal
+  doppio attempt equivalente; collisioni incompatibili falliscono con
+  diagnosi; test CLI/fixture offline e compatibilità dei manifest passano.
+
+### T55 — Dossier Bendini da fonti online e offline (P0, da fare)
+
+- **Input:** profilo e materiale T47 effettivamente esistenti. Il PDF
+  individuato in T47 non è automaticamente un `SourceDocument`: acquisirlo o
+  registrarlo tramite CLI solo se autorizzato e identificabile.
+- **Azione:** combinare almeno due documenti identificabili distinti, generare
+  claim candidati e vista unica con concordanze, divergenze, gap, provenance
+  e decisioni di review reali solo quando esplicitamente espresse.
+- **DoD:** dossier/dettaglio esaminabile nella stessa run, con almeno un
+  confronto multi-fonte e feedback tracciato, senza patch canonica automatica.
+  Se manca review umana, registrare `awaiting_review` senza inventarla.
+
+### T56 — Relazioni candidate fra entità (P1, da fare)
+
+- **Input:** Place, HistoricalEvent, PersonResearchProfile e builder T48.
+- **Azione:** definire relazioni candidate tipizzate e provenance source-level
+  e evidence-level, separando entity mentions, identity match e fatto storico.
+- **DoD:** fixture offline persona-luogo-evento con evidenza e review,
+  conflitti mantenuti e CLI di preview (se necessaria) con test di regressione.
+
+### T57 — Memoria di ricerca incrementale (P1, da fare)
+
+- **Input:** dossier T55, review/feedback T49-T52, schema e store attuali.
+- **Azione:** recuperare nella sessione successiva documenti, claim, conflict,
+  decision e feedback per entità, senza duplicazioni o perdita di audit.
+- **DoD:** due sessioni dimostrano la persistenza verificata; preview/apply
+  separati con backup e audit se richiesti. Nessun merge canonico implicito.
+
+### T58 — Certificazione end-to-end di tre famiglie di fonti (P2, da fare)
+
+- **Input:** registry dichiarativo, pilot T55 e T57.
+- **Azione:** scegliere tre fonti/famiglie *già configurate*, misurare coverage
+  del percorso search/detail/document/claim/review/feedback e stati negativi.
+- **DoD:** matrice capabilities con fixture offline, run controllati se
+  autorizzati, limiti motivati e almeno un dossier ripetibile. Non assumere che
+  18 fonti abilitate siano 18 connettori live completi.
+
+**Regola di selezione:** T53 -> T54 -> T55, poi T56 -> T57 -> T58 secondo
+gap riscontrati; piccoli incrementi testabili, non sei implementazioni in un'unica
+sessione. Q2 solo per rischi che bloccano questo percorso.
 
 ### T45 - Quality gate post-MVP e contratto di integrazione (P0, completato 2026-11-01)
 
@@ -446,6 +521,37 @@ Place/Event; launcher subprocess e catena TTY sintetica build -> catalog-bound
 preview -> receipt -> update PASS, Ruff mirato e diff check PASS. Nessun DB
 operativo reale letto o modificato. I manifest non catalog-bound v1.0 non sono
 accettati dalla review operativa v1.1.
+
+### T52 - Hardening del ciclo review persona T50/T51 (P1)
+
+T52a - Rendere il wizard claims review comprensibile e generico: mostrare
+proprieta', valore, profilo proposto e provenienza recuperata dal catalogo; non
+includere identificativi reali o euristiche specifiche di persone nel codice.
+Il catalog membership check non dimostra l'identita'. Gate 2026-11-14: fixture
+sintetiche mostrano titolo/URL dal catalogo, campo spiegato e decisione
+contestualizzata; rimossi riferimenti reali hardcoded.
+22 test e 42 sottocasi su wizard/catalogo PASS; Ruff e diff check PASS.
+
+T52b - Gestire esplicitamente la compatibilita' delle preview quando cambia il
+contratto della queue. Artifact precedenti devono restare consumabili se
+compatibili oppure essere rifiutati con errore di versione e istruzioni chiare;
+mai fallire per campi vuoti aggiunti implicitamente. Gate 2026-11-14: nuove
+preview v1.2; manifest/queue v1.1 restano consumabili con forma legacy e hash
+verificati. Test di compatibilita' inclusi nei 22 test e 42 sottocasi PASS;
+Ruff e diff check PASS.
+
+T52c - Riconciliare i campi `person.given_name` e `person.family_name` con i
+valori strutturati gia' presenti nel profilo. Le divergenze devono apparire come
+conflitti candidati, senza scrivere il profilo o promuovere fatti. Gate
+2026-11-14: `given_name` e `family_name` leggono i campi strutturati;
+candidato concorde classificato `confirm_existing`, cognome divergente
+`conflict_or_revision`. Profilo resta immutato. Totale gate: 36 test e 60
+sottocasi PASS; Ruff F-check e diff check PASS. Ruff completo segnala E501
+preesistenti in file/moduli toccati, non introdotti dalle modifiche.
+
+T52a-c completati il 2026-11-14. La sequenza non ha avviato ricerche live,
+riusato decisioni chat come receipt o applicato aggiornamenti canonici. La prossima corsia operativa è T53-T58; T41 OCR e T27/T28 pCloud sono
+sospesi per decisione successiva dell'utente.
 
 ## Confini repository
 
@@ -1314,7 +1420,10 @@ Criteri di uscita:
 - test live opzionale resta opt-in;
 - nessun documento reale caricato.
 
-Stato: futuro candidato.
+Stato: rinviato su indicazione utente del 2026-11-14 insieme a T28; non e' il
+prossimo incremento selezionato. Se riaperto, definire nel task envelope target
+diagnostico remoto e gestione token/log; le prove mock offline non richiedono
+accesso reale.
 
 ### T28 - Cache locale e manifest provider
 

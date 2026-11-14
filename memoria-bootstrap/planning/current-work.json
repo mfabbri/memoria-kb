@@ -2,79 +2,79 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-14T11:50:12Z",
-    "updated_at": "2026-11-14T14:25:24Z",
+    "selected_at": "2026-11-14T16:08:56Z",
+    "updated_at": "2026-11-14T20:38:44Z",
     "roadmap_basis": [
         {
             "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "section": "T49 - Review-feedback end-to-end ed evaluation",
-            "reason": "Dopo il follow-up autorizzato, collegare i due SourceDocument reali al catalogo e registrare outcome/evaluation hash-bound."
+            "section": "T52 - Hardening integrato review claims e candidate profile updates",
+            "reason": "Selezionati tre incrementi verificabili dopo T50/T51: contesto wizard generico, compatibilità queue, riconciliazione nomi strutturati."
         }
     ],
     "increment": {
-        "id": "t49-catalog-outcome-evaluation-toni-20261114-e",
-        "title": "Registrare risultati Partigiani e misurare outcome T49",
-        "objective": "Registrare via CLI i due SourceDocument acquisiti, quindi creare outcome ed evaluation legati al solo attempt Partigiani realmente autorizzato ed eseguito.",
+        "id": "t52-hardening-claims-review-and-name-updates",
+        "title": "Hardening generico del ciclo review claim e candidate profile update",
+        "objective": "Rendere il wizard claims review comprensibile senza dati hardcoded, preservare la compatibilita delle preview e riconciliare i campi nome/cognome senza scritture canoniche.",
         "scope": [
-            "Preview e apply additivi dei due detail pages identificabili nel catalogo operativo, mantenendo review_status unreviewed.",
-            "Generare FeedbackLoopOutcome candidate_results con action, plan, source, strategy, query, run ID, timestamp e SourceDocument IDs esatti.",
-            "Generare feedback evaluation con la review summary realmente registrata; lasciare metriche non disponibili quando mancano input."
+            "T52a: mostrare provenienza catalogata e significato delle scelte con dati generici.",
+            "T52b: nuove preview v1.2 e compatibilita verificata per artifact v1.1.",
+            "T52c: mappare given_name/family_name e classificare divergenze come conflitti."
         ],
         "out_of_scope": [
-            "Review identit?/claim o nuovi tentativi.",
-            "Registrazione delle immagini correlate come pagine autonome o promozioni canoniche."
+            "Nuove ricerche live o review di profili reali.",
+            "T41 gate statistico OCR, pianificato dopo T52.",
+            "T27/T28 pCloud, da pianificare separatamente per la nuova applicazione."
         ],
         "candidate_files": [
-            "memoria-bootstrap/docs/current-next-increment.md",
+            "memoria-engine/code/caduti_fonti_report/document_analysis/candidate_evidence_claim_review.py",
+            "memoria-engine/code/caduti_fonti_report/document_analysis/source_document_catalog.py",
+            "memoria-engine/code/caduti_fonti_report/candidate_profile_updates.py",
+            "memoria-engine/tests/test_candidate_evidence_claim_review.py",
+            "memoria-engine/tests/test_source_document_catalog.py",
+            "memoria-engine/tests/test_candidate_profile_updates.py",
             "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+            "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
+            "memoria-bootstrap/docs/current-next-increment.md",
             "memoria-bootstrap/planning/current-work.json"
         ],
-        "stop_condition": "I due SourceDocument sono risolti nel catalogo e restano unreviewed; outcome/evaluation hash-bound riferiscono solo il tentativo eseguito e nessun dato mancante ? inferito."
+        "stop_condition": "Tre slice T52 implementate e verificate; fixture offline passano; nessun dato reale/canonico modificato e nessun identificativo reale hardcoded."
     },
     "verification": {
         "result": "passed",
-        "notes": "Via CLI registrati entrambi i SourceDocument candidati, unreviewed; outcome/evaluation audit-only senza issue e collegati al solo attempt autorizzato. Source coverage 1/2; retrieval candidate_results 1/1; latenza review 26 s. Claim attribution, conflitti, token/costi e confronto sessione unavailable. Nessuna identita o claim promossa e nessuna modifica canonica. Planner validator e git diff --check passano.",
+        "notes": "36 test, 60 sottocasi PASS; Ruff --select F PASS; git diff --check PASS. Ruff completo su file toccati segnala E501 preesistenti in codice/test legacy. Wizard usa metadati opzionali del catalogo; queue v1.1 compatibile e nuove preview v1.2. Nessun dato operativo o profilo canonico modificato.",
         "tests": [
-            "register-online-source preview poi --apply per ciascun detail SourceDocument.",
-            "memoria feedback outcome tramite launcher con action/plan/review summary esatti, source/strategy/query/run/timestamp reali e due SourceDocument IDs.",
-            "memoria feedback evaluate tramite launcher; verificare hash binding e metriche unavailable per campi assenti.",
-            "Planner validator v3.1 e git diff --check."
+            "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_candidate_profile_updates.py tests/test_reviewed_claim_profile_updates.py tests/test_candidate_evidence_claim_review.py tests/test_source_document_catalog.py -q",
+            "memoria-engine/.venv/Scripts/ruff.exe check --select F sui file modificati",
+            "git diff --check"
         ],
         "documentation_touchpoints": [
-            "memoria-bootstrap/docs/current-next-increment.md",
-            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md"
+            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+            "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
+            "memoria-bootstrap/docs/current-next-increment.md"
         ],
         "task_envelope": {
-            "mode": "quality-slice",
+            "mode": "feature-slice",
             "repositories": [
-                "memoria-bootstrap",
                 "memoria-engine",
-                "memoria-sources"
+                "memoria-bootstrap"
             ],
             "read_set": [
-                "report e sidecar T49-D",
-                "action set, feedback plan e action-review-summary T49-C",
-                "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
-                "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
-                "catalogo operativo evidence.sqlite"
+                "claims wizard e SourceDocument resolver",
+                "candidate profile updates mapping",
+                "test mirati T50/T51",
+                "roadmap T41/T49/T50/T51 e direzione pCloud"
             ],
             "write_set": [
-                "memoria-bootstrap/planning/current-work.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\database\\evidence.sqlite",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-preview-antonioli.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-preview-toni.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-apply-antonioli.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-apply-toni.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-outcome.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-outcome.md",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-evaluation.json",
-                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-evaluation.md"
+                "claims review wizard/resolver e candidate profile updates",
+                "test mirati",
+                "roadmap master/technical/current-next",
+                "current-work.json"
             ],
-            "test_command": "Launcher registration preview/apply for both detail pages; launcher feedback outcome/evaluate; verify catalog membership, hash/provenance, outcome linkage, review status and no canonical writes; planner validator and diff-check.",
+            "test_command": "pytest test_candidate_profile_updates.py test_reviewed_claim_profile_updates.py test_candidate_evidence_claim_review.py test_source_document_catalog.py; Ruff F-check; git diff --check",
             "stop_conditions": [
-                "Do not infer that the two candidate pages refer to the same person.",
-                "Do not include unrelated or unregistered document IDs in outcome.",
-                "Do not launch a second query or write canonical profile/facts."
+                "No real profile identifiers/URLs hardcoded.",
+                "No live research or canonical profile changes.",
+                "T41 and pCloud work remain separate."
             ]
         }
     },
@@ -206,19 +206,23 @@
         "2026-11-14: T49-C completato. Action review BUONA con reviewer dichiarato Marco Fabbri e 26 s misurati; plan hash-bound resta execution_allowed=false. Utente non autorizza nuove query; nessun outcome/evaluation di esecuzione creato.",
         "2026-11-14: T49-D avviato dopo nuova autorizzazione utente per un solo attempt Partigiani: cognome-nome-contains con Toni/Teodosio. Il piano completo non ? autorizzato; auth SPID/CIE resta handoff manuale.",
         "2026-11-14: T49-D completato: un solo attempt Partigiani autorizzato dopo handoff SPID/CIE manuale; restituiti due SourceDocument (Toni e Antonioli, Teodosio) e 10 immagini correlate, tutti unreviewed. Nessun altro attempt o profilo modificato.",
-        "2026-11-14: T49-E avviato per registrare i due detail pages Partigiani unreviewed e collegare il follow-up a outcome/evaluation; immagini correlate restano sidecar del run, non candidate claim."
+        "2026-11-14: T49-E avviato per registrare i due detail pages Partigiani unreviewed e collegare il follow-up a outcome/evaluation; immagini correlate restano sidecar del run, non candidate claim.",
+        "2026-11-14: T52a-c completati dopo review architetturale: wizard claim con contesto/provenienza generici e senza dati reali hardcoded; compatibilita queue v1.1 e nuove preview v1.2; mapping nome/cognome strutturati con conflitti espliciti. 36 test/60 sottocasi PASS, Ruff F-check e diff-check PASS. T41 resta il prossimo gate dopo T52; T27/T28 pCloud candidati separati per nuova applicazione.",
+        "2026-11-14: priorita aggiornata su richiesta utente: continuare sviluppo motore memoria con T27/T28 pCloud (nuova applicazione disponibile); T41 OCR rinviato. T27 richiede definizione target diagnostico remoto e gestione token/log nel task envelope.",
+        "2026-11-14: su indicazione utente T27/T28 pCloud e T41 OCR rinviati; nessun incremento non-OCR successivo gia' selezionato. I KPI T49 mancanti richiedono dati di sessioni future; Q2 resta opportunistico.",
+        "2026-11-14: utente conferma il rinvio di T27/T28 pCloud e T41 OCR. La sequenza documentata T53-T58 resta la direzione; T53 e' baseline read-only del workspace, candidato non avviato. Nessun task envelope aperto."
     ],
     "next_action": {
-        "mode": "resume",
-        "description": "Dopo outcome/evaluation, se si vuole revisione delle claim, presentare prima la prima scheda candidata con provenienza per una decisione umana."
+        "mode": "recalculate",
+        "description": "Alla prossima apertura, rivalidare e avviare T53 baseline read-only del workspace secondo docs/current-focus.md e la roadmap tecnica. T27/T28 pCloud e T41 OCR restano sospesi. T53 non e ancora avviato."
     },
     "routing": {
         "model": "gpt-6-luna",
         "agent": "parent",
         "tier": "low",
         "reasoning_effort": "low",
-        "rationale": "Operazioni CLI audit-only e registrazione dichiarativa di due pagine candidate; nessuna implementazione o modifica canonica.",
-        "task_class": "quality",
+        "rationale": "Fallback effettivo parent per microincrementi circoscritti con fixture mirate; il routing implementer Sol non era disponibile in-sessione, nessuna attribuzione non verificata.",
+        "task_class": "implementation",
         "policy_version": "3.1",
         "trace": [
             {
@@ -226,9 +230,9 @@
                 "agent": "parent",
                 "model": "gpt-6-luna",
                 "reasoning_effort": "low",
-                "at": "2026-11-14T11:50:12Z",
+                "at": "2026-11-14T16:16:47Z",
                 "tier": "low",
-                "reason": "Completare il collegamento auditabile tra action review, singolo attempt autorizzato e SourceDocument acquisiti."
+                "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
             }
         ]
     }

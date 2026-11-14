@@ -23,6 +23,13 @@ python -m json.tool .\memoria-bootstrap\planning\current-work.json
 git diff --check
 ```
 
-Per risparmiare token: skill e contratti on-demand, handoff solo con path e
+Per risparmiare token: prima `docs/current-focus.md` +
+`python memoria-bootstrap/planning/current-work-summary.py`, poi
+skill e contratti on-demand, handoff solo con path e
 criteri, nessun fan-out automatico e niente ripetizione del playbook OCR nel
 prompt di avvio. Per misurare costi e cache vedi la policy v3.1.
+
+I custom agent ereditano `sandbox_mode` e `approval_policy` dalla sessione:
+`developer_instructions` read-only **non** isola tecnicamente un subagent.
+Usare una sessione `read-only` separata quando serve enforcement effettivo.
+OCR T41 e pCloud T27/T28 sono sospesi; priorità T53-T58.

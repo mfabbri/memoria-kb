@@ -19,7 +19,11 @@ di contesto e overhead di coordinamento.
 | Architettura, migrazione con trade-off ambigui | `mmr_architect`, `gpt-6-astra`, low | Solo se il problema richiede una valutazione dedicata |
 
 Gli agent specializzati docs/scanner sono **opzionali** e non obbligatori in
-ogni sessione. Non eseguire una review LLM indipendente quando test automatici
+ogni sessione. I custom agent `.codex/agents/*.toml` ereditano sandbox e
+approval policy dalla sessione parent: istruzioni read-only riducono il rischio
+ma non configurano un sandbox separato. Per isolamento tecnico eseguire una
+sessione distinta con permessi compatibili; non impostare `sandbox_mode` nei
+file custom agent. Non eseguire una review LLM indipendente quando test automatici
 mirati e diff sono sufficienti. `high` reasoning non e' un sostituto di dati o
 accessi mancanti. Modifiche ai modelli sono subordinate a disponibilita'
 verificata in `/model`; in caso contrario rendere esplicito il fallback,
@@ -27,7 +31,8 @@ l'eventuale cambio di tier e il modello realmente usato.
 
 ## Contesto e prompt
 
-- `AGENTS.md` solo invarianti; prompt quotidiano breve, senza procedure OCR
+- `AGENTS.md` solo invarianti; `docs/current-focus.md` e summary planner;
+  prompt quotidiano breve, senza procedure OCR
   incorporate. Skill con descrizioni specifiche e dettagli *on-demand*.
 - Leggi interfacce, contratti e test pertinenti (ricerca per path/simbolo), non
   dump di interi file/roadmap, ZIP di run o report di migliaia di righe.

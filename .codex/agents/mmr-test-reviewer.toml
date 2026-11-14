@@ -2,7 +2,6 @@ name = "mmr_test_reviewer"
 description = "Revisione read-only dei test mirati e dei quality gate."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
-sandbox_mode = "read-only"
 developer_instructions = """
 Esegui il quality gate piu piccolo che possa falsificare il cambiamento.
 Cerca regressioni, violazioni dei contratti, perdita di provenance e promozione impropria di claim.

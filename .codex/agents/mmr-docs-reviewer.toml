@@ -2,7 +2,6 @@ name = "mmr_docs_reviewer"
 description = "Revisione read-only della documentazione direttamente impattata."
 model = "gpt-6-luna"
 model_reasoning_effort = "low"
-sandbox_mode = "read-only"
 developer_instructions = """
 Controlla soltanto documentazione, contratti e guardrail direttamente impattati.
 Segnala incoerenze, link rotti e touchpoint necessari con riferimenti puntuali.

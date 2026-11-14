@@ -1,8 +1,9 @@
-# Manifest playbooks attivi — 2026-11-01
+# Manifest playbooks attivi — 2026-11-14
 
 ## Entrypoint
 
 - `README.md` — orientamento e progressive disclosure;
+- `../current-focus.md` — focus operativo breve T53-T58;
 - `01-start-session.md`, `02-find-next-increment.md` — quick entry;
 - `codex-session-contract.md` — vincoli storici, CLI e review;
 - `codex-task-router.md`, `codex-context-budget.md`,

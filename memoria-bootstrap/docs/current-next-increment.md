@@ -1,6 +1,17 @@
 # Current Next Increment
 
-## Stato corrente e prossimo candidato - 2026-11-08
+## Stato post-MVP aggiornato - 2026-11-14
+
+**Focus operativo aggiornato:** `docs/current-focus.md` (T53-T58).
+T45-T52 sono chiusi secondo la roadmap. T53 è il prossimo candidato, **non
+ancora avviato**. T41 OCR e T27/T28 pCloud sono sospesi per decisione utente.
+KPI T49 mancanti richiedono sessioni reali; Q2 non è una corsia autonoma.
+Il resto del presente file conserva lo storico e non va caricato per intero
+nelle sessioni quotidiane. Leggere solo le sezioni pertinenti tramite ricerca
+mirata; il planner corrente rimane immutato finché non si avvia T53.
+
+
+## Contesto storico: stato al 2026-11-08
 
 **T48: percorso CLI e review umana reale completati il 2026-11-08.** Il percorso usa una fonte abilitata nel registry, registra il SourceDocument nel database operativo con CLI, genera preview Place/Event e raccoglie le decisioni con il wizard terminale. Nessun utente deve compilare JSON; il CLI crea gli artifact e la receipt. La review non applica modifiche canoniche e non autentica il reviewer.
 
@@ -72,8 +83,8 @@ Entrambe le schede restano `unreviewed`; la somiglianza dei nomi non risolve
 l'identita e non modifica il profilo canonico.
 
 
-T49 resta aperto per review effettivamente registrate e misure legate a run
-reali. Le decisioni Bendini raccolte in chat non sono state convertite in
+T49-E (2026-11-14) ha chiuso il ciclo auditabile per il run Toni autorizzato;
+claim attribution, conflitti, token/costi e confronto sessioni restano non misurati. Le decisioni Bendini raccolte in chat non sono state convertite in
 receipt; il wizard registra una review con timestamp al momento, senza
 retrodatazione. I quattro attempt risultano già eseguiti e quello solo-cognome
 è escluso: non riavviarli. Qualsiasi nuova query richiede autorizzazione
@@ -165,7 +176,7 @@ portale senza dettaglio persona. Sono registrati due SourceDocument unici in
 documenti acquisiti sono in
 `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-bendini-four-searches-20261108\`.
 Il report contiene claim candidate non promosse; nessun fatto o profilo
-canonico e' stato modificato. T49 resta aperto per review umana.
+canonico e' stato modificato. La review umana T49 resta un passaggio separato.
 
 T49x-z (2026-11-08) proseguono il percorso sui due SourceDocument, senza
 riaprire la ricerca. T49x aggiunge il supporto ai sidecar online YAML in

@@ -2,7 +2,6 @@ name = "mmr_architect"
 description = "Analisi ad alta profondita per architettura, migrazioni e trade-off multi-repository."
 model = "gpt-6-astra"
 model_reasoning_effort = "low"
-sandbox_mode = "read-only"
 developer_instructions = """
 Lavora solo su task classificati high dal router.
 Analizza contratti, dipendenze, alternative e rischi; non implementare automaticamente.

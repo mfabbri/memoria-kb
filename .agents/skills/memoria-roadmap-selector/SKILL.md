@@ -1,23 +1,21 @@
 ---
 name: memoria-roadmap-selector
-description: Select a verifiable post-MVP increment when current-work is completed or invalid.
+description: Seleziona il prossimo micro-incremento post-MVP quando il planner è chiuso o non valido.
 ---
 
-# Roadmap selector post-MVP
+# Selezione roadmap — T53-T58
 
-1. Controlla solo lo stato in `memoria-bootstrap/planning/current-work.json` e
-   il sommario iniziale di `docs/current-next-increment.md`.
-2. Se il lavoro e' ancora valido e aperto, riprendilo. Altrimenti cerca con `rg`
-   le sezioni T45-T49 e le dipendenze in `docs/roadmap/02-technical-roadmap.md`;
-   consulta il master solo per i vincoli strategici interessati.
-3. Proponi 2-3 micro-incrementi con output falsificabile, scegli il piu'
-   piccolo che sblocca il **percorso integrato** (fonte offline/online -> documento
-   -> claim candidato -> entity linking -> review -> feedback).
-4. Non fare nuovi scraping estesi o variazioni ai canonici; distinguere
-   ingestion OCR e revisione dalla validazione storica. Q2 e OCR formale
-   proseguono come workstream secondari motivati dal rischio.
-5. Registra il nuovo task envelope nel planner solo quando effettivamente avvii
-   l'incremento; non falsificare la chiusura dello storico.
+1. Leggi `memoria-bootstrap/docs/current-focus.md` e lo stato conciso ottenuto
+   con `python memoria-bootstrap/planning/current-work-summary.py`.
+2. Se un incremento `selected/in_progress` è coerente, riprendilo. Se è
+   `completed`, consulta **solo** la sezione T53-T58 della roadmap tecnica.
+3. Seleziona la prima slice che riduce un gap concreto del percorso documenti
+   -> claim -> riconciliazione -> review -> memoria; rispetta dipendenze,
+   capacità e dati effettivamente accessibili.
+4. Tratta T41 OCR e T27/T28 pCloud come sospesi, non candidati automatici.
+   T29-T52 sono storico; Q2 solo per regressioni motivate.
+5. Restituisci ID, prova attesa, scope, write set, test e stop condition;
+   apri l'envelope nel planner **all'avvio**, senza riscrivere le sessioni storiche.
 
-Output: ID, scope, file, evidenza di partenza, test, stop condition e decisioni
-che richiedono lo storico.
+Non autorizzare query live, review dello storico o modifiche canoniche per
+il solo fatto di aver selezionato un incremento.

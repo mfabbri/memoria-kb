@@ -50,8 +50,8 @@ def create_catalog(root):
     path = root / "catalog.sqlite"
     if not path.exists():
         with closing(sqlite3.connect(path)) as connection:
-            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY)")
-            connection.execute("INSERT INTO source_documents VALUES ('document:synthetic')")
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+            connection.execute("INSERT INTO source_documents VALUES ('document:synthetic', 'Scheda sintetica', 'https://example.invalid/catalog-document')")
             connection.commit()
     return path
 
@@ -221,6 +221,26 @@ def prepare_preview(root, claims=None):
 
 
 class CandidateEvidenceClaimReviewWizardTests(unittest.TestCase):
+    def test_legacy_v11_queue_remains_readable_after_v12_metadata_extension(self):
+        with workspace_temp_dir() as root:
+            _, manifest_path = prepare_preview(root)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["schema_version"] = "1.1"
+            queue_path = Path(manifest["artifacts"]["review_queue"]["path"])
+            queue = json.loads(queue_path.read_text(encoding="utf-8"))
+            for item in queue["items"]:
+                item.pop("source_document_title", None)
+                item.pop("source_document_url", None)
+            queue_bytes = (json.dumps(queue, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+            queue_path.write_bytes(queue_bytes)
+            manifest["artifacts"]["review_queue"]["sha256"] = hashlib.sha256(queue_bytes).hexdigest()
+            manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            answers = iter(["reviewer-fixture", "a", "", "s"])
+            receipt = run_candidate_evidence_claim_review_wizard(
+                manifest_json=manifest_path, input_fn=lambda _: next(answers), output_fn=lambda _: None,
+            )
+            self.assertTrue(receipt["review_complete"])
+
     def test_catalog_change_after_preview_or_during_review_prevents_receipt(self):
         for change_during_review in (False, True):
             with self.subTest(change_during_review=change_during_review), workspace_temp_dir() as root:
@@ -228,7 +248,7 @@ class CandidateEvidenceClaimReviewWizardTests(unittest.TestCase):
 
                 def change_catalog():
                     with closing(sqlite3.connect(root / "catalog.sqlite")) as connection:
-                        connection.execute("INSERT INTO source_documents VALUES ('document:changed')")
+                        connection.execute("INSERT INTO source_documents (document_id) VALUES ('document:changed')")
                         connection.commit()
 
                 if not change_during_review:
@@ -252,8 +272,9 @@ class CandidateEvidenceClaimReviewWizardTests(unittest.TestCase):
             answers = iter(["reviewer-fixture", "a", "nota sintetica", "r", "", "e", "altra fonte", "s"])
             timestamps = iter([datetime(2026, 1, 1, 12, minute, tzinfo=UTC) for minute in range(3)])
             displayed = []
+            prompts = []
             receipt = run_candidate_evidence_claim_review_wizard(
-                manifest_json=manifest, input_fn=lambda _: next(answers), output_fn=displayed.append,
+                manifest_json=manifest, input_fn=lambda prompt: (prompts.append(prompt), next(answers))[1], output_fn=displayed.append,
                 now_fn=lambda: next(timestamps),
             )
             self.assertEqual(receipt["decision_counts"], {"accept_candidate": 1, "reject_candidate": 1, "needs_more_evidence": 1})
@@ -269,6 +290,11 @@ class CandidateEvidenceClaimReviewWizardTests(unittest.TestCase):
             self.assertTrue(any("[1/3]" in line for line in displayed))
             self.assertTrue(any("Evidenza:" in line for line in displayed))
             self.assertTrue(any("https://example.invalid/person" in line for line in displayed))
+            self.assertTrue(any("Scheda sintetica" in line for line in displayed))
+            self.assertTrue(any("URL della scheda: https://example.invalid/catalog-document" in line for line in displayed))
+            self.assertTrue(any("Profilo a cui il report propone" in line for line in displayed))
+            self.assertTrue(any("comune di nascita" in line for line in displayed))
+            self.assertTrue(any("[e] altra evidenza" in prompt for prompt in prompts))
             self.assertIs(receipt["decisions_recorded"], True)
             for key in ("claim_promotion_allowed", "canonical_write_allowed", "profile_write_allowed",
                         "person_identity_resolved", "reviewer_identity_authenticated"):

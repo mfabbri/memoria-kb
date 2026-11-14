@@ -1,80 +1,40 @@
 ---
 name: memoria-planner
-description: Maintain current-work.json when opening, updating or closing persistent work.
+description: Gestisci il planner persistente all'avvio/chiusura di una slice, con backup, validazione e conservazione delle note storiche.
 ---
 
-# Me.Mo.Ri.A persistent planner
+# Planner persistente
 
-Use this skill at session start and close.
+## Lettura e selezione
 
-## Start
+- Usa `python memoria-bootstrap/planning/current-work-summary.py` per la lettura
+  quotidiana. Apri il JSON completo **solo quando devi aggiornarlo** oppure
+  verificare una nota specifica: contiene molte sessioni storiche.
+- Se stato `selected/in_progress`, valida dipendenze e stop condition;
+  altrimenti seleziona una slice da `docs/current-focus.md` e roadmap tecnica.
+- Non inferire la chiusura da `status`: controlla test e artefatti.
+- Registra increment, roadmap_basis, routing v3.1, scope, out_of_scope, files,
+  test, stop condition e next_action solo quando inizi davvero il task.
 
-1. Read `memoria-bootstrap/planning/current-work.json`.
-2. Check the referenced files and repository state.
-3. Resume only when status is `selected` or `in_progress`, the increment remains
-   aligned with current roadmaps, and the stop condition is not already met.
-4. Otherwise use `$memoria-roadmap-selector`, then record one micro-increment.
-5. Never infer completion from planner text alone; verify code and tests.
+## Scrittura sicura
 
-## Selection record
+1. Preserva `current-work.json` e le note pregresse: prima crea backup byte-exact
+   fuori da Git o in cartella ignorata. Mai rigenerare il planner dalla summary.
+2. Su Windows PowerShell 5.1 imposta `$ErrorActionPreference = 'Stop'` e verifica
+   parsing e forma prima di qualsiasi write (non usare `-AsHashtable`).
+3. Serializza in un temporaneo, riparsalo e valida lo schema JSON, routing e
+   campi prima di sostituire in modo controllato il file corrente.
+4. Non cancellare `session_notes` o record routing preesistenti. Aggiungi una
+   sola nota breve con evidenze/paths, non lunghe trascrizioni di sessione.
+5. Dopo la sostituzione esegui
+   `memoria-bootstrap/planning/validate-codex-model-routing.py` con `jsonschema`
+   installato. Se la validazione è skipped, non considerarla riuscita.
 
-Record:
+## Chiusura
 
-- roadmap path and section;
-- objective and explicit scope;
-- primary deliverable and expected roadmap advancement;
-- whether the increment is prerequisite-only; if yes, the blocking reason or
-  independent value;
-- routing tier, agent, model, reasoning effort and rationale;
-- out-of-scope items;
-- minimum candidate files;
-- targeted tests and documentation touchpoints;
-- objective stop condition;
-- `next_action.mode = resume`.
+- `completed` + `recalculate` se il gate è passato;
+- `in_progress` + `resume` per un task non concluso ma valido;
+- `blocked` + `review`/`recalculate` con blocker verificabile;
+- `superseded` + `recalculate` solo con decisione aggiornata esplicita.
 
-Efficiency gate:
-
-- tests and implementation may share one micro-increment when they protect the
-  same boundary and use the same quality gate;
-- a test-only increment requires a documented real blocker or independent
-  deliverable value;
-- after an architecture review approves a boundary, resume that candidate's
-  implementation unless a newer decision invalidates it.
-
-## Safe planner writes on Windows
-
-Treat `current-work.json` as user work, including uncommitted history. Before
-editing it, make a byte-for-byte backup outside Git or under an ignored temp
-directory. On Windows PowerShell 5.1, `ConvertFrom-Json -AsHashtable` is not
-available; a parse error can leave `$null`, and PowerShell may continue running
-later statements unless errors are terminating.
-
-For a planner update:
-
-1. Set `$ErrorActionPreference = 'Stop'`; parse the current file and verify its
-   status and increment before changing fields. Stop on any parse or shape
-   error.
-2. Serialize to a new temporary file. Parse that file again and validate the
-   current-work schema and routing before replacing the original.
-3. Replace the destination atomically, retaining the backup until the final
-   validator passes. Never write a failed or empty serialization over the
-   working file.
-4. Preserve unrelated `session_notes`; update only the active increment and
-   notes directly required by the task.
-
-Use APIs supported by the active PowerShell version; do not assume
-`-AsHashtable` exists. After replacement, run
-`memoria-bootstrap/planning/validate-codex-model-routing.py` and verify the
-resulting planner status and increment ID.
-
-## Close
-
-Update status, verification result, concise notes, routing trace and next action:
-
-- unfinished and valid: `in_progress` + `resume`;
-- blocked: `blocked` + `review` or `recalculate`;
-- stop condition met and tests acceptable: `completed` + `recalculate`;
-- invalidated by newer decisions: `superseded` + `recalculate`.
-
-Do not preload another implementation task at close. A candidate next step can
-be noted, but the next session must validate it against the roadmap.
+Non aprire automaticamente il task successivo a fine sessione.

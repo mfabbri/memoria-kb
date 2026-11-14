@@ -1,10 +1,9 @@
 # Codex Session Contract
 
-> Stato 2026-11-01: le sezioni qui sotto che chiamano T29-T33 priorita'
-> corrente sono storico del funding MVP, completato. Per la selezione
-> operativa usare T45-T49 in `docs/roadmap/02-technical-roadmap.md` e il
-> sommario di `docs/current-next-increment.md`. Routing secondo policy 3.1,
-> nessun subagent obbligatorio per task brevi.
+> Stato 2026-11-14: funding T29-T33 e sviluppo T45-T52 sono storici.
+> Priorità T53-T58: `docs/current-focus.md` e sezione dedicata della roadmap
+> tecnica. OCR T41 e pCloud T27/T28 sono sospesi. Routing v3.1. Il documento
+> seguente contiene contratti storici da aprire **solo quando pertinenti**.
 
 ## Scopo
 
@@ -91,16 +90,11 @@ prima un micro-incremento CLI delimitato.
 
 ## Priorita' corrente
 
-La corsia prioritaria e':
-
-```text
-T29 -> T30 -> T31 -> T32 -> T33
-```
-
-Obiettivo: una sola golden run che dimostri merge multi-fonte, decisione umana,
-patch preview e feedback loop chiuso.
-
-Cloud T26-T28 e Q2 non sono passi ordinari prima di T33.
+La corsia attuale è T53 -> T54 -> T55, seguita da T56-T58 secondo gap
+verificati. T29-T33 costituisce la golden run **già chiusa**; T45-T52 hanno
+implementato le capacità preliminari. Non riaprire golden run, OCR T41 o
+pCloud T27/T28 come prerequisiti. Per backlog e gate usare
+`docs/current-focus.md` e la roadmap tecnica.
 
 ## Workspace e dati
 

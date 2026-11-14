@@ -8,10 +8,10 @@ Data di impianto: 2026-07-18; aggiornamento stato: 2026-11-01
 cinque documenti, riconciliazione multi-fonte, review, patch preview e ciclo
 feedback documentati. La prova reale dipende dagli artifact nel data root
 esterno, non ricostruibili dal solo repository. Le sezioni sotto costituiscono
-**criteri storici di accettazione**, non backlog da riaprire. La direzione
-post-MVP e' T45-T49 nella roadmap tecnica: collegare fonti online e offline al
-medesimo percorso SourceDocument/EvidenceClaim e ampliare la riconciliazione a
-persone, luoghi ed eventi, sempre con review umana.
+**criteri storici di accettazione**, non backlog da riaprire. T45-T52 hanno introdotto queste capacità post-MVP; il lavoro di prodotto
+successivo è T53-T58: usare fonti già disponibili per dossier multi-fonte reali,
+collegare persone/luoghi/eventi e conservare feedback e provenance. T27/T28
+pCloud e T41 OCR restano sospesi. Vedi `docs/current-focus.md`.
 
 ## Definizione MVP
 

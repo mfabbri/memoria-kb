@@ -8,7 +8,6 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "code"))
 
 from caduti_fonti_report.candidate_profile_updates import build_candidate_profile_updates, build_profile_patch
@@ -45,6 +44,7 @@ class CandidateProfileUpdatesTests(unittest.TestCase):
                 seed_source="fixture.csv",
             )
             profile_path.write_text(json.dumps(profile_to_jsonld(profile), ensure_ascii=False), encoding="utf-8")
+            profile_bytes = profile_path.read_bytes()
             report_path.write_text(
                 json.dumps(
                     {
@@ -82,6 +82,24 @@ class CandidateProfileUpdatesTests(unittest.TestCase):
                                                 "confidence": 0.9,
                                             },
                                             {
+                                                "claim_id": "claim:given",
+                                                "field": "person.given_name",
+                                                "value": "Laura",
+                                                "source_document_id": "doc:1",
+                                                "source_url": "https://example.test/1",
+                                                "quote": "Laura",
+                                                "confidence": 0.9,
+                                            },
+                                            {
+                                                "claim_id": "claim:family",
+                                                "field": "person.family_name",
+                                                "value": "Bendini",
+                                                "source_document_id": "doc:1",
+                                                "source_url": "https://example.test/1",
+                                                "quote": "Bendini",
+                                                "confidence": 0.9,
+                                            },
+                                            {
                                                 "claim_id": "claim:4",
                                                 "field": "death.cause",
                                                 "value": "Esecuzione",
@@ -111,6 +129,7 @@ class CandidateProfileUpdatesTests(unittest.TestCase):
             )
 
             payload = build_candidate_profile_updates(report_json=report_path, profile_jsonld=profile_path)
+            self.assertEqual(profile_path.read_bytes(), profile_bytes)
 
         updates_by_field = {update["field"]: update for update in payload["candidate_updates"]}
         self.assertEqual(payload["merge_policy"], "preview_only_no_profile_write")
@@ -118,6 +137,8 @@ class CandidateProfileUpdatesTests(unittest.TestCase):
         self.assertEqual(updates_by_field["person.full_name"]["review_bucket"], "da_accettare_facilmente")
         self.assertEqual(updates_by_field["birth.date"]["proposed_action"], "refinement")
         self.assertEqual(updates_by_field["death.date"]["proposed_action"], "refinement")
+        self.assertEqual(updates_by_field["person.given_name"]["proposed_action"], "confirm_existing")
+        self.assertEqual(updates_by_field["person.family_name"]["proposed_action"], "conflict_or_revision")
         self.assertEqual(updates_by_field["death.cause"]["proposed_action"], "new_fact")
         self.assertEqual(updates_by_field["death.cause"]["review_status"], "pending")
         self.assertEqual(updates_by_field["death.cause"]["source_claim_ids"], ["claim:4"])

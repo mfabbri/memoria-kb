@@ -82,13 +82,16 @@ la base OCR/review; T41 resta distinto tra pilot empirico chiuso e gate
 statistico formale non dimostrato. Le righe storiche sotto descrivono le
 priorita' al tempo delle decisioni e non riaprono la golden run.
 
-La corsia primaria ora e' **T45-T49** (roadmap tecnica): hardening minimo e
-contratto documentale; OCR revisionabile -> `SourceDocument`; prima run
-online+offline con `EvidenceClaim` candidati; estensione controllata al linking
-di luoghi/eventi; feedback verificabile ed evaluation. Ogni modifica ai profili
-canonici resta soggetta a preview, review e audit. La calibrazione statistica
-OCR e Q2 continuano come corsie indipendenti, senza bloccare la conoscenza
-multi-fonte salvo rischi reali.
+La sequenza T45-T52 ha completato il software e i percorsi documentati.
+**Decisione successiva del 2026-11-14 (prevale sulle precedenti):**
+T27/T28 pCloud e T41 OCR sono **sospesi**, senza avvio automatico. La nuova
+sequenza di prodotto proposta è T53-T58: baseline del workspace operativo,
+deduplicazione multi-attempt, dossier multi-fonte reale, relazioni tipizzate
+Person/Place/HistoricalEvent, memoria incrementale e certificazione fonti.
+Vedi `docs/current-focus.md` e roadmap tecnica per priorità, dipendenze e gate.
+I KPI T49 incompleti si misurano su futuri run reali, non con fixture inventate.
+Ogni modifica ai profili canonici resta soggetta a preview, review e audit.
+Il gate statistico OCR resta distinto e rinviato; Q2 solo opportunistico.
 
 Non confondere `provisional_auto_validated` con `human_verified` o un fatto
 storico. Il cutoff T42 1.0 e' non discriminante; nessuna inferenza sul tasso
@@ -173,19 +176,20 @@ metriche con reference umana. PP-StructureV3 e Docling restano fuori dal
 critical path. Il documento autorevole e'
 `memoria-bootstrap/docs/ocr-structured-evidence-strategy.md`; la sequenza tecnica e' T35-T42.
 
-## Stato corrente al 2026-11-01
+## Stato corrente al 2026-11-14
 
 - MVP finanziatori T29-T33 e migrazione legacy T34/T34b chiusi secondo gli
   artifact e il planner; la run canonica reale va comunque verificata sul data
   root esterno quando la si riesegue.
 - OCR T35-T40, T42-T44: capacità implementate; T41 pilot provisional chiuso,
   gate formale 5%/95% aperto con campioni e holdout insufficienti.
-- Prossimo incremento **candidato**: T45 (P0 sicurezza, test gate e contratto
-  di raccordo); successivamente T46/T47 per la prima integrazione dati utile.
+- T45-T51: software e cicli operativi documentati completati; T49 conserva KPI
+  non misurati (claim attribution, conflitti, token/costi, confronto sessioni).
+- T52a-c completati. La priorità successiva è T53-T58 (vedi focus operativo).
+  T27/T28 pCloud e T41 OCR sospesi; KPI T49 e Q2 non bloccano i pilot reali.
 - I 18 profili fonte nel registry sono configurazioni: non equivalgono a 18
   fonti live verificate. Evitare ulteriori adapter legacy.
-- pCloud T27/T28 e refactor Q2 differiti salvo necessità concreta. Per i nuovi
-  task usare la policy Codex 3.1 e il planner `current-work.json`.
+- Per i nuovi task usare la policy Codex 3.1 e il planner `current-work.json`.
 
 ## Fuori scope per la golden run
 

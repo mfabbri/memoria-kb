@@ -1,5 +1,25 @@
 # Decision Log
 
+## 2026-11-14 — Priorità T53-T58 e pulizia contesto Codex
+
+Decisione esplicita: non proseguire con OCR T41 né implementare pCloud T27/T28
+nel prossimo ciclo. Dopo T45-T52, la priorità è il percorso reale online/offline
+verso un dossier di ricerca verificabile, non un'altra capacità infrastrutturale.
+Sequenza proposta: T53 baseline read-only, T54 deduplica multi-attempt,
+T55 dossier Bendini, T56 relazioni Person/Place/HistoricalEvent, T57 memoria
+incrementale, T58 certificazione delle fonti già presenti. Gli incrementi sono
+**da eseguire**, non riportati come completati.
+
+Codex: mantenere la policy di routing 3.1 e i gate storici; entrypoint breve
+`docs/current-focus.md` + `current-work-summary.py`, skill on-demand,
+nessuna delega automatica né lettura quotidiana di 12 MB di planner o dell'intera
+cronologia. Correggere i custom agent rimuovendo `sandbox_mode` non applicabile:
+i permessi effettivi discendono dalla sessione principale. Non cancellare log o
+planner; per i task futuri note di sessione concise.
+
+Questo allineamento riguarda documentazione e configurazione di sviluppo:
+nessun dato canonico, OCR, query live, storage o `current-work.json` modificato.
+
 ## 2026-11-08 - Chiusura effettiva dei seed CSV profili
 
 Correzione operativa dopo verifica del data root: la chiusura T34/T34b
