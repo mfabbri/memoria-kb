@@ -2,66 +2,81 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-14T10:27:54Z",
-    "updated_at": "2026-11-14T10:27:54Z",
-    "roadmap_basis":     [
+    "selected_at": "2026-11-14T11:50:12Z",
+    "updated_at": "2026-11-14T14:25:24Z",
+    "roadmap_basis": [
         {
-            "path": "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
-            "section": "Review dei claim persona da un report fonte",
-            "reason": "Consolidare le regole derivate dalla review T52: claim associati al soggetto, nomi ambigui e riconoscimento delle decisioni esplicite."
+            "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+            "section": "T49 - Review-feedback end-to-end ed evaluation",
+            "reason": "Dopo il follow-up autorizzato, collegare i due SourceDocument reali al catalogo e registrare outcome/evaluation hash-bound."
         }
     ],
-    "increment":     {
-        "id": "t52f-claim-scope-and-decision-guidance-20261114",
-        "title": "Chiarire ambito dei claim e gestione delle decisioni umane",
-        "objective": "Aggiornare prompt e playbook affinch? si propongano solo claim sul soggetto principale e si registrino senza ambiguit? le decisioni esplicite, mantenendo nomi incerti candidati.",
+    "increment": {
+        "id": "t49-catalog-outcome-evaluation-toni-20261114-e",
+        "title": "Registrare risultati Partigiani e misurare outcome T49",
+        "objective": "Registrare via CLI i due SourceDocument acquisiti, quindi creare outcome ed evaluation legati al solo attempt Partigiani realmente autorizzato ed eseguito.",
         "scope": [
-            "Aggiungere al prompt la regola contro claim generici e il riconoscimento di accept_candidate.",
-            "Aggiungere al playbook regole su soggetto del claim, segmentazione dei nominativi e risposte esplicite dello storico."
+            "Preview e apply additivi dei due detail pages identificabili nel catalogo operativo, mantenendo review_status unreviewed.",
+            "Generare FeedbackLoopOutcome candidate_results con action, plan, source, strategy, query, run ID, timestamp e SourceDocument IDs esatti.",
+            "Generare feedback evaluation con la review summary realmente registrata; lasciare metriche non disponibili quando mancano input."
         ],
         "out_of_scope": [
-            "Modifiche a claim, receipt, profili o dati operativi.",
-            "Ricostruzione delle decisioni della sessione che non sono univocamente documentate."
+            "Review identit?/claim o nuovi tentativi.",
+            "Registrazione delle immagini correlate come pagine autonome o promozioni canoniche."
         ],
         "candidate_files": [
-            "memoria-bootstrap/docs/agent-session-prompt.md",
-            "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
+            "memoria-bootstrap/docs/current-next-increment.md",
+            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
             "memoria-bootstrap/planning/current-work.json"
         ],
-        "stop_condition": "Prompt e playbook esprimono le regole senza ambiguit? o contraddizioni; planner validator e diff-check passano."
+        "stop_condition": "I due SourceDocument sono risolti nel catalogo e restano unreviewed; outcome/evaluation hash-bound riferiscono solo il tentativo eseguito e nessun dato mancante ? inferito."
     },
-    "verification":     {
+    "verification": {
         "result": "passed",
-        "notes": "Rilette le correzioni dell?utente: i claim devono riferirsi a persona/luogo; i generici vanno esclusi e spiegati prima di una domanda; una risposta esplicita ?accetto come candidata? ? una decisione accept_candidate; la segmentazione del nome Bendini/Walter/Ateo resta candidata finch? supportata. Receipt non retrodatate.",
+        "notes": "Via CLI registrati entrambi i SourceDocument candidati, unreviewed; outcome/evaluation audit-only senza issue e collegati al solo attempt autorizzato. Source coverage 1/2; retrieval candidate_results 1/1; latenza review 26 s. Claim attribution, conflitti, token/costi e confronto sessione unavailable. Nessuna identita o claim promossa e nessuna modifica canonica. Planner validator e git diff --check passano.",
         "tests": [
-            "Revisione mirata del flusso claim/review nei playbook e nel prompt quotidiano.",
-            "memoria-bootstrap/planning/validate-codex-model-routing.py PASS.",
-            "git diff --check PASS."
+            "register-online-source preview poi --apply per ciascun detail SourceDocument.",
+            "memoria feedback outcome tramite launcher con action/plan/review summary esatti, source/strategy/query/run/timestamp reali e due SourceDocument IDs.",
+            "memoria feedback evaluate tramite launcher; verificare hash binding e metriche unavailable per campi assenti.",
+            "Planner validator v3.1 e git diff --check."
+        ],
+        "documentation_touchpoints": [
+            "memoria-bootstrap/docs/current-next-increment.md",
+            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md"
         ],
         "task_envelope": {
-            "mode": "scoped-fix",
+            "mode": "quality-slice",
             "repositories": [
-                "memoria-bootstrap"
+                "memoria-bootstrap",
+                "memoria-engine",
+                "memoria-sources"
             ],
             "read_set": [
-                "prompt quotidiano e playbook review profili persona"
+                "report e sidecar T49-D",
+                "action set, feedback plan e action-review-summary T49-C",
+                "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
+                "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
+                "catalogo operativo evidence.sqlite"
             ],
             "write_set": [
-                "memoria-bootstrap/docs/agent-session-prompt.md",
-                "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md",
-                "memoria-bootstrap/planning/current-work.json"
+                "memoria-bootstrap/planning/current-work.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\database\\evidence.sqlite",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-preview-antonioli.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-preview-toni.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-apply-antonioli.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\registration-apply-toni.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-outcome.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-outcome.md",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-evaluation.json",
+                "P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs\\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\\feedback-loop-evaluation.md"
             ],
-            "test_command": "Revisione coerenza documentale, planner validator, git diff --check",
+            "test_command": "Launcher registration preview/apply for both detail pages; launcher feedback outcome/evaluate; verify catalog membership, hash/provenance, outcome linkage, review status and no canonical writes; planner validator and diff-check.",
             "stop_conditions": [
-                "Non registrare come fatto canonico un claim candidato.",
-                "Non attribuire campi del nome senza evidenza.",
-                "Non creare o retrodatare receipt dalle decisioni chat."
+                "Do not infer that the two candidate pages refer to the same person.",
+                "Do not include unrelated or unregistered document IDs in outcome.",
+                "Do not launch a second query or write canonical profile/facts."
             ]
-        },
-        "documentation_touchpoints": [
-            "memoria-bootstrap/docs/agent-session-prompt.md",
-            "memoria-bootstrap/docs/playbooks/codex-person-profile-feedback-loop-core.md"
-        ]
+        }
     },
     "session_notes": [
         "2026-11-07: T46 completed after focused offline gate: 9 registration tests, 27 CLI tests and 5 SQLite store tests pass. No OCR/VLM inference or real data access.",
@@ -182,75 +197,39 @@
         "2026-11-14: T52c completato: receipt review-only scritta dopo 9 decisioni nuove e conferma finale; 8 candidate accettate, 1 needs_more_evidence. Nessuna scrittura canonica o database.",
         "2026-11-14: T52d avviato per generare CandidateProfileUpdate preview-only dal receipt Bendini e dal profilo esistente.",
         "2026-11-14: T52d completato: claims-updates-preview produce 8 update pending, uno da_discutere per conflitto formation.name, con 1 claim needs_more_evidence escluso. Nessun apply canonico.",
-        "2026-11-14: T52e completato: destinazione persistente P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs documentata; 4 run reali trasferiti e hash-verificati. Le directory di fixture/smoke test sono rimaste intatte."
+        "2026-11-14: T52e completato: destinazione persistente P:\\Comune\\Me.Mo.Ri.a\\risultati\\runs documentata; 4 run reali trasferiti e hash-verificati. Le directory di fixture/smoke test sono rimaste intatte.",
+        "2026-11-14: T49-A selezionato per nuova ricerca su Toni Teodosio. Utente ha autorizzato source storia_memoria_bo e solo gli attempt nome-cognome (nom=Teodosio,cog=Toni) e testo-libero-nome-completo (s=\"Teodosio Toni\"); nessun altro attempt o write canonico.",
+        "2026-11-14: T49-B avviato per registrare il SourceDocument Toni acquisito da T49-A e preparare la preview catalog-bound. Nessuna review o promozione inclusa.",
+        "2026-11-14: T49-B scope aggiornato dopo il fail-closed di claims-build su claim ID duplicati nel report a due tentativi. Nessun report alterato; prosecuzione tramite il percorso T49 text->mentions->action sul SourceDocument unico.",
+        "2026-11-14: T49-B completato; SourceDocument Toni registrato, singolo documento processato, 21 menzioni unreviewed e una action preview-only. T50 claims-build fallisce su duplicate claim ID tra i due risultati e resta non risolto; nessun report modificato.",
+        "2026-11-14: T49-C avviato per action review via wizard e FeedbackSearchPlanSet preview-only; nessuna autorizzazione estesa oltre i due attempt iniziali.",
+        "2026-11-14: T49-C completato. Action review BUONA con reviewer dichiarato Marco Fabbri e 26 s misurati; plan hash-bound resta execution_allowed=false. Utente non autorizza nuove query; nessun outcome/evaluation di esecuzione creato.",
+        "2026-11-14: T49-D avviato dopo nuova autorizzazione utente per un solo attempt Partigiani: cognome-nome-contains con Toni/Teodosio. Il piano completo non ? autorizzato; auth SPID/CIE resta handoff manuale.",
+        "2026-11-14: T49-D completato: un solo attempt Partigiani autorizzato dopo handoff SPID/CIE manuale; restituiti due SourceDocument (Toni e Antonioli, Teodosio) e 10 immagini correlate, tutti unreviewed. Nessun altro attempt o profilo modificato.",
+        "2026-11-14: T49-E avviato per registrare i due detail pages Partigiani unreviewed e collegare il follow-up a outcome/evaluation; immagini correlate restano sidecar del run, non candidate claim."
     ],
-    "next_action":     {
-        "mode": "recalculate",
-        "description": "Incremento documentale T52f completato; validare il prossimo lavoro rispetto alla roadmap."
+    "next_action": {
+        "mode": "resume",
+        "description": "Dopo outcome/evaluation, se si vuole revisione delle claim, presentare prima la prima scheda candidata con provenienza per una decisione umana."
     },
     "routing": {
         "model": "gpt-6-luna",
         "agent": "parent",
         "tier": "low",
         "reasoning_effort": "low",
-        "rationale": "Invocazione di un consumer CLI esistente in modalità preview-only; nessuna implementazione o scrittura canonica.",
+        "rationale": "Operazioni CLI audit-only e registrazione dichiarativa di due pagine candidate; nessuna implementazione o modifica canonica.",
         "task_class": "quality",
         "policy_version": "3.1",
         "trace": [
-    {
-        "event": "selected",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:02:30Z",
-        "tier": "low",
-        "reason": "Generare la preview CandidateProfileUpdate dopo receipt umana completa, senza apply."
-    },
-    {
-        "event": "completed",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:03:23Z",
-        "tier": "low",
-        "reason": "Launcher produced hash-bound review-only CandidateProfileUpdate preview; canonical profile unchanged."
-    },
-    {
-        "event": "selected",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:19:53Z",
-        "tier": "low",
-        "reason": "Documentazione mirata e rilocazione conservativa di artifact operativi esistenti."
-    },
-    {
-        "event": "completed",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:19:53Z",
-        "tier": "low",
-        "reason": "Regola persistente documentata e 58 artifact originari trasferiti con hash invariati."
-    },
-    {
-        "event": "selected",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:27:54Z",
-        "tier": "low",
-        "reason": "Revisione retrospettiva della sessione e aggiornamento circoscritto di prompt e playbook."
-    },
-    {
-        "event": "completed",
-        "agent": "parent",
-        "model": "gpt-6-luna",
-        "reasoning_effort": "low",
-        "at": "2026-11-14T10:27:54Z",
-        "tier": "low",
-        "reason": "Regole per claim mirati, nominativi ambigui e decisioni esplicite documentate."
-    }
-]
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T11:50:12Z",
+                "tier": "low",
+                "reason": "Completare il collegamento auditabile tra action review, singolo attempt autorizzato e SourceDocument acquisiti."
+            }
+        ]
     }
 }

@@ -26,6 +26,52 @@ sono legati ai digest del report, claim, manifest, DB/WAL e agli ID
 La presenza del documento nel catalogo non verifica il contenuto della scheda o
 l'identità. Nessun profilo canonico o `verified_fact` è stato modificato.
 
+### Aggiornamento 2026-11-14: nuova ricerca T49-A per Toni Teodosio
+
+Eseguiti con il launcher `memoria` i due attempt autorizzati di
+`storia_memoria_bo`: `nome-cognome` (`nom=Teodosio`, `cog=Toni`) e
+`testo-libero-nome-completo` (`s="Teodosio Toni"`). Entrambi hanno restituito
+la stessa pagina persona, acquisita una volta come SourceDocument
+`storia_memoria_bo:1117a0ce1ca95846` (`unreviewed`). Report, scheda e sidecar
+sono nella run persistente
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-toni-teodosio-storia-memoria-20261114\`.
+Nessuna decisione di review o modifica canonica; il prossimo passo consiste nel
+registrare il documento nel catalogo operativo e preparare la queue umana.
+
+### Aggiornamento 2026-11-14: T49-B registration e action preview
+
+Il SourceDocument e stato registrato via CLI nel catalogo operativo con stato
+`unreviewed` e capture `excerpt_only`. `text-extract` ha processato il solo
+sidecar acquisito; `mention-preview` ha prodotto 21 menzioni unreviewed con
+claim extraction disabilitata. `feedback actions` ha generato una action
+preview-only collegata al profilo solo come `unreviewed_candidate_link`, con
+source document e digest delle menzioni verificati.
+
+Il tentativo T50 `claims-build` sul report completo ha fallito fail-closed per
+ID claim duplicati nei risultati dei due attempt. Nessun report e stato
+modificato e nessuna claim receipt e stata creata. T49-C prepara la review
+umana dell'action e il piano; non lancia query aggiuntive.
+
+T49-C ha registrato via wizard la decisione `BUONA` per l'action
+`research-feedback-action:638e31da875f05bd`, reviewer dichiarato `Marco Fabbri`,
+con latenza misurata di 26 s. Il piano hash-bound propone 2 attempt Storia e
+Memoria (gia eseguiti) e 3 attempt Partigiani, ma resta
+`execution_allowed=false`; al termine di T49-C nessun nuovo attempt era autorizzato.
+La review non risolve l'identita e il SourceDocument resta `unreviewed`.
+
+### Aggiornamento 2026-11-14: T49-D follow-up Partigiani
+
+Dopo una nuova autorizzazione esplicita, il launcher ha eseguito solo
+`cognome-nome-contains` su `partigiani_italia` per Toni Teodosio, con handoff
+SPID/CIE manuale. La ricerca ha restituito due schede candidate:
+`Antonioli, Teodosio` (`partigiani_italia:12a8376577fdb443`) e
+`Toni, Teodosio` (`partigiani_italia:6597e748c120fc78`), piu 10 immagini
+correlate. Report, testo e sidecar sono nella run persistente
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\`.
+Entrambe le schede restano `unreviewed`; la somiglianza dei nomi non risolve
+l'identita e non modifica il profilo canonico.
+
+
 T49 resta aperto per review effettivamente registrate e misure legate a run
 reali. Le decisioni Bendini raccolte in chat non sono state convertite in
 receipt; il wizard registra una review con timestamp al momento, senza
@@ -6985,3 +7031,13 @@ limite del 5% di false accettazioni.
 Prossimo passo: consolidare le unità documentali e ampliare il holdout
 indipendente, compreso lo strato handwritten prose, prima di un eventuale freeze
 o di qualunque valutazione OCR.
+
+### Aggiornamento 2026-11-14: T49-E outcome ed evaluation
+
+La ricerca è stata orchestrata con il launcher `memoria` e il connettore della fonte abilitata nel registry; non è stata una ricerca web libera né navigazione manuale del browser. La prima autorizzazione copriva due attempt `storia_memoria_bo` (`nome-cognome` e `testo-libero-nome-completo`). Dopo review action `BUONA`, non era stata autorizzata alcuna query aggiuntiva. In seguito l’utente ha autorizzato un solo attempt `partigiani_italia`: `cognome-nome-contains`, con `cognome=Toni` e `nome=Teodosio` entrambi in modalità `contains`; i due altri attempt del piano non sono stati eseguiti. L’eventuale handoff SPID/CIE è stato manuale.
+
+Via CLI sono stati registrati nel catalogo operativo i due detail SourceDocument: `partigiani_italia:12a8376577fdb443` (Antonioli, Teodosio) e `partigiani_italia:6597e748c120fc78` (Toni, Teodosio). Entrambi restano `unreviewed`; le 10 immagini correlate non sono state registrate come documenti autonomi.
+
+Il solo attempt autorizzato ha prodotto `FeedbackLoopOutcome` `feedback-loop-outcome:b3317680d6f29e5f`, stato `candidate_results`; la evaluation audit-only accetta un outcome e non segnala issue. Copertura fonte 1/2, retrieval `candidate_results` 1/1 e latenza review 26 s. Attribuzione claim, conflitti, token, costi e confronto sessioni sono `unavailable`. L’outcome non verifica identità o fatti e non consente modifiche al profilo o promozioni claim. Gli artifact sono nella run persistente `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\`.
+
+T49-E chiude il ciclo auditabile action-review → singolo attempt autorizzato → outcome/evaluation. Prossimo passo: sottoporre una scheda candidata alla volta a review umana; nessuna nuova ricerca è autorizzata.

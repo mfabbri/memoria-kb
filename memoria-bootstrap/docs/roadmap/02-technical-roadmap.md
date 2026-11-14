@@ -367,6 +367,21 @@ restano da verificare. Le risposte non sono state convertite retroattivamente
 in receipt o timestamp, non promuovono claim a fatti verificati e non modificano
 il profilo canonico.
 
+Aggiornamento T49 2026-11-14: due attempt autorizzati su `storia_memoria_bo`
+sono convergiti sulla stessa pagina, registrata come SourceDocument
+`unreviewed`/`excerpt_only`. La preview menzioni/action e la review `BUONA`
+(reviewer dichiarato Marco Fabbri, 26 s) restano candidate-only. `claims-build`
+sul report a due risultati ha fallito fail-closed per claim ID duplicati; il
+report e rimasto intatto.
+
+Dopo ulteriore autorizzazione esplicita, T49-D ha eseguito un solo attempt
+`cognome-nome-contains` su `partigiani_italia` per Toni Teodosio, dopo handoff
+SPID/CIE manuale. Il risultato ha acquisito due schede (`Antonioli, Teodosio`
+e `Toni, Teodosio`) e 10 immagini correlate. Entrambi i SourceDocument restano
+`unreviewed`; nessuna identita o fatto e stato promosso e nessun profilo canonico
+e stato modificato. L'outcome/evaluation del follow-up puo ora essere collegato
+agli ID reali dopo registrazione nel catalogo operativo.
+
 ### T50 - Review auditabile dei claim persona e candidate update (P1, completato 2026-11-09)
 
 Obiettivo: collegare `CandidateEvidenceClaimSet` con riferimenti a
@@ -2695,3 +2710,5 @@ Stato: chiusa il 2026-09-02.
 - Nuovi sottosistemi OCR/extraction senza collegamento alla pipeline esistente.
 - Scritture canoniche o API generiche non richieste dal micro-incremento.
 - Generazione di schede definitive.
+
+T49-E (2026-11-14) ha registrato nel catalogo operativo i due SourceDocument Partigiani, entrambi `unreviewed`, e ha creato `feedback-loop-outcome:b3317680d6f29e5f` per il solo attempt `cognome-nome-contains` autorizzato. L'evaluation audit-only accetta un outcome senza issue: source coverage 1/2, retrieval `candidate_results` 1/1 e review latency 26 s; claim attribution, conflict preservation, token/costi e session comparison restano `unavailable`. Nessuna identità o claim è stata promossa e non sono state applicate modifiche canoniche. La ricerca è passata dal launcher CLI al connettore dichiarato nel registry, non da una ricerca web libera; le autorizzazioni sono state raccolte in passaggi separati e il piano non ha esteso il perimetro autorizzato. Run e artifact sono in `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\`. T49 è chiuso sul ciclo auditabile action-review → query autorizzata → outcome/evaluation; la review delle schede resta un passaggio umano separato e ogni nuova query richiede autorizzazione specifica.

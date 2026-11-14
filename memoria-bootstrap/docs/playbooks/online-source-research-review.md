@@ -41,6 +41,13 @@ esclusi anche se riappaiono nel piano. `--execute-first-planned-attempt`, un
 piano `ready_for_review` o una decisione `BUONA` non sostituiscono
 l'autorizzazione per fonte e query.
 
+**Attenzione:** `--include-search-plan` aggiunge il piano al report, ma non
+attiva una modalità preview. Anche senza `--attempt-id`, il comando esegue la
+strategia standard della fonte, che può lanciare più query. Prima di invocarlo
+controllare gli attempt previsti e già eseguiti; per limitare la ricerca,
+passare solo gli ID autorizzati con `--attempt-id`. Non usare questo comando
+come ispezione innocua del piano: al momento non è una preview senza rete.
+
 ```powershell
 memoria sources online run `
   --profiles-index <profiles-index.jsonld> `
@@ -59,11 +66,20 @@ generale come ripiego.
 1. Leggere `memoria-sources/registry/camalanca_fonti.yaml` e scegliere un
    `source_id` presente in `enabled_sources` e adatto alla domanda. Non inventare
    una fonte o passare a uno scraping ampio per comodità.
-2. Consultare la pagina reale nel browser o nel canale consentito dalla fonte.
-   Conservare URL esatto, titolo e data di accesso. Una pagina dei risultati è
-   un candidato da verificare, non una prova di per sé.
+2. Eseguire la ricerca e acquisire i risultati tramite il launcher e il
+   connettore dichiarato per quella fonte. Non sostituire la ricerca CLI con
+   motori web generali o navigazione diretta del browser. Conservare URL esatto,
+   titolo e data di accesso. Una pagina dei risultati è un candidato da
+   verificare, non una prova di per sé.
 3. Trascrivere solo gli estratti pertinenti, con provenienza. Non dedurre fatti
    da un risultato di ricerca, da un nome simile o da OCR provvisorio.
+
+Se il connettore marca il dettaglio `detail_needs_manual_review` o
+`unverified_permalink_manual_review`, non trattare il collegamento costruito
+come pagina verificata e non estrarre claim da quel dettaglio. Se il canale CLI
+non consente la verifica richiesta, lasciare il documento candidato e
+`unreviewed`, descrivere il limite e fermare la generazione di claim; non
+aggirare il limite usando un browser o un motore esterno.
 
 ## 2. Registrare la pagina nel catalogo operativo
 
@@ -179,3 +195,7 @@ indicare il comando esatto per riprenderla. La chiusura di T48 non autorizza
 claim canonici, merge o pubblicazione. T49 resta un percorso separato: fixture
 e preview non valgono come ricerca/review reale né come autorizzazione a
 eseguire nuove query.
+
+### Decisioni umane: una per volta e con contesto
+
+Quando manca un'autorizzazione o serve scegliere una candidata, presentare una sola decisione per messaggio. Includere il contesto necessario: persona/profilo in esame, fonte abilitata, tentativo e query esatti, cosa è già stato eseguito, risultati candidati già presenti e cosa l'autorizzazione sblocca. Separare la valutazione di utilità dell'action (`BUONA`/`DUBBIA`/`INUTILE`) dall'autorizzazione alla ricerca e dalla risoluzione dell'identità. Registrare il perimetro letterale della risposta; un sì a un attempt non autorizza gli altri tentativi del piano, una nuova fonte o una query futura. Dopo la decisione, eseguire solo il perimetro autorizzato e comunicare run/artifact e prossimo comando CLI. Se non serve alcuna decisione, proseguire con il prossimo passaggio già autorizzato.
