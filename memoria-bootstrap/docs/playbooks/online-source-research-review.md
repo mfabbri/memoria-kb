@@ -125,6 +125,61 @@ prima di usarla per estrarre claim. Il fatto che `text-extract` riesca a leggere
 il sidecar o che i metadata dicano `claim_eligible` non prova da solo che il
 permalink sia stato verificato o che il contenuto supporti un'affermazione.
 
+### Copie locali, lineage e fedelta' delle citazioni
+
+Quando l'utente fornisce una directory di documenti e autorizza l'inventario
+ricorsivo, scandire quella radice includendo le sottodirectory; non sostituire
+la scansione richiesta con la sola lista del primo livello. Comunicare quanti
+file sono stati esaminati, quali formati/file pertinenti sono stati trovati e
+ogni limite di accesso. Non estendere l'inventario ad altre radici senza
+autorizzazione.
+
+Un'acquisizione locale di una pagina online resta un `SourceDocument`
+identificabile separatamente. Se il sidecar dichiara
+`original_source_document_id`, conservarlo come provenance esplicita; non
+dedurre una relazione da URL simili o hash. Quando entrambi gli ID sono noti,
+la CLI consente una preview read-only:
+
+```powershell
+memoria review source-lineage-preview `
+  --links-json <SourceDocumentLineageRequest.json> `
+  --source-documents-db <catalogo-operativo> `
+  --output-dir <nuova-directory-run>
+```
+
+La richiesta deve esplicitare i due ID, un tipo relazione ammesso, rationale e
+riferimento alla provenance. Il comando verifica la presenza nel catalogo e
+produce `CandidateSourceDocumentLineageSet` con relazioni `unreviewed`; non
+scrive o fonde record. Per dati reali salvare input e output nella directory
+persistente della run indicata sopra, mai in `.tmp` o `.tmp-tests` del repository.
+
+Prima di usare una quote di claim, confrontare l'`evidence_span` esatto con il
+`ProcessedDocumentText` del medesimo `source_document_id`:
+
+```powershell
+memoria review evidence-verify `
+  --claims-json <CandidateEvidenceClaimSet.json> `
+  --processed-text <ProcessedDocumentText.json> `
+  --output-dir <nuova-directory-run>
+```
+
+`not_exact` segnala una discrepanza testuale, non decide quale versione sia
+corretta. Non riscrivere claim o receipt gia' revisionati: ogni eventuale
+correzione richiede una nuova decisione umana. La vista consolidata puo' mostrare
+separatamente quote-check e lineage, mantenendo provenance e stati di review:
+
+```powershell
+memoria review memory-view `
+  --inventory-json <ResearchMemorySessionInventory.json> `
+  --lineage <CandidateSourceDocumentLineageSet.json> `
+  --quote-verification <CandidateEvidenceQuoteVerification.json> `
+  --output-dir <nuova-directory-run>
+```
+
+La presenza di due documenti o di due acquisizioni dello stesso URL non prova
+due fonti indipendenti. Mantenere visibili lineage e conflitti; non promuovere
+claim, non risolvere identita' o date divergenti e non modificare i profili.
+
 ## 3. Generare la preview
 
 Preparare gli input macchina necessari a partire dall'estratto reale e dalla

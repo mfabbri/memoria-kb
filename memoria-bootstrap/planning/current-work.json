@@ -2,51 +2,50 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-14T21:54:52Z",
-    "updated_at": "2026-11-14T22:00:51Z",
+    "selected_at": "2026-11-15T14:03:59Z",
+    "updated_at": "2026-11-15T14:11:29Z",
     "roadmap_basis": [
         {
             "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "section": "T56 - Relazioni candidate fra entità",
-            "reason": "T55 ha misurato gap di provenance; T56 prosegue su fixture offline senza richiedere fonti reali o catalogazione."
+            "section": "T59c - Vista di memoria con fedelta' quote e lineage",
+            "reason": "The authorized three-increment batch completed exact quote diagnostics, explicit SourceDocument lineage preview, and research memory integration."
         }
     ],
     "increment": {
-        "id": "t56-typed-entity-relationship-previews",
-        "title": "Relazioni candidate tipizzate fra entità",
-        "objective": "Comporre preview tipizzate SourceDocument-Person/Place/Event da link candidati espliciti, mantenendo provenance source/evidence e separando identity match, menzione e fatto storico.",
+        "id": "t59c-memory-view-lineage-and-quote-status",
+        "title": "Research memory view con lineage e quote status",
+        "objective": "Mostrare nella vista read-only le relazioni SourceDocument esplicite e gli esiti di fedelta' quote con provenance hash-bound, senza promuovere claim.",
         "scope": [
-            "Input hash-bound CandidateDocumentPerson/Place/EventLinkSet.",
-            "Output relations con document/source, evidence reference, review unreviewed e avvertenze semantiche.",
-            "Preservare candidati conflittuali senza equivalenze automatiche.",
-            "Fixture offline per persona-luogo-evento e CLI preview."
+            "CLI accetta coppia di ID documento, tipo relazione allowlisted e riferimento/evidenza esplicita.",
+            "Verifica entrambi gli ID nel catalogo operativo read-only.",
+            "Output hash-bound CandidateSourceDocumentLineageSet con review_status unreviewed; consente local_capture_of/original_page_of/derived_from.",
+            "Test fixture per ID mancanti, duplicate link, hash e no DB writes."
         ],
         "out_of_scope": [
-            "Asserire relazioni storiche persona-luogo/evento o partecipazione personale.",
-            "Verificare SourceDocument nel catalogo o applicare decisioni canoniche.",
-            "Ricerca live o uso di profili/dati reali."
+            "Merge o correzione di SourceDocument esistenti.",
+            "Inferire relazioni da URL simile o hash diverso/uguale.",
+            "Aggiornamento canonico o cambiamento receipt T55."
         ],
         "candidate_files": [
-            "memoria-engine/code/caduti_fonti_report/document_analysis/candidate_entity_relationships.py",
+            "memoria-engine/code/caduti_fonti_report/document_analysis/source_document_lineage.py",
             "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-            "memoria-engine/tests/test_candidate_entity_relationships.py",
+            "memoria-engine/tests/test_source_document_lineage.py",
             "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "memoria-bootstrap/planning/current-work.json",
             "memoria-bootstrap/docs/current-focus.md",
-            "memoria-bootstrap/docs/playbooks/online-source-research-review.md"
+            "memoria-bootstrap/planning/current-work.json"
         ],
-        "stop_condition": "Fixture offline e CLI producono relazioni tipizzate con provenance source/evidence, stati unreviewed, conflitti preservati e nessuna asserzione storica; gate mirato verde."
+        "stop_condition": "Fixture confermano membership, provenance e unreviewed; missing IDs/collisioni rifiutate; DB input immutato; CLI e test passano."
     },
     "verification": {
         "result": "passed",
-        "notes": "Preview CLI CandidateEntityRelationshipSet pronta su fixture; i tre input sono hash-bound, i conflitti restano distinti, i link sono unreviewed e source_document_existence_verified/historical_fact_asserted restano false. 43 test e 13 subcases PASS, Ruff F-check PASS, diff check PASS. T55 resta bloccato dal supporto CLI per SourceDocument locale.",
+        "notes": "T59a: 2 tests PASS; T55 had 3 exact and 3 non-exact quotes, with receipt unchanged. T59b: 2 offline tests PASS; T55 lineage preview verifies both explicit IDs from the sidecar and remains unreviewed, with no catalog write. T59c: 3 memory-view tests PASS; real T55 view includes 1 lineage link and all 6 quote statuses (3 exact, 3 not exact). No canonical writes.",
         "tests": [
-            "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_candidate_entity_relationships.py tests/test_document_person_linking.py tests/test_document_place_linking.py tests/test_document_event_linking.py tests/test_memoria_cli_place_event_preview.py tests/test_entity_preview_review.py -q",
-            "memoria-engine/.venv/Scripts/ruff.exe check --select F sui file T56 modificati",
-            "git diff --check"
+            "pytest tests/test_claim_evidence_quote_verification.py tests/test_source_document_lineage.py tests/test_research_memory_view.py -q (7 passed)",
+            "memoria review evidence-verify on T55 artifacts: 3 exact_match, 3 not_exact; inputs unchanged",
+            "installed memoria review source-lineage-preview on explicit T55 IDs: membership verified read-only, link unreviewed",
+            "installed memoria review memory-view on T57 inventory + T59a/T59b artifacts: 1 lineage link, 6 quote statuses (3 exact, 3 not exact), canonical writes disabled"
         ],
         "documentation_touchpoints": [
-            "memoria-bootstrap/docs/playbooks/online-source-research-review.md",
             "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
             "memoria-bootstrap/docs/current-focus.md"
         ],
@@ -57,23 +56,20 @@
                 "memoria-bootstrap"
             ],
             "read_set": [
-                "builder T48 Person/Place/Event candidate links e provenance",
-                "contract CLI document preview",
-                "roadmap T56 e fixture offline"
+                "SQLite source_document_catalog resolver",
+                "T55 T47 sidecar and local capture provenance",
+                "CandidateEntityRelationshipSet patterns"
             ],
             "write_set": [
-                "builder composito typed relationship preview",
-                "CLI documents relationship-preview",
-                "fixture/test offline e roadmap T56",
-                "planner",
-                "memoria-bootstrap/docs/current-focus.md",
-                "memoria-bootstrap/docs/playbooks/online-source-research-review.md"
+                "preview-only SourceDocument lineage module and CLI",
+                "offline tests",
+                "T59b roadmap/focus/planner"
             ],
-            "test_command": "pytest tests/test_candidate_entity_relationships.py tests/test_document_person_linking.py tests/test_document_place_linking.py tests/test_document_event_linking.py tests/test_memoria_cli_place_event_preview.py tests/test_entity_preview_review.py -q; Ruff F-check; git diff --check",
+            "test_command": "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_source_document_lineage.py -q; installed memoria documents source-lineage-preview; planner validator; git diff --check",
             "stop_conditions": [
-                "Solo relazioni SourceDocument-to-candidate entity da link espliciti.",
-                "Nessuna equivalenza o fatto storico inventato.",
-                "No real data, review simulation, catalog write or canonical mutation."
+                "Explicit SourceDocument IDs and relationship rationale only.",
+                "No inferred same-document relation, merge, catalog update or canonical write.",
+                "T41 OCR/T27/T28 pCloud excluded."
             ]
         }
     },
@@ -213,18 +209,28 @@
         "2026-11-14: T53 baseline completata read-only; report t53-workspace-baseline-2026-11-14.md; data root raggiungibile, 60 profili caricati, hash indice diverso dal repo, ricevute Toni presenti ma persistenza catalogo non interrogata. T54 primo candidato; T41 e T27/T28 restano sospesi.",
         "2026-11-14: T54 completato; builder deduplica solo collisioni semantiche equivalenti e conserva attempt_provenance. 12 test builder/CLI, 52 test compatibilità +42 subcases, Ruff F-check e diff check PASS. Roadmap T54 aggiornata.",
         "2026-11-14: T55 fermato prima di produrre dossier: il catalogo non attesta gli ID locali/online T47 e manca il comando CLI per registrare un file locale generico come SourceDocument. PDF T47 non acquisito; nessuna ricerca live o scrittura. Report t55-bendini-pilot-readiness-2026-11-14.md. T56 avviato su fixture offline a partire dal gap di provenance/tipi relazionali.",
-        "2026-11-14: T56 completato; aggiunto relationship-preview typed da Person/Place/Event link-set con provenance e senza asserzioni storiche/catalog verification. 43 test +13 subcases, Ruff F-check, help CLI e diff check PASS. Guida, focus e roadmap aggiornati. T55 resta bloccato dal comando mancante di registrazione SourceDocument locale generico; nessuna ricerca o scrittura."
+        "2026-11-14: T56 completato; aggiunto relationship-preview typed da Person/Place/Event link-set con provenance e senza asserzioni storiche/catalog verification. 43 test +13 subcases, Ruff F-check, help CLI e diff check PASS. Guida, focus e roadmap aggiornati. T55 resta bloccato dal comando mancante di registrazione SourceDocument locale generico; nessuna ricerca o scrittura.",
+        "2026-11-15: selected t55-local-source-document-registration; bounded to one local file, preview/apply, hash/provenance, unreviewed and idempotence on offline fixtures. No live search or operational write.",
+        "2026-11-15: t55-local-source-document-registration completato su fixture offline; 3 test PASS, launcher help PASS, hash/provenance/unreviewed/idempotenza verificati. Dossier operativo T55 ancora non composto; nessun dato reale o ricerca live usati.",
+        "2026-11-15: T55 dossier completed. Two identified documents registered; six human decisions accept_candidate recorded by wizard; receipt and dossier in persistent run t55-bendini-dossier-20261115. Conflicting dates and identity remain unresolved; no canonical mutation.",
+        "2026-11-15: opened T57a after T55 dossier and architecture review. Read-only receipt/artifact verification; T41 and T27/T28 excluded.",
+        "2026-11-15: T57a passed; opened T57b as next authorized subincrement. T57a tested 3 fixtures and verified T52/T55 receipt chains via launcher.",
+        "2026-11-15: T57b completed: two CLI processes produced deterministic ResearchMemoryView from T52/T55 receipts; 15 decisions, three conflict groups, feedback explicitly absent. Opened T58a offline certification.",
+        "2026-11-15: T58a completed offline for local_docx, storia_memoria_bo and partigiani_italia. Registry/detail/auth/local intake gate 27 PASS; connector fixtures 5 PASS; report t58a-source-family-certification-2026-11-15.md. No live search or canonical writes.",
+        "2026-11-15: opened T59a from architect-measured T55 citation fidelity gap; read-only exact span verification, no receipt changes.",
+        "2026-11-15: T59a completed diagnostic-only: 3/6 T55 evidence spans exact, 3/6 not exact; no prior claim or receipt altered. Opened T59b for explicit source-copy lineage preview.",
+        "2026-11-15: T59b/T59c completed: explicit T55 SourceDocument lineage preview verifies both IDs from the local-capture sidecar and stays unreviewed; integrated T55 memory view has 1 link and six quote statuses (3 exact, 3 not exact). Seven focused tests and installed CLI pass; no link applied and no canonical writes."
     ],
     "next_action": {
         "mode": "recalculate",
-        "description": "Delimitare il micro-incremento prerequisito per T55: registrazione preview/apply di un singolo file locale generico come SourceDocument, con hash, provenance e verifica idempotente. Non avviare nuove ricerche live; T27/T28 e T41 restano sospesi."
+        "description": "Select the next post-MVP micro-increment from measured gaps; keep T41 and T27/T28 suspended."
     },
     "routing": {
         "model": "gpt-6-luna",
         "agent": "parent",
         "tier": "low",
         "reasoning_effort": "low",
-        "rationale": "Fallback effettivo parent disponibile per incrementi; Sol/medium non disponibile nel contesto. La slice è implementata direttamente con gate mirato, nessuna attribuzione a un modello non usato.",
+        "rationale": "Parent fallback for a bounded CLI slice; Sol/medium is unavailable in this context.",
         "task_class": "implementation",
         "policy_version": "3.1",
         "trace": [
@@ -272,6 +278,15 @@
                 "at": "2026-11-14T21:54:52Z",
                 "tier": "low",
                 "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-15T09:51:39Z",
+                "reason": "T55 prerequisite scope and implementation are bounded; direct parent execution under policy 3.1, no delegation."
             }
         ]
     }

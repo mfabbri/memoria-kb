@@ -1,0 +1,14 @@
+﻿search_profile:
+  source_id: local_docx
+  engine: explicit_local_file
+  discovery:
+    method: manual_file_selection
+    profiled_at: '2026-11-15'
+  fields:
+  - id: local_file
+    label: Explicit local DOCX
+    type: local_document
+    role: source_document
+    required: true
+  strategy_notes:
+  - One explicitly selected local DOCX; no discovery, recursive search or network access.

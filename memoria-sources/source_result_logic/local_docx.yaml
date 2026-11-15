@@ -1,0 +1,16 @@
+﻿result_logic:
+  source_id: local_docx
+  engine: explicit_local_file
+  candidate_limit: 1
+  too_broad_threshold: 1
+  signals:
+    manual_input_only: true
+  rules:
+  - id: explicit-file
+    when:
+      file_explicitly_selected: true
+    assessment: candidate_results
+    collect_candidate_links: false
+    review_required: true
+  review_notes:
+  - File presence and registration do not establish claim truth.

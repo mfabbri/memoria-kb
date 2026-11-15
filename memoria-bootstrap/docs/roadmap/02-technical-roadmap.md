@@ -20,10 +20,8 @@ rilevato hardening necessario su contesto del wizard, compatibilita' delle queue
 e riconciliazione dei campi nome/cognome.
 
 T52a-c sono stati completati il 2026-11-14. Su decisione successiva,
-T27/T28 pCloud e T41 OCR sono sospesi. È definita la nuova sequenza T53-T58
-(qui sotto), con T53 primo incremento da selezionare e verificare, **non già
-avviato**. I KPI T49 non misurati richiedono dati da sessioni future; Q2 resta
-opportunistico, non una priorità autonoma. Nessuna modifica canonica è autorizzata.
+T27/T28 pCloud e T41 OCR sono sospesi. T53-T59c sono completati; nessuna
+attivita autorizza canonizzazione o ricerca live.
 
 ## Nuova sequenza integrata T53-T58 — decisione 2026-11-14
 
@@ -32,7 +30,7 @@ T41 OCR e T27/T28 pCloud sono sospesi fino a richiesta esplicita dell'utente.
 Ogni avanzamento distingue implementazione, test sintetici e prove su data root.
 Usare `docs/current-focus.md` per lo stato breve; questa roadmap è il backlog.
 
-### T53 — Baseline read-only del workspace (P0, da fare)
+### T53 ? Baseline read-only del workspace (P0, completato 2026-11-14)
 
 - **Input:** data root canonico accessibile, indice profili, catalogo SQLite,
   artifact T47 Bendini e T49 Toni, registry attuale. Il repo ZIP non sostituisce
@@ -60,24 +58,11 @@ risultato in `attempt_provenance`; collisioni o ripetizioni nello stesso attempt
 falliscono prima di creare output. Fixture sintetiche e CLI installata passano;
 manifest preesistenti restano leggibili e il formato non richiede migrazione.
 
-### T55 — Dossier Bendini da fonti online e offline (P0, bloccato: registrazione SourceDocument locale)
+### T55 - Dossier Bendini da fonti online e offline (P0, completato 2026-11-15; review-only)
 
-- **Input:** profilo e materiale T47 effettivamente esistenti. Il PDF
-  individuato in T47 non è automaticamente un `SourceDocument`: acquisirlo o
-  registrarlo tramite CLI solo se autorizzato e identificabile.
-- **Azione:** combinare almeno due documenti identificabili distinti, generare
-  claim candidati e vista unica con concordanze, divergenze, gap, provenance
-  e decisioni di review reali solo quando esplicitamente espresse.
-- **DoD:** dossier/dettaglio esaminabile nella stessa run, con almeno un
-  confronto multi-fonte e feedback tracciato, senza patch canonica automatica.
-  Se manca review umana, registrare `awaiting_review` senza inventarla.
+Il DOCX T47 e la cattura testuale gia acquisita di Storia e Memoria sono stati registrati via CLI come due SourceDocument locali con hash; source ID distinti e provenance conservata. L'ID online storico collidente non e stato sovrascritto. Sei claim con quote sono stati revisionati nel wizard da Marco Fabbri, tutti `accept_candidate`; receipt e dossier nel run persistente `t55-bendini-dossier-20261115`. Date divergenti/ambigue e identity match restano irrisolti; nessun fatto canonico o profilo aggiornato. Il PDF T47 resta SearchResult.
 
-Verifica di prerequisito 2026-11-14: T47 registra che gli ID del DOCX e della
-pagina online non sono nel catalogo operativo; il PDF è rimasto SearchResult.
-La CLI non dispone di registrazione preview/apply di un file locale generico
-nel catalogo `SourceDocument` (il comando locale esistente gestisce immagini).
-Nessuna nuova ricerca o registrazione avviata. Dettaglio e perimetro minimo
-della capacità mancante: `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md`.
+Il prerequisito CLI `memoria documents register-local-source` e coperto da 3 test offline: preview/apply, hash, provenance, review unreviewed, retry e collisione divergente. Il dettaglio operativo e in `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md` e nel run sopra.
 
 ### T56 — Relazioni candidate fra entità (P1, completato 2026-11-14)
 
@@ -96,15 +81,17 @@ restano menzioni. I conflitti restano distinti; catalog verification e fatti
 storici/partecipazione non sono asseriti. Gate su fixture e CLI: 43 test e 13
 sottocasi PASS, Ruff F-check e diff check PASS.
 
-### T57 — Memoria di ricerca incrementale (P1, da fare)
+### T57a - Recupero verificabile delle sessioni (P1, completato 2026-11-15)
 
-- **Input:** dossier T55, review/feedback T49-T52, schema e store attuali.
-- **Azione:** recuperare nella sessione successiva documenti, claim, conflict,
-  decision e feedback per entità, senza duplicazioni o perdita di audit.
-- **DoD:** due sessioni dimostrano la persistenza verificata; preview/apply
-  separati con backup e audit se richiesti. Nessun merge canonico implicito.
+`memoria review memory-inventory --receipt <receipt> [--receipt <receipt> ...] --output-dir <new-dir>` verifica SHA-256 di manifest, claims input, queue e review markdown; usa `artifact-relocation-manifest.json` come mapping solo se il digest atteso coincide. Classifica separatamente catalog snapshot corrente, drift e indisponibilita. Non modifica receipt, artifact o catalogo.
 
-### T58 — Certificazione end-to-end di tre famiglie di fonti (P2, da fare)
+Gate: tre test fixture PASS (due sessioni, hash manomesso, file mancante e relocation); CLI installata verificata su receipt T52/T55: 8 artifact verificati, T52 risolto via relocation e catalog drift dichiarato, T55 snapshot corrente verificato. Inventario persistente in `P:\Comune\Me.Mo.Ri.a\risultati\runs\t57-bendini-memory-view-20261115\verified-inventory-v2\`.
+
+### T57b - Vista consolidata di evidenze, decisioni e feedback (P1, completato 2026-11-15)
+
+CLI `memoria review memory-view` ricostruisce la vista dagli inventari T57a, ricontrolla hash delle receipt e conserva ogni decisione, documento e conflitto. Feedback assente e dichiarato `not_provided`. Gate: 2 test fixture PASS e due processi CLI distinti con payload JSON identico (15 decisioni, 3 gruppi di divergenza). Nessun merge canonico; artifact nel run T57 persistente.
+
+### T58a - Certificazione end-to-end di tre famiglie di fonti (P2, completato 2026-11-15)
 
 - **Input:** registry dichiarativo, pilot T55 e T57.
 - **Azione:** scegliere tre fonti/famiglie *già configurate*, misurare coverage
@@ -113,9 +100,41 @@ sottocasi PASS, Ruff F-check e diff check PASS.
   autorizzati, limiti motivati e almeno un dossier ripetibile. Non assumere che
   18 fonti abilitate siano 18 connettori live completi.
 
-**Regola di selezione:** T53 -> T54 -> T55, poi T56 -> T57 -> T58 secondo
-gap riscontrati; piccoli incrementi testabili, non sei implementazioni in un'unica
-sessione. Q2 solo per rischi che bloccano questo percorso.
+Esito T58a 2026-11-15: matrice offline per `local_docx`, `storia_memoria_bo` e `partigiani_italia`, con differenze search/detail, review/feedback, no_results e stati autenticati non verificati. Gate registry/detail/auth/local intake: 27 PASS; connector fixtures mirate: 5 PASS. Nessuna ricerca live. Limiti e artifact: `docs/reports/t58a-source-family-certification-2026-11-15.md`.
+
+**Regola di selezione:** T53 -> T54 -> T55 -> T56 -> T57a -> T57b -> T58a. La sequenza e chiusa; il candidato successivo va selezionato dai gap misurati, senza pre-selezione. T41 e T27/T28 restano sospesi.
+
+## Incrementi T59a-T59c - Fedelta' delle evidenze e lineage SourceDocument (P1, completati 2026-11-15)
+
+### T59a - Verifica exact-match delle citazioni
+
+`memoria review evidence-verify` confronta `evidence_span` dei claim con
+`ProcessedDocumentText` espliciti e hash-bound. Non normalizza o corregge le
+quote e non modifica claim/receipt. Sul dossier T55: 3 di 6 quote sono
+exact-match, 3 non esatte. Report diagnostico nel run T55; la receipt umana
+resta invariata. Due test mirati PASS.
+
+### T59b - Preview di relazioni esplicite tra copie e fonti
+
+`memoria review source-lineage-preview --links-json <request>
+--source-documents-db <catalog> --output-dir <dir>` richiede coppie di ID,
+relazione allowlisted, rationale e riferimento provenance espliciti. Verifica
+entrambi gli ID con catalogo SQLite read-only; missing ID, self-link e link
+duplicati falliscono. L'output `CandidateSourceDocumentLineageSet` ha
+`review_status: unreviewed`, hash dell'input e snapshot del catalogo. Non
+inserisce link nel catalogo e non inferisce l'identita' di copie. Due test
+offline PASS; nessun collegamento T55 e' stato applicato.
+
+### T59c - Estensione della research memory view
+
+`memoria review memory-view` accetta `--lineage` e `--quote-verification`
+ripetibili. Espone le relazioni ancora unreviewed e gli stati delle verifiche
+quote con hash e path degli artifact, distinti da decisioni e conflitti della
+review umana. Tre test mirati della vista PASS; promozione claim e scritture
+canoniche restano disabilitate.
+
+**Sequenza chiusa:** T53 -> T54 -> T55 -> T56 -> T57a -> T57b -> T58a ->
+T59a -> T59b -> T59c. T41 e T27/T28 restano sospesi.
 
 ### T45 - Quality gate post-MVP e contratto di integrazione (P0, completato 2026-11-01)
 

@@ -1,0 +1,13 @@
+detail_logic:
+  source_id: local_docx
+  detail_level: detail_document_only
+  engine: explicit_local_file
+  rules:
+  - id: file-unreviewed
+    when:
+      file_registered: true
+    assessment: detail_document_fetched
+    review_required: true
+  review_notes:
+  - Preserve original bytes and hash; claims require separate evidence extraction and human review.
+  extraction_method: manual_document

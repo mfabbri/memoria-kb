@@ -1,0 +1,8 @@
+﻿search_strategy:
+  source_id: local_docx
+  engine: explicit_local_file
+  profile_path: source_profiles/local_docx.yaml
+  max_attempts: 0
+  attempts: []
+  strategy_notes:
+  - Manual single-file registration only; this source has no search connector.

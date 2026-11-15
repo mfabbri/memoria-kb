@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sqlite3
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -1200,6 +1201,61 @@ def _command_review_claims_preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_review_memory_inventory(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_memory_inventory import build_research_memory_inventory
+    try:
+        report = build_research_memory_inventory(receipt_paths=[Path(x) for x in args.receipt], output_dir=Path(args.output_dir))
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"ERROR review memory-inventory: {exc}", file=sys.stderr)
+        return 1
+    print(f"Research memory inventory: {Path(args.output_dir).resolve() / 'research-memory-inventory.json'}")
+    print(f"Receipts: {report['receipt_count']}; decisions: {report['decision_count']}; profiles: {len(report['profile_ids'])}")
+    print("Read-only: source receipts and artifacts were not modified.")
+    return 0
+
+
+def _command_review_memory_view(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.research_memory_view import build_research_memory_view
+    try:
+        report = build_research_memory_view(inventory_path=Path(args.inventory_json),
+            output_dir=Path(args.output_dir), feedback_outcome_paths=[Path(x) for x in args.feedback_outcome],
+            lineage_paths=[Path(x) for x in args.lineage], quote_verification_paths=[Path(x) for x in args.quote_verification])
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"ERROR review memory-view: {exc}", file=sys.stderr)
+        return 1
+    print(f"Research memory view: {Path(args.output_dir).resolve() / 'research-memory-view.json'}")
+    print(f"Profiles: {len(report['profile_ids'])}; sessions: {report['session_count']}; decisions: {len(report['claim_decisions'])}; conflicts: {len(report['conflicts'])}")
+    print(f"Feedback: {report['feedback_state']}; canonical writes disabled.")
+    print(f"Lineage links: {len(report['source_document_lineage'])}; quote checks: {len(report['evidence_quote_checks'])}.")
+    return 0
+
+
+def _command_review_evidence_verify(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.claim_evidence_quote_verification import verify_claim_evidence_quotes
+    try:
+        report = verify_claim_evidence_quotes(claims_json=Path(args.claims_json),
+            processed_text_paths=[Path(x) for x in args.processed_text], output_dir=Path(args.output_dir))
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
+        print(f"ERROR review evidence-verify: {exc}", file=sys.stderr)
+        return 1
+    print(f"Quote verification: {Path(args.output_dir).resolve() / 'quote-verification.json'}")
+    print(f"Claims: {report['claim_count']}; statuses: {report['status_counts']}; input claims and receipts unchanged.")
+    return 0
+
+
+def _command_review_source_lineage_preview(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.source_document_lineage import build_source_document_lineage_preview
+    try:
+        report = build_source_document_lineage_preview(links_json=Path(args.links_json),
+            catalog_db=Path(args.source_documents_db), output_dir=Path(args.output_dir))
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError, sqlite3.Error) as exc:
+        print(f"ERROR review source-lineage-preview: {exc}", file=sys.stderr)
+        return 1
+    print(f"SourceDocument lineage: {Path(args.output_dir).resolve() / 'source-document-lineage.json'}")
+    print(f"Links: {len(report['links'])}; unreviewed; catalog unchanged.")
+    return 0
+
+
 def _command_review_claims_wizard(args: argparse.Namespace) -> int:
     from caduti_fonti_report.document_analysis.candidate_evidence_claim_review import (
         _protect_catalog_output,
@@ -2214,6 +2270,20 @@ def _command_documents_register_online_source(args: argparse.Namespace) -> int:
         )
     except (OSError, ValueError, TypeError, KeyError) as exc:
         print(f"Errore documents register-online-source: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def _command_documents_register_local_source(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.local_source_registration import register_local_source_document
+    try:
+        report = register_local_source_document(database_path=Path(args.database), file_path=Path(args.file),
+            source_id=args.source_id, title=args.title, access_date=args.access_date,
+            archival_reference=args.archival_reference, sources_registry=Path(args.sources_registry) if args.sources_registry else None,
+            apply=args.apply, timestamp=datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"))
+    except (OSError, ValueError, TypeError, KeyError, sqlite3.Error) as exc:
+        print(f"Errore documents register-local-source: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
@@ -3808,6 +3878,33 @@ def build_parser() -> argparse.ArgumentParser:
     review_claims_preview.add_argument("--source-documents-db", required=True, help="Catalogo SQLite esistente; sola lettura.")
     review_claims_preview.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
     review_claims_preview.set_defaults(handler=_command_review_claims_preview)
+    review_memory_inventory = review_subparsers.add_parser(
+        "memory-inventory", help="Verifica receipt di review e artifact espliciti senza modificare gli input.")
+    review_memory_inventory.add_argument("--receipt", action="append", required=True,
+                                         help="Receipt CandidateEvidenceClaimReviewReceipt; ripetibile.")
+    review_memory_inventory.add_argument("--output-dir", required=True, help="Directory nuova per l'inventario verificato.")
+    review_memory_inventory.set_defaults(handler=_command_review_memory_inventory)
+    review_memory_view = review_subparsers.add_parser(
+        "memory-view", help="Compone una vista read-only da inventari verificati, decisioni e feedback espliciti.")
+    review_memory_view.add_argument("--inventory-json", required=True, help="ResearchMemorySessionInventory verificato da T57a.")
+    review_memory_view.add_argument("--feedback-outcome", action="append", default=[], help="FeedbackLoopOutcome; ripetibile.")
+    review_memory_view.add_argument("--lineage", action="append", default=[], help="CandidateSourceDocumentLineageSet; ripetibile.")
+    review_memory_view.add_argument("--quote-verification", action="append", default=[], help="CandidateEvidenceQuoteVerification; ripetibile.")
+    review_memory_view.add_argument("--output-dir", required=True, help="Directory nuova per la vista consolidata.")
+    review_memory_view.set_defaults(handler=_command_review_memory_view)
+    review_evidence_verify = review_subparsers.add_parser(
+        "evidence-verify", help="Verifica exact evidence_span nei ProcessedDocumentText espliciti; non corregge i claim.")
+    review_evidence_verify.add_argument("--claims-json", required=True, help="CandidateEvidenceClaimSet esplicito.")
+    review_evidence_verify.add_argument("--processed-text", action="append", required=True,
+                                        help="ProcessedDocumentText hash-bound; ripetibile.")
+    review_evidence_verify.add_argument("--output-dir", required=True, help="Directory nuova per il report read-only.")
+    review_evidence_verify.set_defaults(handler=_command_review_evidence_verify)
+    review_source_lineage = review_subparsers.add_parser(
+        "source-lineage-preview", help="Verifica e descrive relazioni esplicite tra SourceDocument senza modificarli.")
+    review_source_lineage.add_argument("--links-json", required=True, help="SourceDocumentLineageRequest esplicita.")
+    review_source_lineage.add_argument("--source-documents-db", required=True, help="Catalogo SQLite esistente; sola lettura.")
+    review_source_lineage.add_argument("--output-dir", required=True, help="Directory nuova per l'artifact preview.")
+    review_source_lineage.set_defaults(handler=_command_review_source_lineage_preview)
     review_claims_wizard = review_subparsers.add_parser(
         "claims-wizard", help="Revisiona un claim per volta e scrive una receipt solo dopo conferma.")
     review_claims_wizard.add_argument("--manifest", required=True, help="Manifest esatto di claims-preview.")
@@ -3969,6 +4066,17 @@ def build_parser() -> argparse.ArgumentParser:
                                          help="Titolo attuale esatto, richiesto per correggere solo il titolo di un record esistente.")
     documents_online_source.add_argument("--apply", action="store_true", help="Registra SourceDocument e SearchRun; default preview.")
     documents_online_source.set_defaults(handler=_command_documents_register_online_source)
+    documents_local_source = documents_subparsers.add_parser(
+        "register-local-source", help="Preview or register one explicit local file as an unreviewed SourceDocument.")
+    documents_local_source.add_argument("--database", required=True, help="Existing operational SQLiteEvidenceStore.")
+    documents_local_source.add_argument("--file", required=True, help="One local file; no directory recursion.")
+    documents_local_source.add_argument("--source-id", required=True, help="Source ID enabled in the registry.")
+    documents_local_source.add_argument("--title", required=True, help="Explicit document title.")
+    documents_local_source.add_argument("--access-date", required=True, help="Access date YYYY-MM-DD.")
+    documents_local_source.add_argument("--archival-reference", default="", help="Optional archival reference.")
+    documents_local_source.add_argument("--sources-registry", default="", help="Optional explicit source registry.")
+    documents_local_source.add_argument("--apply", action="store_true", help="Register; default is read-only preview.")
+    documents_local_source.set_defaults(handler=_command_documents_register_local_source)
     documents_text_extract = documents_subparsers.add_parser(
         "text-extract",
         help="Estrae testo da metadata e file espliciti; non esegue OCR né scansioni ricorsive.",

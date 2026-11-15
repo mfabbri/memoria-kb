@@ -17,6 +17,7 @@
 - oesta_ais_feldsuche
 - oesta_kriegsarchiv
 - noi_partigiani
+- local_docx
 sources:
 - id: partigiani_italia
   name: I Partigiani d'Italia - ricerca pubblica
@@ -815,3 +816,26 @@ sources:
   review:
     required: true
     reason: 'Ogni risultato Ã¨ candidato: nessun fatto storico deve essere pubblicato senza evidenza e revisione.'
+- id: local_docx
+  name: Documenti DOCX locali identificati
+  kind: local_document
+  group: local_archival_documents
+  access_type: local_file
+  priority: 1
+  query_mode: manual_only
+  legal_policy:
+    allow_automated_search: false
+    allow_mass_extraction: false
+    attribution_required: true
+    notes: 'Registrazione manuale di singoli DOCX locali esplicitamente identificati; nessuna ricerca o estrazione automatica.'
+  supports:
+  - document_registration
+  output_fields:
+  - document.title
+  - document.content_hash
+  raw_storage:
+    enabled: true
+    strategy: explicit_local_file
+  review:
+    required: true
+    reason: 'Il documento e i claim restano unreviewed fino a decisione umana.'

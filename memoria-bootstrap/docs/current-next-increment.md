@@ -7052,3 +7052,35 @@ Via CLI sono stati registrati nel catalogo operativo i due detail SourceDocument
 Il solo attempt autorizzato ha prodotto `FeedbackLoopOutcome` `feedback-loop-outcome:b3317680d6f29e5f`, stato `candidate_results`; la evaluation audit-only accetta un outcome e non segnala issue. Copertura fonte 1/2, retrieval `candidate_results` 1/1 e latenza review 26 s. Attribuzione claim, conflitti, token, costi e confronto sessioni sono `unavailable`. L’outcome non verifica identità o fatti e non consente modifiche al profilo o promozioni claim. Gli artifact sono nella run persistente `P:\Comune\Me.Mo.Ri.a\risultati\runs\t49-toni-teodosio-partigiani-cognome-nome-contains-20261114\`.
 
 T49-E chiude il ciclo auditabile action-review → singolo attempt autorizzato → outcome/evaluation. Prossimo passo: sottoporre una scheda candidata alla volta a review umana; nessuna nuova ricerca è autorizzata.
+
+### Retrospettiva sessione T55/T59 - 2026-11-15
+
+T55 resta review-only: il wizard ha registrato sei `accept_candidate`, ma le
+date di nascita e di morte divergenti e l'identita' non sono state risolte; la
+receipt non equivale a canonizzazione. La verifica exact-span T59a sul testo
+acquisito ha trovato 3 quote esatte e 3 non esatte. Il report persistente e'
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\t55-bendini-dossier-20261115\quote-verification-t59a-v2\quote-verification.json`.
+Questi mismatch sono diagnostici: non alterare retroattivamente claim o receipt;
+un'eventuale correzione deve tornare a review umana.
+
+Il sidecar della cattura locale Storia e Memoria esplicita
+`original_source_document_id=storia_memoria_bo:e07e90deee3e6b6b` e conserva
+l'ID locale `local-source:e46ff1f6ae603469ba147cb9b91c85f61f3ea64f9d2efab7de7d59aa2ce5ad02`,
+lo stesso `source_id` e l'URL della pagina. T59b ha verificato entrambi gli ID
+nel catalogo e prodotto una preview `local_capture_of` ancora `unreviewed`; il
+catalog hash e' rimasto invariato. Il legame non e' stato applicato e due copie
+non vanno conteggiate come fonti indipendenti.
+
+T59c ha ricomposto inventory T57, lineage e quote-check T59a: 1 legame e 6
+esiti (3 `exact_match`, 3 `not_exact`), con canonical write disabilitato. Le
+prove CLI T59b/T59c sono state smoke temporanei; non e' stato creato un nuovo
+run persistente per tali output. Per prossime sessioni con dati reali, creare
+prima la directory persistente della run e non lasciare artifact reali in
+`.tmp-tests` o nel repository.
+
+Lezione di processo: quando l'utente indica una cartella e autorizza la ricerca
+ricorsiva, l'inventario deve coprire quella radice e tutte le sottocartelle;
+una lista del primo livello non basta. Se manca un input o una scelta, chiedere
+esattamente quale dato/decisione serve e quale passaggio sblocca, senza fermarsi
+a elencare blocker generici. Documentare la copertura e poi procedere entro il
+perimetro autorizzato.
