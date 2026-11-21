@@ -1188,6 +1188,7 @@ def _command_review_claims_preview(args: argparse.Namespace) -> int:
         report = build_candidate_evidence_claim_review(
             claims_json=Path(args.claims_json), source_documents_db=Path(args.source_documents_db),
             output_dir=Path(args.output_dir),
+            quote_verification_path=Path(args.quote_verification) if args.quote_verification else None,
         )
     except (OSError, UnicodeError, ValueError, TypeError) as exc:
         print(f"ERROR review claims-preview: {exc}", file=sys.stderr)
@@ -1196,6 +1197,9 @@ def _command_review_claims_preview(args: argparse.Namespace) -> int:
     print(f"Manifest: {Path(args.output_dir).resolve() / 'candidate_claim_review_manifest.json'}")
     print(f"Claim candidati: {report['counts']['claims']}")
     print(f"Input SHA-256: {report['claims_input']['sha256']}")
+    if report.get("quote_verification"):
+        print(f"Quote verification SHA-256: {report['quote_verification']['sha256']}")
+        print(f"Quote diagnostics: {report['quote_status_counts']}")
     print("Review-only: nessuna decisione, promozione claim o modifica canonica.")
     print("SourceDocument: presenza verificata nel catalogo SQLite esplicito; contenuti non validati.")
     return 0
@@ -2113,6 +2117,7 @@ def _command_feedback_outcome(args: argparse.Namespace) -> int:
             execution_mode=args.execution_mode,
             query=args.query,
             result_source_document_ids=args.result_source_document_id,
+            source_documents_db=Path(args.source_documents_db) if args.source_documents_db else None,
             notes=args.notes,
             run_id=args.run_id,
             executed_at=args.executed_at or None,
@@ -3876,6 +3881,7 @@ def build_parser() -> argparse.ArgumentParser:
         "claims-preview", help="Genera una review queue hash-bound dai claim persona espliciti; nessuna decisione.")
     review_claims_preview.add_argument("--claims-json", required=True, help="CandidateEvidenceClaimSet esplicito.")
     review_claims_preview.add_argument("--source-documents-db", required=True, help="Catalogo SQLite esistente; sola lettura.")
+    review_claims_preview.add_argument("--quote-verification", help="CandidateEvidenceQuoteVerification per lo stesso input; sola diagnostica.")
     review_claims_preview.add_argument("--output-dir", required=True, help="Directory nuova o preview precedente identica.")
     review_claims_preview.set_defaults(handler=_command_review_claims_preview)
     review_memory_inventory = review_subparsers.add_parser(
@@ -4026,6 +4032,8 @@ def build_parser() -> argparse.ArgumentParser:
     feedback_outcome.add_argument("--query", required=True, help="Query realmente eseguita.")
     feedback_outcome.add_argument("--result-source-document-id", action="append", default=[],
                                   help="SourceDocument identificabile trovato; ripetibile, non basta un risultato web.")
+    feedback_outcome.add_argument("--source-documents-db",
+                                  help="Catalogo SQLite esistente; richiesto con candidate_results e documenti.")
     feedback_outcome.add_argument("--notes", default="")
     feedback_outcome.add_argument("--run-id", required=True, help="Identificativo del run effettivamente avvenuto.")
     feedback_outcome.add_argument("--executed-at", help="Timestamp reale ISO-8601 con timezone; default: istante CLI.")

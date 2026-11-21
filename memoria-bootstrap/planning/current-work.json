@@ -2,78 +2,78 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-15T14:03:59Z",
-    "updated_at": "2026-11-15T14:11:29Z",
+    "selected_at": "2026-11-21T14:53:27Z",
+    "updated_at": "2026-11-21T14:54:31Z",
     "roadmap_basis": [
         {
             "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "section": "T59c - Vista di memoria con fedelta' quote e lineage",
-            "reason": "The authorized three-increment batch completed exact quote diagnostics, explicit SourceDocument lineage preview, and research memory integration."
+            "section": "T77-T79 - SourceDocument catalog binding and memory-view projection",
+            "reason": "T77-T79 add producer resolution, catalog provenance projection, and consistency validation, but the combined launcher fixture does not yet assert these fields in the final consumer view."
         }
     ],
     "increment": {
-        "id": "t59c-memory-view-lineage-and-quote-status",
-        "title": "Research memory view con lineage e quote status",
-        "objective": "Mostrare nella vista read-only le relazioni SourceDocument esplicite e gli esiti di fedelta' quote con provenance hash-bound, senza promuovere claim.",
-        "scope": [
-            "CLI accetta coppia di ID documento, tipo relazione allowlisted e riferimento/evidenza esplicita.",
-            "Verifica entrambi gli ID nel catalogo operativo read-only.",
-            "Output hash-bound CandidateSourceDocumentLineageSet con review_status unreviewed; consente local_capture_of/original_page_of/derived_from.",
-            "Test fixture per ID mancanti, duplicate link, hash e no DB writes."
-        ],
-        "out_of_scope": [
-            "Merge o correzione di SourceDocument esistenti.",
-            "Inferire relazioni da URL simile o hash diverso/uguale.",
-            "Aggiornamento canonico o cambiamento receipt T55."
-        ],
-        "candidate_files": [
-            "memoria-engine/code/caduti_fonti_report/document_analysis/source_document_lineage.py",
-            "memoria-engine/code/caduti_fonti_report/memoria_cli.py",
-            "memoria-engine/tests/test_source_document_lineage.py",
-            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "memoria-bootstrap/docs/current-focus.md",
-            "memoria-bootstrap/planning/current-work.json"
-        ],
-        "stop_condition": "Fixture confermano membership, provenance e unreviewed; missing IDs/collisioni rifiutate; DB input immutato; CLI e test passano."
-    },
+    "id": "t84-multi-result-source-attribution-matrix",
+    "title": "Cover multi-document source attribution outcomes",
+    "objective": "Verify candidate_results attribution for multiple SourceDocuments: all matching yields matched, incomplete legacy metadata yields unavailable, and any known mismatch fails before output.",
+    "scope": [
+        "Add a multi-document offline fixture with two matching SourceDocuments and assert matched attribution.",
+        "Add a partial source_id metadata case and assert unavailable without match inference.",
+        "Make one document mismatch and assert fail-closed before writing outcome; verify fixture catalog bytes remain unchanged during resolution."
+    ],
+    "out_of_scope": [
+        "Change runtime behavior unless tests expose a concrete defect.",
+        "Use real catalogs or online searches.",
+        "Modify ResearchMemoryView or canonical records."
+    ],
+    "candidate_files": [
+        "memoria-engine/tests/test_feedback_loop_outcome.py",
+        "memoria-bootstrap/planning/current-work.json",
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/current-next-increment.md"
+    ],
+    "stop_condition": "Offline multi-document matrix proves matched, unavailable and mismatch behavior, no output on mismatch and no resolver catalog writes; focused tests, Ruff, planner validation and diff check pass."
+},
     "verification": {
-        "result": "passed",
-        "notes": "T59a: 2 tests PASS; T55 had 3 exact and 3 non-exact quotes, with receipt unchanged. T59b: 2 offline tests PASS; T55 lineage preview verifies both explicit IDs from the sidecar and remains unreviewed, with no catalog write. T59c: 3 memory-view tests PASS; real T55 view includes 1 lineage link and all 6 quote statuses (3 exact, 3 not exact). No canonical writes.",
-        "tests": [
-            "pytest tests/test_claim_evidence_quote_verification.py tests/test_source_document_lineage.py tests/test_research_memory_view.py -q (7 passed)",
-            "memoria review evidence-verify on T55 artifacts: 3 exact_match, 3 not_exact; inputs unchanged",
-            "installed memoria review source-lineage-preview on explicit T55 IDs: membership verified read-only, link unreviewed",
-            "installed memoria review memory-view on T57 inventory + T59a/T59b artifacts: 1 lineage link, 6 quote statuses (3 exact, 3 not exact), canonical writes disabled"
+    "result": "passed",
+    "notes": "T84 passed the multi-document attribution matrix: complete matching metadata yields matched, partial legacy metadata yields unavailable, and one known mismatch prevents outcome output. SourceDocument catalog bytes remain unchanged during resolution.",
+    "tests": [
+        "memoria-engine/.venv/Scripts/pytest.exe tests/test_feedback_loop_outcome.py tests/test_source_document_catalog.py tests/test_research_memory_view.py -q: 32 passed, 30 subtests passed",
+        "Focused Ruff on source catalog, feedback outcome, memory view and tests: PASS",
+        "Planner validator and git diff --check: PASS"
+    ],
+    "documentation_touchpoints": [
+        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+        "memoria-bootstrap/docs/current-next-increment.md"
+    ],
+    "task_envelope": {
+        "mode": "quality-slice",
+        "repositories": [
+            "memoria-engine",
+            "memoria-bootstrap"
         ],
-        "documentation_touchpoints": [
-            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "memoria-bootstrap/docs/current-focus.md"
+        "read_set": [
+            "T81 producer source attribution semantics",
+            "T82 consumer attribution validation",
+            "T83 single-document launcher integration"
         ],
-        "task_envelope": {
-            "mode": "feature-slice",
-            "repositories": [
-                "memoria-engine",
-                "memoria-bootstrap"
-            ],
-            "read_set": [
-                "SQLite source_document_catalog resolver",
-                "T55 T47 sidecar and local capture provenance",
-                "CandidateEntityRelationshipSet patterns"
-            ],
-            "write_set": [
-                "preview-only SourceDocument lineage module and CLI",
-                "offline tests",
-                "T59b roadmap/focus/planner"
-            ],
-            "test_command": "memoria-engine/.venv/Scripts/python.exe -m pytest tests/test_source_document_lineage.py -q; installed memoria documents source-lineage-preview; planner validator; git diff --check",
-            "stop_conditions": [
-                "Explicit SourceDocument IDs and relationship rationale only.",
-                "No inferred same-document relation, merge, catalog update or canonical write.",
-                "T41 OCR/T27/T28 pCloud excluded."
-            ]
-        }
-    },
+        "write_set": [
+            "Multi-document source attribution fixtures and assertions",
+            "Planner and direct roadmap/current-next notes"
+        ],
+        "test_command": "pytest tests/test_feedback_loop_outcome.py tests/test_source_document_catalog.py tests/test_research_memory_view.py -q; focused Ruff; planner validator; git diff --check",
+        "stop_conditions": [
+            "Synthetic SQLite fixtures only.",
+            "Catalog resolution does not mutate database bytes.",
+            "Mismatch fails before output creation.",
+            "No live search, real records or canonical writes."
+        ]
+    }
+},
     "session_notes": [
+        "2026-11-15: T61 claim 1/3 completed via installed claims-wizard: death-date DOCX accept_candidate with exact ProcessedDocumentText span; new receipt in persistent run, canonical writes disabled. Original T55 receipt/claim unchanged. Exact quote verified 1/1 and catalog-bound preview verified.",
+        "2026-11-15: T61 opened after user said proceed on the three T55 quote mismatches. Scope limited to exact-source diagnosis and one-at-a-time human decisions; existing claims and receipt remain immutable.",
+        "2026-11-15: T60 completed; offline memory-view fixture verifies lineage and quote-verification artifact paths and SHA-256 in the returned and serialized view. 3 focused tests, planner schema validation with jsonschema, and diff check pass; no runtime or real data changed.",
+        "2026-11-15: T60 opened as an offline quality-slice after identifying that T59c promises artifact paths and hashes in ResearchMemoryView but the focused fixture asserts only diagnostic status. No real dossier, review, or canonical writes authorized or used.",
         "2026-11-07: T46 completed after focused offline gate: 9 registration tests, 27 CLI tests and 5 SQLite store tests pass. No OCR/VLM inference or real data access.",
         "2026-11-01: T45 micro-increment completed: OCR->SourceDocument contract v1.0, focused baseline documented, two stale OCR batch test fixtures refreshed. 62 targeted tests pass across unittest/pytest; test_cli_paths.py is pytest-only placeholder, T31 test is collectable by both runners. .env ignored/untracked/not read, no archive found. T46 remains next; no production bridge implemented.",
         "2026-11-01: tuning provisional OCR T42 chiuso nello scope tedesco/PP-OCRv5/numbered_report. 63/11.616 eventi/parole candidate stimate (~0,54%), worst page 10/1.117 (~0,90%), cutoff 1.0, 10/10 provisional accepted e 0/10 manual nel pilot. Il cutoff non discrimina e non garantisce accuratezza futura; machine_pass, human_verified e claim restano falsi. OcrWorkflow blocca il batch se la review supera il 3%.",
@@ -219,75 +219,325 @@
         "2026-11-15: T58a completed offline for local_docx, storia_memoria_bo and partigiani_italia. Registry/detail/auth/local intake gate 27 PASS; connector fixtures 5 PASS; report t58a-source-family-certification-2026-11-15.md. No live search or canonical writes.",
         "2026-11-15: opened T59a from architect-measured T55 citation fidelity gap; read-only exact span verification, no receipt changes.",
         "2026-11-15: T59a completed diagnostic-only: 3/6 T55 evidence spans exact, 3/6 not exact; no prior claim or receipt altered. Opened T59b for explicit source-copy lineage preview.",
-        "2026-11-15: T59b/T59c completed: explicit T55 SourceDocument lineage preview verifies both IDs from the local-capture sidecar and stays unreviewed; integrated T55 memory view has 1 link and six quote statuses (3 exact, 3 not exact). Seven focused tests and installed CLI pass; no link applied and no canonical writes."
+        "2026-11-15: T59b/T59c completed: explicit T55 SourceDocument lineage preview verifies both IDs from the local-capture sidecar and stays unreviewed; integrated T55 memory view has 1 link and six quote statuses (3 exact, 3 not exact). Seven focused tests and installed CLI pass; no link applied and no canonical writes.",
+        "2026-11-21: T61 claim 2/3 (DOCX formation) quote-verified exact against the hash-bound source text; needs_more_evidence recorded via claims-wizard in review/formation/receipt.json. SourceDocument catalog presence verified; canonical writes and claim promotion remain false. Original T55 claim and receipt unchanged. Next: request decision on claim 3/3.",
+        "2026-11-21: T61 completed after three explicit decisions were recorded via claims-wizard in separate review-only receipts. Exact quote checks pass for the corrected DOCX formation and online formation candidates; SourceDocument catalog membership verified. Original T55 claims/receipt unchanged; no promotion, canonical write or identity resolution. Focused CLI workflow and planner validator passed; no code tests run. Next: roadmap selection only.",
+        "2026-11-21: T62 completed. claims-wizard requires a non-empty rationale for needs_more_evidence; other decisions retain optional notes. Focused tests: 18 PASS plus 42 subtests; installed launcher help and Ruff PASS. No runtime or operational review artifacts changed. Next candidate: preserve review rationale in ResearchMemoryView.",
+        "2026-11-21: T63 opened from T61/T62: review decisions carry a note in receipts, and needs_more_evidence now requires one, but ResearchMemoryView omits it. Preserve only the existing receipt value in the read-only view.",
+        "2026-11-21: T63 completed. ResearchMemoryView now preserves decision.note in JSON and renders it in Markdown with claim/decision/source context. Legacy missing notes remain empty; no inference. Three focused tests, Ruff and launcher help PASS; canonical writes disabled. Next candidate: bind quote verification diagnostics into claims review preview.",
+        "2026-11-21: T64 opened from T61 workflow friction: evidence-verify and claims-preview artifacts had to be manually correlated. Bind quote verification to the exact candidate-set hash and surface status as a diagnostic only; do not correct quotes or infer decisions.",
+        "2026-11-21: T64 completed. claims-preview optionally binds quote verification to the exact CandidateEvidenceClaimSet, verifies ProcessedDocumentText hashes and one-to-one claim coverage, recomputes statuses, and exposes diagnostics in queue/manifest/wizard. Legacy manifests remain compatible. Focused suite 20 PASS/47 subtests; launcher integration PASS; Ruff clean on changed module/tests. CLI baseline I001/UP035 confirmed in HEAD. No canonical or operational writes. Three requested increments are complete.",
+        "2026-11-21: T65 opened from the measured T61-T64 workflow gap: quote verification, preview/wizard, inventory and memory view had isolated tests but no single synthetic regression carrying quote status and rationale end-to-end.",
+        "2026-11-21: T65 completed. Synthetic launcher flow carries exact_match and a needs_more_evidence rationale through evidence-verify, claims-preview, wizard fixture, memory-inventory, and memory-view. Claims input and catalog fixture unchanged; no promotion/canonical write. 21 tests/47 subtests and Ruff PASS. Next candidate: measured memory-view positive-feedback coverage.",
+        "2026-11-21: T66 opened from T65/ResearchMemoryView inspection: feedback_outcomes are present in JSON, but Markdown renders only feedback_state; no positive outcome fixture currently verifies artifact visibility.",
+        "2026-11-21: T66 completed. ResearchMemoryView Markdown now lists FeedbackLoopOutcome ID, profile, status, path and SHA-256; positive synthetic fixture passes and absent feedback stays not_provided. Four focused tests, Ruff and launcher help PASS; no real outcome or canonical write.",
+        "2026-11-21: T67 opened from T65/T64: ResearchMemoryView Markdown lists quote claim ID/status but omits evidence span, SourceDocument, and verification artifact provenance already present in JSON.",
+        "2026-11-21: T67 completed. Memory-view Markdown now shows quote status, SourceDocument, field, evidence span, and verification artifact path/SHA-256. Four focused tests, Ruff and launcher help PASS; no quote or review semantics changed. Three requested increments T65-T67 are complete.",
+        "2026-11-21: T68 opened from the T65-T67 test gap: final Markdown features have isolated tests, while the end-to-end launcher flow asserts only JSON. Extend synthetic flow to assert feedback, rationale, quote status/span and artifact provenance.",
+        "2026-11-21: T68 completed. The launcher end-to-end fixture now includes synthetic FeedbackLoopOutcome and asserts final Markdown feedback provenance, review note, and quote status/span/SourceDocument/artifact provenance. 21 tests/47 subtests and Ruff PASS; no live/operational data or canonical writes.",
+        "2026-11-21: T69 opened after T68 closed; measured gap is missing end-to-end coverage for not_exact across the launcher review flow. Scope is synthetic and diagnostic-only.",
+        "2026-11-21: T69 completed; exact_match and not_exact verified through the launcher review flow. 21 tests/47 subtests and Ruff pass. Decisions remain human and preview-only.",
+        "2026-11-21: T70 opened after T69 passed; measured remaining gap is end-to-end preservation of source_id_mismatch and missing_document_text. Synthetic offline fixture only.",
+        "2026-11-21: T70 completed; all four quote statuses persist through launcher review and memory view. 25 tests/47 subtests and Ruff pass; fixture catalog and claims unchanged.",
+        "2026-11-21: T71 opened after T70; measured gap is loss of the explicit no_results semantic warning in ResearchMemoryView. Scope preserves supplied warnings only.",
+        "2026-11-21: T71 completed; ResearchMemoryView now preserves explicit FeedbackLoopOutcome warnings including no_results historical-absence caveat. 40 tests/63 subtests and Ruff pass; no inferred warnings.",
+        "2026-11-21: T72 opened after T71; measured gap is lack of multi-outcome provenance coverage despite repeatable input support.",
+        "2026-11-21: T72 completed; two outcome artifacts preserve their individual status, warning, path and digest in input order. 6 tests/3 subtests and Ruff pass; runtime unchanged.",
+        "2026-11-21: T73 opened after T72; measured CLI gap is missing launcher E2E coverage for repeated --feedback-outcome arguments.",
+        "2026-11-21: T73 completed; repeated launcher feedback outcomes preserve independent status, warning, path and digest in JSON/Markdown. 41 tests/63 subtests and Ruff pass.",
+        "2026-11-21: T74 opened after T73; measured gap is no end-to-end test connecting generated feedback outcome CLI artifact to memory-view CLI consumer.",
+        "2026-11-21: T74 completed; generated no_results FeedbackLoopOutcome passed from producer launcher to memory-view consumer with warnings and provenance intact. 41 tests/63 subtests and Ruff pass.",
+        "2026-11-21: T75 opened after T74; measured producer-consumer status coverage gap remains for three of four allowed outcome statuses.",
+        "2026-11-21: T75 completed; all four generated FeedbackLoopOutcome statuses survive producer-consumer launcher flow with warning and provenance. 41 tests/63 subtests and Ruff pass.",
+        "2026-11-21: T76 opened after T75; measured gap is unbound feedback outcome profile identity in the consumed research-memory inventory.",
+        "2026-11-21: T76 completed; memory view now rejects missing, cross-inventory, and divergent feedback profile IDs before output. 42 tests/67 subtests and Ruff pass.",
+        "2026-11-21: T77 opened after T76; measured candidate_results gap is accepting unverified document IDs without catalog resolution.",
+        "2026-11-21: T77 completed; candidate_results requires SourceDocument catalog resolution and stores provenance. 62 tests/95 subtests pass; source catalog fixtures remain unchanged.",
+        "2026-11-21: T78 opened after T77; measured consumer gap is dropping result SourceDocument IDs and catalog snapshot provenance.",
+        "2026-11-21: T78 completed; memory view now carries result SourceDocument IDs and declared catalog snapshot provenance for each feedback outcome. 43 tests/67 subtests and Ruff pass.",
+        "2026-11-21: T79 opened after T78; measured gap is unvalidated internal agreement between outcome result IDs, nested preview, and catalog snapshot.",
+        "2026-11-21: T79 completed; memory view rejects inconsistent outcome/catalog bindings before output and preserves legacy unverified outcomes. 45 tests/74 subtests and Ruff pass.",
+        "2026-11-21: T80 opened after T79; measured gap is no final memory-view assertion for generated candidate result IDs/catalog snapshot.",
+        "2026-11-21T14:13:17Z: T80 completed; launcher E2E preserves candidate SourceDocument IDs and catalog path/SHA-256/metadata into final ResearchMemoryView JSON/Markdown. Focused gate 64 tests, 102 subtests; Ruff PASS; catalog fixture byte-identical; no live search or canonical writes.",
+        "2026-11-21T14:47:45Z: T81 completed; feedback outcome verifies result SourceDocument source_id against the selected source when available, reports legacy attribution unavailable, and rejects mismatches before output. Focused gate 43 tests/60 subtests; Ruff and installed launcher help PASS; fixture catalog unchanged.",
+        "2026-11-21T14:50:32Z: T82 completed; ResearchMemoryView validates matched/unavailable result source attribution and renders it in JSON/Markdown. Legacy artifacts remain readable without a match claim. Gate 46 tests/77 subtests, Ruff, launcher help, validator and diff check PASS.",
+        "2026-11-21T14:52:49Z: T83 completed; both installed launchers preserve matched result source attribution into final ResearchMemoryView JSON/Markdown. Focused E2E 1 pass; combined gate 46 tests/77 subtests; Ruff, validator, diff check PASS; catalog fixture unchanged.",
+        "2026-11-21T14:54:31Z: T84 completed; multi-document candidate outcomes return matched for complete source attribution, unavailable when legacy metadata is partial, and fail before artifact creation on any known mismatch. Gate 32 tests/30 subtests, Ruff, planner validation and diff check PASS."
     ],
     "next_action": {
-        "mode": "recalculate",
-        "description": "Select the next post-MVP micro-increment from measured gaps; keep T41 and T27/T28 suspended."
-    },
+    "mode": "recalculate",
+    "description": "T81-T84 close candidate result SourceDocument attribution from producer through ResearchMemoryView, including legacy and multi-document cases. Recalculate the next micro-increment from remaining measured document-to-review gaps; do not open it automatically. Keep T41 OCR and T27/T28 pCloud suspended."
+},
     "routing": {
-        "model": "gpt-6-luna",
-        "agent": "parent",
-        "tier": "low",
-        "reasoning_effort": "low",
-        "rationale": "Parent fallback for a bounded CLI slice; Sol/medium is unavailable in this context.",
-        "task_class": "implementation",
-        "policy_version": "3.1",
-        "trace": [
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "at": "2026-11-14T16:16:47Z",
-                "tier": "low",
-                "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
-            },
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "at": "2026-11-14T21:40:53Z",
-                "tier": "low",
-                "reason": "T53 discovery-lite read-only; fallback parent secondo policy 3.1, nessuna delega necessaria."
-            },
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "at": "2026-11-14T21:55:00Z",
-                "tier": "low",
-                "reason": "T54 implementazione circoscritta; fallback effettivo secondo policy 3.1."
-            },
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "at": "2026-11-14T21:49:25Z",
-                "tier": "low",
-                "reason": "T55 discovery-lite su artifact esistenti e CLI read-only; fallback parent secondo policy 3.1."
-            },
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "at": "2026-11-14T21:54:52Z",
-                "tier": "low",
-                "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
-            },
-            {
-                "event": "selected",
-                "agent": "parent",
-                "model": "gpt-6-luna",
-                "reasoning_effort": "low",
-                "tier": "low",
-                "at": "2026-11-15T09:51:39Z",
-                "reason": "T55 prerequisite scope and implementation are bounded; direct parent execution under policy 3.1, no delegation."
-            }
-        ]
-    }
+    "model": "gpt-6-luna",
+    "agent": "parent",
+    "tier": "low",
+    "reasoning_effort": "low",
+    "rationale": "Parent fallback for a focused edge-case quality slice; no delegation needed.",
+    "task_class": "quality",
+    "policy_version": "3.1",
+    "trace": [
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-14T16:16:47Z",
+            "tier": "low",
+            "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-14T21:40:53Z",
+            "tier": "low",
+            "reason": "T53 discovery-lite read-only; fallback parent secondo policy 3.1, nessuna delega necessaria."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-14T21:55:00Z",
+            "tier": "low",
+            "reason": "T54 implementazione circoscritta; fallback effettivo secondo policy 3.1."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-14T21:49:25Z",
+            "tier": "low",
+            "reason": "T55 discovery-lite su artifact esistenti e CLI read-only; fallback parent secondo policy 3.1."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-14T21:54:52Z",
+            "tier": "low",
+            "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "tier": "low",
+            "at": "2026-11-15T09:51:39Z",
+            "reason": "T55 prerequisite scope and implementation are bounded; direct parent execution under policy 3.1, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T11:48:56Z",
+            "tier": "low",
+            "reason": "T62 bounded wizard behavior fix; implementer route unavailable, parent fallback per routing policy 3.1."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T11:52:10Z",
+            "tier": "low",
+            "reason": "T63 small additive ResearchMemoryView contract; direct parent fallback, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T11:55:55Z",
+            "tier": "low",
+            "reason": "T64 bounded additive claims-preview diagnostic binding; direct parent fallback, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:07:44Z",
+            "tier": "low",
+            "reason": "T65 bounded offline end-to-end quality fixture; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:11:44Z",
+            "tier": "low",
+            "reason": "T66 bounded positive feedback artifact visibility in read-only memory view; direct parent."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:13:36Z",
+            "tier": "low",
+            "reason": "T67 narrow ResearchMemoryView quote diagnostic presentation; parent fallback, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:22:12Z",
+            "tier": "low",
+            "reason": "T68 focused end-to-end Markdown quality assertions; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:25:34Z",
+            "tier": "low",
+            "reason": "T69 bounded quality slice for end-to-end diagnostic coverage; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:28:37Z",
+            "tier": "low",
+            "reason": "T70 bounded launcher-driven diagnostic quality slice; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:38:25Z",
+            "tier": "low",
+            "reason": "T71 measured, additive ResearchMemoryView warning projection gap; direct parent fallback, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:40:52Z",
+            "tier": "low",
+            "reason": "T72 test-only slice for bounded multi-outcome provenance coverage; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T12:42:35Z",
+            "tier": "low",
+            "reason": "T73 bounded launcher-driven quality slice for repeatable feedback artifacts; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T13:08:53Z",
+            "tier": "low",
+            "reason": "T74 bounded offline integration fixture; direct parent under policy 3.1, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T13:12:22Z",
+            "tier": "low",
+            "reason": "T75 bounded launcher integration test for allowed feedback outcomes; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T13:14:57Z",
+            "tier": "low",
+            "reason": "T76 narrow profile identity binding in read-only view; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T13:56:22Z",
+            "tier": "low",
+            "reason": "T77 bounded SourceDocument catalog binding; direct parent under policy 3.1, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T14:02:40Z",
+            "tier": "low",
+            "reason": "T78 additive memory-view projection; direct parent under policy 3.1, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T14:05:58Z",
+            "tier": "low",
+            "reason": "T79 narrow consistency validation for embedded SourceDocument bindings; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "at": "2026-11-21T14:09:34Z",
+            "tier": "low",
+            "reason": "T80 bounded producer-consumer test assertion; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "tier": "low",
+            "at": "2026-11-21T14:45:14Z",
+            "reason": "T81 source attribution binding is bounded; direct parent fallback because delegation is disabled in this session."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "tier": "low",
+            "at": "2026-11-21T14:48:20Z",
+            "reason": "T82 consumer validation and rendering is a narrow follow-up; direct parent fallback, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "tier": "low",
+            "at": "2026-11-21T14:51:23Z",
+            "reason": "T83 test-only launcher integration slice; direct parent, no delegation."
+        },
+        {
+            "event": "selected",
+            "agent": "parent",
+            "model": "gpt-6-luna",
+            "reasoning_effort": "low",
+            "tier": "low",
+            "at": "2026-11-21T14:53:27Z",
+            "reason": "T84 bounded multi-document fixture coverage; direct parent, no delegation."
+        }
+    ]
+}
 }

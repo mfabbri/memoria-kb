@@ -1,15 +1,18 @@
-# Current Next Increment
+# Current Next Increment (entry point storico)
 
-## Stato post-MVP aggiornato - 2026-11-14
+## Stato corrente — 2026-11-21
 
-**Focus operativo aggiornato:** `docs/current-focus.md` (T53-T58).
-T45-T52 sono chiusi secondo la roadmap. T53 è il prossimo candidato, **non
-ancora avviato**. T41 OCR e T27/T28 pCloud sono sospesi per decisione utente.
-KPI T49 mancanti richiedono sessioni reali; Q2 non è una corsia autonoma.
-Il resto del presente file conserva lo storico e non va caricato per intero
-nelle sessioni quotidiane. Leggere solo le sezioni pertinenti tramite ricerca
-mirata; il planner corrente rimane immutato finché non si avvia T53.
+**Non usare le sezioni storiche sotto per aprire automaticamente un task.**
+Lo snapshot del planner e' chiuso su T84 (`completed`). Fonte per la priorita':
+`docs/current-focus.md` e sezione T85-T89 della roadmap tecnica.
+L'ultimo focus T53-T59c e' superato. T85-T89 sono proposti, non avviati:
+T85 riallineamento; T86 dossier documenti reali; T87 legami entita';
+T88 feedback reale; T89 misurazione su un piccolo campione.
+OCR T41, pCloud T27/T28 e nuova golden run sospesi/non richiesti.
+La selezione non autorizza ricerca online, review storica, scrittura canonica.
+Non caricare le migliaia di righe sottostanti nella sessione quotidiana.
 
+---
 
 ## Contesto storico: stato al 2026-11-08
 
@@ -7084,3 +7087,151 @@ una lista del primo livello non basta. Se manca un input o una scelta, chiedere
 esattamente quale dato/decisione serve e quale passaggio sblocca, senza fermarsi
 a elencare blocker generici. Documentare la copertura e poi procedere entro il
 perimetro autorizzato.
+
+## T60 - Regression della provenance artifact nella memory view (2026-11-15)
+
+La fixture offline di `ResearchMemoryView` ora verifica che path risolto e SHA-256 degli artifact lineage e quote-verification restino nella vista restituita e nel JSON persistito. Il test mirato ha dato 3 PASS; il validator planner con `jsonschema` e `git diff --check` hanno passato. Nessun runtime, receipt o dato reale modificato.
+
+T60 chiude soltanto il gap di copertura della provenance. I tre quote mismatch T59a restano diagnostici e non corretti; qualsiasi correzione richiede verifica della citazione esatta nel SourceDocument e nuova review umana. Prossimo candidato: ricalcolare dai gap misurati senza aprire automaticamente una review reale.
+
+## T61 - Follow-up umano dei quote mismatch T55 (2026-11-21)
+
+Le tre citazioni sono state riverificate sul testo acquisito identificato e hash-bound; ogni decisione è stata raccolta una alla volta via launcher. La data DOCX ha ricevuto `accept_candidate`; le due candidature di formazione hanno ricevuto `needs_more_evidence`. Le citazioni corrette per i due claim formation sono risultate `exact_match`. Le receipt e i claim T55 originali non sono stati modificati; le nuove receipt T61 sono review-only e non promuovono fatti. Nessuna ricerca live o scrittura canonica.
+
+## T62 - Motivazione obbligatoria per needs_more_evidence (2026-11-21)
+
+Il gap misurato nelle receipt T61 è che `needs_more_evidence` senza nota non specifica cosa serva per il follow-up. Il claims wizard ora richiede una motivazione non vuota solo per questa decisione; le note restano facoltative per `accept_candidate` e `reject_candidate`. Gate offline: 18 test e 42 sottocasi, launcher help e Ruff mirati PASS. Runtime e receipt reali invariati.
+
+## T63 - Preservare la motivazione nella ResearchMemoryView (2026-11-21)
+
+ResearchMemoryView ora mantiene il campo `note` già registrato nei receipt dentro `claim_decisions` e lo espone anche nel Markdown per ogni decisione. I receipt precedenti senza nota restano tali; non si inferisce una motivazione. Test mirati: 3 PASS; Ruff e launcher help PASS. La vista resta read-only e non promuove claim.
+
+## T64 - Quote diagnostics nella claims review preview (2026-11-21)
+
+`claims-preview --quote-verification` collega la verifica exact-match al digest del CandidateEvidenceClaimSet e ai ProcessedDocumentText hash-bound. La copertura deve includere ogni claim una sola volta. Queue e wizard mostrano `exact_match` o `not_exact` solo come diagnostica; i manifest legacy restano compatibili e nessuna decisione è automatizzata. Test offline: 20 PASS e 47 sottocasi; launcher subprocess e Ruff mirati PASS. Nessuna ricerca live o scrittura canonica.
+
+## T65 - Regression end-to-end del flusso review (2026-11-21)
+
+Una fixture sintetica usa i launcher `evidence-verify`, `claims-preview`, `memory-inventory` e `memory-view`, con input deterministico iniettato solo nel wizard del claim fixture. Exact-match e nota `needs_more_evidence` sono conservati nella ResearchMemoryView; promozione e scrittura canonica restano disabilitate. 21 test e 47 sottocasi PASS; nessun dato reale usato.
+
+## T66 - Esiti feedback visibili nella ResearchMemoryView (2026-11-21)
+
+Il Markdown della memory view ora espone outcome ID, profilo, stato, path e SHA-256 per gli outcome espliciti; mantiene il riepilogo `present`/`not_provided`. Fixture positiva offline: 4 test PASS complessivi nel modulo; Ruff e launcher help PASS. Nessun outcome reale modificato.
+
+## T67 - Quote diagnostics completi nel Markdown memory view (2026-11-21)
+
+Il Markdown mostra per ciascun quote-check stato, SourceDocument, campo, evidence span e provenance path/SHA-256 del report. La fixture offline asserisce i dettagli; quote e decisioni restano immutate. Quattro test mirati, Ruff e launcher help PASS.
+
+## T68 - Asserzioni Markdown nel flusso end-to-end review (2026-11-21)
+
+La fixture launcher T65 include ora un feedback outcome sintetico e verifica il Markdown finale per outcome/provenance, nota `needs_more_evidence` e quote status/span/SourceDocument/path/hash. Suite mirata: 21 test e 47 sottocasi PASS; Ruff PASS. Solo fixture temporanee.
+
+## T69 - Percorso end-to-end per quote non esatte (2026-11-21)
+
+La fixture launcher conserva due casi hash-bound, `exact_match` e `not_exact`,
+attraverso verifica, preview, decisione umana, inventory e ResearchMemoryView.
+La citazione non esatta resta diagnostica, con motivazione umana esplicita e
+senza promozione o scrittura canonica. Test mirati: 21 test e 47 sottocasi
+PASS; Ruff PASS. Solo fixture temporanee.
+
+## T70 - Diagnostiche di provenienza nel flusso end-to-end (2026-11-21)
+
+Lo stesso flusso launcher verifica `exact_match`, `not_exact`,
+`source_id_mismatch` e `missing_document_text` dalla verifica alla
+ResearchMemoryView. Ogni esito resta diagnostico; le decisioni richiedono
+motivazioni umane e non promuovono claim. Gate: 25 test e 47 sottocasi PASS nei
+moduli claim review e memory view; Ruff PASS. Gli input e il catalogo sintetici
+restano immutati.
+
+## T71 - Preservare gli warning feedback nella memory view (2026-11-21)
+
+ResearchMemoryView conserva warning espliciti degli outcome feedback in JSON e
+Markdown. Il caso `no_results` mantiene l'avvertenza che non prova assenza
+storica; forme warning non valide falliscono prima dell'output. Gli outcome
+legacy senza warning restano compatibili. Gate: 40 test, 63 sottocasi e Ruff
+PASS. Nessuna ricerca live o scrittura canonica.
+
+## T72 - Provenance distinta per più outcome feedback (2026-11-21)
+
+La fixture passa due outcome sintetici in un'unica vista; JSON e Markdown
+mantengono l'ordine d'ingresso, gli status, il warning `no_results` e path/SHA-256
+separati. Gate: 6 test e 3 sottocasi nel modulo memory view; Ruff PASS. Nessun
+runtime o dato reale modificato.
+
+## T73 - Outcome feedback ripetuti via launcher (2026-11-21)
+
+La fixture end-to-end usa due argomenti `--feedback-outcome` ripetibili. La
+ResearchMemoryView finale conserva entrambi gli esiti e la caveat `no_results`
+con provenance path/SHA-256 separata. Gate: 41 test e 63 sottocasi nei moduli
+feedback, review e memory view; Ruff PASS. Solo artifact sintetici temporanei.
+
+## T74 - Outcome generato e consumato via launcher (2026-11-21)
+
+Il test genera `FeedbackLoopOutcome` con `memoria feedback outcome` usando un
+piano sintetico, poi passa l'artifact al launcher `memoria review memory-view`.
+ID, status, warning, path e SHA-256 arrivano alla vista finale; i flag di
+promozione e scrittura profilo restano disattivati. Gate: 41 test, 63 sottocasi
+e Ruff PASS. Nessuna query live o modifica canonica.
+
+## T75 - Matrice outcome feedback producer-consumer (2026-11-21)
+
+Il test passa attraverso i launcher tutti gli stati supportati di
+`FeedbackLoopOutcome`; la memory view conserva per ciascuno status, warning e
+provenance. `candidate_results` include il SourceDocument della fixture, mentre
+`no_results` mantiene la caveat sull'assenza storica. Gate: 41 test, 63
+sottocasi e Ruff PASS. Solo input sintetici.
+
+## T76 - Binding degli outcome ai profili inventory (2026-11-21)
+
+ResearchMemoryView rifiuta feedback outcome senza un profilo coerente con
+l'inventory, compresi i casi di ID assente, profilo esterno o conflitto tra
+profilo top-level e search-memory preview. I casi validi e le integrazioni T74/T75
+restano verdi. Gate: 42 test, 67 sottocasi e Ruff PASS; nessuna identità inferita
+né scrittura canonica.
+
+## T77 - Binding candidate_results al catalogo SourceDocument (2026-11-21)
+
+Il generatore outcome richiede il catalogo esistente per gli ID risultato di
+`candidate_results`, li verifica senza scrivere e allega path, SHA-256 e
+metadata risolti. Il launcher ha `--source-documents-db`; ID mancanti sono
+rifiutati prima di creare l'outcome. Gate: 62 test, 95 sottocasi e Ruff PASS;
+catalogo fixture invariato.
+
+## T78 - Result SourceDocument visibili nella memory view (2026-11-21)
+
+La memory view conserva gli ID risultato e il catalog snapshot dichiarato da
+ogni FeedbackLoopOutcome, mostrandone path e digest in JSON e Markdown. Per gli
+outcome legacy i dati non presenti restano espliciti, senza verifica inferita.
+Gate: 43 test, 67 sottocasi e Ruff PASS; nessun accesso o write al catalogo.
+
+## T79 - Coerenza interna del binding SourceDocument (2026-11-21)
+
+La vista controlla che result IDs, catalog snapshot e metadata dei documenti
+concordino fra outcome e search-memory preview. Incongruenze falliscono prima
+dell'output; gli outcome legacy senza snapshot restano leggibili e non verificati.
+Gate: 45 test, 74 sottocasi e Ruff PASS. Nessun catalogo viene aperto.
+
+
+## T80 - Binding SourceDocument verificato nel flusso launcher (2026-11-21)
+
+La fixture end-to-end genera `candidate_results` con il launcher `memoria feedback outcome` e lo passa a `memoria review memory-view`. La vista finale conserva result IDs, catalog path/SHA-256 e metadata risolti in JSON e Markdown; catalogo sintetico byte-identico e scritture/promozioni disabilitate. Gate: 64 test, 102 sottocasi e Ruff PASS. Nessuna ricerca live o modifica canonica. Prossimo passo: ricalcolare il candidato dai gap misurati, senza aprire automaticamente un'altra slice.
+
+
+## T81 - Attribuzione source_id dei risultati candidati (2026-11-21)
+
+Il catalog resolver espone `source_id` quando presente. `memoria feedback outcome` confronta tale valore con la fonte selezionata: un mismatch fallisce prima dell'output, una corrispondenza viene dichiarata e gli schemi legacy senza `source_id` restano `unavailable`. Gate: 43 test, 60 sottocasi, Ruff e launcher help PASS. Nessun catalogo reale o scrittura canonica. Prossimo gap: ResearchMemoryView JSON conserva il dettaglio, ma il Markdown non mostra lo stato di attribuzione per ogni risultato.
+
+
+## T82 - Source attribution nella ResearchMemoryView (2026-11-21)
+
+Il consumer valida `source_id_match_status` e, per `matched`, confronta ogni metadata `source_id` con la fonte dell'outcome senza riaprire il catalogo. JSON e Markdown espongono `matched`, `unavailable` o `not_applicable`; gli artifact legacy restano leggibili senza inferire una corrispondenza. Gate: 46 test, 77 sottocasi, Ruff e launcher help PASS. Prossimo gap: manca una fixture che eserciti entrambi i launcher e verifichi l'attribuzione nell'output finale.
+
+
+## T83 - Source attribution end-to-end tra launcher (2026-11-21)
+
+La fixture offline usa entrambi i launcher installati e verifica `source_id_match_status=matched`, metadata SourceDocument, catalog path/hash e rendering nella ResearchMemoryView finale. Il catalogo sintetico resta invariato e scritture/promozioni disabilitate. Gate: 46 test, 77 sottocasi e Ruff PASS. Prossimo gap: copertura di outcome multi-documento con attribuzione completa, parziale e discordante.
+
+
+## T84 - Matrice multi-documento per source attribution (2026-11-21)
+
+Fixture SQLite offline con pi? risultati: attributi `source_id` concordi producono `matched`; attributi parziali legacy restano `unavailable`; un solo ID discordante blocca la generazione prima dell'output. Il catalogo non viene modificato. Gate: 32 test, 30 sottocasi e Ruff PASS. T81-T84 completano la verifica dell'attribuzione dalla generazione alla ResearchMemoryView. Prossimo passo: ricalcolare il candidato dai gap residui nel passaggio documento-review.

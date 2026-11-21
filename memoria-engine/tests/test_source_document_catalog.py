@@ -27,6 +27,17 @@ class SourceDocumentCatalogTests(unittest.TestCase):
         self.assertEqual(enriched["documents"], [{"document_id": "doc:1", "title": "Scheda sintetica", "url": "https://example.invalid/doc:1"}])
         self.assertEqual({key: value for key, value in plain.items()}, {key: value for key, value in enriched.items() if key != "documents"})
 
+    def test_optional_source_id_metadata_is_returned_when_catalog_supports_it(self) -> None:
+        path = self._catalog_path()
+        with closing(sqlite3.connect(path)) as connection:
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, source_id TEXT)")
+            connection.execute("INSERT INTO source_documents VALUES ('doc:1', 'source:one')")
+            connection.commit()
+
+        enriched = resolve_source_documents(path, {"doc:1"}, include_metadata=True)
+
+        self.assertEqual(enriched["documents"], [{"document_id": "doc:1", "source_id": "source:one"}])
+
     def test_reports_database_and_wal_digests_from_read_only_resolution(self) -> None:
         path = self._catalog_path()
         with closing(sqlite3.connect(path)) as connection:

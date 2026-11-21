@@ -28,7 +28,7 @@ def resolve_source_documents(
             requested = sorted(value.strip() for value in document_ids if value.strip())
             found: set[str] = set()
             documents: dict[str, dict[str, str]] = {}
-            metadata_columns = [column for column in ("title", "url") if column in columns]
+            metadata_columns = [column for column in ("title", "url", "source_id") if column in columns]
             selected_columns = ["document_id", *metadata_columns]
             projection = ", ".join(f'"{column}"' for column in selected_columns)
             for offset in range(0, len(requested), 500):

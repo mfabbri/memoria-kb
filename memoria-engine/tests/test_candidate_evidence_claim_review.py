@@ -46,18 +46,52 @@ def claim(**updates):
     return result
 
 
-def create_catalog(root):
+def create_catalog(root, *, source_id=None):
     path = root / "catalog.sqlite"
     if not path.exists():
         with closing(sqlite3.connect(path)) as connection:
-            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
-            connection.execute("INSERT INTO source_documents VALUES ('document:synthetic', 'Scheda sintetica', 'https://example.invalid/catalog-document')")
+            if source_id is None:
+                connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+                connection.execute("INSERT INTO source_documents VALUES ('document:synthetic', 'Scheda sintetica', 'https://example.invalid/catalog-document')")
+            else:
+                connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT, source_id TEXT)")
+                connection.execute("INSERT INTO source_documents VALUES ('document:synthetic', 'Scheda sintetica', 'https://example.invalid/catalog-document', ?)",
+                    (source_id,))
             connection.commit()
     return path
 
 
 def write_claims(path, claims):
     path.write_text(json.dumps({"@type": "CandidateEvidenceClaimSet", "candidate_evidence_claims": claims}), encoding="utf-8")
+
+
+def write_quote_verification(root, claims_path, claims, statuses):
+    text_inputs = []
+    for source_document_id in sorted({item["source_document_id"] for item in claims}):
+        text_path = root / ("processed-" + str(len(text_inputs)) + ".json")
+        document_claims = [item for item in claims if item["source_document_id"] == source_document_id]
+        text = " ".join(item["evidence_span"] for item in document_claims
+                         if statuses[item["@id"]] == "exact_match")
+        text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        text_payload = {"@type": "ProcessedDocumentText", "source_id": document_claims[0]["source_id"],
+                        "source_document_id": source_document_id,
+                        "text": text, "text_sha256": text_sha256}
+        text_path.write_text(json.dumps(text_payload), encoding="utf-8")
+        raw = text_path.read_bytes()
+        text_inputs.append({"path": str(text_path.resolve()), "sha256": hashlib.sha256(raw).hexdigest(),
+                            "source_document_id": source_document_id, "text_sha256": text_sha256})
+    payload = {"@type": "CandidateEvidenceQuoteVerification", "schema_version": "1.0", "preview_only": True,
+               "claims_input": {"path": str(claims_path.resolve()),
+                                "sha256": hashlib.sha256(claims_path.read_bytes()).hexdigest()},
+               "processed_text_inputs": text_inputs,
+               "claims": [{"claim_id": item["@id"], "source_id": item["source_id"],
+                           "source_document_id": item["source_document_id"], "evidence_span": item["evidence_span"],
+                           "status": statuses[item["@id"]]} for item in claims],
+               "status_counts": {status: list(statuses.values()).count(status) for status in sorted(set(statuses.values()))},
+               "claim_count": len(claims)}
+    path = root / "quote-verification.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
 
 
 class CandidateEvidenceClaimReviewTests(unittest.TestCase):
@@ -118,6 +152,292 @@ class CandidateEvidenceClaimReviewTests(unittest.TestCase):
                 self.assertIs(queue[key], False)
             self.assertIs(manifest["source_document_existence_verified"], True)
             self.assertEqual(manifest["source_documents_catalog"]["resolved_document_ids"], ["document:synthetic"])
+
+    def test_quote_verification_is_hash_bound_and_visible_but_diagnostic_only(self):
+        with workspace_temp_dir() as root:
+            claims = [claim(**{"@id": "claim:exact"}),
+                      claim(**{"@id": "claim:not-exact", "source_document_id": "document:second"})]
+            source = root / "claims.json"
+            write_claims(source, claims)
+            database = create_catalog(root)
+            with closing(sqlite3.connect(database)) as connection:
+                connection.execute("INSERT INTO source_documents VALUES ('document:second', 'Second fixture', '')")
+                connection.commit()
+            quote_path = write_quote_verification(root, source, claims,
+                {"claim:exact": "exact_match", "claim:not-exact": "not_exact"})
+            output = root / "preview-with-quotes"
+            manifest = build_candidate_evidence_claim_review(
+                claims_json=source, source_documents_db=database, output_dir=output,
+                quote_verification_path=quote_path,
+            )
+            queue = json.loads((output / "candidate_claim_review_queue.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["schema_version"], "1.3")
+            self.assertEqual(manifest["quote_verification"]["sha256"], hashlib.sha256(quote_path.read_bytes()).hexdigest())
+            self.assertEqual([item["evidence_quote_status"] for item in queue["items"]], ["exact_match", "not_exact"])
+            self.assertIn("Quote verification: `not_exact` (diagnostic only)",
+                          (output / "candidate_claim_review_queue.md").read_text(encoding="utf-8"))
+            answers = iter(["reviewer-fixture", "a", "", "e", "Serve una fonte indipendente.", "s"])
+            displayed = []
+            receipt = run_candidate_evidence_claim_review_wizard(
+                manifest_json=output / "candidate_claim_review_manifest.json",
+                input_fn=lambda _: next(answers), output_fn=displayed.append,
+            )
+            self.assertEqual([item["evidence_quote_status"] for item in receipt["decisions"]],
+                             ["exact_match", "not_exact"])
+            self.assertTrue(any("not_exact (diagnostica" in line for line in displayed))
+            self.assertFalse(receipt["claim_promotion_allowed"])
+            self.assertFalse(receipt["canonical_write_allowed"])
+
+    def test_quote_verification_rejects_hash_id_and_text_drift_before_output(self):
+        for scenario in ("claims-hash", "claim-coverage", "duplicate-id", "forged-status", "processed-text-hash"):
+            with self.subTest(scenario=scenario), workspace_temp_dir() as root:
+                claims = [claim(**{"@id": "claim:one"}),
+                          claim(**{"@id": "claim:two", "source_document_id": "document:second",
+                                   "evidence_span": "Different evidence quote."})]
+                source = root / "claims.json"
+                write_claims(source, claims)
+                database = create_catalog(root)
+                with closing(sqlite3.connect(database)) as connection:
+                    connection.execute("INSERT INTO source_documents VALUES ('document:second', 'Second fixture', '')")
+                    connection.commit()
+                quote_path = write_quote_verification(root, source, claims,
+                    {"claim:one": "exact_match", "claim:two": "not_exact"})
+                report = json.loads(quote_path.read_text(encoding="utf-8"))
+                if scenario == "claims-hash":
+                    report["claims_input"]["sha256"] = "0" * 64
+                    quote_path.write_text(json.dumps(report), encoding="utf-8")
+                elif scenario == "claim-coverage":
+                    report["claims"] = report["claims"][:-1]
+                    report["claim_count"] = len(report["claims"])
+                    quote_path.write_text(json.dumps(report), encoding="utf-8")
+                elif scenario == "duplicate-id":
+                    report["claims"][1]["claim_id"] = report["claims"][0]["claim_id"]
+                    quote_path.write_text(json.dumps(report), encoding="utf-8")
+                elif scenario == "forged-status":
+                    report["claims"][1]["status"] = "exact_match"
+                    report["status_counts"] = {"exact_match": 2}
+                    quote_path.write_text(json.dumps(report), encoding="utf-8")
+                else:
+                    text_path = Path(report["processed_text_inputs"][0]["path"])
+                    text_path.write_text(text_path.read_text(encoding="utf-8") + " changed", encoding="utf-8")
+                output = root / "invalid-preview"
+                with self.assertRaises(ValueError):
+                    build_candidate_evidence_claim_review(
+                        claims_json=source, source_documents_db=database, output_dir=output,
+                        quote_verification_path=quote_path,
+                    )
+                self.assertFalse(output.exists())
+
+    def test_offline_cli_flow_preserves_quote_status_and_review_note_into_memory_view(self):
+        with workspace_temp_dir() as root:
+            launcher = Path(sys.executable).parent / ("memoria.exe" if os.name == "nt" else "memoria")
+            source_claim = claim(**{"@id": "claim:e2e", "evidence_span": "Nato a Comune sintetico."})
+            non_exact_claim = claim(**{
+                "@id": "claim:e2e-not-exact", "field": "formation.name",
+                "value": "Formazione sintetica", "normalized_value": "formazione sintetica",
+                "evidence_span": "La formazione mai riportata nella scheda.",
+                "context": "Estratto sintetico: La formazione mai riportata nella scheda.",
+            })
+            source_mismatch_claim = claim(**{
+                "@id": "claim:e2e-source-mismatch", "source_id": "source:other",
+                "field": "death.date", "value": "12 ottobre 1944",
+                "normalized_value": "1944-10-12", "evidence_span": "12 ottobre 1944",
+                "context": "Estratto sintetico: 12 ottobre 1944.",
+            })
+            missing_text_claim = claim(**{
+                "@id": "claim:e2e-missing-text", "source_id": "source:second",
+                "source_document_id": "document:second", "field": "birth.date",
+                "value": "30 gennaio 1909", "normalized_value": "1909-01-30",
+                "evidence_span": "30 gennaio 1909",
+                "context": "Estratto sintetico: 30 gennaio 1909.",
+            })
+            claims_path = root / "claims.json"
+            source_claims = [source_claim, non_exact_claim, source_mismatch_claim, missing_text_claim]
+            write_claims(claims_path, source_claims)
+            claims_before = claims_path.read_bytes()
+            text = "Scheda sintetica. Nato a Comune sintetico."
+            text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            processed_text = root / "processed-text.json"
+            processed_text.write_text(json.dumps({
+                "@type": "ProcessedDocumentText", "source_id": source_claim["source_id"],
+                "source_document_id": source_claim["source_document_id"], "text": text,
+                "text_sha256": text_sha256,
+            }), encoding="utf-8")
+            database = create_catalog(root, source_id=source_claim["source_id"])
+            with closing(sqlite3.connect(database)) as connection:
+                connection.execute(
+                    "INSERT INTO source_documents (document_id, title, url, source_id) VALUES (?, ?, ?, ?)",
+                    ("document:second", "Second synthetic sheet", "https://example.invalid/second", source_claim["source_id"]),
+                )
+                connection.commit()
+            catalog_before = hashlib.sha256(database.read_bytes()).hexdigest()
+
+            quote_dir = root / "quote-verification"
+            verified = subprocess.run([
+                str(launcher), "review", "evidence-verify", "--claims-json", str(claims_path),
+                "--processed-text", str(processed_text), "--output-dir", str(quote_dir),
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(verified.returncode, 0, verified.stderr)
+            quote_path = quote_dir / "quote-verification.json"
+            quote_report = json.loads(quote_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                [item["status"] for item in quote_report["claims"]],
+                ["exact_match", "not_exact", "source_id_mismatch", "missing_document_text"],
+            )
+
+            preview_dir = root / "preview"
+            preview = subprocess.run([
+                str(launcher), "review", "claims-preview", "--claims-json", str(claims_path),
+                "--source-documents-db", str(database), "--quote-verification", str(quote_path),
+                "--output-dir", str(preview_dir),
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(preview.returncode, 0, preview.stderr)
+            self.assertIn("exact_match", preview.stdout)
+
+            answers = iter([
+                "reviewer-fixture", "e", "Serve una fonte indipendente.",
+                "e", "La citazione proposta non compare nel testo acquisito.", "s",
+                "e", "Verificare l'identificativo della fonte associata al testo.",
+                "e", "Serve il testo acquisito del secondo documento.", "s",
+            ])
+            receipt = run_candidate_evidence_claim_review_wizard(
+                manifest_json=preview_dir / "candidate_claim_review_manifest.json",
+                input_fn=lambda _: next(answers), output_fn=lambda _: None,
+                now_fn=lambda: datetime(2026, 11, 21, 12, 0, tzinfo=UTC),
+            )
+            receipt_path = root / "receipt.json"
+            receipt_path.write_text(json.dumps(receipt, ensure_ascii=False), encoding="utf-8")
+
+            inventory_dir = root / "inventory"
+            inventoried = subprocess.run([
+                str(launcher), "review", "memory-inventory", "--receipt", str(receipt_path),
+                "--output-dir", str(inventory_dir),
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(inventoried.returncode, 0, inventoried.stderr)
+            feedback_plan_path = root / "feedback-plan.json"
+            feedback_plan_path.write_text(json.dumps({
+                "@type": "FeedbackSearchPlanSet", "actions_sha256": "a" * 64,
+                "review_status": "unreviewed", "execution_allowed": False,
+                "online_search_started": False, "profile_write_allowed": False,
+                "plans": [{
+                    "@type": "FeedbackSearchPlan", "@id": "feedback-plan:e2e",
+                    "feedback_search_plan_id": "feedback-plan:e2e",
+                    "action_id": "feedback-action:e2e", "profile_id": source_claim["profile_id"],
+                    "source_document_id": source_claim["source_document_id"],
+                    "status": "ready_for_review", "manual_review_required": True,
+                    "source_plans": [{
+                        "@type": "FeedbackSearchSourcePlan", "source_id": source_claim["source_id"],
+                        "status": "planned", "planned_attempts": [{
+                            "query": "synthetic offline query", "strategy_id": "strategy:e2e",
+                        }],
+                    }],
+                }],
+            }), encoding="utf-8")
+            outcome_specs = [
+                ("candidate_results", ["--result-source-document-id", source_claim["source_document_id"]]),
+                ("no_results", []),
+                ("needs_manual_review", []),
+                ("blocked_or_dynamic", []),
+            ]
+            feedback_paths = []
+            generated_outcomes = []
+            for index, (status, extra_args) in enumerate(outcome_specs):
+                feedback_path = root / f"feedback-{status}.json"
+                feedback_generated = subprocess.run([
+                    str(launcher), "feedback", "outcome", "--feedback-plan-json", str(feedback_plan_path),
+                    "--action-id", "feedback-action:e2e", "--plan-id", "feedback-plan:e2e",
+                    "--source-id", source_claim["source_id"], "--strategy-id", "strategy:e2e",
+                    "--outcome-status", status, "--query", "synthetic offline query",
+                    "--run-id", f"run:e2e-feedback-{index}",
+                    "--executed-at", f"2026-11-21T12:0{index}:00+00:00",
+                    *extra_args, "--source-documents-db", str(database),
+                    "--output-json", str(feedback_path),
+                ], capture_output=True, text=True, check=False)
+                self.assertEqual(feedback_generated.returncode, 0, feedback_generated.stderr)
+                generated = json.loads(feedback_path.read_text(encoding="utf-8"))
+                self.assertEqual(generated["outcome_status"], status)
+                self.assertFalse(generated["profile_write_allowed"])
+                self.assertFalse(generated["claim_promotion_allowed"])
+                feedback_paths.append(feedback_path)
+                generated_outcomes.append(generated)
+            self.assertEqual(generated_outcomes[0]["result_source_document_ids"], [source_claim["source_document_id"]])
+            self.assertEqual(generated_outcomes[0]["result_source_documents_catalog"]["resolved_document_ids"],
+                [source_claim["source_document_id"]])
+            self.assertEqual(generated_outcomes[0]["result_source_documents_catalog"]["source_id_match_status"], "matched")
+            self.assertEqual(generated_outcomes[0]["result_source_documents_catalog"]["documents"][0]["source_id"],
+                source_claim["source_id"])
+            self.assertIn("no_results_is_search_memory_not_historical_absence_proof", generated_outcomes[1]["warnings"])
+            view_dir = root / "memory-view"
+            view_command = [
+                str(launcher), "review", "memory-view", "--inventory-json",
+                str(inventory_dir / "research-memory-inventory.json"), "--quote-verification", str(quote_path),
+            ]
+            for feedback_path in feedback_paths:
+                view_command.extend(["--feedback-outcome", str(feedback_path)])
+            view_command.extend(["--output-dir", str(view_dir)])
+            viewed = subprocess.run(view_command, capture_output=True, text=True, check=False)
+            self.assertEqual(viewed.returncode, 0, viewed.stderr)
+
+            view = json.loads((view_dir / "research-memory-view.json").read_text(encoding="utf-8"))
+            decisions = {item["claim_id"]: item for item in view["claim_decisions"]}
+            self.assertEqual(decisions["claim:e2e"]["decision"], "needs_more_evidence")
+            self.assertEqual(decisions["claim:e2e"]["note"], "Serve una fonte indipendente.")
+            self.assertEqual(decisions["claim:e2e-not-exact"]["decision"], "needs_more_evidence")
+            self.assertEqual(decisions["claim:e2e-not-exact"]["note"], "La citazione proposta non compare nel testo acquisito.")
+            self.assertEqual(decisions["claim:e2e-source-mismatch"]["decision"], "needs_more_evidence")
+            self.assertEqual(decisions["claim:e2e-source-mismatch"]["note"], "Verificare l'identificativo della fonte associata al testo.")
+            self.assertEqual(decisions["claim:e2e-missing-text"]["decision"], "needs_more_evidence")
+            self.assertEqual(decisions["claim:e2e-missing-text"]["note"], "Serve il testo acquisito del secondo documento.")
+            quote_checks = {item["claim_id"]: item for item in view["evidence_quote_checks"]}
+            self.assertEqual(quote_checks["claim:e2e"]["status"], "exact_match")
+            self.assertEqual(quote_checks["claim:e2e-not-exact"]["status"], "not_exact")
+            self.assertEqual(quote_checks["claim:e2e-source-mismatch"]["status"], "source_id_mismatch")
+            self.assertEqual(quote_checks["claim:e2e-missing-text"]["status"], "missing_document_text")
+            self.assertFalse(view["canonical_write_allowed"])
+            self.assertFalse(view["claim_promotion_allowed"])
+            feedback_outcomes = view["feedback_outcomes"]
+            self.assertEqual([item["outcome_id"] for item in feedback_outcomes],
+                [item["feedback_loop_outcome_id"] for item in generated_outcomes])
+            self.assertEqual([item["outcome_status"] for item in feedback_outcomes],
+                [status for status, _ in outcome_specs])
+            self.assertEqual([item["warnings"] for item in feedback_outcomes],
+                [item["warnings"] for item in generated_outcomes])
+            self.assertEqual([item["path"] for item in feedback_outcomes],
+                [str(path.resolve()) for path in feedback_paths])
+            self.assertEqual([item["sha256"] for item in feedback_outcomes],
+                [hashlib.sha256(path.read_bytes()).hexdigest() for path in feedback_paths])
+            self.assertEqual(feedback_outcomes[0]["result_source_document_ids"],
+                generated_outcomes[0]["result_source_document_ids"])
+            self.assertEqual(feedback_outcomes[0]["result_source_attribution_status"], "matched")
+            result_catalog = feedback_outcomes[0]["result_source_documents_catalog"]
+            self.assertEqual(result_catalog, generated_outcomes[0]["result_source_documents_catalog"])
+            self.assertEqual(result_catalog["path"], str(database.resolve()))
+            self.assertEqual(result_catalog["sha256"], catalog_before)
+            self.assertEqual(result_catalog["resolved_document_ids"], [source_claim["source_document_id"]])
+            self.assertEqual(result_catalog["documents"][0]["title"], "Scheda sintetica")
+            markdown = (view_dir / "research-memory-view.md").read_text(encoding="utf-8")
+            for generated, path in zip(generated_outcomes, feedback_paths, strict=True):
+                self.assertIn(generated["feedback_loop_outcome_id"], markdown)
+                self.assertIn(generated["outcome_status"], markdown)
+                self.assertIn(str(path.resolve()), markdown)
+                self.assertIn(hashlib.sha256(path.read_bytes()).hexdigest(), markdown)
+            self.assertIn("no_results_is_search_memory_not_historical_absence_proof", markdown)
+            self.assertIn(f"Result SourceDocument: `{source_claim['source_document_id']}`", markdown)
+            self.assertIn("Result source attribution: `matched`", markdown)
+            self.assertIn(str(database.resolve()), markdown)
+            self.assertIn(catalog_before, markdown)
+            self.assertIn("Serve una fonte indipendente.", markdown)
+            self.assertIn("exact_match", markdown)
+            self.assertIn("Nato a Comune sintetico.", markdown)
+            self.assertIn("not_exact", markdown)
+            self.assertIn("La formazione mai riportata nella scheda.", markdown)
+            self.assertIn("source_id_mismatch", markdown)
+            self.assertIn("missing_document_text", markdown)
+            self.assertIn("SourceDocument `document:synthetic`", markdown)
+            self.assertIn(str(quote_path.resolve()), markdown)
+            self.assertIn(hashlib.sha256(quote_path.read_bytes()).hexdigest(), markdown)
+            self.assertEqual(claims_path.read_bytes(), claims_before)
+            self.assertEqual(hashlib.sha256(database.read_bytes()).hexdigest(), catalog_before)
 
     def test_idempotent_retry_is_byte_identical_and_divergent_retry_refused(self):
         with workspace_temp_dir() as root:
@@ -204,6 +524,16 @@ class CandidateEvidenceClaimReviewTests(unittest.TestCase):
             self.assertEqual(source.read_bytes(), before)
             manifest = json.loads((root / "preview" / "candidate_claim_review_manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["counts"]["claims"], 1)
+            quote_path = write_quote_verification(root, source, [claim()], {"claim:synthetic": "exact_match"})
+            quote_output = root / "preview-with-quotes"
+            quote_command = [str(launcher), "review", "claims-preview", "--claims-json", str(source),
+                            "--source-documents-db", str(create_catalog(root)), "--quote-verification", str(quote_path),
+                            "--output-dir", str(quote_output)]
+            quote_result = subprocess.run(quote_command, capture_output=True, text=True, check=False)
+            self.assertEqual(quote_result.returncode, 0, quote_result.stderr)
+            self.assertIn("exact_match", quote_result.stdout)
+            quote_manifest = json.loads((quote_output / "candidate_claim_review_manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(quote_manifest["quote_status_counts"], {"exact_match": 1})
             write_claims(source, [claim(source_document_id="")])
             command[-1] = str(root / "invalid-preview")
             invalid = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -221,6 +551,23 @@ def prepare_preview(root, claims=None):
 
 
 class CandidateEvidenceClaimReviewWizardTests(unittest.TestCase):
+    def test_needs_more_evidence_requires_a_rationale_before_receipt(self):
+        with workspace_temp_dir() as root:
+            _, manifest = prepare_preview(root)
+            answers = iter(["reviewer-fixture", "e", "", "La scheda non specifica l'unità di appartenenza.", "s"])
+            prompts = []
+            displayed = []
+            receipt = run_candidate_evidence_claim_review_wizard(
+                manifest_json=manifest,
+                input_fn=lambda prompt: (prompts.append(prompt), next(answers))[1],
+                output_fn=displayed.append,
+            )
+            self.assertIsNotNone(receipt)
+            self.assertEqual(receipt["decisions"][0]["decision"], "needs_more_evidence")
+            self.assertEqual(receipt["decisions"][0]["note"], "La scheda non specifica l'unità di appartenenza.")
+            self.assertEqual(sum("Quale evidenza manca?" in prompt for prompt in prompts), 2)
+            self.assertTrue(any("specifica quale informazione o fonte manca" in line for line in displayed))
+
     def test_legacy_v11_queue_remains_readable_after_v12_metadata_extension(self):
         with workspace_temp_dir() as root:
             _, manifest_path = prepare_preview(root)

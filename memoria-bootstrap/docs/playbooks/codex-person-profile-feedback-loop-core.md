@@ -284,22 +284,46 @@ legacy) o non più corrispondente al file actions passato.
    l'esito reale dal launcher:
 
    ```text
-   memoria feedback outcome --feedback-plan-json <plan.json> --review-summary-json <review-summary.json> --action-id <action_id> --plan-id <plan_id> --source-id <source_id> --strategy-id <strategy_id> --outcome-status <candidate_results|no_results|needs_manual_review|blocked_or_dynamic> --query <query-eseguita> --run-id <run_id> --executed-at <timestamp-ISO-8601-con-timezone> --result-source-document-id <source_document_id> --output-json <outcome.json> --output-md <outcome.md>
+   memoria feedback outcome --feedback-plan-json <plan.json> --review-summary-json <review-summary.json> --action-id <action_id> --plan-id <plan_id> --source-id <source_id> --strategy-id <strategy_id> --outcome-status <candidate_results|no_results|needs_manual_review|blocked_or_dynamic> --query <query-eseguita> --run-id <run_id> --executed-at <timestamp-ISO-8601-con-timezone> --result-source-document-id <source_document_id> --source-documents-db <database-operativo/evidence.sqlite> --output-json <outcome.json> --output-md <outcome.md>
    ```
 
    Ripetere `--strategy-id` e `--result-source-document-id` quando necessario;
    non aggiungere ID documento se non identificano SourceDocument registrati.
-   Conserva `feedback_search_plan_id`, `action_id`, `source_id`, strategia,
+   Per `candidate_results` con documenti, `--source-documents-db` e' richiesto:
+   il launcher verifica gli ID nel catalogo esistente in sola lettura e include
+   nell'outcome la provenance del catalogo e i metadata risolti. Se il catalogo
+   espone `source_id`, ogni risultato con attribuzione nota deve concordare con
+   la fonte selezionata; un mismatch blocca la scrittura dell'outcome. Nei
+   cataloghi legacy senza `source_id`, l'attribuzione resta `unavailable` e non
+   va trattata come corrispondenza. Conserva `feedback_search_plan_id`,
+   `action_id`, `source_id`, strategia,
    `run_id`, query ed `executed_at` timezone-aware effettivi. `no_results` non
    dimostra assenza storica.
-4. Per attribuzione claim, passa al valutatore un `CandidateEvidenceClaimSet`
+4. Se serve una vista consolidata delle decisioni e degli outcome espliciti,
+   usa il launcher installato:
+
+   ```text
+   memoria review memory-view --inventory-json <inventory.json> --feedback-outcome <outcome.json> --output-dir <nuova-directory>
+   ```
+
+   `--feedback-outcome` e' ripetibile. La ResearchMemoryView conserva ID,
+   status, provenance dell'artifact e, quando presenti, gli ID risultati, lo
+   snapshot del catalogo e lo stato di attribuzione (`matched`, `unavailable`
+   o `not_applicable`) in JSON e Markdown. Il consumer non riapre il catalogo:
+   `matched` riflette la verifica registrata dal producer, non una nuova
+   verifica. Gli outcome legacy senza snapshot restano leggibili ma non
+   verificati. Presenza nel catalogo o concordanza di `source_id` non verificano
+   contenuto, citazione, autenticita' della fonte o identita' del soggetto e non
+   sostituiscono la review umana; non promuovere il risultato a fatto storico.
+5. Per attribuzione claim, passa al valutatore un `CandidateEvidenceClaimSet`
    reale con ID univoco, `source_id` e `source_document_id`. La metrica misura
-   la presenza di questi riferimenti, non verifica l'esistenza nel catalogo.
-5. Se la riconciliazione incontra un conflitto reale, registra in
+   la presenza di questi riferimenti; la valutazione non risolve i riferimenti
+   nel catalogo. Usa la preview claim per quella verifica.
+6. Se la riconciliazione incontra un conflitto reale, registra in
    `FeedbackLoopEvaluationMeasurements.conflicts` `conflict_id`, `outcome_id`,
    `before_claim_ids` e `after_claim_ids`. Non creare record di conflitto per
    simulare una misura.
-6. Per l'uso sessione registra in `sessions` `session_id`, `run_id` e i valori
+7. Per l'uso sessione registra in `sessions` `session_id`, `run_id` e i valori
    realmente disponibili: `input_tokens`, `cached_input_tokens`,
    `output_tokens`, `cost_usd`. Per confrontare baseline e candidate aggiungi
    `comparison_group_id`, `task_contract_sha256`, `quality_gate_status`,

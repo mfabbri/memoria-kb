@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import unittest
@@ -36,6 +37,11 @@ class FeedbackLoopEvaluationTests(unittest.TestCase):
             "action_id": "action:one", "decision_status": "accepted", "decision": "BUONA",
             "person_id": "person:test", "source_document_id": "doc:seed",
         }]})
+        self.source_documents_db = self.root / "source-documents.sqlite"
+        with sqlite3.connect(self.source_documents_db) as connection:
+            connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+            connection.execute("INSERT INTO source_documents VALUES (?, ?, ?)",
+                ("doc:result", "Synthetic result", "https://example.invalid/result"))
 
     def write(self, filename: str, payload: dict) -> Path:
         if payload.get("@type") == "ResearchFeedbackActionReviewSummary":
@@ -49,7 +55,9 @@ class FeedbackLoopEvaluationTests(unittest.TestCase):
         build_feedback_loop_outcome(feedback_plan_json=self.plan, review_summary_json=self.review,
             plan_id="plan:one", source_id=source, outcome_status=status, run_id=run_id,
             executed_at="2026-11-07T10:00:00+00:00", query="Test query",
-            result_source_document_ids=["doc:result"] if status == "candidate_results" else [], output_json=output)
+            result_source_document_ids=["doc:result"] if status == "candidate_results" else [],
+            source_documents_db=self.source_documents_db if status == "candidate_results" else None,
+            output_json=output)
         return output
 
     def test_composes_real_outcome_builder_and_measures_partial_source_coverage(self) -> None:

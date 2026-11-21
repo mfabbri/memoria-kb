@@ -15,7 +15,8 @@ from .source_document_catalog import resolve_source_documents
 DECISIONS = ("accept_candidate", "reject_candidate", "needs_more_evidence")
 
 
-def _build_review_queue(*, claims_json: Path, source_documents_db: Path) -> dict[str, Any]:
+def _build_review_queue(*, claims_json: Path, source_documents_db: Path,
+                        quote_verification_path: Path | None = None) -> dict[str, Any]:
     raw = claims_json.read_bytes()
     payload = json.loads(raw)
     if not isinstance(payload, dict) or payload.get("@type") != "CandidateEvidenceClaimSet":
@@ -77,12 +78,20 @@ def _build_review_queue(*, claims_json: Path, source_documents_db: Path) -> dict
         document = catalog_documents.get(item["source_document_id"], {})
         item["source_document_title"] = str(document.get("title") or "")
         item["source_document_url"] = str(document.get("url") or "")
+    quote_reference = None
+    if quote_verification_path is not None:
+        quote_reference, quote_statuses = _load_quote_verification(
+            quote_verification_path, claims_json=claims_json, claims_input=input_ref, claims=items,
+        )
+        for item in items:
+            item["evidence_quote_status"] = quote_statuses[item["claim_id"]]
     return {
         "@type": "CandidateEvidenceClaimReviewQueue",
         "claims_input": input_ref,
         "review_status": "unreviewed",
         "source_documents_catalog": catalog_manifest_reference,
         "source_document_existence_verified": True,
+        **({"quote_verification": quote_reference} if quote_reference else {}),
         "items": items,
         **_review_only_flags(),
     }
@@ -90,8 +99,10 @@ def _build_review_queue(*, claims_json: Path, source_documents_db: Path) -> dict
 
 def build_candidate_evidence_claim_review(
     *, claims_json: Path, source_documents_db: Path, output_dir: Path,
+    quote_verification_path: Path | None = None,
 ) -> dict[str, Any]:
-    queue = _build_review_queue(claims_json=claims_json, source_documents_db=source_documents_db)
+    queue = _build_review_queue(claims_json=claims_json, source_documents_db=source_documents_db,
+                                quote_verification_path=quote_verification_path)
     input_ref, items = queue["claims_input"], queue["items"]
     queue_bytes = _json_bytes(queue)
     markdown = _render_markdown(queue).encode("utf-8")
@@ -100,7 +111,7 @@ def build_candidate_evidence_claim_review(
     markdown_path = output_dir / "candidate_claim_review_queue.md"
     manifest = {
         "@type": "CandidateEvidenceClaimReviewManifest",
-        "schema_version": "1.2",
+        "schema_version": "1.3" if quote_verification_path is not None else "1.2",
         "claims_input": input_ref,
         "artifacts": {
             "review_queue": {"path": str(queue_path), "sha256": _digest(queue_bytes)},
@@ -115,6 +126,9 @@ def build_candidate_evidence_claim_review(
                      "claim_acceptance_does_not_resolve_person_identity"],
         **_review_only_flags(),
     }
+    if quote_verification_path is not None:
+        manifest["quote_verification"] = queue["quote_verification"]
+        manifest["quote_status_counts"] = dict(sorted(Counter(item["evidence_quote_status"] for item in items).items()))
     files = {queue_path.name: queue_bytes, markdown_path.name: markdown,
              "candidate_claim_review_manifest.json": _json_bytes(manifest)}
     _protect_catalog_output(output_dir, queue["source_documents_catalog"])
@@ -162,6 +176,8 @@ def run_candidate_evidence_claim_review_wizard(
             output_fn(f"Scheda/documento che riporta il dato: {item['source_document_title']}")
         if item.get("source_document_url"):
             output_fn(f"URL della scheda: {item['source_document_url']}")
+        if item.get("evidence_quote_status"):
+            output_fn(f"Verifica esatta della citazione: {item['evidence_quote_status']} (diagnostica; nessuna correzione automatica)")
         person_candidate_id = item.get("person_candidate_id")
         if person_candidate_id and person_candidate_id != item["profile_id"]:
             output_fn(f"Record persona indicato dal claim: {person_candidate_id}")
@@ -188,9 +204,18 @@ def run_candidate_evidence_claim_review_wizard(
         timestamp = now_fn() if now_fn else datetime.now().astimezone()
         if not isinstance(timestamp, datetime) or timestamp.tzinfo is None or timestamp.utcoffset() is None:
             raise ValueError("The review clock must provide a timezone-aware datetime.")
-        note = ask("Nota (opzionale, [q] annulla): ").strip()
-        if note.lower() == "q":
-            return None
+        if choices[answer] == "needs_more_evidence":
+            while True:
+                note = ask("Quale evidenza manca? Nota obbligatoria ([q] annulla): ").strip()
+                if note.lower() == "q":
+                    return None
+                if note:
+                    break
+                output_fn("Per richiedere altra evidenza, specifica quale informazione o fonte manca.")
+        else:
+            note = ask("Nota (opzionale, [q] annulla): ").strip()
+            if note.lower() == "q":
+                return None
         decisions.append({**item, "decision": choices[answer], "reviewer": reviewer,
                           "reviewed_at": timestamp.isoformat(), "note": note})
     counts = dict(sorted(Counter(item["decision"] for item in decisions).items()))
@@ -222,8 +247,8 @@ def _load_review_preview(manifest_json: Path) -> tuple[dict[str, Any], str, dict
     manifest = json.loads(raw)
     if (not isinstance(manifest, dict)
             or manifest.get("@type") != "CandidateEvidenceClaimReviewManifest"
-            or manifest.get("schema_version") not in {"1.1", "1.2"}):
-        raise ValueError("Expected a catalog-bound CandidateEvidenceClaimReviewManifest v1.1 or v1.2.")
+            or manifest.get("schema_version") not in {"1.1", "1.2", "1.3"}):
+        raise ValueError("Expected a catalog-bound CandidateEvidenceClaimReviewManifest v1.1, v1.2, or v1.3.")
     for key, value in {**_review_only_flags(), "source_document_existence_verified": True}.items():
         if manifest.get(key) is not value:
             raise ValueError(f"Review manifest has an invalid {key} flag.")
@@ -233,13 +258,26 @@ def _load_review_preview(manifest_json: Path) -> tuple[dict[str, Any], str, dict
     catalog = manifest.get("source_documents_catalog")
     if not isinstance(catalog, dict) or not isinstance(catalog.get("path"), str) or not Path(catalog["path"]).is_absolute():
         raise ValueError("Review manifest requires an absolute SourceDocument catalog reference.")
-    expected_queue = _build_review_queue(claims_json=claims_path, source_documents_db=Path(catalog["path"]))
+    quote_verification_path = None
+    if manifest["schema_version"] == "1.3":
+        quote_ref = manifest.get("quote_verification")
+        quote_verification_path, _ = _checked_reference(quote_ref, "quote verification")
+    elif manifest.get("quote_verification") is not None:
+        raise ValueError("Legacy review manifests cannot add quote-verification references.")
+    expected_queue = _build_review_queue(claims_json=claims_path, source_documents_db=Path(catalog["path"]),
+                                        quote_verification_path=quote_verification_path)
     if manifest["schema_version"] == "1.1":
         for item in expected_queue["items"]:
             item.pop("source_document_title", None)
             item.pop("source_document_url", None)
     if catalog != expected_queue["source_documents_catalog"]:
         raise ValueError("SourceDocument catalog changed or referenced IDs differ from the preview.")
+    if manifest["schema_version"] == "1.3" and manifest.get("quote_verification") != expected_queue.get("quote_verification"):
+        raise ValueError("Quote-verification reference does not match the review queue.")
+    if manifest["schema_version"] == "1.3":
+        expected_quote_counts = dict(sorted(Counter(item["evidence_quote_status"] for item in expected_queue["items"]).items()))
+        if manifest.get("quote_status_counts") != expected_quote_counts:
+            raise ValueError("Quote-verification status counts do not match the review queue.")
     artifacts = manifest.get("artifacts")
     if not isinstance(artifacts, dict) or set(artifacts) != {"review_queue", "review_markdown"}:
         raise ValueError("Review manifest requires the exact queue and Markdown artifact references.")
@@ -282,6 +320,84 @@ def _protect_catalog_output(output_dir: Path, catalog: dict[str, Any]) -> None:
     reserved = (database, Path(str(database) + "-wal"), Path(str(database) + "-shm"))
     if any(path == output_dir or path in output_dir.parents for path in reserved):
         raise ValueError("Review output must not replace a catalog or its SQLite sidecars.")
+
+
+def _load_quote_verification(
+    path: Path, *, claims_json: Path, claims_input: dict[str, str], claims: list[dict[str, Any]],
+) -> tuple[dict[str, str], dict[str, str]]:
+    path = path.resolve(strict=True)
+    raw = path.read_bytes()
+    report = json.loads(raw.decode("utf-8-sig"))
+    if not isinstance(report, dict) or report.get("@type") != "CandidateEvidenceQuoteVerification":
+        raise ValueError("Expected a CandidateEvidenceQuoteVerification artifact.")
+    if report.get("schema_version") != "1.0" or report.get("preview_only") is not True:
+        raise ValueError("Quote verification must be a preview-only v1.0 artifact.")
+    claims_reference = report.get("claims_input")
+    if (not isinstance(claims_reference, dict) or not isinstance(claims_reference.get("path"), str)
+            or Path(claims_reference["path"]).resolve() != claims_json.resolve()
+            or claims_reference.get("sha256") != claims_input["sha256"]):
+        raise ValueError("Quote verification must bind to the exact claims input path and SHA-256.")
+    text_inputs = report.get("processed_text_inputs")
+    if not isinstance(text_inputs, list) or not text_inputs:
+        raise ValueError("Quote verification requires hash-bound ProcessedDocumentText inputs.")
+    processed_documents: dict[str, tuple[str, str]] = {}
+    for reference in text_inputs:
+        text_path, text_raw = _checked_reference(reference, "ProcessedDocumentText")
+        processed_text = json.loads(text_raw.decode("utf-8-sig"))
+        source_document_id = processed_text.get("source_document_id") if isinstance(processed_text, dict) else None
+        source_id = processed_text.get("source_id") if isinstance(processed_text, dict) else None
+        body = processed_text.get("text") if isinstance(processed_text, dict) else None
+        actual_text_sha256 = _digest(body.encode("utf-8")) if isinstance(body, str) else None
+        if (not isinstance(processed_text, dict) or processed_text.get("@type") != "ProcessedDocumentText"
+                or not isinstance(source_document_id, str) or not source_document_id
+                or not isinstance(source_id, str) or not source_id
+                or not isinstance(body, str)
+                or source_document_id in processed_documents
+                or reference.get("source_document_id") != source_document_id
+                or reference.get("text_sha256") != actual_text_sha256
+                or processed_text.get("text_sha256") not in (None, actual_text_sha256)):
+            raise ValueError(f"Invalid ProcessedDocumentText binding: {text_path}")
+        processed_documents[source_document_id] = (source_id, body)
+    rows = report.get("claims")
+    if (not isinstance(rows, list) or isinstance(report.get("claim_count"), bool)
+            or not isinstance(report.get("claim_count"), int) or report.get("claim_count") != len(rows)):
+        raise ValueError("Quote verification claim count does not match its rows.")
+    expected_ids = {item["claim_id"] for item in claims}
+    statuses: dict[str, str] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Quote verification contains an invalid claim row.")
+        claim_id, status = row.get("claim_id"), row.get("status")
+        if not isinstance(claim_id, str) or not claim_id or claim_id not in expected_ids or claim_id in statuses:
+            raise ValueError("Quote verification claim IDs must match the review queue without duplicates.")
+        if not isinstance(status, str) or status not in {
+            "exact_match", "not_exact", "missing_document_text", "source_id_mismatch", "empty_evidence_span",
+        }:
+            raise ValueError(f"Unsupported quote verification status for {claim_id}.")
+        matching_claim = next(item for item in claims if item["claim_id"] == claim_id)
+        source_document_id = matching_claim["source_document_id"]
+        if row.get("source_document_id") != source_document_id or row.get("source_id") != matching_claim["source_id"]:
+            raise ValueError(f"Quote verification SourceDocument differs for {claim_id}.")
+        source_document = processed_documents.get(source_document_id)
+        span = matching_claim["source_claim"].get("evidence_span")
+        if source_document is None:
+            expected_status = "missing_document_text"
+        elif matching_claim["source_id"] != source_document[0]:
+            expected_status = "source_id_mismatch"
+        elif not isinstance(span, str) or not span:
+            expected_status = "empty_evidence_span"
+        else:
+            expected_status = "exact_match" if span in source_document[1] else "not_exact"
+        if (row.get("evidence_span") != (span if isinstance(span, str) else "")
+                or status != expected_status):
+            raise ValueError(f"Quote verification status is inconsistent with hash-bound evidence for {claim_id}.")
+        statuses[claim_id] = expected_status
+    if set(statuses) != expected_ids:
+        raise ValueError("Quote verification must cover every claim in the review queue.")
+    counts = dict(sorted(Counter(statuses.values()).items()))
+    if report.get("status_counts") != counts:
+        raise ValueError("Quote verification status counts do not match its claim rows.")
+    return {"path": str(path), "sha256": _digest(raw)}, statuses
 
 
 def _required_text(payload: dict[str, Any], key: str, *, fallback: str = "") -> str:
@@ -333,6 +449,8 @@ def _render_markdown(queue: dict[str, Any]) -> str:
                       f"- Fonte: `{item['source_id']}`; SourceDocument: `{item['source_document_id']}`",
                       f"- Metodo: `{item['extraction_method']}`; confidence: `{item['confidence']}`", "",
                       item["evidence_span"] or item["context"], ""])
+        if item.get("evidence_quote_status"):
+            lines.insert(-1, f"- Quote verification: `{item['evidence_quote_status']}` (diagnostic only)")
         if item["context"] and item["context"] != item["evidence_span"]:
             lines.extend(["Contesto: " + item["context"], ""])
     return "\n".join(lines) + "\n"

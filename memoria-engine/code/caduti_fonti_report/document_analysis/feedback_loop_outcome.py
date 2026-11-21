@@ -8,6 +8,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .source_document_catalog import resolve_source_documents
+
 AUDITABLE_OUTCOME_STATUSES = {
     "candidate_results",
     "no_results",
@@ -30,6 +32,7 @@ def build_feedback_loop_outcome(
     execution_mode: str = "manual_review_session",
     query: str = "",
     result_source_document_ids: list[str] | None = None,
+    source_documents_db: Path | None = None,
     notes: str = "",
     run_id: str = "",
     executed_at: str | None = None,
@@ -51,6 +54,20 @@ def build_feedback_loop_outcome(
     result_documents = sorted(set(_string_list(result_source_document_ids or [])))
     if status == "no_results" and result_documents:
         raise ValueError("A no_results outcome cannot include result SourceDocument IDs.")
+    result_catalog = None
+    if status == "candidate_results" and result_documents:
+        if source_documents_db is None:
+            raise ValueError("candidate_results requires an existing SourceDocument catalog.")
+        result_catalog = resolve_source_documents(
+            source_documents_db, set(result_documents), include_metadata=True,
+        )
+        source_ids = [document.get("source_id", "") for document in result_catalog.get("documents", [])]
+        known_source_ids = [source_id for source_id in source_ids if source_id]
+        if any(source_id != selected_source_id for source_id in known_source_ids):
+            raise ValueError("Result SourceDocument source_id does not match the selected search source.")
+        result_catalog["source_id_match_status"] = (
+            "matched" if len(known_source_ids) == len(source_ids) and source_ids else "unavailable"
+        )
     review_action_set_provenance = _review_action_set_provenance(
         plan_payload=plan_payload,
         review_summary=review_summary,
@@ -109,6 +126,7 @@ def build_feedback_loop_outcome(
         "approved_decision": approved_decision,
         "review_action_set_provenance": review_action_set_provenance,
         "result_source_document_ids": result_documents,
+        "result_source_documents_catalog": result_catalog,
         "notes": notes,
         "profile_write_allowed": False,
         "claim_promotion_allowed": False,
@@ -128,6 +146,7 @@ def build_feedback_loop_outcome(
             outcome_status=status,
             query=query,
             result_source_document_ids=result_documents,
+            result_source_documents_catalog=result_catalog,
             notes=notes,
             executed_at=now,
         ),
@@ -176,6 +195,12 @@ def render_feedback_loop_outcome_markdown(payload: dict[str, Any]) -> str:
             lines.append(f"- `{document_id}`")
     else:
         lines.append("_Nessun nuovo documento candidato registrato._")
+    catalog = payload.get("result_source_documents_catalog")
+    if isinstance(catalog, dict):
+        lines.append(
+            f"- Catalogo SourceDocument: `{catalog.get('path', '')}` "
+            f"| SHA-256 `{catalog.get('sha256', '')}`"
+        )
     lines.extend(["", "## Memoria di ricerca preview", ""])
     memory = payload.get("search_memory_update_preview", {})
     if isinstance(memory, dict):
@@ -205,6 +230,7 @@ def _search_memory_update_preview(
     outcome_status: str,
     query: str,
     result_source_document_ids: list[str],
+    result_source_documents_catalog: dict[str, Any] | None,
     notes: str,
     executed_at: str,
 ) -> dict[str, Any]:
@@ -223,6 +249,7 @@ def _search_memory_update_preview(
         "outcome_status": outcome_status,
         "query": query,
         "result_source_document_ids": result_source_document_ids,
+        "result_source_documents_catalog": result_source_documents_catalog,
         "summary": notes or _default_summary(outcome_status),
         "executed_at": executed_at,
         "profile_write_allowed": False,
@@ -417,6 +444,8 @@ def main() -> int:
     parser.add_argument("--execution-mode", default="manual_review_session")
     parser.add_argument("--query", default="")
     parser.add_argument("--result-source-document-id", action="append", default=[])
+    parser.add_argument("--source-documents-db", type=Path,
+                        help="Catalogo SourceDocument SQLite esistente; obbligatorio con candidate_results e documenti.")
     parser.add_argument("--notes", default="")
     parser.add_argument("--run-id", default="")
     parser.add_argument("--executed-at", default="")
@@ -435,6 +464,7 @@ def main() -> int:
         execution_mode=args.execution_mode,
         query=args.query,
         result_source_document_ids=args.result_source_document_id,
+        source_documents_db=args.source_documents_db,
         notes=args.notes,
         run_id=args.run_id,
         executed_at=args.executed_at or None,

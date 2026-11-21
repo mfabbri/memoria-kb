@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import unittest
@@ -123,6 +125,41 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
             self.assertFalse(payload["claim_promotion_allowed"])
             self.assertEqual(before, {path: path.read_bytes() for path in before})
 
+            candidate_output = tmp_dir / "candidate-outcome.json"
+            candidate_command = [
+                str(launcher), "feedback", "outcome", "--feedback-plan-json", str(plan),
+                "--review-summary-json", str(review), "--action-id", "research-feedback-action:7bdbb2060d955baa",
+                "--plan-id", "feedback-search-plan:a19b13e6e3cd8b0d", "--source-id", "storia_memoria_bo",
+                "--strategy-id", "testo-libero-nome-completo", "--outcome-status", "candidate_results",
+                "--query", "Andreoli Dino", "--result-source-document-id", "doc:result",
+                "--run-id", "run:candidate-fixture", "--executed-at", "2026-07-15T10:00:00+00:00",
+                "--output-json", str(candidate_output), "--output-md", str(tmp_dir / "candidate-outcome.md"),
+            ]
+            missing_catalog = subprocess.run(candidate_command, capture_output=True, text=True, check=False)
+            self.assertEqual(missing_catalog.returncode, 1)
+            self.assertIn("requires an existing SourceDocument catalog", missing_catalog.stderr)
+            self.assertFalse(candidate_output.exists())
+            catalog = tmp_dir / "catalog.sqlite"
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, source_id TEXT, title TEXT, url TEXT)")
+                connection.execute("INSERT INTO source_documents VALUES (?, ?, ?, ?)",
+                    ("doc:result", "storia_memoria_bo", "Synthetic result", "https://example.invalid/result"))
+            candidate_command.extend(["--source-documents-db", str(catalog)])
+            verified = subprocess.run(candidate_command, capture_output=True, text=True, check=False)
+            self.assertEqual(verified.returncode, 0, verified.stderr)
+            candidate_payload = json.loads(candidate_output.read_text(encoding="utf-8"))
+            self.assertEqual(candidate_payload["result_source_documents_catalog"]["resolved_document_ids"], ["doc:result"])
+            self.assertEqual(candidate_payload["result_source_documents_catalog"]["source_id_match_status"], "matched")
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("UPDATE source_documents SET source_id = 'source:other' WHERE document_id = 'doc:result'")
+                connection.commit()
+            mismatch_output = tmp_dir / "candidate-mismatch.json"
+            candidate_command[candidate_command.index("--output-json") + 1] = str(mismatch_output)
+            rejected = subprocess.run(candidate_command, capture_output=True, text=True, check=False)
+            self.assertEqual(rejected.returncode, 1)
+            self.assertIn("does not match the selected search source", rejected.stderr)
+            self.assertFalse(mismatch_output.exists())
+
     def build_outcome(self, root: Path, **overrides: object) -> dict:
         arguments = {
             "feedback_plan_json": root / "plan.json",
@@ -134,6 +171,17 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
             "query": "Andreoli Dino",
         }
         arguments.update(overrides)
+        result_ids = arguments.get("result_source_document_ids") or []
+        if arguments.get("outcome_status") == "candidate_results" and result_ids and "source_documents_db" not in overrides:
+            catalog = root / "source-documents.sqlite"
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("CREATE TABLE IF NOT EXISTS source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+                connection.executemany(
+                    "INSERT OR IGNORE INTO source_documents VALUES (?, ?, ?)",
+                    [(str(document_id), "Synthetic source document", "https://example.invalid/document")
+                     for document_id in result_ids if isinstance(document_id, str) and document_id.strip()],
+                )
+            arguments["source_documents_db"] = catalog
         return build_feedback_loop_outcome(**arguments)
 
     def write_inputs(self, root: Path) -> dict:
@@ -262,6 +310,119 @@ class FeedbackLoopOutcomeTests(unittest.TestCase):
 
         self.assertEqual(payload["loop_status"], "missing_candidate_result_document")
         self.assertIn("candidate_results_requires_source_document_id", payload["warnings"])
+
+    def test_candidate_results_require_registered_source_documents_and_preserve_catalog_provenance(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            self.write_inputs(tmp_dir)
+            output = tmp_dir / "outcome.json"
+            with self.assertRaisesRegex(ValueError, "requires an existing SourceDocument catalog"):
+                build_feedback_loop_outcome(
+                    feedback_plan_json=tmp_dir / "plan.json", review_summary_json=tmp_dir / "review.json",
+                    action_id="research-feedback-action:7bdbb2060d955baa",
+                    outcome_status="candidate_results", query="Andreoli Dino",
+                    result_source_document_ids=["doc:result"], output_json=output,
+                )
+            self.assertFalse(output.exists())
+
+            catalog = tmp_dir / "catalog.sqlite"
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, title TEXT, url TEXT)")
+            with self.assertRaisesRegex(ValueError, "SourceDocument IDs are absent from catalog"):
+                self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                    result_source_document_ids=["doc:result"], source_documents_db=catalog, output_json=output)
+            self.assertFalse(output.exists())
+
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("INSERT INTO source_documents VALUES (?, ?, ?)",
+                    ("doc:result", "Synthetic result", "https://example.invalid/result"))
+            before = catalog.read_bytes()
+            payload = self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                result_source_document_ids=["doc:result"], source_documents_db=catalog,
+                output_json=output, output_md=tmp_dir / "outcome.md")
+            verification = payload["result_source_documents_catalog"]
+            self.assertEqual(verification["resolved_document_ids"], ["doc:result"])
+            self.assertEqual(verification["documents"][0]["title"], "Synthetic result")
+            self.assertEqual(verification["path"], str(catalog.resolve()))
+            self.assertEqual(verification["sha256"], hashlib.sha256(before).hexdigest())
+            self.assertEqual(verification["source_id_match_status"], "unavailable")
+            self.assertEqual(payload["search_memory_update_preview"]["result_source_documents_catalog"], verification)
+            markdown = (tmp_dir / "outcome.md").read_text(encoding="utf-8")
+            self.assertIn(str(catalog.resolve()), markdown)
+            self.assertIn(hashlib.sha256(before).hexdigest(), markdown)
+            self.assertEqual(catalog.read_bytes(), before)
+
+    def test_candidate_result_source_id_must_match_when_catalog_provides_attribution(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            self.write_inputs(tmp_dir)
+            catalog = tmp_dir / "catalog.sqlite"
+            with sqlite3.connect(catalog) as connection:
+                connection.execute(
+                    "CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, source_id TEXT, title TEXT)"
+                )
+                connection.execute(
+                    "INSERT INTO source_documents VALUES (?, ?, ?)",
+                    ("doc:result", "storia_memoria_bo", "Synthetic result"),
+                )
+                connection.commit()
+            before = catalog.read_bytes()
+            payload = self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                result_source_document_ids=["doc:result"], source_documents_db=catalog)
+            self.assertEqual(payload["result_source_documents_catalog"]["source_id_match_status"], "matched")
+            self.assertEqual(payload["result_source_documents_catalog"]["documents"][0]["source_id"],
+                "storia_memoria_bo")
+            self.assertEqual(catalog.read_bytes(), before)
+
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("UPDATE source_documents SET source_id = 'source:other' WHERE document_id = 'doc:result'")
+                connection.commit()
+            mismatch_before = catalog.read_bytes()
+            output = tmp_dir / "mismatch.json"
+            with self.assertRaisesRegex(ValueError, "does not match the selected search source"):
+                self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                    result_source_document_ids=["doc:result"], source_documents_db=catalog, output_json=output)
+            self.assertFalse(output.exists())
+            self.assertEqual(catalog.read_bytes(), mismatch_before)
+
+    def test_multi_document_source_attribution_handles_complete_partial_and_conflicting_metadata(self) -> None:
+        with workspace_temp_dir() as tmp_dir:
+            self.write_inputs(tmp_dir)
+            catalog = tmp_dir / "catalog.sqlite"
+            with sqlite3.connect(catalog) as connection:
+                connection.execute(
+                    "CREATE TABLE source_documents (document_id TEXT PRIMARY KEY, source_id TEXT, title TEXT)"
+                )
+                connection.executemany(
+                    "INSERT INTO source_documents VALUES (?, ?, ?)",
+                    [("doc:one", "storia_memoria_bo", "First"),
+                     ("doc:two", "storia_memoria_bo", "Second"),
+                     ("doc:legacy", None, "Legacy")],
+                )
+                connection.commit()
+
+            before = catalog.read_bytes()
+            matched = self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                result_source_document_ids=["doc:one", "doc:two"], source_documents_db=catalog)
+            self.assertEqual(matched["result_source_documents_catalog"]["source_id_match_status"], "matched")
+            self.assertEqual(matched["result_source_documents_catalog"]["resolved_document_ids"],
+                ["doc:one", "doc:two"])
+            self.assertEqual(catalog.read_bytes(), before)
+
+            partial = self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                result_source_document_ids=["doc:one", "doc:legacy"], source_documents_db=catalog)
+            self.assertEqual(partial["result_source_documents_catalog"]["source_id_match_status"], "unavailable")
+            self.assertEqual(catalog.read_bytes(), before)
+
+            with sqlite3.connect(catalog) as connection:
+                connection.execute("UPDATE source_documents SET source_id = 'source:other' WHERE document_id = 'doc:two'")
+                connection.commit()
+            mismatch_before = catalog.read_bytes()
+            output = tmp_dir / "multi-mismatch.json"
+            with self.assertRaisesRegex(ValueError, "does not match the selected search source"):
+                self.build_outcome(tmp_dir, outcome_status="candidate_results",
+                    result_source_document_ids=["doc:one", "doc:two"], source_documents_db=catalog,
+                    output_json=output)
+            self.assertFalse(output.exists())
+            self.assertEqual(catalog.read_bytes(), mismatch_before)
 
     def test_markdown_renderer_lists_result_documents(self) -> None:
         markdown = render_feedback_loop_outcome_markdown(
