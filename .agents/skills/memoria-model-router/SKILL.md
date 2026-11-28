@@ -1,26 +1,24 @@
 ---
 name: memoria-model-router
-description: Choose a model or specialist only for a nontrivial Me.Mo.Ri.A task with known scope and risk.
+description: Scegli modello e delega solo per slice di codice o trade-off con rischio definito.
 ---
 
-# Routing v3.1
+# Routing v3.2 — on demand
 
-Prima chiediti se serve delegare: per typo, discovery, documentazione limitata
-e fix meccanici il parent puo' procedere da solo senza duplicare il contesto.
+Non attivare un subagent solo per aderire a una tabella. Il parent Sol/medium
+puo' completare direttamente gran parte delle slice. Switch manuale del parent
+in `/model` quando il compito e' evidentemente piccolo o strutturalmente arduo.
 
-| Task | Route preferita | Effort iniziale |
+| Compito | Modello/effort proposto | Delega |
 |---|---|---|
-| Discovery, docs, modifica meccanica limitata | parent GPT-6 Luna | low |
-| Codice che modifica comportamento, regole o CLI | mmr_implementer GPT-6.1 Sol | medium |
-| Review indipendente per rischio concreto | mmr_test_reviewer GPT-6.1 Sol | medium |
-| Migrazione/architettura multi-repo ambigua | mmr_architect GPT-6 Astra | low |
+| Fix meccanico, ricerca per file, documento breve | Luna/low | Nessuna di norma |
+| Dossier reale, integrazione/CLI, test mirati | GPT-6.2 Sol/medium | Solo indipendente e delimitata |
+| Review rischio reale: provenance, canonici, regressioni | Sol/medium | Solo quando i test non bastano |
+| Architettura ambigua multi-repo, conflitto di contratti | GPT-6.2 Astra/medium | Solo trade-off concreto |
+| Interazione visiva non automatizzabile con tool usuali | GPT-6.1 Terra/medium | Solo task effettivamente visuale |
 
-Gli agent read-only/docs restano disponibili solo quando l'indipendenza porta
-valore. Un solo subagent alla volta di norma; non forzare la separazione di task
-brevi. Registra nel planner `policy_version: "3.1"` per **nuovi** record di routing
-attivi; lo storico 2.x/3.0 non si riscrive. `/model` e' il gate di disponibilita':
-se il modello non e' accessibile, registra un fallback concordante e non
-attribuire al modello richiesto un lavoro eseguito altrove.
-
-Escalation solo davanti a un blocco verificabile, contratti in conflitto o
-rischio nuovo. Ridurre prima scope, tool output e materiale duplicato.
+Effort high/xhigh non e' un default, ma escalation per blocco riproducibile.
+Verifica disponibilita' in `/model`; gli slug API non garantiscono accesso Codex.
+Per nuove route usa `policy_version: "3.2"`, senza riscrivere lo storico.
+Se manca il modello, registra quello reale e il motivo di fallback.
+Non leggere l'intero planner o la roadmap per scegliere un modello.

@@ -1,13 +1,14 @@
-# 01 Start Session
+# 01 Start Session (2026-11-21)
 
-Carica solo il contesto necessario al task.
+Per un task guidato dalla roadmap, leggi `AGENTS.md`,
+`memoria-bootstrap/docs/current-focus.md` e il riepilogo:
 
-1. `AGENTS.md` e `memoria-bootstrap/planning/current-work.json`.
-2. Se esiste lavoro persistente aperto, apri solo i riferimenti citati dal planner.
-3. Se serve scegliere un nuovo incremento, usa `$memoria-roadmap-selector`, che
-   cerca e apre solo le sezioni pertinenti delle roadmap.
-4. Usa un solo playbook/skill verticale quando il task lo richiede.
+```text
+python memoria-bootstrap/planning/current-work-summary.py
+```
 
-Prima di modificare file devono essere chiari objective, write set, test minimo e
-stop condition. Non leggere preventivamente tutte le roadmap, il decision log o
-la golden run per modifiche che non li coinvolgono.
+Non leggere `current-work.json` intero a meno che devi aggiornarlo.
+Se serve una nuova slice usa `$memoria-roadmap-selector` (T85-T89).
+Carica solo una skill verticale strettamente pertinente, non tutti i playbook.
+Prima del write: obiettivo, evidenza attesa, file, test e stop condition.
+Per una correzione puntuale richiesta dall'utente non serve aprire il planner.

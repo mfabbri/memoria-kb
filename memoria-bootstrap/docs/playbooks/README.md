@@ -1,17 +1,18 @@
-# Playbook e skill Codex — post-MVP (2026-11-14)
+# Playbook e skill Codex — source-first (2026-11-21)
 
-Entrypoint operativo breve: `AGENTS.md` -> `docs/current-focus.md` ->
+Avvio: `AGENTS.md` -> `docs/current-focus.md` ->
 `python memoria-bootstrap/planning/current-work-summary.py`.
-Prompt quotidiano: `docs/agent-session-prompt.md` (non duplicare il contenuto
-nelle skill). Roadmap tecnica T53-T58 contiene i criteri di accettazione.
+Entry point quotidiano: `../agent-session-prompt.md`. Per la prossima slice,
+usare la sola sezione T85-T89 della roadmap tecnica, non la cronologia T53-T84.
 
-- `$memoria-roadmap-selector`: usa il focus se il planner è chiuso;
-- `$memoria-session`: solo task sostanziali/multi-step;
-- `$memoria-planner`: solo quando si apre/aggiorna/chiude lavoro persistente;
-- `$memoria-model-router`: routing/delega solo per rischio o compito separabile;
-- skill verticali e playbook di dominio **on-demand**.
+- `$memoria-roadmap-selector`: seleziona un risultato storico o un blocker reale.
+- `$memoria-session`: gestione di lavori sostanziali, non typo/read-only.
+- `$memoria-planner`: aggiorna stato in sicurezza solo quando si avvia o chiude.
+- `$memoria-model-router`: routing v3.2 on-demand, nessuna delega automatica.
+- `online-source-research-review.md`: CLI e autorizzazione live.
+- `codex-person-profile-feedback-loop-core.md`: claim, memoria, feedback.
+- `codex-session-contract.md`: guardrail di review e applicazione canonica.
 
-Policy modelli v3.1 rimane attiva, condizionata a disponibilità effettiva;
-nessun subagent obbligatorio. Hook opzionali soltanto se approvati in `/hooks`.
-Non caricare integralmente il planner, le roadmap storiche o il lungo playbook
-OCR in ogni sessione. Non usare T45-T49 come backlog aperto.
+OCR e pCloud sono sospesi. Evitare micro-test non motivati, letture complete di
+planner, roadmap storica, corpus e report pesanti. Lo stato del data root non
+si deduce dal solo ZIP del codice.

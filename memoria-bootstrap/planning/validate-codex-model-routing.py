@@ -10,9 +10,9 @@ EXPECTED = {
     "mmr-scanner": ("gpt-6-luna", "low"),
     "mmr-docs-reviewer": ("gpt-6-luna", "low"),
     "mmr-docs-editor": ("gpt-6-luna", "low"),
-    "mmr-implementer": ("gpt-6.1-sol", "medium"),
-    "mmr-test-reviewer": ("gpt-6.1-sol", "medium"),
-    "mmr-architect": ("gpt-6-astra", "low"),
+    "mmr-implementer": ("gpt-6.2-sol", "medium"),
+    "mmr-test-reviewer": ("gpt-6.2-sol", "medium"),
+    "mmr-architect": ("gpt-6.2-astra", "medium"),
 }
 
 ROUTES_V20 = {
@@ -40,7 +40,23 @@ ROUTES_V30 = {
     "high": {("mmr_architect", "gpt-6-astra", "low")},
 }
 ROUTES_V31 = {**ROUTES_V30, "low": ROUTES_V30["low"] | {("parent", "gpt-6-luna", "low")}}
-ROUTES_BY_POLICY = {"2.0": ROUTES_V20, "2.1": ROUTES_V21, "3.0": ROUTES_V30, "3.1": ROUTES_V31}
+ROUTES_V32 = {
+    "low": ROUTES_V31["low"],  # Luna/low direct + optional small read-only agent
+    "medium": {
+        ("parent", "gpt-6.2-sol", "medium"),
+        ("parent", "gpt-6.1-terra", "medium"),  # optional visual session
+        ("mmr_implementer", "gpt-6.2-sol", "medium"),
+    },
+    "review": {("mmr_test_reviewer", "gpt-6.2-sol", "medium")},
+    "high": {
+        ("parent", "gpt-6.2-astra", "medium"),
+        ("mmr_architect", "gpt-6.2-astra", "medium"),
+    },
+}
+ROUTES_BY_POLICY = {
+    "2.0": ROUTES_V20, "2.1": ROUTES_V21,
+    "3.0": ROUTES_V30, "3.1": ROUTES_V31, "3.2": ROUTES_V32,
+}
 
 
 def fail(msg: str) -> None:
@@ -52,16 +68,16 @@ def main() -> int:
     cfg = tomllib.loads((ROOT / ".codex/config.toml").read_text(encoding="utf-8"))
     if "profiles" in cfg:
         fail("project-local profiles present")
-    if (cfg.get("model"), cfg.get("model_reasoning_effort")) != ("gpt-6-luna", "low"):
-        fail("parent must be GPT-6 Luna/low router")
-    if cfg.get("plan_mode_reasoning_effort") != "low":
-        fail("plan mode must start at low reasoning")
+    if (cfg.get("model"), cfg.get("model_reasoning_effort")) != ("gpt-6.2-sol", "medium"):
+        fail("parent must default to GPT-6.2 Sol/medium")
+    if cfg.get("plan_mode_reasoning_effort") != "medium":
+        fail("plan mode must start at medium reasoning")
     if cfg.get("skills", {}).get("max_context_tokens") != 2000:
         fail("skills.max_context_tokens must be 2000")
 
     ag = cfg.get("agents", {})
-    if ag.get("max_concurrent_threads_per_session") != 3:
-        fail("max_concurrent_threads_per_session != 3")
+    if ag.get("max_concurrent_threads_per_session") != 2:
+        fail("max_concurrent_threads_per_session != 2")
     if ag.get("default_subagent_model") != "gpt-6-luna":
         fail("default subagent must be GPT-6 Luna")
     if ag.get("default_subagent_reasoning_effort") != "low":
@@ -95,8 +111,12 @@ def main() -> int:
         fail("active planner has no routing block")
     if route:
         policy_version = route.get("policy_version", "2.0")
-        if active and policy_version != "3.1":
-            fail("new active planner must be routed with policy_version 3.1")
+        # Preserve already-open historical sessions, without rewriting their route.
+        # New records selected on/after the strategy decision must use v3.2.
+        if active and policy_version != "3.2":
+            selected_at = planner.get("selected_at") or ""
+            if selected_at[:10] >= "2026-11-21":
+                fail("active new planner must use policy_version 3.2")
         routes = ROUTES_BY_POLICY.get(policy_version)
         if routes is None:
             fail(f"unknown routing policy: {policy_version}")
@@ -130,7 +150,7 @@ def main() -> int:
     if not (ROOT / ".codex/hooks/model-routing-audit.py").is_file():
         fail("runtime audit hook script missing")
 
-    print("OK: Codex model routing v3.1 is structurally coherent")
+    print("OK: Codex model routing v3.2 is structurally coherent")
     if route:
         print(
             f"planner: policy={route.get('policy_version')} tier={route['tier']} "

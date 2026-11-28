@@ -1,18 +1,20 @@
-# Codex Context Budget — euristiche v3.1
+# Codex context budget — euristiche v3.2
 
-Non esiste una quota rigida di file valida per ogni task: il criterio e' la
-**quantita' di contesto utile per correggere/verificare il cambiamento**.
+**Obiettivo: costo totale per ciclo storico completato**, non il minor numero
+di token in una singola risposta. Non imporre quote arbitrarie di file/tokens.
 
-- `discovery-lite`: `rg --files`, simboli e snippet; niente dump ricorsivi.
-- docs/config breve: parent Luna/low, nessuna delega per principio.
-- code slice: leggere il modulo target, contratto pubblico e test pertinenti;
-  Sol/medium se la modifica e' sostanziale.
-- review: indipendente solo per rischio concreto (provenance, idempotenza,
-  dati canonici, storage, regressione ampia).
-- architettura: Astra/low per trade-off che coinvolgono piu' repository e
-  decisioni difficili; evitare l'uso per semplice scrittura documentale.
+1. Avvio: `AGENTS.md`, focus e summary planner (non JSON storico).
+2. Ricerca: `rg --files`, `rg -n 'simbolo|heading'` e righe pertinenti; no dump.
+3. Solo se cambia comportamento: modulo target + contratto + test prossimo.
+4. Solo se necessario: playbook verticale specifico. Non aprire OCR, roadmap
+   da 160 KB, decision log intero o 12 MB di planner per un task ordinario.
+5. Delega una sola review indipendente per rischio; no parallelismo rituale.
+6. Stop al rework: se due iterazioni non aumentano evidenza o non sbloccano
+   il caso, documenta blocker; non generare il terzo micro-test automaticamente.
+7. Checkpoint prima di compaction: obiettivo, artifact, decisioni, file, test,
+   stato. Le evidenze restano persistenti fuori dal contesto del modello.
+8. Misura su task omogenei: input/cached/output/reasoning se disponibili,
+   retry, subagent, tempo e gate superati. Non assumere riduzioni percentuali.
 
-Token: skill su richiesta, dettagli verticali nei playbook, handoff con path e
-criteri, output strumenti brevi, checkpoint dopo compaction, niente agent
-paralleli su stessi file, evitare test e letture gia' conclusi senza motivo.
-Misurare esiti e costi completi prima di dichiarare una riduzione percentuale.
+Codex `/model` non implica accesso all'API con lo stesso slug; non confondere
+prompt cache API e cache client. Vedi `../model-routing-policy.md`.

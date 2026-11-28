@@ -1,83 +1,148 @@
-# Focus operativo Me.Mo.Ri.A. — 2026-11-14
+# Focus operativo Me.Mo.Ri.A — 2026-11-24
 
-Questo è il **punto di ingresso breve** per selezionare lavoro post-MVP.
-La roadmap tecnica resta la fonte di verità del backlog; i log T29-T52 sono
-storici. Non aggiornare questo documento per ogni sessione: aggiornalo solo
-quando cambia una priorità o si completa una milestone.
+## Decisione di prodotto (prevale sulle priorita' storiche)
 
-## Decisione di prodotto
+**MVP T29-T33 completato; T53-T84 sono storico implementativo.** Dopo T84
+sono stati consegnati dossier, viste e report T86-T89. Il problema aperto e'
+dimostrare nuova evidenza utile e cicli ripetibili su piu' casi reali.
+Un incremento `completed` puo' chiudere una consegna o un attempt senza
+risolvere il problema storico. Lo stato del task corrente va letto dalla
+summary del planner, non dedotto dal vecchio snapshot T84.
+T41 OCR e T27/T28 pCloud restano **sospesi senza data**. Non proporre
+scansioni/OCR, nuovi backend cloud o nuove golden run come prerequisiti.
 
-- **Priorità P0:** rendere ripetibile il percorso fonte online/offline ->
-  `SourceDocument` -> `EvidenceClaim` -> riconciliazione -> review -> feedback ->
-  memoria di ricerca. Misurare esiti reali, non quantità di CLI o connettori.
-- **Sospesi senza data:** T41 OCR formale e T27/T28 pCloud. Non selezionarli
-  automaticamente; restano backlog differito fino a nuova decisione utente.
-- **MVP finanziatori:** T29-T33 chiusi. T34/T34b e T45-T54/T56 chiusi secondo gli
-  artifact e i gate registrati. Nessuna nuova golden run come prerequisito.
-- **T55:** completato 2026-11-15 con dossier Bendini review-only. Sei claim accettati come candidati; identita e divergenze non risolte. Il PDF T47 resta SearchResult.
+**P0:** applicare un criterio di uscita per *risultato storico*, non numero
+di test, CLI, fixture, adapter o task chiusi. Non riaprire T53-T84 salvo
+regressione reale che impedisce il nuovo percorso.
 
-- **Dati veri:** fuori da Git. Prima di agire su documenti/profili reali,
-  verificare la disponibilità del data root operativo e il consenso sul perimetro.
+## T85-T89: consegne e prove residue al 2026-11-22
 
-## Sequenza proposta, una slice per sessione
+| ID | Priorita' | Consegna riscontrata | Cosa resta da dimostrare |
+|---|---|---|---|
+| T85 | P0 | Governance/routing v3.2 presenti; allineamento documentale dello stato completato il 22 novembre | Chiusura integrale dei gate originari non attestata da questa sessione; configurazione e validator non provano disponibilita' effettiva in `/model` |
+| T86 | P0 | Dossier Bendini: 3 documenti esistenti, 2 famiglie di portali e DOCX locale; 5 receipt pregresse, 18 decisioni; 3 quote corrette T61 esatte | Indipendenza archivistica a monte, identita', date e formazione restano aperte; consolidamento offline, nessuna nuova acquisizione T86 |
+| T87 | P0 | Vista consegnata con 4 link candidati persona/luoghi/evento, su 3 documenti | I link della nuova vista sono `unreviewed`; identita', identificazione dei luoghi e partecipazione storica non dimostrate |
+| T88 | P0 | Un ciclo live chiuso: feedback umano -> piano -> attempt autorizzato -> `no_results` -> review utilita' DUBBIA -> memoria recuperabile | Zero documenti/claim nuovi; lacuna storica aperta. Il ciclo operativo e' provato anche con esito vuoto, l'arricchimento no |
+| T89 | P1 | Report completato su 4 casi, con quote-check e review candidate distinte per caso | Un solo caso con feedback live nella coorte; ripetibilita' multi-caso e nuova evidenza da feedback non dimostrate; tempi umani/costi token comparabili non disponibili |
 
-| ID | Prio | Obiettivo e criterio di uscita |
-|---|---|---|
-| T53 | P0 | Completato 2026-11-14: baseline read-only. |
-| T54 | P0 | Completato 2026-11-14: claims-build multi-attempt idempotente. |
-| T55 | P0 | Completato 2026-11-15: dossier Bendini e 6 decisioni accept_candidate; nessuna canonizzazione. |
-| T56 | P1 | Completato 2026-11-14: relazioni candidate tipizzate. |
-| T57a | P1 | Completato 2026-11-15: CLI verifica receipt/artifact; risolve relocation T52 e diagnostica catalog drift. |
-| T57b | P1 | Completato 2026-11-15: vista deterministica da due sessioni; 15 decisioni, 3 divergenze, feedback assente esplicito, no canonical write. |
-| T58a | P2 | Completato 2026-11-15: matrice offline di local_docx, storia_memoria_bo e partigiani_italia; report in `docs/reports/t58a-source-family-certification-2026-11-15.md`. |
-| T59a | P1 | Completato 2026-11-15: verifica exact-match delle citazioni; sul dossier T55 3 esatte e 3 non esatte, senza modifiche alle decisioni. |
-| T59b | P1 | Completato 2026-11-15: preview di lineage esplicita tra SourceDocument; membership read-only e stato unreviewed. |
-| T59c | P1 | Completato 2026-11-15: memory view include lineage e quote-check con provenance degli artifact. |
+T86-T89 non sono piu' backlog interamente da avviare. Le note di completamento
+del planner restano storiche: non equivalgono a fatti verificati o a tutte le
+capacita' dimostrate. I criteri originari e i limiti attuali sono nella sezione
+T85-T89 di `roadmap/02-technical-roadmap.md`; non servono nuovi layer tecnici
+finche' il launcher esistente consente il caso reale.
 
-**Dipendenze:** T53 -> T54 -> T55 -> T56 -> T57a -> T57b -> T58a -> T59a -> T59b -> T59c. T59c e' chiuso; prossimo candidato da selezionare dai gap misurati.
-T41 e T27/T28 restano sospesi. T57a e T57b sono capability CLI chiuse; la vista resta read-only.
+## Evidenze e ultimo esito
 
-## Evidenze T53-T58a
+Riferimenti nel data root esterno `P:\Comune\Me.Mo.Ri.a\risultati\runs\`:
 
-- Rapporti: `docs/reports/t53-workspace-baseline-2026-11-14.md` e
-  `docs/reports/t55-bendini-pilot-readiness-2026-11-14.md`; dossier T55 nel run persistente `t55-bendini-dossier-20261115`.
-- Il data root reale resta autoritativo per profili e catalogo; la copia indice
-  nel repository non va usata per correggere o sostituire dati operativi.
-- T55 receipt: sei `accept_candidate` nel wizard per birth date (DOCX ambiguo e
-  pagina), death date (11/12 ottobre) e formazione. Nessun claim promosso.
-- T57a: `memoria review memory-inventory` verifica T52/T55; 8 artifact verificati,
-  relocation risolta da manifest, snapshot catalogo T52 in drift storico. Tre test PASS.
-- T57b: `memoria review memory-view` ripetuta in processi separati: 15 decisioni,
-  3 conflitti, feedback not_provided, canonical_write_allowed=false; 2 test PASS.
-- T58a: tre famiglie certificate offline; report capability e gap in `docs/reports/t58a-source-family-certification-2026-11-15.md`. Nessun live run.
-- T59a: `memoria review evidence-verify` sul dossier T55: 3/6 quote exact-match e 3/6 non esatte. Report diagnostico nel run T55; claim e receipt invariati.
-- T59b: `memoria review source-lineage-preview` genera `CandidateSourceDocumentLineageSet` da coppie esplicite, verifica gli ID nel catalogo read-only, rifiuta missing/duplicate e marca i legami `unreviewed`. Due test offline PASS; preview T55 collega local capture e ID online citato dal sidecar, senza applicare il legame al catalogo.
-- T59c: `memoria review memory-view` accetta artifact lineage e quote-verification ripetibili e ne riporta status, hash e riferimento; 3 test mirati PASS. Vista T55: 1 lineage link e 6 quote (3 exact, 3 not exact). Nessuna promozione claim o scrittura canonica.
-- T54 deduplica solo a parità di ID e payload semantico; non deduplica per solo
-  valore.
-- T56 compone link candidati con `memoria documents relationship-preview`;
-  la preview non verifica l'esistenza del SourceDocument nel catalogo.
+- `t86-bendini-dossier-20261121/dossier.md`: 3 documenti e review pregresse;
+  T55 resta 3/6 exact nella versione originaria, T61 conserva 3/3 correzioni
+  esatte senza sovrascrivere le vecchie receipt.
+- `t87-bendini-purocielo-relations-20261121/review-notes.md`: link candidati.
+- `t88-bendini-feedback-handoff-20261121/utility-review/closure-audit.json`:
+  chiusura del ciclo; l'audit iniziale con review pending resta storico.
+- `t89-purocielo-cohort-baseline-20261121/cohort-baseline.md`: Bendini,
+  Balboni, Andreoli e Battaglia di Purocielo; completato il confronto, non la
+  replica di un feedback live su tutti i casi.
+- `bendini-noi-partigiani-formazione-20261122/outcome-audit.json`: follow-up
+  del 22 novembre sulla formazione, fonte `noi_partigiani`, attempt
+  `nome-completo-wordpress`, query `s=Bendini Ateo`. Un attempt autorizzato,
+  zero retry, hit, documenti nuovi e claim nuovi; le due richieste T61 di
+  ulteriore evidenza restano aperte. Non e' il ciclo T88 del 21 novembre.
+- `bendini-formation-gap-offline-20261122/formation-gap-handoff.md`: scheda
+  **fuori procedura, non validata**: prodotta con script diretti e lettura
+  `view_image`, non con `memoria`. Conservata come appunto storico, esclusa
+  dagli input validati. Il precedente `completed/passed` e' rettificato sotto.
+- `bendini-formation-cli-recheck-20261122/`: nuovi output prodotti solo dal
+  launcher installato: `text/`, `quote-check-local/`, `quote-check-online/`,
+  `quote-check-partigiani/`. Validano i controlli testuali, non la vecchia scheda.
+- `bendini-transcription-review-20261124-recto/`: trascrizione manuale del solo
+  campo Formazione del recto e receipt, salvate da `memoria` dopo decisione e
+  conferma finale dell'utente. Una `accept_transcription`, `review_complete=true`;
+  verso escluso, nessuna nuova EvidenceClaim o applicazione canonica.
 
-## Note per T54 e T55
+Verifica mirata del 22 novembre: 41/41 riferimenti SHA-256 corrispondenti fra
+manifest T89 (29), chiusura T88 (5) e ultimo outcome (7). Questo controllo
+attesta l'integrita' dei riferimenti, non la correttezza storica dei contenuti.
+Era un controllo ausiliario con script: non equivale a rianalisi documentale
+tramite CLI e non sana il metodo della scheda fuori procedura.
 
-- Il fail-closed T51 `claims-build` su report T49 con due attempt può rifiutare
-  claim ID duplicati: verificare prima semantica di ID, quote, provenienza e
-  report; non deduplicare per il solo valore di una proprietà. Non perdere
-  `attempt_id`, source document o collisioni non equivalenti.
-- T47 Bendini contiene candidate e un PDF individuato ma **non registrato**:
-  non considerarlo SourceDocument fino alla registrazione identificabile.
-  Riusare il materiale autorizzato già disponibile; nuove ricerche live solo
-  con fonte, strategia e query esplicitamente autorizzate.
-- Review umana = decisione effettiva, mai simulata. Claim unreviewed != fatto.
+## Rettifica procedurale e rianalisi CLI — 2026-11-22
 
-## Come usarlo
+**Bendini: scheda di riscontro sulla formazione Bianconcini/Bonvicini.**
 
-1. `python memoria-bootstrap/planning/current-work-summary.py` (solo lettura).
-2. Se l'incremento è aperto e valido, riprenderlo; se completato, scegliere
-   da questo focus + sezione T53-T58 della roadmap tecnica.
-3. Registrare l'envelope nel planner **solo all'avvio**; preservare note
-   storiche e non aggiungere cronache prolisse.
-4. Applicare il quality gate mirato e chiudere con prove e prossimo candidato.
+- **Parte rifatta via CLI:** `memoria documents text-extract` sui tre sidecar
+  esistenti: 3/3 documenti estratti. `memoria review evidence-verify` sui claim
+  T61 locali (1/1 exact), T61 online (1/1 exact) e set T52 (9/9 exact).
+  Il set T52 contiene nove claim: non sono nove prove nuove sulla formazione.
+- **Limite:** questi output verificano testo e citazioni; non interpretano
+  il manoscritto, non validano dipendenza delle fonti o segnatura archivistica
+  e non rendono conforme l'appunto precedente. Nessuna lettura dell'immagine
+  viene confermata o riproposta come risultato validato.
+- **Blocker rilevato il 22 novembre:** mancava un percorso CLI di trascrizione
+  manuale con review; `text-extract` non legge immagini e i workflow OCR/VLM
+  esistenti non erano eseguibili nel perimetro autorizzato.
+- **Stato della rianalisi del 22 novembre:** `blocked`, verifica `partial`; il vecchio
+  `completed/passed` non vale come validazione documentale. Nuovi output CLI
+  preservati separatamente; nessuna rete, OCR/VLM, nuova EvidenceClaim,
+  decisione umana o modifica canonica.
 
-Dettaglio storico: `docs/current-next-increment.md` (append-only),
-`docs/roadmap/02-technical-roadmap.md` e `docs/decision-log.md`.
+## Percorso manuale disponibile — 2026-11-24
+
+Su autorizzazione esplicita, implementato `memoria documents transcription-wizard`:
+report di acquisizione e ID delle immagini espliciti, verifica di hash/parent/
+sidecar, testo inserito da una persona, poi decisione e conferma del reviewer.
+Riusato il builder di trascrizione; nessuna scansione o inferenza OCR/VLM.
+Draft, ProcessedDocumentText, manifest e receipt sono versionati in un nuovo
+run; ID immagine e flag degli originali restano preservati. Una conferma
+attesta soltanto la lettura della porzione dichiarata, non un fatto storico.
+
+**Consegna tecnica completata:** 12 test mirati, con subprocess del launcher
+su fixture sintetiche, e 14 test di compatibilita' dei contratti esistenti.
+Rimosso il blocker di disponibilita' CLI; quella consegna era solo tecnica.
+La successiva sessione umana e il suo perimetro sono descritti sotto.
+L'appunto fuori procedura resta non validato, escluso dagli input del wizard.
+
+## Review umana della trascrizione del recto completata — 2026-11-24
+
+Sessione guidata esclusivamente tramite `memoria documents transcription-wizard`.
+L'utente ha fornito testo e identificativi, confermato la lettura e autorizzato
+il salvataggio finale senza nota. Copertura parziale: solo campo Formazione
+del recto; reviewer e trascrittore dichiarati coincidono, non autenticati.
+Il verso e' escluso su richiesta dell'utente, senza trascrizione o attribuzione
+della sua annotazione. La prima sessione su due immagini e' stata annullata
+senza scritture; la sessione sul solo recto e' stata salvata nel nuovo run.
+
+Artifact: `image-1.text.json`, `transcription-draft.json`,
+`transcription-manifest.json`, `transcription-review-receipt.json` nel run
+esterno sopra indicato. Il launcher ha verificato i binding/hash degli input
+e restituito `review_complete=true`, una decisione, flag claim/promozione/
+scrittura canonica/identita' risolta/machine pass tutti falsi. Non e' una
+decisione storica di accettazione del claim, ne' una validazione retroattiva
+della scheda fuori procedura o una soluzione dei conflitti T52/T61.
+
+**Prossimo candidato, non avviato:** confronto versionato fra questa lettura
+umana e l'attestazione del portale per un'eventuale nuova decisione storica,
+conservando gli ID delle rispettive fonti e le receipt pregresse. Procedura
+nel playbook. Nessun nuovo claim o task aperto automaticamente; nessuna
+ricerca o OCR/VLM, T41 resta sospeso.
+
+## Avvio quotidiano (solo 3 passi)
+
+1. Leggi questo file e `AGENTS.md`.
+2. Esegui `python memoria-bootstrap/planning/current-work-summary.py`.
+3. Se nessun lavoro aperto coerente: valuta una lacuna residua T86-T89 in base
+   al primo *blocco documentale reale*, senza riavviare le consegne concluse;
+   registra nel planner solo quando avvii la slice autorizzata.
+
+Per ricerche reali, leggere `docs/playbooks/online-source-research-review.md`.
+Per il feedback, `docs/playbooks/codex-person-profile-feedback-loop-core.md`.
+Per modello/delega, `docs/model-routing-policy.md` (v3.2).
+
+## Stop non negoziabili
+
+Nessuna ricerca live prima di autorizzazione per fonte/query/attempt; nessuna
+review fittizia; nessuna promozione automatica da search result a documento o
+claim; nessuna canonizzazione, risoluzione conflitti o pubblicazione autonoma.
+Se mancano data root, documento, review o autorizzazione: esito `blocked`
+con prova del blocco e prossimo passo eseguibile, non nuovo micro-task tecnico.

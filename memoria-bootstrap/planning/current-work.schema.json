@@ -258,7 +258,8 @@
             "2.0",
             "2.1",
             "3.0",
-            "3.1"
+            "3.1",
+            "3.2"
           ]
         },
         "tier": {
@@ -299,7 +300,10 @@
             "gpt-6-astra",
             "gpt-6-luna",
             "gpt-6-sol",
-            "gpt-6.1-sol"
+            "gpt-6.1-sol",
+            "gpt-6.2-sol",
+            "gpt-6.2-astra",
+            "gpt-6.1-terra"
           ]
         },
         "reasoning_effort": {
@@ -371,7 +375,10 @@
                   "gpt-6-astra",
                   "gpt-6-luna",
                   "gpt-6-sol",
-                  "gpt-6.1-sol"
+                  "gpt-6.1-sol",
+                  "gpt-6.2-sol",
+                  "gpt-6.2-astra",
+                  "gpt-6.1-terra"
                 ]
               },
               "reasoning_effort": {

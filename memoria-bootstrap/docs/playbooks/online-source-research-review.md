@@ -125,6 +125,74 @@ prima di usarla per estrarre claim. Il fatto che `text-extract` riesca a leggere
 il sidecar o che i metadata dicano `claim_eligible` non prova da solo che il
 permalink sia stato verificato o che il contenuto supporti un'affermazione.
 
+### Trascrizione manuale revisionabile di immagini gia' acquisite
+
+Il launcher espone un percorso senza OCR/VLM e senza scansione del corpus:
+
+```powershell
+memoria documents transcription-wizard `
+  --source-report <report-acquisizione-online.json> `
+  --document-id <source-document-id-immagine-recto> `
+  --document-id <source-document-id-immagine-verso> `
+  --output-dir <nuovo-run-esterno> `
+  --open-images
+```
+
+Il comando accetta gli ID delle **immagini correlate**, non l'ID della scheda
+parent. Risolve solo i file espliciti del report e verifica parent, source ID,
+sidecar online e SHA-256; non scarica URL e non modifica i flag delle fonti.
+`--open-images` apre esclusivamente i file locali verificati con il viewer di
+sistema, durante inserimento e review; senza flag stampa i percorsi. Non
+attesta che il viewer o il reviewer abbiano identificato correttamente il dato.
+
+Una persona inserisce identificativo trascrittore, porzione/campo, copertura
+parziale/intera immagine e testo su una riga; `[i]` indica porzione illeggibile.
+Il comando non propone letture e non usa appunti pregressi come precompilazione.
+In una fase distinta raccoglie reviewer dichiarato, conferma della lettura,
+rifiuto oppure incertezza; una nota e' obbligatoria per rifiuto/incertezza.
+Reviewer e trascrittore possono coincidere: le identita' non sono autenticate
+e non si dichiara una review indipendente. Una porzione illeggibile non puo'
+essere confermata. `[q]`, EOF o mancata conferma finale non salvano receipt.
+
+Solo dopo conferma finale scrive in una directory nuova:
+
+- `transcription-draft.json`: testo manuale originario, ambito e stato unreviewed;
+- `image-N.text.json`: ProcessedDocumentText con l'ID della singola immagine,
+  metodo `manual_transcription`, confidence non misurata (`null`) e provenance;
+- `transcription-manifest.json`: riferimenti e hash di report, immagini,
+  sidecar, draft e testi;
+- `transcription-review-receipt.json`: decisioni per immagine e porzione,
+  reviewer dichiarato e timestamp, legati all'hash del manifest e dei testi.
+
+Gli input sono ricontrollati prima della pubblicazione. Nessun overwrite;
+input cambiati o conferma annullata impediscono una receipt completa.
+`review_complete=true` significa decisioni definitive sulla lettura delle
+porzioni dichiarate (anche respinte); incertezza mantiene `pending`.
+Un testo confermato ha `review_status=human_reviewed_transcription`, non e' un
+fatto storico verificato. Testi respinti/incerti restano `unreviewed`; porzioni
+illeggibili non hanno testo inventato. `claim_eligible`, promozioni e scritture
+canoniche restano disabilitati. La receipt non cambia immagini o catalogo.
+
+Queste receipt riguardano la **trascrizione**, non le decisioni su EvidenceClaim:
+non sostituiscono `claims-wizard`. Per eventuali claim futuri occorrono i gate
+del dominio e l'ID della fonte realmente citata; non verificare un claim del
+parent contro la trascrizione di un'immagine con ID diverso.
+
+Il wizard non ha un'opzione per saltare un'immagine gia' selezionata. Se la
+persona esclude una faccia, annullare senza scritture e riavviare con i soli
+ID voluti, riportando esclusivamente le risposte gia' fornite. Non sostituire
+un'esclusione con il marcatore di illeggibilita' o con un testo inventato.
+Nella guida in chat, mostrare i file locali indicati dalla CLI e usare parole
+semplici: la copertura parziale corrisponde alla scelta di un solo campo.
+Il wizard gira nel terminale della sessione; non apre una finestra del form.
+
+Per Bendini, dopo i test sintetici e' stata autorizzata e completata la sola
+trascrizione/review del campo Formazione del recto nel run esterno
+`bendini-transcription-review-20261124-recto`, senza nota; verso escluso.
+Il launcher ha salvato una decisione di lettura, non una nuova EvidenceClaim.
+La vecchia scheda fuori procedura resta non validata e non e' un input ammesso.
+T41 resta sospeso; non avviare altre review o ricerche senza perimetro autorizzato.
+
 ### Copie locali, lineage e fedelta' delle citazioni
 
 Quando l'utente fornisce una directory di documenti e autorizza l'inventario

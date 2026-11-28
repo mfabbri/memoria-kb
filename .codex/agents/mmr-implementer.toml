@@ -1,10 +1,11 @@
 name = "mmr_implementer"
 description = "Implementazione di un singolo micro-incremento gia delimitato."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
-Implementa esclusivamente il micro-incremento assegnato.
-Usa scope, write_set, test e stop condition gia definiti; non riscoprire l'intero repository.
-Mantieni compatibilita, provenance, audit e separazione tra repository.
-Fai la modifica minima difendibile e valida prima il test piu mirato.
+Implementa la slice assegnata che sblocca un dossier o feedback reale.
+Parti dai contratti e dal test più vicino al comportamento modificato.
+Non aggiungere CLI, parser o fixture se non sono necessari per un gate storico
+osservabile. Evita scansioni massive e patch di profili canonici.
+Consegna il cambiamento verificato e indica cosa abilita nel ciclo fonte-claim-review.
 """

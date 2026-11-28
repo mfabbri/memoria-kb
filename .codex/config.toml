@@ -1,46 +1,44 @@
-# Me.Mo.Ri.A Codex model routing.
-# GPT-6 family policy v3.1 (2026-11-01).
-# Parent direct for small tasks; delegate only substantive, separable work.
-
-model = "gpt-6-luna"
-model_reasoning_effort = "low"
-plan_mode_reasoning_effort = "low"
+# Me.Mo.Ri.A Codex policy v3.2 — source-first, 2026-11-21.
+# Model names require verification via /model in the actual Codex account.
+# Default interactive agent: Sol/medium. Switch to Luna/low for truly bounded edits.
+model = "gpt-6.2-sol"
+model_reasoning_effort = "medium"
+plan_mode_reasoning_effort = "medium"
 
 sandbox_mode = "workspace-write"
 approval_policy = "on-request"
 
-# Keep the skill catalog small. Skill bodies are loaded only when selected.
 [skills]
 max_context_tokens = 2000
 
 [agents]
 enabled = true
-max_concurrent_threads_per_session = 3
-# Safe default for ad-hoc subagents. Named project agents override it explicitly.
+max_concurrent_threads_per_session = 2
+# Do not create subagents by default. These are fallback defaults if delegated.
 default_subagent_model = "gpt-6-luna"
 default_subagent_reasoning_effort = "low"
 interrupt_message = true
 
 [agents.mmr_scanner]
-description = "Discovery read-only e ricognizione meccanica."
+description = "Discovery read-only mirata, solo se indipendente dal parent."
 config_file = "agents/mmr-scanner.toml"
 
 [agents.mmr_docs_reviewer]
-description = "Verifica read-only di documentazione, contratti e guardrail."
+description = "Review documentale read-only su rischio specifico."
 config_file = "agents/mmr-docs-reviewer.toml"
 
 [agents.mmr_docs_editor]
-description = "Modifiche semplici e circoscritte a docs, planner e configurazione agent."
+description = "Documentazione circoscritta, senza doppia lettura del parent."
 config_file = "agents/mmr-docs-editor.toml"
 
 [agents.mmr_implementer]
-description = "Fix e micro-feature nel codice entro contratti esistenti."
+description = "Implementazione di una slice con valore documentale misurabile."
 config_file = "agents/mmr-implementer.toml"
 
 [agents.mmr_test_reviewer]
-description = "Review tecnica indipendente, regressioni, edge case e quality gate."
+description = "Review indipendente per rischio effettivo di regressione."
 config_file = "agents/mmr-test-reviewer.toml"
 
 [agents.mmr_architect]
-description = "Architettura, migrazioni e trade-off multi-repository; usare solo dopo routing high."
+description = "Trade-off complessi fra piu' repository o contratti storici."
 config_file = "agents/mmr-architect.toml"

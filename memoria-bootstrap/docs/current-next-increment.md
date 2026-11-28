@@ -1,13 +1,32 @@
 # Current Next Increment (entry point storico)
 
-## Stato corrente — 2026-11-21
+## Stato corrente — 2026-11-24
 
 **Non usare le sezioni storiche sotto per aprire automaticamente un task.**
-Lo snapshot del planner e' chiuso su T84 (`completed`). Fonte per la priorita':
-`docs/current-focus.md` e sezione T85-T89 della roadmap tecnica.
-L'ultimo focus T53-T59c e' superato. T85-T89 sono proposti, non avviati:
-T85 riallineamento; T86 dossier documenti reali; T87 legami entita';
-T88 feedback reale; T89 misurazione su un piccolo campione.
+Lo snapshot T84 e' storico; leggere la summary del planner per il task attuale.
+T85: stato documentale allineato, chiusura integrale originaria non attestata.
+T86 dossier e T87 preview consegnati; T88 un ciclo live chiuso con `no_results`;
+T89 report su 4 casi completato, con un solo caso di feedback live.
+Nuova evidenza dal feedback e ripetibilita' multi-caso restano da dimostrare.
+Anche il follow-up Bendini del 22 novembre ha zero documenti/claim nuovi;
+il completamento dell'attempt non chiude la lacuna sulla formazione.
+Scheda offline Bianconcini/Bonvicini **fuori procedura, non validata** nel run
+`bendini-formation-gap-offline-20261122`; precedente `completed/passed`
+rettificato. Nuovo run `bendini-formation-cli-recheck-20261122`, solo `memoria`:
+3 testi estratti; quote-check 1/1, 1/1 e 9/9 exact sui claim esistenti.
+Rianalisi del 22 novembre **blocked** / **partial** sul manoscritto.
+Il 24 novembre implementato `memoria documents transcription-wizard`, su
+autorizzazione esplicita: trascrizione manuale con immagini hash-bound e
+review separata, senza OCR/VLM; 12 test sintetici mirati e 14 di compatibilita'.
+Blocker tecnico rimosso. Successiva sessione umana autorizzata e salvata nel
+run `bendini-transcription-review-20261124-recto`: solo campo Formazione del
+recto, senza nota, una `accept_transcription`, `review_complete=true`.
+Verso escluso dall'utente; nessuna nuova EvidenceClaim o modifica canonica.
+Prossimo candidato, non avviato: confronto versionato con il testo del portale
+per eventuale decisione storica distinta; le receipt T52/T61 restano immutate.
+Non riusare la scheda precedente o la lettura diretta come prova validata.
+Input, evidenze e stop in `current-focus.md` e nella sezione T85-T89 di
+`roadmap/02-technical-roadmap.md`. Non riavviare T53-T84 o le consegne concluse.
 OCR T41, pCloud T27/T28 e nuova golden run sospesi/non richiesti.
 La selezione non autorizza ricerca online, review storica, scrittura canonica.
 Non caricare le migliaia di righe sottostanti nella sessione quotidiana.

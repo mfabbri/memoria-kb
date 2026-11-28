@@ -1,17 +1,16 @@
-# Codex Roadmap Task Selector — post-MVP
+# Codex roadmap task selector — 2026-11-21
 
-**Fonte breve:** `memoria-bootstrap/docs/current-focus.md`.
-**Fonte per i gate:** sezione T53-T58 della roadmap tecnica.
+Fonte breve: `../current-focus.md`.
+Fonte DoD: sezione **T85-T89** della roadmap tecnica.
 
-- Prima verificare se il planner contiene un task aperto coerente. Usare
-  `planning/current-work-summary.py`, non stampare 12 MB di note.
-- Se chiuso, selezionare una slice che avanza verso un dossier reale
-  multi-fonte, con prove verificabili e dipendenze soddisfatte.
-- Sequenza proposta: T53 baseline read-only; T54 deduplica multi-attempt;
-  T55 Bendini; T56 relazioni; T57 memoria; T58 certificazione fonti.
-- Non riprendere T29-T52; OCR T41 e pCloud T27/T28 sono sospesi. Q2 solo se
-  il gap impedisce il percorso attivo.
-- Nessuna ricerca live senza source_id, strategia e attempt autorizzati;
-  nessuna decisione storica o scrittura canonica automatica.
+1. Verificare stato con `planning/current-work-summary.py`.
+2. Se T84 `completed` nello snapshot, scegliere T85 di riallineamento;
+   dopo T85 usare T86 dossier reale. Non inferire da vecchi documenti che
+   T53 sia ancora da iniziare.
+3. Richiedere artifact storico o feedback misurabile per ogni nuovo task.
+4. Se manca accesso/autorizzazione, registrare `blocked` con prerequisito.
+   Non selezionare Q2, micro-hardening, OCR o pCloud per aggirare il blocco.
+5. Output: ID, dipendenze, fonte/profilo target, write set, expected artifact,
+   test minimo, review boundary, stop condition.
 
-Output: ID, dipendenze, write set, prove, test, criterio di stop e limiti.
+Nessuna ricerca live o applicazione canonica autorizzata da questo selector.

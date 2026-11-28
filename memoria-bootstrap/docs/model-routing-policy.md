@@ -1,82 +1,87 @@
-# Model routing e context efficiency — policy v3.1
+# Model routing, token efficiency e audit — policy v3.2
 
-Aggiornamento: 2026-11-01. Sostituisce v3.0 **per nuove sessioni** senza
-riscrivere route o audit di sessioni precedenti.
+Aggiornamento: 2026-11-21. Valida per **nuove** sessioni, senza modificare
+route storiche 2.x, 3.0 o 3.1 e senza riscrivere `current-work.json`.
 
-## Criterio principale: costo per task concluso, non costo per singolo token
+## Regola di scelta: risultato verificabile / costo totale
 
-La scelta del modello e del numero di agent dipende da rischio, ambiguita',
-qualita' misurata e costo complessivo (input/output/reasoning, retry e subagent).
-Per task semplici non delegare: il parent evita un secondo prompt, ripetizioni
-di contesto e overhead di coordinamento.
+Le linee guida OpenAI per Codex raccomandano GPT-6.2 Sol come punto di partenza
+per lavoro ordinario, Astra per complessita' elevata e Luna per operazioni
+ripetitive circoscritte. La selezione dipende dalla **disponibilita' reale**
+`/model`, non dai soli slug pubblicati nell'API o dalla configurazione locale.
 
-| Lavoro | Default | Quando delegare |
+| Task | Route preferita | Perche' |
 |---|---|---|
-| Discovery, typo, docs mirate, aggiornamento planner | parent `gpt-6-luna`, low | Solo se un confronto indipendente ha valore |
-| Fix meccanico isolato con test immediato | parent Luna/low; verificare risultato | Se cambia comportamento/contratto, passare a Sol |
-| Implementazione, parser, CLI, provenance, test | `mmr_implementer`, `gpt-6.1-sol`, medium | Se il task e' sostanziale e delegabile; altrimenti cambiare modello in sessione |
-| Review di regressioni/contratti | `mmr_test_reviewer`, Sol/medium | Solo per rischio reale e revisione indipendente |
-| Architettura, migrazione con trade-off ambigui | `mmr_architect`, `gpt-6-astra`, low | Solo se il problema richiede una valutazione dedicata |
+| Slice ordinaria: codice, CLI, ricerca multi-fonte, elaborazione documentale | parent `gpt-6.2-sol` / `medium` | Riduce tentativi falliti e rimbalzi fra agent |
+| Correzioni deterministiche, docs piccole, inventory read-only | parent `gpt-6-luna` / `low` se selezionato in `/model` | Nessun overhead di delega |
+| Implementazione ampia ma indipendente | `mmr_implementer` / `gpt-6.2-sol` / `medium` | Solo se separabile dal parent |
+| Rischio concreto di regressione/storicita' | `mmr_test_reviewer` / Sol / `medium` | Solo se serve indipendenza oltre ai test |
+| Contratti ambigui multi-repo / decisione irreversibile | `mmr_architect` / `gpt-6.2-astra` / `medium` | Esamina trade-off, non micro-task |
+| Schermate, UI o materialita' visiva | Terra / `medium` (sessione dedicata) | Non usarlo per parsing testuale |
 
-Gli agent specializzati docs/scanner sono **opzionali** e non obbligatori in
-ogni sessione. I custom agent `.codex/agents/*.toml` ereditano sandbox e
-approval policy dalla sessione parent: istruzioni read-only riducono il rischio
-ma non configurano un sandbox separato. Per isolamento tecnico eseguire una
-sessione distinta con permessi compatibili; non impostare `sandbox_mode` nei
-file custom agent. Non eseguire una review LLM indipendente quando test automatici
-mirati e diff sono sufficienti. `high` reasoning non e' un sostituto di dati o
-accessi mancanti. Modifiche ai modelli sono subordinate a disponibilita'
-verificata in `/model`; in caso contrario rendere esplicito il fallback,
-l'eventuale cambio di tier e il modello realmente usato.
+Parti da `medium` per Sol/Astra; eleva effort solo davanti a blocco motivato,
+mai per sostituire fonte/documenti mancanti. Sol e Astra 6.2 non supportano
+`none`. Un nome di modello API non prova la sua utilizzabilita' su Codex con
+il piano corrente. Se `/model` non mostra una route: non provare fallback
+silenziosi; scegliere un modello supportato, registrarlo nel planner e
+rieseguire i controlli. Non presentare come misurato un costo stimato.
 
-## Contesto e prompt
+## Budget contestuale e subagent
 
-- `AGENTS.md` solo invarianti; `docs/current-focus.md` e summary planner;
-  prompt quotidiano breve, senza procedure OCR
-  incorporate. Skill con descrizioni specifiche e dettagli *on-demand*.
-- Leggi interfacce, contratti e test pertinenti (ricerca per path/simbolo), non
-  dump di interi file/roadmap, ZIP di run o report di migliaia di righe.
-- Usa output delle CLI concisi, `rg -n`, `git diff --stat` e sezioni mirate;
-  conserva nei handoff: obiettivo, path, vincoli, evidenza e stop condition.
-- Un solo subagent di default, nessuno per task brevi. Parallelismo soltanto
-  per analisi veramente indipendenti; non far editare gli stessi file a due agent.
-- Evita di rilanciare una suite gia' verde e invariata; espandi i test soltanto
-  per rischio residuo documentato.
-- Dopo una lunga sessione compatta solo quando utile al costo totale e conserva
-  un breve checkpoint: obiettivo, modifiche, test, stato e questioni aperte.
+- Ordine: `AGENTS.md` -> focus breve -> planner summary; poi soltanto file
+  e sezioni pertinenti. Non caricare `current-work.json` completo (~12 MB),
+  roadmap tecnica storica, ZIP di run e playbook OCR per l'avvio quotidiano.
+- Ricerca per path/simbolo/heading; prima `rg -n`, poi estratti di dimensione
+  utile. Evitare output lunghi, duplicati e traceback completi se basta l'errore.
+- Skill: descrizione corta e contenuto specifico, disclosure progressiva;
+  non forzare skill generiche in ogni turno. Non duplicare istruzioni fra
+  AGENTS, prompt e playbook.
+- Un solo parent per default. Delega quando la revisione e' indipendente e il
+  beneficio atteso supera il costo di serializzare handoff e output. Mai due
+  agent in scrittura sugli stessi file. `max_concurrent_threads` e' un limite,
+  non un obiettivo.
+- Handoff breve: obiettivo, input/path, stop condition, risultato atteso,
+  test/provenance. Non copiare ogni riga gia' disponibile nel repository.
+- Eseguire il test piu' vicino al codice modificato; suite larga solo per
+  nuovi rischi. Fermare cicli di test/documentazione privi di miglioramento
+  concreto della ricerca storica.
+- Dopo sessioni lunghe, checkpoint sintetico prima di compaction:
+  decisioni, file, artefatti, test, blocker; compaction non sostituisce le
+  evidenze persistite. Non forzare compaction o token cap arbitrari.
 
-## Prompt caching: distinzione fra API e Codex
+## Distingui Codex da Responses API
 
-Per integrazioni **Responses API**: preservare il prefisso stabile (istruzioni,
-schemi, strumenti ordinati), aggiungere dettagli dinamici in coda, mantenere
-cronologia append-only; misurare `cached input tokens`, output e costo totale.
-Con GPT-5.6+ le opzioni `prompt_cache_options`, breakpoint e
-`configuration_update` dipendono dal modello/API scelti. Non aggiungere
-padding privo di valore per inseguire la soglia cache. Compaction puo' ridurre
-hit-rate ma anche costo totale; testare su trace reali. Queste opzioni **non**
-sono chiavi trasferibili a `.codex/config.toml` e la cache non e' garantita per
-la sola permanenza della sessione Codex.
+Per **Codex**: `/model` e `/hooks` sul client determinano modelli, hook e
+telemetria disponibili. Non incollare opzioni API (`prompt_cache_options`,
+`context_management`, `reasoning.effort`) nel TOML. Il TOML qui usa
+`model_reasoning_effort`; la disponibilita' delle chiavi va verificata con la
+versione Codex installata. Il hook di audit puo' non contenere model ID.
 
-## Evidenza e versioni
+Per **Responses API**: preserva i prefissi stabili; GPT-6.2 riordina
+`instructions` top-level dopo `input`, quindi per caching mettere le
+istruzioni stabili in un `developer` iniziale. Configurare TTL della cache
+solo se supportato, misurare gli input cached/non-cached e il costo di write;
+non promettere automaticamente risparmi dal semplice mantenere una sessione.
+Modifiche retroattive al prefisso possono invalidare cache e reasoning items;
+compaction e configurazioni dinamiche hanno condizioni specifiche dell'API.
 
-- `current-work.json` registra la decisione intenzionale: nuove route attive
-  `policy_version: "3.1"`; il validatore accetta le route storiche 2.0/2.1/3.0.
-- `.codex/hooks.json` registra eventi runtime in
-  `memoria-bootstrap/planning/.runtime/model-routing.ndjson` (se gli hook sono
-  stati trusted nel client). I log possono non fornire sempre il model id;
-  non inventare quel dato.
-- Verifica `codex --version`, `/model`, `/hooks` e i limiti del workspace prima
-  di assumere compatibilita'; gli ID API non garantiscono accesso Codex.
-- Metriche di valutazione: task corretti al primo tentativo, retry, durata,
-  token input non cached / cached / output quando disponibili, costo totale,
-  subagent avviati, esiti dei test e patch non richieste. Registrare baseline
-  e confronto su task equivalenti prima di affermare risparmi percentuali.
+## Osservabilita' / esperimento minimo
 
-## Fonti OpenAI consultate il 2026-11-01
+Per 3-5 task comparabili (dossier, bug semplice, review e feedback) registra
+modello effettivo, effort, input/cached/output/reasoning token se disponibili,
+numero subagent, retry, tempo fino al gate, revisione manuale, errori materiali
+ed esito. Confronta costo **per risultato accettabile**, non token/test isolati.
+I dati API e i limiti ChatGPT/Codex possono essere non comparabili: riportare
+`not_available` invece di inventare un prezzo o un risparmio.
 
-- https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
+Nuove route `policy_version: "3.2"`; validator accetta storico 2.x/3.0/3.1.
+I custom agent ereditano sandbox/approval dalla sessione; read-only nel prompt
+non e' isolamento tecnico. Per isolamento usare sessione separata read-only.
+
+## Fonti OpenAI (verificate il 2026-11-21)
+
 - https://developers.openai.com/api/docs/guides/model-selection
+- https://developers.openai.com/api/docs/guides/latest-model
+- https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra
 - https://developers.openai.com/api/docs/guides/prompt-caching
-- https://developers.openai.com/api/docs/guides/agents-api/observability
 - https://developers.openai.com/api/docs/guides/agents-api/multi-agent
-- https://learn.chatgpt.com/docs/hooks

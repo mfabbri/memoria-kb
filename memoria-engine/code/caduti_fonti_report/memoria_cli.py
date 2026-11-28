@@ -2294,6 +2294,24 @@ def _command_documents_register_local_source(args: argparse.Namespace) -> int:
     return 0
 
 
+def _command_documents_transcription_wizard(args: argparse.Namespace) -> int:
+    from caduti_fonti_report.document_analysis.document_transcription_review import run_document_transcription_wizard
+
+    try:
+        result = run_document_transcription_wizard(
+            source_report=Path(args.source_report), document_ids=args.document_id,
+            output_dir=Path(args.output_dir), open_images=args.open_images,
+        )
+    except (OSError, ValueError, TypeError, KeyError, EOFError, KeyboardInterrupt) as exc:
+        print(f"Errore documents transcription-wizard: {exc}", file=sys.stderr)
+        return 1
+    if result is None:
+        print("Trascrizione annullata; nessuna scrittura o receipt.")
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _command_documents_text_extract(args: argparse.Namespace) -> int:
     from caduti_fonti_report.document_analysis.text_extraction import extract_document_text
 
@@ -4085,6 +4103,15 @@ def build_parser() -> argparse.ArgumentParser:
     documents_local_source.add_argument("--sources-registry", default="", help="Optional explicit source registry.")
     documents_local_source.add_argument("--apply", action="store_true", help="Register; default is read-only preview.")
     documents_local_source.set_defaults(handler=_command_documents_register_local_source)
+    documents_transcription = documents_subparsers.add_parser(
+        "transcription-wizard", help="Trascrizione manuale e review di immagini acquisite esplicite; nessun OCR/VLM.")
+    documents_transcription.add_argument("--source-report", required=True, help="Report di acquisizione online esistente.")
+    documents_transcription.add_argument("--document-id", action="append", required=True,
+                                         help="ID dell'immagine correlata, ripetibile; nessuna scansione.")
+    documents_transcription.add_argument("--output-dir", required=True, help="Nuovo run per draft, testi, manifest e receipt.")
+    documents_transcription.add_argument("--open-images", action="store_true",
+                                         help="Apre soltanto i file immagine locali verificati con il viewer di sistema.")
+    documents_transcription.set_defaults(handler=_command_documents_transcription_wizard)
     documents_text_extract = documents_subparsers.add_parser(
         "text-extract",
         help="Estrae testo da metadata e file espliciti; non esegue OCR né scansioni ricorsive.",

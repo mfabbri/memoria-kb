@@ -1,23 +1,21 @@
-# Daily Agent Procedure — post-MVP (2026-11-14)
+# Daily Agent Procedure — source-first 2026-11-21
 
-Per una piccola correzione richiesta direttamente dall'utente non serve
-selezionare un incremento, né caricare le roadmap complete.
+Per modifiche puntuali richieste dall'utente: applica la modifica e verifica,
+senza aprire roadmap, planner o subagent se non necessari.
 
-Per il lavoro **guidato dalla roadmap**:
+Per task guidati dalla roadmap:
 
-1. `AGENTS.md`, `docs/current-focus.md`, quindi
-   `python memoria-bootstrap/planning/current-work-summary.py`.
-2. Riprendi l'incremento aperto solo se ancora coerente; se `completed`, usa
-   `$memoria-roadmap-selector` e la sezione T53-T58 della roadmap tecnica.
-3. Definisci obiettivo, write set, test, criterio di uscita; registra nel planner
-   soltanto all'avvio. Non riscrivere lo storico T29-T52.
-4. Leggi gli entrypoint del codice e i test pertinenti; carica una skill
-   verticale solo se serve. Nessun fan-out automatico di subagent.
-5. Esegui e verifica lo slice fino al criterio di uscita, correggendo gli errori
-   introdotti; non interromperti per approvazioni già coperte dal task.
-6. Ferma il lavoro davanti a review umana, dati reali non accessibili, scritture
-   canoniche o query live non autorizzate; registra un blocker concreto.
-7. Chiudi con test effettivi, diff, stato planner e prossima slice candidata.
+1. `AGENTS.md` + `docs/current-focus.md` + summary del planner.
+2. Se presente un task aperto, verifica coerenza con la strategia attuale;
+   se chiuso T84, seleziona T85-T89 e non T53-T84.
+3. Definisci evidenza storica attesa, scope, rischi, test essenziale e stop.
+4. Leggi solo i file pertinenti. Model routing v3.2 on-demand: Sol/medium
+   default, Luna/low per task meccanici, Astra/medium solo per vera ambiguita'.
+5. Usa CLI `memoria` su data root reale se accessibile e autorizzato;
+   SourceResult non e' documento e claim non equivale a verified fact.
+6. Se manca autorizzazione live, review umana o accesso al data root,
+   ferma la slice con blocker preciso; niente fixture come surrogato.
+7. Registra planner solo all'avvio/chiusura, preserva lo storico e riferisci
+   esito documentale o blocker. Non aprire task di hardening consequenziali.
 
-OCR T41 e pCloud T27/T28 sono sospesi. Procedure verticali storiche restano
-consultabili ma non sono istruzioni di avvio generale.
+T41 OCR e T27/T28 pCloud sospesi; le procedure verticali sono on-demand.

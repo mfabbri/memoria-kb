@@ -1,17 +1,33 @@
 # Technical Roadmap
 
-Data: 2026-07-12
+Data di impianto: 2026-07-12; stato source-first aggiornato al 2026-11-24
 
 ## Nuova fase source-first T85-T89 — decisione 2026-11-21
 
-**Stato di partenza:** il planner dello ZIP e' `completed` su T84
-(2026-11-21). Le sezioni T53-T84 che seguono sono storico implementativo.
-Questi T85-T89 sono **proposte di backlog**, non task automaticamente
-avviati o chiusi. La scelta reale richiede accesso al data root e consenso
-sul perimetro. T41 OCR e T27/T28 pCloud sono sospesi. Nessuna nuova golden
-run, nessuna promozione automatica a fatto canonico.
+**Stato di partenza storico:** lo snapshot T84 era `completed` il 2026-11-21.
+**Stato riscontrato al 2026-11-22:** dossier T86, vista T87, ciclo T88 e report
+T89 consegnati; non sono piu' proposte interamente da avviare. Le rispettive
+prove e lacune sono distinte sotto. La chiusura di un report o di un attempt
+non dimostra automaticamente arricchimento storico o ripetibilita'.
 
-### T85 — Riallineamento di governance e routing (P0; proposto)
+Le sezioni T53-T84 che seguono restano storico implementativo. I criteri
+originari T85-T89 sono conservati, senza retro-certificare gate mancanti.
+T41 OCR e T27/T28 pCloud restano sospesi; nessuna nuova golden run o promozione
+automatica a fatto canonico. Vedi `../current-focus.md` per i run esterni e
+la rettifica della scheda fuori procedura e il percorso manuale CLI aggiunto
+il 24 novembre (review Bendini non avviata). Verificati 41/41
+riferimenti SHA-256 con script ausiliari fra
+manifest T89, chiusura T88 e outcome del 22 novembre; non e' una verifica
+della verita' storica dei claim.
+
+### T85 — Riallineamento di governance e routing (P0; stato documentale allineato)
+
+**Consegna:** governance/routing v3.2 presenti e stato documentale riallineato
+il 22 novembre. La chiusura integrale dei gate originari non e' attestata:
+questa sessione non certifica disponibilita' effettiva in `/model` o una
+precedente approvazione complessiva della governance. I criteri seguenti
+descrivono il perimetro originario del 21 novembre; il vincolo sul planner
+riguardava quella patch, non le successive sessioni operative tracciate.
 
 - **Input:** focus T59c non aggiornato, planner T84 completed, skill selector
   T53-T58, routing v3.1 e modello default Luna.
@@ -24,7 +40,14 @@ run, nessuna promozione automatica a fatto canonico.
   i nuovi slug. **Stop:** dopo verifica e approvazione della governance,
   senza aprire automaticamente T86.
 
-### T86 — Dossier documentale reale multi-fonte (P0; proposto)
+### T86 — Dossier documentale reale multi-fonte (P0; dossier consegnato)
+
+**Completato:** dossier Bendini composto offline da 3 documenti esistenti,
+2 famiglie di portali piu' un DOCX locale, 5 receipt pregresse e 18 decisioni.
+T55 conserva i 3/6 exact originari; T52 ha 9/9 exact; T61 ha 3/3 citazioni
+corrette esatte. **Aperto:** indipendenza archivistica a monte, conflitti su
+identita'/date/formazione e nuove acquisizioni. Le decisioni riusate sono
+umane e pregresse: T86 non ha prodotto nuova review o nuova evidenza.
 
 - **Input:** data root operativo, registry fonti, dossier Bendini T55/T59 e/o
   altro soggetto autorizzato. I report di snapshot non sostituiscono la
@@ -41,7 +64,12 @@ run, nessuna promozione automatica a fatto canonico.
 - **Stop:** ricerca live solo con source_id, strategia, query/attempt
   autorizzati; senza autorizzazione o data root => blocker dichiarato.
 
-### T87 — Relazioni persona/luogo/evento revisionabili (P0; proposto)
+### T87 — Relazioni persona/luogo/evento revisionabili (P0; preview consegnata)
+
+**Completato:** vista con 4 link candidati su 3 documenti, con provenance e
+distinzione fra identita', menzioni di luoghi e menzione di evento.
+**Aperto:** i link della nuova vista sono `unreviewed`; non sono provate
+identita', identificazione dei luoghi o partecipazione alla battaglia.
 
 - **Input:** dossier T86 e preview T56/T59. Evitare nuovo schema se quello
   esistente permette rappresentazioni sufficienti.
@@ -54,7 +82,19 @@ run, nessuna promozione automatica a fatto canonico.
 - **Stop:** gap modellistico solo se dimostrato da un caso reale; mai
   modifica automatica di profili canonici.
 
-### T88 — Feedback loop reale e memoria di ricerca (P0; proposto)
+### T88 — Feedback loop reale e memoria di ricerca (P0; un ciclo operativo chiuso)
+
+**Completato:** un feedback umano ha condotto a piano, attempt autorizzato
+`memorie_locali` del 21 novembre, esito `no_results`, review utilita' DUBBIA
+e memoria recuperabile. La chiusura e' in `utility-review/closure-audit.json`;
+l'audit iniziale con stato pending resta storico. **Non dimostrato:** nuova
+evidenza utile dal feedback, essendo zero i documenti/claim nuovi.
+
+**Follow-up distinto del 22 novembre:** un attempt autorizzato su
+`noi_partigiani`, `nome-completo-wordpress`, `s=Bendini Ateo`, sulla lacuna
+formazione: zero hit, documenti/claim nuovi e retry. Esecuzione completata;
+le due decisioni T61 `needs_more_evidence` restano aperte. Non trasformare
+nessuno dei due esiti vuoti in una soluzione del conflitto storico.
 
 - **Input:** lacuna/conflitto selezionato dallo storico e recepita nel run
   con decisione/handoff tracciato.
@@ -68,7 +108,18 @@ run, nessuna promozione automatica a fatto canonico.
 - **Stop:** senza decisione umana o autorizzazione live, fermarsi su handoff
   esplicito. Mai trasformare `no_results` in un fatto negativo storico.
 
-### T89 — Estensione misurata a piccolo campione (P1; proposto)
+### T89 — Estensione misurata a piccolo campione (P1; report completato, replica da dimostrare)
+
+**Completato:** confronto su 4 casi (Bendini, Balboni, Andreoli, Battaglia
+di Purocielo), con denominatori, quote-check e decisioni candidate distinte.
+La nota storica `completed` del planner riguarda questa consegna.
+**Non dimostrato:** ripetibilita' del feedback live su piu' casi e produzione
+di nuova evidenza dal feedback. Solo Bendini ha un ciclo live nella coorte;
+gli altri casi hanno review o evidenze pregresse, senza nuovi attempt.
+Tempi umani comparabili e costi/token non disponibili; nessuna misura di
+risparmio o generalizzazione dal campione. Le decisioni sui candidati non
+promuovono fatti canonici. Il follow-up del 22 novembre e' esterno al report
+della coorte del 21 novembre e non ne aumenta i casi con feedback live.
 
 - **Input:** un T86-T88 completato e verificato su dati reali.
 - **Scope:** ripetere su 3-5 profili/casi con famiglie di fonte diverse e un
@@ -79,6 +130,61 @@ run, nessuna promozione automatica a fatto canonico.
   classificazione chiara di prova live, offline, preview e revisione umana.
 - **Stop:** non aggiungere nuove fonti/backend/funzionalita' solo per aumentare
   il numero delle milestone.
+
+### Scheda offline non validata; rianalisi parziale e sblocco tecnico CLI
+
+L'appunto del 22 novembre in
+`bendini-formation-gap-offline-20261122/formation-gap-handoff.md`, nel data
+root esterno, e' stato prodotto fuori dal launcher con script e `view_image`.
+**Non e' validato**: il precedente stato `completed/passed` e' rettificato,
+nonostante i controlli di integrita'. Resta immutato come storico, escluso
+dagli input validati. Le sue conclusioni su manoscritto, dipendenza delle
+fonti e riferimenti archivistici non sono validate dalla nuova rianalisi.
+
+**Parte eseguita con il launcher installato:** nuovi output nel run esterno
+`bendini-formation-cli-recheck-20261122`: `documents text-extract` su 3
+sidecar (3/3 estratti), `review evidence-verify` con 1/1 exact T61 locale,
+1/1 exact T61 online e 9/9 exact nel set T52. Sono controlli letterali sui
+testi e claim esistenti, non nuove prove o accertamenti sul manoscritto.
+
+**Blocker rilevato il 22 novembre:** `text-extract` non legge immagini
+(`manual_ocr_required`); `ocr-visual-review-audit` audita un ledger gia'
+compilato senza attestare la semantica; `ocr-visual-correct` richiede
+osservazioni/correzioni esistenti; `ocr-review-scaffold` dipende da un package
+OCR; `vlm-crop-evaluate` esegue inferenza live anche in preview e richiede
+una coorte. Help e contratto locale verificati, nessuno di questi workflow
+OCR/VLM eseguito. Non e' disponibile un percorso CLI verificato eseguibile
+per trascrivere il campo manoscritto entro i vincoli correnti.
+
+La rianalisi del 22 novembre resta storicamente `blocked` / `partial`.
+Su autorizzazione esplicita dell'utente, il 24 novembre e' stato implementato
+il percorso minimo `memoria documents transcription-wizard`, riusando il
+builder di trascrizione manuale. Verifica report/ID/parent/file/sidecar/hash,
+raccoglie testo e ambito di copertura, poi decisioni umane distinte. Salva
+draft, testi per immagine, manifest e receipt solo dopo conferma, in un nuovo
+run. Supporta rifiuto, incertezza, porzione illeggibile e annullamento; nessuna
+abilitazione claim o modifica agli originali, nessun OCR/VLM.
+
+**Sblocco tecnico verificato solo con fixture sintetiche:** 12 test mirati
+(inclusi subprocess del launcher installato), 7 test di registrazione delle
+trascrizioni e 7 di estrazione del testo. Questi test non erano review reali.
+
+**Successiva review umana autorizzata e completata il 24 novembre:** l'utente
+ha trascritto e confermato solo il campo Formazione del recto, senza nota,
+tramite il launcher, fino alla conferma finale di salvataggio. Il verso e'
+stato escluso su sua richiesta: nessuna trascrizione o attribuzione della
+nota sul verso. Prima sessione su due immagini annullata senza scritture;
+nuova sessione sul solo recto salvata nel run esterno
+`bendini-transcription-review-20261124-recto`, con draft, testo, manifest e
+receipt. Esito del launcher: una `accept_transcription`, `review_complete=true`,
+flag di claim/promozione/scrittura canonica/identita' risolta/machine pass falsi.
+
+Questa decisione attesta la lettura della porzione dichiarata; non decide
+la correttezza storica dell'attribuzione, non modifica claim o receipt T52/T61
+e non valida l'appunto precedente. Prossimo candidato, non avviato:
+confronto versionato con il testo del portale per un'eventuale decisione
+storica separata. T41 resta sospeso; nessuna ricerca o OCR/VLM eseguiti.
+Procedura e limiti nel playbook; stato operativo in `../current-focus.md`.
 
 ### Gate anti-loop comune (T85-T89)
 

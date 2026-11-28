@@ -1,5 +1,135 @@
 # Decision Log
 
+## 2026-11-24 — Bendini: lettura umana del solo recto salvata tramite memoria
+
+L'utente ha autorizzato l'avvio del wizard, fornito la trascrizione del solo
+campo Formazione del recto, dichiarato trascrittore e reviewer, confermato la
+lettura e infine il salvataggio senza nota. Il verso e' escluso su sua
+richiesta, senza interpretare o associare la sua annotazione. La prima
+sessione su due immagini e' stata annullata senza scritture; quella sul
+solo recto ha prodotto nel run esterno
+`bendini-transcription-review-20261124-recto` draft, testo, manifest e receipt.
+
+Esito del launcher installato `memoria documents transcription-wizard`:
+`review_complete=true`, una `accept_transcription`; claim/promozione/scrittura
+canonica/identita' risolta/machine pass disabilitati. Le risposte trasmesse
+sono quelle dell'utente; copertura parziale derivata dalla sua scelta di un
+solo campo. Identita' dichiarate, non autenticate. Nessuna nuova decisione
+storica sui claim, ricerca o OCR/VLM; nessuna modifica agli originali o alle
+receipt T52/T61. Vecchia scheda fuori procedura ancora non validata.
+
+Prossimo candidato non avviato: confronto versionato fra la lettura umana
+e il testo del portale per un'eventuale decisione storica separata. T41 resta
+sospeso. I valori trascritti e i dettagli della review restano nel data root.
+
+## 2026-11-24 — transcription-wizard: sblocco tecnico, solo test sintetici
+
+Implementazione minima autorizzata dall'utente: un comando del launcher,
+`memoria documents transcription-wizard`, con immagini correlate selezionate
+per ID da report esistente, controlli di parent/sidecar/file/hash, testo umano
+e fase di review distinta. Riusato il builder di trascrizione manuale con
+input espliciti, senza scansioni o produzione di metadata dal corpus.
+Draft, testi con ID immagine, manifest e receipt versionati; nessun overwrite,
+claim o promozione canonica. Le identita' dichiarate non sono autenticate.
+
+Prova su fixture sintetiche tramite launcher installato, non su Bendini:
+12 test mirati (conferma/rifiuto/incertezza/illeggibile, annullamento/EOF,
+discordanze di binding, input modificati durante review/staging, collisione
+output e fallimento scrittura receipt); 14 test di compatibilita' dei builder
+di registrazione/estrazione. Il blocker tecnico di disponibilita' del percorso
+e' rimosso; non e' un nuovo risultato storico o una review reale completata.
+
+La scheda fuori procedura resta non validata e non viene riutilizzata.
+Nessun accesso o lettura delle immagini Bendini, nessuna review umana reale,
+OCR/VLM o ricerca avviati. T41 resta sospeso. Il prossimo candidato e' l'uso
+umano del wizard con autorizzazione specifica, non avviato automaticamente.
+
+## 2026-11-22 — Rettifica scheda fuori procedura e rianalisi tramite memoria
+
+Su istruzione esplicita dell'utente, la precedente scheda nel run esterno
+`bendini-formation-gap-offline-20261122` e' classificata **non validata**:
+script diretti e `view_image` non rispettavano il canale CLI richiesto.
+Il precedente `completed/passed` non attesta validazione documentale ed e'
+rettificato nel planner attivo. Artifact e note pregresse restano immutati
+come storico, con questa rettifica prevalente; nessuna lettura precedente
+del manoscritto viene promossa o riusata come input validato.
+
+Eseguiti solo tramite launcher installato nel nuovo run esterno
+`bendini-formation-cli-recheck-20261122`: `documents text-extract` su tre
+sidecar, 3/3 estratti; `review evidence-verify` sui set T61 locale (1/1 exact),
+T61 online (1/1 exact), T52 (9/9 exact). Nessun nuovo claim o decisione umana.
+
+Help di documents/review e dei comandi visuali verificati. `text-extract`
+non esegue OCR; audit visuale non attesta semantica, correzione e scaffold
+richiedono artefatti OCR preesistenti, VLM crop richiede inferenza live anche
+in preview. Per il manoscritto manca un percorso CLI verificato eseguibile
+nei vincoli correnti: analisi complessiva **blocked**, verifica **partial**.
+Nessuna rete, OCR/VLM, nuova ricerca o applicazione canonica. Prossimo
+candidato limitato a definire il percorso del caso, senza implementazione
+automatica o riattivazione T41. Le note di consegna sotto sono storico
+rettificato e non una validazione ancora vigente della scheda precedente.
+
+## 2026-11-22 — Scheda offline formazione Bendini consegnata
+
+Su autorizzazione dell'utente, confronto offline dei tre testi T86, quote e
+receipt T61/T52, report T49 e immagini correlate gia' acquisite. Scheda in
+`P:\Comune\Me.Mo.Ri.a\risultati\runs\bendini-formation-gap-offline-20261122\formation-gap-handoff.md`.
+Il DOCX rinvia alla biografia: non conta come conferma indipendente.
+Le due immagini originali erano disponibili; il gate immediato e' la review
+umana del campo Formazione, non una nuova ricerca. Restano mancanti la
+segnatura archivistica completa legata alla scansione e il riferimento
+puntuale ANPI della biografia negli artifact esaminati. Nessuna lettura
+visiva dell'assistente promossa a trascrizione validata o decisione umana.
+
+Verifiche: 3/3 citazioni esatte, 2/2 immagini hash-bound al parent T49,
+28 artifact letti hashati e input immutati. Nessuna rete, OCR, nuova
+EvidenceClaim, review umana o scrittura canonica. I run e le receipt
+pregresse restano immutati; il prossimo gate non viene avviato automaticamente.
+
+## 2026-11-22 — Stato reale T85-T89 e prossimo passo solo proposto
+
+Su richiesta dell'utente, riallineati focus, roadmap master/MVP/tecnica e
+testata current-next agli artifact esterni riscontrati. T86 dossier, T87
+preview, T88 un ciclo operativo e T89 report comparativo sono consegne;
+non certificano nuova evidenza, soluzione dei conflitti o ripetibilita' live
+multi-caso. La chiusura integrale originaria T85 non e' retro-certificata.
+Le note storiche `completed` del planner restano preservate con il loro
+perimetro; questa sessione chiude il solo allineamento documentale.
+
+Provenance: run `t86-bendini-dossier-20261121`,
+`t87-bendini-purocielo-relations-20261121`,
+`t88-bendini-feedback-handoff-20261121/utility-review`,
+`t89-purocielo-cohort-baseline-20261121` e
+`bendini-noi-partigiani-formazione-20261122`, nel data root esterno.
+41/41 riferimenti SHA-256 verificati nei manifest T89, chiusura T88 e ultimo
+outcome. I due attempt Bendini del 21 e 22 novembre restano distinti e senza
+nuovi documenti/claim; l'esito vuoto non risolve la lacuna storica.
+
+Proposta non avviata: scheda offline sulla formazione Bianconcini/Bonvicini,
+con citazioni/riferimenti esistenti e target documentale motivato oppure
+blocker preciso. Nessuna nuova ricerca, review umana o applicazione canonica;
+nessuna autorizzazione live implicita. OCR/pCloud restano sospesi.
+
+## 2026-11-21 — Uscita dal loop di hardening, policy Codex v3.2
+
+Decisione proposta sulla base dell'audit dello ZIP corrente: T84 completato;
+T53-T84 diventano storia dell'implementazione, non backlog per nuove
+micro-rifiniture. Priorita' T85-T89 source-first: ottenere casi verificabili
+su documenti reali, evidenze, persone/luoghi/eventi, revisione e feedback.
+OCR T41 e pCloud T27/T28 sospesi, nessuna golden run nuova. I gap tecnici
+vanno affrontati solo se bloccano i casi reali e con test falsificabili.
+
+Routing v3.2: Sol/medium come parent per task sostanziali, Luna/low su task
+meccanici, Astra/medium per trade-off complessi; subagent non obbligatori.
+Nessun modello in configurazione garantisce disponibilita' Codex: testare
+`/model` e documentare fallback. Vedi `docs/model-routing-policy.md`.
+
+Questa patch e' esclusivamente documentazione, configurazione e validazione:
+non modifica `current-work.json`, non esegue query, non registra decisioni,
+non altera dati canonici. Le conclusioni T55-T61 richiedono una verifica
+sul data root originale, non sul solo ZIP.
+
+
 ## 2026-11-14 — Priorità T53-T58 e pulizia contesto Codex
 
 Decisione esplicita: non proseguire con OCR T41 né implementare pCloud T27/T28

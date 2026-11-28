@@ -1,14 +1,12 @@
-# Find Next Increment — post-MVP
+# 02 Find Next Increment — source-first 2026-11-21
 
-1. Leggere `docs/current-focus.md` e
-   `python memoria-bootstrap/planning/current-work-summary.py`.
-2. Se il planner è aperto e valido, riprendere il task. Se chiuso, usare la
-   sezione T53-T58 della roadmap tecnica con `$memoria-roadmap-selector`.
-3. Selezionare il primo task indipendentemente verificabile in base a prove e
-   dipendenze; T53 è candidato iniziale, non risulta già avviato.
-4. Leggere solo il codice/test e i contratti della slice selezionata.
-5. Registrare envelope nel planner solo all'avvio. OCR T41 e pCloud T27/T28
-   non vanno scelti automaticamente.
+1. Leggi `docs/current-focus.md` e usa `current-work-summary.py`.
+2. Se il planner e' completato (T84 nello snapshot), scegli la prima slice
+   T85-T89 che avanza un caso storico, non un'altra micro-feature.
+3. T85 riallinea la procedura; T86 produce dossier reale; T87 integra entita';
+   T88 chiude feedback reale; T89 ripete su piccolo campione misurato.
+4. Verifica accessi, provenienza, fonte, tentativi autorizzati e review umana.
+5. Registra la slice nel planner solo quando parte; se bloccata, esplicita
+   il prerequisito senza avviare una corsia tecnica sostitutiva.
 
-Output: ID, obiettivo, write set, test, criterio di uscita, vincoli sui dati
-reali, eventuale decisione dello storico e prossimo passo.
+T29-T84 storici; T41 OCR e T27/T28 pCloud sospesi.

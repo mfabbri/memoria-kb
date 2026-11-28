@@ -1,9 +1,9 @@
 # Codex Session Contract
 
-> Stato 2026-11-14: funding T29-T33 e sviluppo T45-T52 sono storici.
-> Priorità T53-T58: `docs/current-focus.md` e sezione dedicata della roadmap
-> tecnica. OCR T41 e pCloud T27/T28 sono sospesi. Routing v3.1. Il documento
-> seguente contiene contratti storici da aprire **solo quando pertinenti**.
+> Stato 2026-11-21: MVP T29-T33 e sequenza T45-T84 sono storici.
+> Corrente: `docs/current-focus.md` e roadmap tecnica T85-T89;
+> OCR T41 e pCloud T27/T28 sospesi; routing v3.2. I contratti
+> storici sotto si aprono solo quando pertinenti.
 
 ## Scopo
 
@@ -90,8 +90,8 @@ prima un micro-incremento CLI delimitato.
 
 ## Priorita' corrente
 
-La corsia attuale è T53 -> T54 -> T55, seguita da T56-T58 secondo gap
-verificati. T29-T33 costituisce la golden run **già chiusa**; T45-T52 hanno
+La corsia corrente proposta è T85 -> T86, seguita da T87-T89 secondo
+evidenze reali; T53-T84 sono chiusi nello snapshot del 2026-11-21. T29-T33 costituisce la golden run **già chiusa**; T45-T52 hanno
 implementato le capacità preliminari. Non riaprire golden run, OCR T41 o
 pCloud T27/T28 come prerequisiti. Per backlog e gate usare
 `docs/current-focus.md` e la roadmap tecnica.
@@ -142,12 +142,14 @@ Sorgenti canoniche:
 ## Regole operative
 
 - Lavorare per piccoli incrementi testabili.
-- Leggere `current-next-increment.md` prima di scegliere il lavoro.
+- Usare il focus e la summary planner; consultare solo le sezioni utili di
+  `current-next-increment.md` se servono dettagli storici.
 - Aggiornare solo i documenti direttamente impattati.
 - Usare fixture offline.
 - Non fare scraping aggressivo.
 - Non salvare credenziali.
-- Non aggiungere fonti salvo scope T29-T31.
+- Aggiungere fonti solo se il caso storico e il relativo registry lo richiedono,
+  con test offline e consenso sul perimetro.
 - Non fare refactor ampi.
 - Riportare file, test, rischi e impatto sulla golden run.
 

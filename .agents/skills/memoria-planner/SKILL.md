@@ -11,9 +11,9 @@ description: Gestisci il planner persistente all'avvio/chiusura di una slice, co
   quotidiana. Apri il JSON completo **solo quando devi aggiornarlo** oppure
   verificare una nota specifica: contiene molte sessioni storiche.
 - Se stato `selected/in_progress`, valida dipendenze e stop condition;
-  altrimenti seleziona una slice da `docs/current-focus.md` e roadmap tecnica.
+  altrimenti seleziona una slice da `docs/current-focus.md` e sezione T85-T89 della roadmap tecnica.
 - Non inferire la chiusura da `status`: controlla test e artefatti.
-- Registra increment, roadmap_basis, routing v3.1, scope, out_of_scope, files,
+- Registra increment, roadmap_basis, routing v3.2, scope, out_of_scope, files,
   test, stop condition e next_action solo quando inizi davvero il task.
 
 ## Scrittura sicura
@@ -41,4 +41,4 @@ description: Gestisci il planner persistente all'avvio/chiusura di una slice, co
 - `blocked` + `review`/`recalculate` con blocker verificabile;
 - `superseded` + `recalculate` solo con decisione aggiornata esplicita.
 
-Non aprire automaticamente il task successivo a fine sessione.
+Non aprire automaticamente il task successivo a fine sessione. Non creare task di solo hardening se non sbloccano un dossier/feedback; lo storico T84 resta immutato.

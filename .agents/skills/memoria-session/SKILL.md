@@ -10,7 +10,8 @@ not need the full session workflow.
 
 ## Minimal input
 
-Read `AGENTS.md`, then only the current-work/contract sections needed by the task.
+Read `AGENTS.md`, `docs/current-focus.md` and planner summary, then only the
+current-work/contract sections needed by the task.
 Do not preload all roadmaps or playbooks.
 
 ## Task envelope
@@ -48,6 +49,10 @@ resolving historical conflicts, publishing records, exposing credentials, or
 starting broad scraping without an explicit authorized increment.
 
 ## Close
+
+Prioritize actual SourceDocument/claim/review/feedback artifacts over another
+quality-only iteration. If the task is blocked by missing authorization or
+data, stop with a concrete blocker rather than inventing tests.
 
 Update only the persistent planner/notes and documentation actually affected by
 the completed work. Report file changes, targeted tests, result and residual risk.

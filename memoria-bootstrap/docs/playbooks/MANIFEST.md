@@ -1,19 +1,19 @@
-# Manifest playbooks attivi — 2026-11-14
+# Manifest playbook — 2026-11-21
 
-## Entrypoint
+## Entry point corrente
 
-- `README.md` — orientamento e progressive disclosure;
-- `../current-focus.md` — focus operativo breve T53-T58;
-- `01-start-session.md`, `02-find-next-increment.md` — quick entry;
-- `codex-session-contract.md` — vincoli storici, CLI e review;
-- `codex-task-router.md`, `codex-context-budget.md`,
-  `codex-roadmap-task-selector.md` — routing, costo e priorita' post-MVP.
+- `../current-focus.md` — roadmap operativa T85-T89.
+- `../agent-session-prompt.md` — prompt quotidiano minimo.
+- `01-start-session.md` e `02-find-next-increment.md` — quick start.
+- `codex-roadmap-task-selector.md`, `codex-task-router.md`,
+  `codex-context-budget.md` — selezione, modelli v3.2 e token.
+- `../model-routing-policy.md` — policy canonica di costo/qualita'.
 
-## Verticali disponibili (non autocaricati)
+## Contratti verticali, solo quando servono
 
-- `codex-document-analysis-core.md` — OCR, review, claim, struttura;
-- `codex-person-profile-feedback-loop-core.md` — memoria di ricerca e feedback.
+- `online-source-research-review.md` — source registry, source document, review.
+- `codex-person-profile-feedback-loop-core.md` — feedback reale e profili.
+- `codex-session-contract.md` — preview/apply, audit e consenso.
+- `codex-document-analysis-core.md` — OCR differito, non pre-caricare.
 
-Le vecchie liste T29-T33 e i playbook inesistenti non sono piu' elencati come
-file obbligatori. I contratti di funding demo restano documentazione storica,
-non priorita' corrente.
+I riferimenti T53-T84 in report storici non autorizzano nuove slice.

@@ -13,6 +13,31 @@ from .metadata_extraction import extract_document_metadata
 ALLOWED_TRANSCRIPTION_METHODS = {"manual_transcription", "external_ocr_unreviewed"}
 
 
+def build_bound_manual_transcription(
+    *, source_id: str, document_id: str, image_path: Path, sidecar_path: Path,
+    text: str, provenance: dict[str, Any], review_decision: str,
+) -> dict[str, Any]:
+    """Build a derived text for an explicitly bound image; no lookup or writes.
+
+    Image/sidecar validation and human decisions belong to the calling wizard.
+    This entry point never enables claims or changes source metadata.
+    """
+    normalized = " ".join(text.split())
+    payload = _processed_text_from_transcription(
+        metadata={"source_id": source_id, "source_document_id": document_id,
+                  "document_class": "image_scan", "claim_eligible": False,
+                  "raw_file": str(image_path), "_metadata_file": str(sidecar_path),
+                  "media_type": provenance["media_type"]},
+        transcription_text=normalized, transcription_method="manual_transcription",
+        review_status="human_reviewed_transcription" if review_decision == "accept_transcription" else "unreviewed",
+    )
+    payload.update({"provenance": provenance, "confidence": None,
+                    "transcription_review_decision": review_decision,
+                    "text_status": "extracted" if normalized else "not_transcribed",
+                    "claim_promotion_allowed": False, "canonical_write_allowed": False})
+    return payload
+
+
 def register_document_transcription(
     *,
     file_path: Path | None = None,

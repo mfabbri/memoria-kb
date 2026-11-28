@@ -1,69 +1,60 @@
-# AGENTS.md — Me.Mo.Ri.A
+# AGENTS.md — Me.Mo.Ri.A (source-first, 2026-11-21)
 
-Regole persistenti (valgono per ogni task). Il resto si carica **solo quando
-serve**: `memoria-bootstrap/docs/model-routing-policy.md`, skill mirate,
-contratti e sezioni di roadmap pertinenti.
+## Contratto storico (sempre)
 
-## Dominio e limiti
+`fonti -> documenti identificabili -> EvidenceClaim -> riconciliazione ->
+revisione umana -> feedback -> nuova ricerca`. Un `SourceResult` generico
+non prova fatti. Ogni claim conserva `source_document_id`, provenance, metodo,
+confidence e review status; un claim non revisionato non e' verificato.
+Conflitti e alias non si risolvono per somiglianza di nome. Mai scrivere
+profili canonici, accettare claim, simulare una decisione dello storico o
+pubblicare senza i gate espliciti del dominio.
 
-`fonti -> documenti -> evidenze -> riconciliazione -> revisione umana -> feedback -> nuova ricerca`.
-Un risultato di ricerca non e' un fatto. Ogni `EvidenceClaim` richiede un
-`SourceDocument` identificabile, provenance e `review_status`; le patch canoniche,
-le decisioni storiche e la pubblicazione non sono automatizzate.
-Dati reali, credenziali, corpus OCR e run pesanti restano fuori da Git.
-Il registry `memoria-sources/registry/camalanca_fonti.yaml` e' la fonte di verita'
-per i quattro livelli dichiarativi delle fonti.
+Dati reali, segreti, corpus OCR e run pesanti restano fuori da Git. Registry
+fonte di verita': `memoria-sources/registry/camalanca_fonti.yaml`, con
+`source_profiles`, `source_strategies`, `source_result_logic`,
+`source_detail_logic`. Solo dettaglio/documento identificabile puo' diventare
+`SourceDocument` e produrre claim candidati. Per operazioni di prodotto usare
+il launcher installato `memoria`, non chiamate Python interne.
 
-Per invocare o verificare un comando Me.Mo.Ri.A usa sempre il launcher CLI
-installato (`memoria` o il suo eseguibile nella `.venv`). Non saltarlo con
-`python -m`, import diretti o chiamate alle funzioni Python: queste non
-verificano l'entry point realmente usato dall'utente. Se il launcher e' guasto,
-ripara l'ambiente o il packaging e poi ripeti la chiamata tramite launcher.
+## Priorita' e selezione (lavoro guidato dalla roadmap)
 
-Per ricerche online parti da una fonte abilitata nel registry e dal database
-operativo configurato; usa la CLI per registrare SourceDocument e generare le
-preview, poi il wizard per raccogliere le decisioni umane. Non chiedere
-all'utente di creare o compilare JSON. Spiega dove la CLI ha salvato gli
-artifact, cosa contengono e il comando successivo. Se manca un passaggio CLI,
-delimita l'estensione necessaria prima di trasferire all'utente attività manuali
-sui file. Procedura completa: `memoria-bootstrap/docs/playbooks/online-source-research-review.md`.
+1. Leggi `memoria-bootstrap/docs/current-focus.md` e l'output breve di
+   `python memoria-bootstrap/planning/current-work-summary.py`.
+2. Se esiste lavoro aperto, riprendilo solo se coerente con la decisione
+   source-first; altrimenti valuta T85-T89 nella sezione **corrente** della
+   roadmap tecnica. Il planner T84 e' chiuso: non riprendere T53-T84.
+3. L'uscita della slice deve essere un risultato storico osservabile o un
+   blocker reale. Un micro-test, una nuova CLI o una rifinitura di provenance
+   senza dossier/feedback sbloccato non sono un risultato di prodotto.
+4. T41 OCR e T27/T28 pCloud sospesi, golden run T29-T33 completata.
+   Riattivarli solo con decisione esplicita dell'utente.
+5. Prima di partire: obiettivo, set minimo di file, evidenza attesa,
+   test, stop condition. Non creare un nuovo record nel planner prima
+   dell'avvio effettivo. Non aprire automaticamente il task successivo.
 
-## Incrementi
+Per dati reali e run online: usa
+`memoria-bootstrap/docs/playbooks/online-source-research-review.md`; chiedi
+l'autorizzazione per fonte, query e attempt specifici. Non lanciare nuove
+ricerche live autonomamente. La sola preview non equivale a review umana.
 
-- Per lavoro guidato dalla roadmap, apri `memoria-bootstrap/docs/current-focus.md`
-  e lo stato breve con `python memoria-bootstrap/planning/current-work-summary.py`;
-  leggi `current-work.json` integrale solo quando occorre modificarlo o
-  verificare un dettaglio storico. Se concluso usa `$memoria-roadmap-selector`.
-  Priorità T53-T58; OCR T41 e pCloud T27/T28 sospesi.
-- Un micro-incremento verificabile alla volta: obiettivo, write set, prova
-  mirata e stop condition. `memoria-engine` contiene runtime e test;
-  `memoria-bootstrap` pianificazione; `memoria-sources` registry;
-  `memoria-rules` regole; `memoria-knowledge` dominio;
-  `memoria-workspace` descriptor, non dati reali.
-- Usa `$memoria-session` per lavori sostanziali multi-step; non per typo o
-  review read-only. Una skill verticale alla volta, quando pertinente.
-- Preferisci fixture offline, preview prima di apply, idempotenza, audit,
-  provenance e test che falsifichino il cambiamento. Non avviare grandi
-  scansioni, refactor estesi o nuovi scraping senza scope esplicito.
+## Codex: modelli e contesto
 
-## Modelli, delega e token
+Policy v3.2: `memoria-bootstrap/docs/model-routing-policy.md`.
+Per task sostanziali parti con GPT-6.2 Sol/medium; per modifica meccanica
+breve puoi usare GPT-6 Luna/low; GPT-6.2 Astra/medium solo per problemi
+multi-repo ambigui o review ad alto impatto non risolvibili da test mirati.
+Il modello effettivo dipende da `/model`: niente fallback silenzioso.
+Delega solo lavoro indipendente che giustifica token/overhead extra.
 
-Policy: `memoria-bootstrap/docs/model-routing-policy.md` (v3.1).
-Parent `gpt-6-luna/low`; lavora direttamente per discovery, documentazione e
-fix minimi ben circoscritti. Sol/medium per implementazioni sostanziali o
-review indipendenti necessarie; Astra/low per trade-off architetturali complessi.
-**Non creare subagent per principio**: delega solo per lavoro separabile,
-review indipendente ad alto rischio o contesto che giustifica l'overhead.
-Registra disponibilita' e fallback espliciti; i nomi del config non garantiscono
-l'accesso al modello. Passa riferimenti a file e risultati, non dump integrali.
-
-Solo su richiesta esplicita di lavoro OCR, apri la sezione pertinente di
-`memoria-bootstrap/docs/playbooks/codex-document-analysis-core.md`;
-preflight Ollama WSL solo se e' prevista inferenza VLM. La soglia T42
-provisional `1.0` non e' discriminante, non abilita `machine_pass`, claim o
-pubblicazione. Il gate formale OCR resta separato.
+Carica skill e contratti per domanda, non a pacchetto. Non aprire i ~160 KB
+di roadmap tecnica, il planner integrale o i run ZIP per un normale avvio.
+Usa ricerca per simbolo/path e output brevi; ferma loop di lettura/test senza
+nuova evidenza. Non riaprire OCR, pCloud o refactor estesi per riempire il
+backlog. Per sessioni sostanziali: `$memoria-session`.
 
 ## Chiusura
 
-Riporta: incremento, file cambiati, test fatti/non fatti, risultati, limiti e
-prossimo candidato. Aggiorna solo i documenti direttamente impattati.
+Riporta artefatto storico ottenuto o blocker specifico, file cambiati,
+provenance, test mirati, stato della review/autorizzazioni, limiti e prossimo
+candidato. Non dichiarare risparmi token senza metriche comparabili.

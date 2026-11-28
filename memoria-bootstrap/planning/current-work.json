@@ -2,73 +2,77 @@
     "$schema": "./current-work.schema.json",
     "schema_version": "1.0",
     "status": "completed",
-    "selected_at": "2026-11-21T14:53:27Z",
-    "updated_at": "2026-11-21T14:54:31Z",
+    "selected_at": "2026-11-24T20:59:50Z",
+    "updated_at": "2026-11-24T21:16:17Z",
     "roadmap_basis": [
         {
             "path": "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-            "section": "T77-T79 - SourceDocument catalog binding and memory-view projection",
-            "reason": "T77-T79 add producer resolution, catalog provenance projection, and consistency validation, but the combined launcher fixture does not yet assert these fields in the final consumer view."
+            "section": "T88 - Review umana della trascrizione tramite memoria",
+            "reason": "User explicitly authorized a guided real transcription-wizard session for the two existing Bendini images; every transcription and decision must come from the user."
         }
     ],
     "increment": {
-    "id": "t84-multi-result-source-attribution-matrix",
-    "title": "Cover multi-document source attribution outcomes",
-    "objective": "Verify candidate_results attribution for multiple SourceDocuments: all matching yields matched, incomplete legacy metadata yields unavailable, and any known mismatch fails before output.",
-    "scope": [
-        "Add a multi-document offline fixture with two matching SourceDocuments and assert matched attribution.",
-        "Add a partial source_id metadata case and assert unavailable without match inference.",
-        "Make one document mismatch and assert fail-closed before writing outcome; verify fixture catalog bytes remain unchanged during resolution."
-    ],
-    "out_of_scope": [
-        "Change runtime behavior unless tests expose a concrete defect.",
-        "Use real catalogs or online searches.",
-        "Modify ResearchMemoryView or canonical records."
-    ],
-    "candidate_files": [
-        "memoria-engine/tests/test_feedback_loop_outcome.py",
-        "memoria-bootstrap/planning/current-work.json",
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/current-next-increment.md"
-    ],
-    "stop_condition": "Offline multi-document matrix proves matched, unavailable and mismatch behavior, no output on mismatch and no resolver catalog writes; focused tests, Ruff, planner validation and diff check pass."
-},
+        "id": "bendini-transcription-human-review-20261124",
+        "title": "Bendini: trascrizione e review umana guidate da CLI",
+        "objective": "Run installed memoria transcription-wizard on the two already acquired image IDs; forward only literal user-supplied text and decisions and save only after explicit final confirmation.",
+        "scope": [
+            "T49 acquired report and image:1 only, through memoria",
+            "User excluded verso transcription; its note is not interpreted or entered",
+            "Interactive human transcription, scope/coverage and separate review decisions",
+            "New external run bendini-transcription-review-20261124-recto after user final confirmation"
+        ],
+        "out_of_scope": [
+            "Assistant-authored transcription, coverage or review decisions",
+            "OCR/VLM, new searches, claims or canonical writes",
+            "Reuse or validation of the previous out-of-procedure sheet"
+        ],
+        "candidate_files": [
+            "memoria-bootstrap/planning/current-work.json",
+            "P:/Comune/Me.Mo.Ri.a/risultati/runs/bendini-transcription-review-20261124-recto",
+            "Affected current-state documentation after the human-session outcome"
+        ],
+        "stop_condition": "Wait at every prompt for user input; do not manufacture answers or save before explicit final confirmation."
+    },
     "verification": {
-    "result": "passed",
-    "notes": "T84 passed the multi-document attribution matrix: complete matching metadata yields matched, partial legacy metadata yields unavailable, and one known mismatch prevents outcome output. SourceDocument catalog bytes remain unchanged during resolution.",
-    "tests": [
-        "memoria-engine/.venv/Scripts/pytest.exe tests/test_feedback_loop_outcome.py tests/test_source_document_catalog.py tests/test_research_memory_view.py -q: 32 passed, 30 subtests passed",
-        "Focused Ruff on source catalog, feedback outcome, memory view and tests: PASS",
-        "Planner validator and git diff --check: PASS"
-    ],
-    "documentation_touchpoints": [
-        "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
-        "memoria-bootstrap/docs/current-next-increment.md"
-    ],
-    "task_envelope": {
-        "mode": "quality-slice",
-        "repositories": [
-            "memoria-engine",
-            "memoria-bootstrap"
+        "result": "passed",
+        "tests": [
+            "Installed memoria transcription-wizard validated selected image/parent/sidecar/report hashes and rechecked inputs before saving",
+            "Original two-image CLI session cancelled: no writes or receipt reported; new recto-only session used only prior literal user answers",
+            "User supplied transcription, reviewer identity, accept decision, no-note choice and explicit final save confirmation; memoria returned review_complete=true and decision_count=1",
+            "Planner JSON schema/routing, scoped diff and preservation of prior notes/history; current documentation consistency"
         ],
-        "read_set": [
-            "T81 producer source attribution semantics",
-            "T82 consumer attribution validation",
-            "T83 single-document launcher integration"
+        "documentation_touchpoints": [
+            "memoria-bootstrap/docs/current-focus.md",
+            "memoria-bootstrap/docs/current-next-increment.md",
+            "memoria-bootstrap/docs/roadmap/00-roadmap-master.md",
+            "memoria-bootstrap/docs/roadmap/01-mvp-roadmap.md",
+            "memoria-bootstrap/docs/roadmap/02-technical-roadmap.md",
+            "memoria-bootstrap/docs/decision-log.md",
+            "memoria-bootstrap/docs/playbooks/online-source-research-review.md"
         ],
-        "write_set": [
-            "Multi-document source attribution fixtures and assertions",
-            "Planner and direct roadmap/current-next notes"
-        ],
-        "test_command": "pytest tests/test_feedback_loop_outcome.py tests/test_source_document_catalog.py tests/test_research_memory_view.py -q; focused Ruff; planner validator; git diff --check",
-        "stop_conditions": [
-            "Synthetic SQLite fixtures only.",
-            "Catalog resolution does not mutate database bytes.",
-            "Mismatch fails before output creation.",
-            "No live search, real records or canonical writes."
-        ]
-    }
-},
+        "notes": "Human recto-only transcription session completed through installed memoria; exit code 0 and CLI output report receipt at P:/Comune/Me.Mo.Ri.a/risultati/runs/bendini-transcription-review-20261124-recto/transcription-review-receipt.json, review_complete=true, one accept_transcription. User limited coverage to the Formazione field, provided text and declared transcriber/reviewer, confirmed reading, chose no note and explicitly confirmed save. Verso excluded without transcription, illegibility label or interpretation. Session 30329 cancelled without writes; session 4248 saved the recto-only run. Source bindings/hashes rechecked by memoria; no separate-script document analysis. Claim eligibility, promotion, canonical/profile writes, identity resolution and machine_pass remain false as reported by the CLI. No OCR/VLM or network, new claim or historical conflict resolution. Prior out-of-procedure sheet remains NOT VALIDATED. Current-state docs updated; old history preserved.",
+        "task_envelope": {
+            "mode": "discovery-lite",
+            "repositories": [
+                "me.mo.ri.a-kb"
+            ],
+            "read_set": [
+                "Current focus, planner summary and transcription-wizard playbook",
+                "T49 acquired report and selected recto image consumed only by memoria; verso excluded at user request"
+            ],
+            "write_set": [
+                "memoria-bootstrap/planning/current-work.json",
+                "External run bendini-transcription-review-20261124-recto after user final confirmation",
+                "Affected current-state documentation after outcome"
+            ],
+            "test_command": "Use installed memoria documents transcription-wizard; schema/routing checks for planner metadata only.",
+            "stop_conditions": [
+                "Await user answer at each content/decision prompt",
+                "No OCR/VLM/network or direct document analysis outside memoria",
+                "No canonical write or validity assigned to the old handoff"
+            ]
+        }
+    },
     "session_notes": [
         "2026-11-15: T61 claim 1/3 completed via installed claims-wizard: death-date DOCX accept_candidate with exact ProcessedDocumentText span; new receipt in persistent run, canonical writes disabled. Original T55 receipt/claim unchanged. Exact quote verified 1/1 and catalog-bound preview verified.",
         "2026-11-15: T61 opened after user said proceed on the three T55 quote mismatches. Scope limited to exact-source diagnosis and one-at-a-time human decisions; existing claims and receipt remain immutable.",
@@ -262,282 +266,314 @@
         "2026-11-21T14:47:45Z: T81 completed; feedback outcome verifies result SourceDocument source_id against the selected source when available, reports legacy attribution unavailable, and rejects mismatches before output. Focused gate 43 tests/60 subtests; Ruff and installed launcher help PASS; fixture catalog unchanged.",
         "2026-11-21T14:50:32Z: T82 completed; ResearchMemoryView validates matched/unavailable result source attribution and renders it in JSON/Markdown. Legacy artifacts remain readable without a match claim. Gate 46 tests/77 subtests, Ruff, launcher help, validator and diff check PASS.",
         "2026-11-21T14:52:49Z: T83 completed; both installed launchers preserve matched result source attribution into final ResearchMemoryView JSON/Markdown. Focused E2E 1 pass; combined gate 46 tests/77 subtests; Ruff, validator, diff check PASS; catalog fixture unchanged.",
-        "2026-11-21T14:54:31Z: T84 completed; multi-document candidate outcomes return matched for complete source attribution, unavailable when legacy metadata is partial, and fail before artifact creation on any known mismatch. Gate 32 tests/30 subtests, Ruff, planner validation and diff check PASS."
+        "2026-11-21T14:54:31Z: T84 completed; multi-document candidate outcomes return matched for complete source attribution, unavailable when legacy metadata is partial, and fail before artifact creation on any known mismatch. Gate 32 tests/30 subtests, Ruff, planner validation and diff check PASS.",
+        "2026-11-21 T86: assembled a real Bendini dossier from 3 distinct documents, 2 online source families, 5 prior receipts and 18 decisions. T52 9/9 exact, T55 3/6 exact, T61 3/3 corrected spans exact. Persistent run t86-bendini-dossier-20261121. No new live research or review; historical conflicts remain open.",
+        "2026-11-21 T87 completed: four unreviewed links across three real documents (person candidate, two place mentions, event mention) in t87-bendini-purocielo-relations-20261121. Historical event receipt manifest/link hashes matched. Participation and identity remain open.",
+        "2026-11-21 T88 blocked after offline action and source-specific plan in t88-bendini-feedback-handoff-20261121. T52 needs_more_evidence traced. Four previous attempts executed, surname-only attempt excluded. Awaiting explicit memorie_locali / nome-completo / Bendini Ateo authorization. T89 waits for T88 outcome.",
+        "2026-11-21 T88: executed the one authorized memorie_locali nome-completo query Bendini Ateo. No_results, zero detail documents, no retry. Report, authorization, outcome and memory view are hash-linked. CLI remains pending_historian_approval for the new action utility. T89 offline baseline for four cases saved in t89-purocielo-cohort-baseline-20261121; replication pending.",
+        "2026-11-21 T88 completed: user recorded DUBBIA on utility. Launcher closed with the original no_results outcome. Reviewed outcome and memory view in t88-bendini-feedback-handoff-20261121/utility-review. No repeat of the authorized query.",
+        "2026-11-21 T89 partial: four-case baseline. Balboni catalog registration unreviewed, 11 exact literal quote proposals and two excluded fragment values, hash-bound review queue. Human claim decisions and any subsequent case-specific authorizations remain pending.",
+        "2026-11-21 T89: user selected the Andreoli case and accepted the death-place claim as a candidate. One exact quote, new catalogue reference and hash-bound human receipt verified in andreoli-death-place-review. No new live attempts or canonical writes. Remaining cohort feedback cycles require a selected gap and specific authorization.",
+        "2026-11-21 T89 completed: four-case report updated with 11/11 Balboni candidate decisions, Andreoli death-place decision and prior Bendini/Purocielo records. Supporting references and hashes verified. One authorized live feedback outcome in cohort (Bendini no_results, DUBBIA); no time/token comparison available.",
+        "2026-11-22 bendini-noi-partigiani-formazione-20261122: One authorized attempt returned no_results, zero hits, detail documents and claims, zero retries. Persistent outcome-audit.json SHA-256 f79f2987fd29b1862b502ac035c13b3b0c80190beb0e9e36a8aaf9460d90c926. The original registry stopped before network; scoped source definitions were copied byte-exact. Two T61 needs_more_evidence decisions remain open.",
+        "2026-11-22 roadmap-state-alignment: updated focus, master/MVP/technical roadmap and current-next entry point from external T86-T89 artifacts. Deliveries distinguished from new evidence and multi-case replication; 41/41 referenced hashes match. No new research or review. Offline formation-gap sheet proposed, not started; historical completion notes retained.",
+        "2026-11-22 bendini-formation-gap-offline: delivered formation-gap-handoff.md in external run bendini-formation-gap-offline-20261122; SHA-256 2bb19d7be1862edce668a7709b741885ff9417f1acf0036edd70c189e61bd14f. Three exact quotes and 28/28 input hashes verified; two original images already available, visual reading awaiting human review. DOCX depends on biography; full archival mapping absent in examined inputs. No live research, OCR, claim creation or canonical write.",
+        "2026-11-22 CLI-only procedural correction overrides the prior offline-sheet completed/passed claim: old custom-script/view_image handoff is NOT VALIDATED and excluded as validated input. Installed memoria produced 3 fresh text extracts and exact quote checks 1/1, 1/1, 9/9 in external run bendini-formation-cli-recheck-20261122. Overall analysis BLOCKED/PARTIAL: no executable authorized CLI manuscript-transcription path in current scope. No OCR/VLM, new search, direct image interpretation, claim creation or human decision. Roadmap/focus/current-next corrected; prior artifacts and notes retained unchanged.",
+        "2026-11-24 transcription-wizard-cli completed: installed memoria now binds explicit acquired image IDs/parents/report/sidecars/hashes to manual transcription and separate declared-human review. Versioned draft/text/manifest/receipt; source flags unchanged, no claims or canonical writes. 12 synthetic wizard tests (including launcher subprocess) and 14 compatibility tests PASS; lint has no new findings, main CLI keeps two baseline findings. Technical blocker removed only; no real Bendini access/review, OCR/VLM or network, and the old out-of-procedure sheet remains NOT VALIDATED. Roadmap/focus/playbook updated; next real review not started.",
+        "2026-11-24 bendini-transcription-human-review completed via installed memoria: user-provided recto Formazione text, declared transcriber/reviewer, explicit accept reading, no note and final save yes. Saved draft/text/manifest/receipt in external run bendini-transcription-review-20261124-recto; CLI review_complete=true, decision_count=1, claim/promotion/canonical/identity/machine-pass flags false. Verso excluded by user; initial two-image session cancelled without writes. No invented answers, OCR/VLM, research or new claims. Old out-of-procedure sheet still NOT VALIDATED. Focus/roadmap/playbook updated; next comparison not started."
     ],
     "next_action": {
-    "mode": "recalculate",
-    "description": "T81-T84 close candidate result SourceDocument attribution from producer through ResearchMemoryView, including legacy and multi-document cases. Recalculate the next micro-increment from remaining measured document-to-review gaps; do not open it automatically. Keep T41 OCR and T27/T28 pCloud suspended."
-},
+        "mode": "recalculate",
+        "description": "Saved human-reviewed recto Formazione transcription only; verso excluded. Next candidate, not started: versioned comparison with portal text for a separate historical claim decision. Old sheet unvalidated; no automatic claim change or research."
+    },
     "routing": {
-    "model": "gpt-6-luna",
-    "agent": "parent",
-    "tier": "low",
-    "reasoning_effort": "low",
-    "rationale": "Parent fallback for a focused edge-case quality slice; no delegation needed.",
-    "task_class": "quality",
-    "policy_version": "3.1",
-    "trace": [
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-14T16:16:47Z",
-            "tier": "low",
-            "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-14T21:40:53Z",
-            "tier": "low",
-            "reason": "T53 discovery-lite read-only; fallback parent secondo policy 3.1, nessuna delega necessaria."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-14T21:55:00Z",
-            "tier": "low",
-            "reason": "T54 implementazione circoscritta; fallback effettivo secondo policy 3.1."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-14T21:49:25Z",
-            "tier": "low",
-            "reason": "T55 discovery-lite su artifact esistenti e CLI read-only; fallback parent secondo policy 3.1."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-14T21:54:52Z",
-            "tier": "low",
-            "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "tier": "low",
-            "at": "2026-11-15T09:51:39Z",
-            "reason": "T55 prerequisite scope and implementation are bounded; direct parent execution under policy 3.1, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T11:48:56Z",
-            "tier": "low",
-            "reason": "T62 bounded wizard behavior fix; implementer route unavailable, parent fallback per routing policy 3.1."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T11:52:10Z",
-            "tier": "low",
-            "reason": "T63 small additive ResearchMemoryView contract; direct parent fallback, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T11:55:55Z",
-            "tier": "low",
-            "reason": "T64 bounded additive claims-preview diagnostic binding; direct parent fallback, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:07:44Z",
-            "tier": "low",
-            "reason": "T65 bounded offline end-to-end quality fixture; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:11:44Z",
-            "tier": "low",
-            "reason": "T66 bounded positive feedback artifact visibility in read-only memory view; direct parent."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:13:36Z",
-            "tier": "low",
-            "reason": "T67 narrow ResearchMemoryView quote diagnostic presentation; parent fallback, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:22:12Z",
-            "tier": "low",
-            "reason": "T68 focused end-to-end Markdown quality assertions; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:25:34Z",
-            "tier": "low",
-            "reason": "T69 bounded quality slice for end-to-end diagnostic coverage; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:28:37Z",
-            "tier": "low",
-            "reason": "T70 bounded launcher-driven diagnostic quality slice; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:38:25Z",
-            "tier": "low",
-            "reason": "T71 measured, additive ResearchMemoryView warning projection gap; direct parent fallback, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:40:52Z",
-            "tier": "low",
-            "reason": "T72 test-only slice for bounded multi-outcome provenance coverage; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T12:42:35Z",
-            "tier": "low",
-            "reason": "T73 bounded launcher-driven quality slice for repeatable feedback artifacts; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T13:08:53Z",
-            "tier": "low",
-            "reason": "T74 bounded offline integration fixture; direct parent under policy 3.1, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T13:12:22Z",
-            "tier": "low",
-            "reason": "T75 bounded launcher integration test for allowed feedback outcomes; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T13:14:57Z",
-            "tier": "low",
-            "reason": "T76 narrow profile identity binding in read-only view; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T13:56:22Z",
-            "tier": "low",
-            "reason": "T77 bounded SourceDocument catalog binding; direct parent under policy 3.1, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T14:02:40Z",
-            "tier": "low",
-            "reason": "T78 additive memory-view projection; direct parent under policy 3.1, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T14:05:58Z",
-            "tier": "low",
-            "reason": "T79 narrow consistency validation for embedded SourceDocument bindings; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "at": "2026-11-21T14:09:34Z",
-            "tier": "low",
-            "reason": "T80 bounded producer-consumer test assertion; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "tier": "low",
-            "at": "2026-11-21T14:45:14Z",
-            "reason": "T81 source attribution binding is bounded; direct parent fallback because delegation is disabled in this session."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "tier": "low",
-            "at": "2026-11-21T14:48:20Z",
-            "reason": "T82 consumer validation and rendering is a narrow follow-up; direct parent fallback, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "tier": "low",
-            "at": "2026-11-21T14:51:23Z",
-            "reason": "T83 test-only launcher integration slice; direct parent, no delegation."
-        },
-        {
-            "event": "selected",
-            "agent": "parent",
-            "model": "gpt-6-luna",
-            "reasoning_effort": "low",
-            "tier": "low",
-            "at": "2026-11-21T14:53:27Z",
-            "reason": "T84 bounded multi-document fixture coverage; direct parent, no delegation."
-        }
-    ]
-}
+        "model": "gpt-6.2-sol",
+        "agent": "parent",
+        "tier": "medium",
+        "reasoning_effort": "medium",
+        "rationale": "Configured policy v3.2 parent route retained for guided human CLI session; actual client model/effort not independently verified. No delegation or autonomous historical decisions.",
+        "task_class": "discovery",
+        "policy_version": "3.2",
+        "trace": [
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T16:16:47Z",
+                "tier": "low",
+                "reason": "Tre hardening micro-slice T52a-c secondo raccomandazione architetturale review-only."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:40:53Z",
+                "tier": "low",
+                "reason": "T53 discovery-lite read-only; fallback parent secondo policy 3.1, nessuna delega necessaria."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:55:00Z",
+                "tier": "low",
+                "reason": "T54 implementazione circoscritta; fallback effettivo secondo policy 3.1."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:49:25Z",
+                "tier": "low",
+                "reason": "T55 discovery-lite su artifact esistenti e CLI read-only; fallback parent secondo policy 3.1."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-14T21:54:52Z",
+                "tier": "low",
+                "reason": "T56 micro-incremento contrattuale su preview typed; fallback parent effettivo e fixture circoscritte."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-15T09:51:39Z",
+                "reason": "T55 prerequisite scope and implementation are bounded; direct parent execution under policy 3.1, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T11:48:56Z",
+                "tier": "low",
+                "reason": "T62 bounded wizard behavior fix; implementer route unavailable, parent fallback per routing policy 3.1."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T11:52:10Z",
+                "tier": "low",
+                "reason": "T63 small additive ResearchMemoryView contract; direct parent fallback, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T11:55:55Z",
+                "tier": "low",
+                "reason": "T64 bounded additive claims-preview diagnostic binding; direct parent fallback, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:07:44Z",
+                "tier": "low",
+                "reason": "T65 bounded offline end-to-end quality fixture; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:11:44Z",
+                "tier": "low",
+                "reason": "T66 bounded positive feedback artifact visibility in read-only memory view; direct parent."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:13:36Z",
+                "tier": "low",
+                "reason": "T67 narrow ResearchMemoryView quote diagnostic presentation; parent fallback, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:22:12Z",
+                "tier": "low",
+                "reason": "T68 focused end-to-end Markdown quality assertions; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:25:34Z",
+                "tier": "low",
+                "reason": "T69 bounded quality slice for end-to-end diagnostic coverage; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:28:37Z",
+                "tier": "low",
+                "reason": "T70 bounded launcher-driven diagnostic quality slice; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:38:25Z",
+                "tier": "low",
+                "reason": "T71 measured, additive ResearchMemoryView warning projection gap; direct parent fallback, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:40:52Z",
+                "tier": "low",
+                "reason": "T72 test-only slice for bounded multi-outcome provenance coverage; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T12:42:35Z",
+                "tier": "low",
+                "reason": "T73 bounded launcher-driven quality slice for repeatable feedback artifacts; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T13:08:53Z",
+                "tier": "low",
+                "reason": "T74 bounded offline integration fixture; direct parent under policy 3.1, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T13:12:22Z",
+                "tier": "low",
+                "reason": "T75 bounded launcher integration test for allowed feedback outcomes; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T13:14:57Z",
+                "tier": "low",
+                "reason": "T76 narrow profile identity binding in read-only view; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T13:56:22Z",
+                "tier": "low",
+                "reason": "T77 bounded SourceDocument catalog binding; direct parent under policy 3.1, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T14:02:40Z",
+                "tier": "low",
+                "reason": "T78 additive memory-view projection; direct parent under policy 3.1, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T14:05:58Z",
+                "tier": "low",
+                "reason": "T79 narrow consistency validation for embedded SourceDocument bindings; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "at": "2026-11-21T14:09:34Z",
+                "tier": "low",
+                "reason": "T80 bounded producer-consumer test assertion; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-21T14:45:14Z",
+                "reason": "T81 source attribution binding is bounded; direct parent fallback because delegation is disabled in this session."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-21T14:48:20Z",
+                "reason": "T82 consumer validation and rendering is a narrow follow-up; direct parent fallback, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-21T14:51:23Z",
+                "reason": "T83 test-only launcher integration slice; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6-luna",
+                "reasoning_effort": "low",
+                "tier": "low",
+                "at": "2026-11-21T14:53:27Z",
+                "reason": "T84 bounded multi-document fixture coverage; direct parent, no delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6.2-sol",
+                "reasoning_effort": "medium",
+                "tier": "medium",
+                "at": "2026-11-21T19:27:17Z",
+                "reason": "Policy v3.2 configured parent route for a real dossier. Client /model and session effort not independently verified. No delegation."
+            },
+            {
+                "event": "selected",
+                "agent": "parent",
+                "model": "gpt-6.2-sol",
+                "reasoning_effort": "medium",
+                "tier": "medium",
+                "at": "2026-11-21T19:34:33Z",
+                "reason": "Configured parent route for T87/T88. No delegation; client /model not independently checked."
+            }
+        ]
+    }
 }

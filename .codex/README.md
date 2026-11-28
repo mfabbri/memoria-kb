@@ -1,35 +1,30 @@
-# Codex agent e routing — Me.Mo.Ri.A v3.1
+# Codex — Me.Mo.Ri.A policy v3.2
 
-Configurazione unica alla radice del workspace: `.codex/config.toml`;
-non creare altre directory `.codex` nei sei repository figli.
+**Una sola configurazione alla root** `.codex/config.toml`. Non creare
+`.codex` nei repository figli. Snapshot 2026-11-21: planner T84 `completed`,
+nuove slice T85-T89; OCR T41 e pCloud T27/T28 sospesi.
 
-Il controller e' GPT-6 Luna/low. I custom agent sono **disponibili**, non
-obbligatori: le operazioni brevi sono dirette, gli incrementi runtime
-sostanziali usano Sol/medium, la review indipendente solo quando giustificata,
-i trade-off complessi Astra/low. Vedi
-`memoria-bootstrap/docs/model-routing-policy.md`.
+Default GPT-6.2 Sol/medium per lavoro sostanziale; Luna/low selezionabile per
+edit deterministici; Astra/medium solo per architettura ambigua. Subagent
+specializzati **opzionali**, non obbligatori. La disponibilita' effettiva
+va verificata con `/model` prima di affidarsi alla configurazione: modelli
+visibili nell'API non garantiscono supporto in Codex/ChatGPT.
 
-`/model` verifica la disponibilita' effettiva; la configurazione non garantisce
-che un modello possa essere avviato nell'account. Il planner registra la route
-intenzionale, gli hook trusted `/hooks` registrano eventi runtime in
-`memoria-bootstrap/planning/.runtime/model-routing.ndjson`. Non assumere che il
-model id sia sempre presente nell'evento. Le route storiche 2.x e 3.0 restano.
-
-Validazione:
+Per validare senza modificare dati storici:
 
 ```powershell
-& .\memoria-engine\.venv\Scripts\python.exe .\memoria-bootstrap\planning\validate-codex-model-routing.py
-python -m json.tool .\memoria-bootstrap\planning\current-work.json
+python .\memoria-bootstrap\planning\current-work-summary.py
+python .\memoria-bootstrap\planning\validate-codex-model-routing.py
+# Se jsonschema non installato, il validator avverte: non chiamare PASS il gate schema.
 git diff --check
 ```
 
-Per risparmiare token: prima `docs/current-focus.md` +
-`python memoria-bootstrap/planning/current-work-summary.py`, poi
-skill e contratti on-demand, handoff solo con path e
-criteri, nessun fan-out automatico e niente ripetizione del playbook OCR nel
-prompt di avvio. Per misurare costi e cache vedi la policy v3.1.
+`/hooks` abilita, se trusted, l'audit runtime in
+`memoria-bootstrap/planning/.runtime/model-routing.ndjson`; un evento puo'
+non contenere model ID. La route intenzionale e' nel planner, lo storico
+2.x/3.0/3.1 non si riscrive. Permessi custom agent ereditati dalla sessione:
+read-only nelle istruzioni non e' isolamento tecnico.
 
-I custom agent ereditano `sandbox_mode` e `approval_policy` dalla sessione:
-`developer_instructions` read-only **non** isola tecnicamente un subagent.
-Usare una sessione `read-only` separata quando serve enforcement effettivo.
-OCR T41 e pCloud T27/T28 sono sospesi; priorità T53-T58.
+Contesto piccolo: `AGENTS.md` -> `current-focus.md` -> planner summary;
+skill e contratti mirati, niente dump del planner o roadmap integrale.
+Dettagli in `memoria-bootstrap/docs/model-routing-policy.md`.

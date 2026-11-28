@@ -1,17 +1,58 @@
 # MVP Roadmap
 
-Data di impianto: 2026-07-18; aggiornamento stato: 2026-11-01
+Data di impianto: 2026-07-18; aggiornamento stato: 2026-11-24
 
-## Stato formale — 2026-11-01
+## Stato formale — 2026-11-01 (storico, superato dalle priorita' del 2026-11-21)
 
 **MVP finanziatori completato** secondo T29-T33, con run canonica, tre casi,
 cinque documenti, riconciliazione multi-fonte, review, patch preview e ciclo
 feedback documentati. La prova reale dipende dagli artifact nel data root
 esterno, non ricostruibili dal solo repository. Le sezioni sotto costituiscono
 **criteri storici di accettazione**, non backlog da riaprire. T45-T52 hanno introdotto queste capacità post-MVP; il lavoro di prodotto
-successivo è T53-T58: usare fonti già disponibili per dossier multi-fonte reali,
+allora previsto era T53-T58: usare fonti già disponibili per dossier multi-fonte reali,
 collegare persone/luoghi/eventi e conservare feedback e provenance. T27/T28
 pCloud e T41 OCR restano sospesi. Vedi `docs/current-focus.md`.
+
+## Decisione source-first post-T84 — stato al 2026-11-24
+
+Stato storico di partenza: T84 `completed` al 2026-11-21;
+T53-T84 non vanno scelti di nuovo come backlog ordinario. Il valore atteso
+e' acquisire **documenti identificabili, claim con provenance, revisioni e
+feedback persistente** su persone, luoghi ed eventi. Lavoro OCR T41 e pCloud
+T27/T28 sospesi senza data. Nessuna nuova golden run. Qualita' tecnica solo
+se sblocca un caso reale, non come filone autonomo.
+
+**Consegne riscontrate:** T85 stato documentale riallineato (chiusura integrale
+originaria non attestata); T86 dossier da 3 documenti esistenti con review
+pregresse; T87 vista con 4 link candidati; T88 un ciclo live chiuso con
+`no_results` e utilita' DUBBIA; T89 report comparativo su 4 casi completato.
+**Da dimostrare:** indipendenza archivistica a monte, risoluzione delle lacune
+storiche, nuova evidenza dal feedback e ripetibilita' live su piu' casi.
+Il solo caso con feedback live nella coorte e' Bendini. Il follow-up Bendini
+del 22 novembre ha anch'esso zero documenti/claim nuovi e resta distinto dal
+ciclo T88 del 21 novembre. I task chiusi non promuovono candidati a fatti.
+
+Scheda offline Bianconcini/Bonvicini **fuori procedura e non validata** nel
+run `bendini-formation-gap-offline-20261122`; precedente `completed/passed`
+rettificato. Rianalisi tramite `memoria` nel run esterno
+`bendini-formation-cli-recheck-20261122`: 3 testi estratti e quote-check
+1/1, 1/1 e 9/9 exact sui set esistenti. **Analisi complessiva bloccata**:
+lettura del manoscritto non validata nella rianalisi del 22 novembre.
+Il 24 novembre, su autorizzazione esplicita, aggiunto `transcription-wizard`
+al launcher: trascrizione manuale con provenance e review umana, verificata
+solo su fixture sintetiche (12 test mirati e 14 di compatibilita'). Blocker
+tecnico rimosso. Successiva sessione umana autorizzata: salvati trascrizione
+del solo campo Formazione del recto e receipt nel run
+`bendini-transcription-review-20261124-recto`; una `accept_transcription`,
+`review_complete=true`, senza nota. Verso escluso, vecchia scheda ancora non
+validata; nessuna accettazione di claim o scrittura canonica. Prossimo
+candidato: confronto con il testo del portale per una decisione storica
+distinta, non avviato. Nessuna riattivazione T41 o promozione automatica.
+Gate originari, prove e limiti in `02-technical-roadmap.md`; input e stop in
+`../current-focus.md`. Nessuna nuova ricerca autorizzata; OCR/pCloud e golden
+run restano fuori dal prossimo passo. Le sezioni sotto conservano i criteri
+e il contesto storico, non sono nuovi task da avviare automaticamente.
+
 
 ## Definizione MVP
 
